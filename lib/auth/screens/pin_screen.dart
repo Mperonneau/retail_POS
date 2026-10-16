@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/permissions/first_allowed_home_route.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/device_session_provider.dart';
 import '../../core/providers/permission_settings_provider.dart';
 import '../../core/providers/staff_session_provider.dart';
 import '../../core/widgets/timeclock_modal.dart';
@@ -40,6 +41,19 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   String? _error;
   bool _busy = false;
   static const int _pinLength = 4;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = ref.read(authProvider);
+      final session = ref.read(deviceSessionProvider);
+      if (auth.status != AuthStatus.authenticated && session.profile != null) {
+        ref.read(deviceSessionProvider.notifier).applyStoredAuth(ref);
+      }
+    });
+  }
 
   void _append(String d) {
     if (_busy || _digits.length >= _pinLength) return;

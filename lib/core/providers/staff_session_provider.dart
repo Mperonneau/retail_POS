@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/staff_role.dart';
+import 'device_session_provider.dart';
 import 'staff_directory_provider.dart';
 
 export '../models/staff_role.dart';
@@ -81,20 +82,40 @@ class StaffSessionNotifier extends StateNotifier<StaffSessionState?> {
   }
 
   /// Returns `null` if PIN is invalid.
+  ///
+  /// A PIN already saved on this register unlocks locally. The staff
+  /// directory is only consulted when this device has not seen the PIN.
   String? signInWithPin(String pin) {
     if (pin.length != 4) return 'Enter a 4-digit PIN.';
+
+    final devices = _ref.read(deviceSessionProvider);
+    final deviceApi = _ref.read(deviceSessionProvider.notifier);
+    if (devices.offlineUnlockBlocked) {
+      return devices.offlineUnlockBlockedMessage;
+    }
+
+    final cached = deviceApi.unlockFromCache(pin);
+    if (cached != null) {
+      state = StaffSessionState(
+        employeeId: cached.userId,
+        employeeName: cached.name,
+        role: cached.role,
+        lastActivityAt: DateTime.now(),
+      );
+      _scheduleIdleCheck();
+      if (devices.online) deviceApi.markVerified();
+      return null;
+    }
 
     final directory = _ref.read(staffDirectoryProvider.notifier);
     final fromDirectory = directory.findActiveByPin(pin);
     if (fromDirectory != null) {
-      final now = DateTime.now();
-      state = StaffSessionState(
+      _openSession(
         employeeId: fromDirectory.id,
         employeeName: fromDirectory.fullName,
         role: fromDirectory.role,
-        lastActivityAt: now,
+        pin: pin,
       );
-      _scheduleIdleCheck();
       return null;
     }
 
@@ -102,15 +123,38 @@ class StaffSessionNotifier extends StateNotifier<StaffSessionState?> {
     if (role == null) {
       return 'Invalid PIN. Use a staff PIN from Settings or a demo code (e.g. 1234, 1111, 8888 reception).';
     }
-    final now = DateTime.now();
-    state = StaffSessionState(
+    _openSession(
       employeeId: 'emp_${pin}_demo',
       employeeName: _demoNameForRole(role),
       role: role,
-      lastActivityAt: now,
+      pin: pin,
+    );
+    return null;
+  }
+
+  void _openSession({
+    required String employeeId,
+    required String employeeName,
+    required StaffRole role,
+    required String pin,
+  }) {
+    final devices = _ref.read(deviceSessionProvider);
+    state = StaffSessionState(
+      employeeId: employeeId,
+      employeeName: employeeName,
+      role: role,
+      lastActivityAt: DateTime.now(),
     );
     _scheduleIdleCheck();
-    return null;
+    _ref.read(deviceSessionProvider.notifier).rememberPin(
+          pin: pin,
+          userId: employeeId,
+          name: employeeName,
+          role: role,
+        );
+    if (devices.online) {
+      _ref.read(deviceSessionProvider.notifier).markVerified();
+    }
   }
 
   void recordActivity() {

@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:retail_pos/core/services/local_store.dart';
 import 'package:retail_pos/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    LocalStore.instance.debugReset();
   });
 
   testWidgets('Login with a staff PIN opens the retail shell', (tester) async {
@@ -53,6 +60,13 @@ void main() {
 
     expect(find.text('Order History'), findsOneWidget);
     _expectBottomNavLabelsVisible(tester);
+
+    await tester.tap(find.byTooltip('Menu'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Customers'), findsWidgets);
+    expect(find.text('Connected devices'), findsOneWidget);
+    expect(find.text('Inventory'), findsWidgets);
   });
 }
 
@@ -64,10 +78,17 @@ Future<void> _signInToRetailShell(
   await tester.pump(const Duration(milliseconds: 1600));
   await tester.pump();
 
+  expect(find.text('Connect this device'), findsOneWidget);
+  await tester.tap(find.text('Sign in with email'));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+
   expect(find.text('Sign In'), findsOneWidget);
 
-  await tester.enterText(find.byType(TextField).at(0), 'manager@shop.ht');
-  await tester.enterText(find.byType(TextField).at(1), 'password');
+  final fields = find.byType(TextFormField);
+  final count = fields.evaluate().length;
+  await tester.enterText(fields.at(count - 2), 'manager@shop.ht');
+  await tester.enterText(fields.at(count - 1), 'password');
   await tester.tap(find.text('Sign In'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 900));

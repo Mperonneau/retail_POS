@@ -7,6 +7,7 @@ import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_scroll_behavior.dart';
 import 'core/widgets/app_notification_banner.dart';
+import 'core/widgets/app_update_banner.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,21 +36,22 @@ class BizManagerApp extends ConsumerWidget {
       routerConfig: router,
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
-        if (!hasStaffSession) return content;
-        // Stack [Navigator] then [modal layer] so notifications stay above scrims/sheets.
-        return Stack(
-          fit: StackFit.expand,
-          clipBehavior: Clip.none,
-          children: [
-            Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (_) =>
-                  ref.read(staffSessionProvider.notifier).recordActivity(),
-              child: content,
-            ),
-            const AppNotificationModal(),
-          ],
-        );
+        final body = !hasStaffSession
+            ? content
+            : Stack(
+                fit: StackFit.expand,
+                clipBehavior: Clip.none,
+                children: [
+                  Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerDown: (_) =>
+                        ref.read(staffSessionProvider.notifier).recordActivity(),
+                    child: content,
+                  ),
+                  const AppNotificationModal(),
+                ],
+              );
+        return AppUpdateHost(child: body);
       },
     );
   }

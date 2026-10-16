@@ -8,6 +8,10 @@ class AppRoutes {
   static const String register = '/register';
   /// Staff PIN (Tier 2) — requires Tier 1 auth.
   static const String pin = '/pin';
+  /// One-time code that authorizes this register.
+  static const String pairDevice = '/pair-device';
+  /// Codes another register can use to connect.
+  static const String devices = '/devices';
 
   // Restaurant
   static const String restaurantDashboard = '/restaurant/dashboard';

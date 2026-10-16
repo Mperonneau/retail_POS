@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/navigation/app_routes.dart';
+import '../../core/providers/device_session_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
@@ -33,11 +34,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
 
     _controller.forward();
+    _boot();
+  }
 
-    Future.delayed(AppConstants.splashDuration, () {
-      if (!mounted) return;
-      context.go(AppRoutes.login);
-    });
+  Future<void> _boot() async {
+    await Future.wait([
+      ref.read(deviceSessionProvider.notifier).restore(),
+      Future.delayed(AppConstants.splashDuration),
+    ]);
+    if (!mounted) return;
+    final session = ref.read(deviceSessionProvider);
+    if (session.isPaired) {
+      ref.read(deviceSessionProvider.notifier).applyStoredAuth(ref);
+      context.go(AppRoutes.pin);
+    } else {
+      context.go(AppRoutes.pairDevice);
+    }
   }
 
   @override

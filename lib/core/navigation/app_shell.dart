@@ -16,7 +16,9 @@ import '../utils/constants.dart';
 import '../utils/date_formatter.dart';
 import '../utils/navigation_helpers.dart';
 import '../widgets/app_bottom_sheet.dart';
+import '../providers/device_session_provider.dart';
 import '../widgets/connectivity_dot.dart';
+import '../widgets/offline_banner.dart';
 import '../widgets/keyboard_scroll_shortcuts.dart';
 import '../widgets/loading_overlay.dart';
 import 'app_routes.dart';
@@ -369,6 +371,7 @@ class _DesktopLayout extends ConsumerWidget {
             child: Column(
               children: [
                 _TopBar(moduleLabel: moduleLabel),
+                const OfflineBanner(),
                 Expanded(child: KeyboardScrollArea(child: LoadingOverlay(child: child))),
               ],
             ),
@@ -927,6 +930,7 @@ class _TabletLayout extends ConsumerWidget {
             child: Column(
               children: [
                 _TopBar(moduleLabel: moduleLabel, compact: true),
+                const OfflineBanner(),
                 Expanded(
                   child: KeyboardScrollArea(
                     child: LoadingOverlay(child: child),
@@ -987,13 +991,28 @@ class _MobileLayout extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: Column(
-        children: [
-          _TopBar(moduleLabel: moduleLabel, compact: true),
-          Expanded(
-            child: KeyboardScrollArea(child: LoadingOverlay(child: child)),
-          ),
-        ],
+      drawer: _MobileSideMenu(
+        destinations: destinations,
+        selectedRoute: location,
+        onSelected: (route) {
+          Navigator.of(context).pop();
+          navigateWithLoading(ref, context, route);
+        },
+      ),
+      body: Builder(
+        builder: (bodyContext) => Column(
+          children: [
+            _TopBar(
+              moduleLabel: moduleLabel,
+              compact: true,
+              onMenu: () => Scaffold.of(bodyContext).openDrawer(),
+            ),
+            const OfflineBanner(),
+            Expanded(
+              child: KeyboardScrollArea(child: LoadingOverlay(child: child)),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: adjustedIndex,
@@ -1020,7 +1039,10 @@ class _TopBar extends ConsumerWidget {
   const _TopBar({
     required this.moduleLabel,
     this.compact = false,
+    this.onMenu,
   });
+
+  final VoidCallback? onMenu;
 
   void _showNotificationsSheet(BuildContext context, bool isDark) {
     final notifications = [
@@ -1109,6 +1131,7 @@ class _TopBar extends ConsumerWidget {
     );
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateStr = DateFormatter.topBarDate();
+    final online = ref.watch(deviceSessionProvider.select((s) => s.online));
 
     return Container(
       height: compact ? 56 : 64,
@@ -1125,6 +1148,15 @@ class _TopBar extends ConsumerWidget {
       ),
       child: Row(
         children: [
+          if (onMenu != null)
+            IconButton(
+              tooltip: 'Menu',
+              onPressed: onMenu,
+              icon: Icon(
+                Icons.menu,
+                color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
+              ),
+            ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1168,7 +1200,11 @@ class _TopBar extends ConsumerWidget {
               ],
             ),
           ),
-          const ConnectivityDot(status: ConnectivityStatus.online),
+          ConnectivityDot(
+            status: online
+                ? ConnectivityStatus.online
+                : ConnectivityStatus.offline,
+          ),
           const SizedBox(width: AppConstants.spacing16),
           _TopBarAction(
             icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
@@ -1254,6 +1290,95 @@ class _TopBarAction extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _MobileSideMenu extends ConsumerWidget {
+  const _MobileSideMenu({
+    required this.destinations,
+    required this.selectedRoute,
+    required this.onSelected,
+  });
+
+  final List<_NavDestination> destinations;
+  final String selectedRoute;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final auth = ref.watch(authProvider);
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
+    final accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    return Drawer(
+      backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    (auth.businessName ?? '').isEmpty
+                        ? 'Retail POS'
+                        : auth.businessName!,
+                    style: AppTextStyles.h2(color: accent),
+                  ),
+                  if ((auth.userName ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(auth.userName!, style: AppTextStyles.caption(color: muted)),
+                  ],
+                ],
+              ),
+            ),
+            Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.lightBlue),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  for (final destination in destinations)
+                    ListTile(
+                      leading: Icon(
+                        selectedRoute == destination.route
+                            ? destination.selectedIcon
+                            : destination.icon,
+                        color: selectedRoute == destination.route ? accent : muted,
+                      ),
+                      title: Text(
+                        destination.label,
+                        style: AppTextStyles.body(
+                          color: selectedRoute == destination.route ? accent : ink,
+                        ).copyWith(
+                          fontWeight: selectedRoute == destination.route
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                      ),
+                      onTap: () => onSelected(destination.route),
+                    ),
+                  Divider(color: isDark ? AppColors.darkBorder : AppColors.lightBlue),
+                  ListTile(
+                    leading: Icon(Icons.devices_other_outlined, color: muted),
+                    title: Text(
+                      'Connected devices',
+                      style: AppTextStyles.body(color: ink),
+                    ),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push(AppRoutes.devices);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

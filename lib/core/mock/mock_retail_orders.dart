@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/device_session_provider.dart';
+import '../services/local_store.dart';
+
 import '../models/order_history.dart';
 import '../models/retail_fulfillment_mode.dart';
 import '../models/retail_order.dart';
@@ -426,16 +429,39 @@ final _mockRetailOrdersSeed = <RetailOrder>[
 // ──────────────────────────────────────────────────────────────────────────────
 
 class RetailOrdersNotifier extends StateNotifier<List<RetailOrder>> {
-  RetailOrdersNotifier() : super(_mockRetailOrdersSeed);
+  RetailOrdersNotifier(this._ref) : super(_mockRetailOrdersSeed) {
+    Future<void>.microtask(_hydrate);
+  }
+
+  final Ref _ref;
+
+  Future<void> _hydrate() async {
+    final saved = await LocalStore.instance.loadExtraOrders();
+    if (saved.isEmpty) return;
+    final known = state.map((order) => order.id).toSet();
+    final extras = [
+      for (final order in saved)
+        if (!known.contains(order.id)) order,
+    ];
+    if (extras.isEmpty) return;
+    state = [...extras, ...state];
+  }
 
   void updateStatus(String id, RetailOrderStatus status) {
     state = [
       for (final o in state)
         if (o.id == id) o.copyWith(status: status) else o,
     ];
+    final updated = state.where((order) => order.id == id).firstOrNull;
+    if (updated != null) {
+      _ref.read(deviceSessionProvider.notifier).captureOrder(updated);
+    }
   }
 
-  void add(RetailOrder order) => state = [order, ...state];
+  void add(RetailOrder order) {
+    state = [order, ...state];
+    _ref.read(deviceSessionProvider.notifier).captureOrder(order);
+  }
 
   List<RetailOrder> get active =>
       state.where((o) => !o.status.isTerminal).toList()
@@ -448,5 +474,5 @@ class RetailOrdersNotifier extends StateNotifier<List<RetailOrder>> {
 
 final retailOrdersProvider =
     StateNotifierProvider<RetailOrdersNotifier, List<RetailOrder>>(
-  (ref) => RetailOrdersNotifier(),
+  (ref) => RetailOrdersNotifier(ref),
 );

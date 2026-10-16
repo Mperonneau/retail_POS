@@ -54,6 +54,22 @@ class RetailOrderLine {
   });
 
   double get lineTotalHtg => unitPriceHtg * quantity;
+
+  Map<String, dynamic> toJson() => {
+        'productName': productName,
+        'productId': productId,
+        'quantity': quantity,
+        'unitPriceHtg': unitPriceHtg,
+        'unitPriceUsd': unitPriceUsd,
+      };
+
+  static RetailOrderLine fromJson(Map<String, dynamic> json) => RetailOrderLine(
+        productName: json['productName']?.toString() ?? '',
+        productId: (json['productId'] as num?)?.toInt() ?? 0,
+        quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+        unitPriceHtg: (json['unitPriceHtg'] as num?)?.toDouble() ?? 0,
+        unitPriceUsd: (json['unitPriceUsd'] as num?)?.toDouble(),
+      );
 }
 
 /// A retail order (created from direct POS payment or from a paid quote).
@@ -185,6 +201,88 @@ class RetailOrder {
       paymentLastFour: paymentLastFour == _sentinel
           ? this.paymentLastFour
           : paymentLastFour as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'orderNumber': orderNumber,
+        'fromQuoteId': fromQuoteId,
+        'clientName': clientName,
+        'clientPhone': clientPhone,
+        'clientEmail': clientEmail,
+        'fulfillmentMode': fulfillmentMode.name,
+        'status': status.name,
+        'paymentSource': paymentSource.name,
+        'paymentMethod': paymentMethod.name,
+        'lines': [for (final line in lines) line.toJson()],
+        'discountPercent': discountPercent,
+        'taxPercent': taxPercent,
+        'serviceChargePercent': serviceChargePercent,
+        'deliveryFee': deliveryFee,
+        'deliveryLocation': deliveryLocation,
+        'deliveryPhone': deliveryPhone,
+        'createdAt': createdAt.toIso8601String(),
+        'paidAt': paidAt.toIso8601String(),
+        'paymentLastFour': paymentLastFour,
+      };
+
+  static RetailOrder? fromJson(Map<String, dynamic> json) {
+    final id = json['id']?.toString() ?? '';
+    if (id.isEmpty) return null;
+    final linesRaw = json['lines'];
+    final lines = <RetailOrderLine>[
+      if (linesRaw is List)
+        for (final item in linesRaw)
+          if (item is Map) RetailOrderLine.fromJson(item.cast<String, dynamic>()),
+    ];
+    T enumValue<T>(List<T> values, Object? raw, T fallback) {
+      final name = raw?.toString();
+      for (final value in values) {
+        if (value.toString().split('.').last == name) return value;
+      }
+      return fallback;
+    }
+
+    final now = DateTime.now();
+    return RetailOrder(
+      id: id,
+      orderNumber: json['orderNumber']?.toString() ?? id,
+      fromQuoteId: json['fromQuoteId']?.toString(),
+      clientName: json['clientName']?.toString(),
+      clientPhone: json['clientPhone']?.toString(),
+      clientEmail: json['clientEmail']?.toString(),
+      fulfillmentMode: enumValue(
+        RetailFulfillmentMode.values,
+        json['fulfillmentMode'],
+        RetailFulfillmentMode.inStore,
+      ),
+      status: enumValue(
+        RetailOrderStatus.values,
+        json['status'],
+        RetailOrderStatus.paid,
+      ),
+      paymentSource: enumValue(
+        RetailPaymentSource.values,
+        json['paymentSource'],
+        RetailPaymentSource.pos,
+      ),
+      paymentMethod: enumValue(
+        PaymentMethodType.values,
+        json['paymentMethod'],
+        PaymentMethodType.cash,
+      ),
+      lines: lines,
+      discountPercent: (json['discountPercent'] as num?)?.toDouble() ?? 0,
+      taxPercent: (json['taxPercent'] as num?)?.toDouble() ?? 0,
+      serviceChargePercent:
+          (json['serviceChargePercent'] as num?)?.toDouble() ?? 0,
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0,
+      deliveryLocation: json['deliveryLocation']?.toString(),
+      deliveryPhone: json['deliveryPhone']?.toString(),
+      createdAt: DateTime.tryParse('${json['createdAt']}') ?? now,
+      paidAt: DateTime.tryParse('${json['paidAt']}') ?? now,
+      paymentLastFour: json['paymentLastFour']?.toString(),
     );
   }
 }

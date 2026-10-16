@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/device_session_provider.dart';
 import '../providers/permission_settings_provider.dart';
 import '../providers/staff_session_provider.dart';
 import '../navigation/app_shell.dart';
@@ -16,6 +17,8 @@ import '../../auth/screens/login_screen.dart';
 import '../../auth/screens/forgot_password_screen.dart';
 import '../../auth/screens/register_screen.dart';
 import '../../auth/screens/pin_screen.dart';
+import '../../auth/screens/pair_device_screen.dart';
+import '../../auth/screens/connected_devices_screen.dart';
 
 import '../../core/screens/customers/customer_list_screen.dart';
 import '../../core/screens/customers/collections_dashboard_screen.dart';
@@ -54,27 +57,52 @@ NoTransitionPage<void> _noTransitionPage(
 bool _isShellRoute(String loc) => loc.startsWith('/retail/');
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  // Only presence matters for redirects — watching full state rebuilds GoRouter on
-  // every idle activity tick and freezes the UI.
-  final hasStaff =
-      ref.watch(staffSessionProvider.select((s) => s != null));
-  ref.watch(permissionSettingsProvider);
+  // Refresh redirects without building a new GoRouter. A new router would
+  // drop the page the user is on.
+  final refresh = ValueNotifier<int>(0);
+  void bump() => refresh.value++;
+  ref.listen(authProvider, (_, _) => bump());
+  ref.listen(
+    staffSessionProvider.select((session) => session != null),
+    (_, _) => bump(),
+  );
+  ref.listen(permissionSettingsProvider, (_, _) => bump());
+  ref.listen(
+    deviceSessionProvider.select((session) => (session.ready, session.isPaired)),
+    (_, _) => bump(),
+  );
+  ref.onDispose(refresh.dispose);
 
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: AppRoutes.splash,
+    refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
+      final authState = ref.read(authProvider);
+      final hasStaff = ref.read(staffSessionProvider) != null;
+      final session = ref.read(deviceSessionProvider);
+      if (!session.ready) {
+        return loc == AppRoutes.splash ? null : AppRoutes.splash;
+      }
       final isAuth = authState.status == AuthStatus.authenticated;
+      final devicePaired = session.isPaired;
 
       final isPublicUnauth = loc == AppRoutes.splash ||
           loc == AppRoutes.login ||
           loc == AppRoutes.register ||
-          loc == AppRoutes.forgotPassword;
+          loc == AppRoutes.forgotPassword ||
+          loc == AppRoutes.pairDevice;
 
       if (!isAuth) {
-        if (loc == AppRoutes.pin) return AppRoutes.login;
-        if (!isPublicUnauth) return AppRoutes.login;
+        if (devicePaired && loc != AppRoutes.pin && loc != AppRoutes.splash) {
+          return AppRoutes.pin;
+        }
+        if (loc == AppRoutes.pin) {
+          return devicePaired ? null : AppRoutes.pairDevice;
+        }
+        if (!isPublicUnauth) {
+          return devicePaired ? AppRoutes.pin : AppRoutes.pairDevice;
+        }
         return null;
       }
 
@@ -162,6 +190,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: AppRoutes.register, builder: (_, __) => const RegisterScreen()),
       GoRoute(path: AppRoutes.pin, builder: (_, __) => const PinScreen()),
+      GoRoute(
+        path: AppRoutes.pairDevice,
+        builder: (_, __) => const PairDeviceScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.devices,
+        builder: (_, __) => const ConnectedDevicesScreen(),
+      ),
 
       // --- Retail Shell ---
       ShellRoute(
@@ -280,4 +316,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           builder: (_, __) => const PaymentFlowScreen()),
     ],
   );
+  ref.onDispose(router.dispose);
+  return router;
 });

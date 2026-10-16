@@ -69,10 +69,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-            child: Text('Settings',
-                style: AppTextStyles.h1(
-                  color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
-                )),
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Text('Settings',
+                    style: AppTextStyles.h1(
+                      color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
+                    )),
+                TextButton.icon(
+                  onPressed: () => context.push(AppRoutes.devices),
+                  icon: const Icon(Icons.devices_other_outlined, size: 18),
+                  label: const Text('Connected devices'),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppConstants.spacing16),
           TabBar(

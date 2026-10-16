@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/navigation/app_routes.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/device_session_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
@@ -45,12 +46,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
+    const userName = 'Jean-Marc Dupont';
+    const businessName = 'Boutique Soleil';
+    await ref.read(deviceSessionProvider.notifier).authorizeThisRegister(
+          userName: userName,
+          businessName: businessName,
+          module: ActiveModule.retail,
+        );
     ref.read(authProvider.notifier).login(
-      userName: 'Jean-Marc Dupont',
-      businessName: 'Boutique Soleil',
+      userName: userName,
+      businessName: businessName,
       module: ActiveModule.retail,
     );
     setState(() => _isLoading = false);
+    if (!mounted) return;
     context.go(AppRoutes.pin);
   }
 
@@ -182,11 +191,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text('Remember me',
-                                style: AppTextStyles.body(
-                                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
-                                )),
-                            const Spacer(),
+                            Flexible(
+                              child: Text('Remember me',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.body(
+                                    color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                                  )),
+                            ),
                             TextButton(
                               onPressed: () => context.go(AppRoutes.forgotPassword),
                               style: TextButton.styleFrom(
@@ -206,8 +217,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           isLoading: _isLoading,
                         ),
                         const SizedBox(height: AppConstants.spacing16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text("Don't have an account? ",
                                 style: AppTextStyles.body(
