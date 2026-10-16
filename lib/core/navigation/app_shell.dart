@@ -1003,7 +1003,7 @@ class _MobileLayout extends ConsumerWidget {
           selectedIcon: Icon(d.selectedIcon),
           label: d.label,
         )).toList(),
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       ),
     );
   }
