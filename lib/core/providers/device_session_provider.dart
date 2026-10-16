@@ -125,10 +125,22 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
   }
 
   Future<void> _restore() async {
+    try {
+      await _restoreFromStore();
+    } catch (_) {
+      // A storage failure must not leave the splash screen up forever.
+      if (!state.ready) {
+        state = state.copyWith(ready: true);
+      }
+    }
+  }
+
+  Future<void> _restoreFromStore() async {
     final online = BrowserNetwork.isOnline;
     var id = await _store.getString(LocalStore.deviceId);
     if (id == null || id.isEmpty) {
-      id = 'dev-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1 << 32)}';
+      // Web bitwise shifts stay inside 32 bits, so 1 << 32 is 0 there.
+      id = 'dev-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(0x3fffffff)}';
       await _store.setString(LocalStore.deviceId, id);
     }
     final pairingRaw = await _store.getString(LocalStore.pairing);

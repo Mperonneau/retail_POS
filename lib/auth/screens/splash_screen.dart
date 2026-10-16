@@ -38,10 +38,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _boot() async {
-    await Future.wait([
-      ref.read(deviceSessionProvider.notifier).restore(),
-      Future.delayed(AppConstants.splashDuration),
-    ]);
+    try {
+      await Future.wait([
+        ref.read(deviceSessionProvider.notifier).restore(),
+        Future.delayed(AppConstants.splashDuration),
+      ]);
+    } catch (_) {}
     if (!mounted) return;
     final session = ref.read(deviceSessionProvider);
     if (session.isPaired) {
