@@ -390,7 +390,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     padding: const EdgeInsets.all(12),
                     child: AppButton(
                       label:
-                          'Cart (${_cart.length}) · ${CurrencyFormatter.local(context, _subtotal)}',
+                          'Panier (${_cart.length}) · ${CurrencyFormatter.local(context, _subtotal)}',
                       onPressed: () =>
                           setState(() => _mobileCartPanelOpen = true),
                       icon: Icons.shopping_cart_outlined,
@@ -685,16 +685,23 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   message: 'Aucun produit ne correspond à votre recherche.')
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    final crossAxisCount =
-                        _posProductGridCrossAxisCount(constraints.maxWidth);
+                    final compact = constraints.maxWidth <= AppConstants.mobileBreakpoint;
                     return GridView.builder(
                       padding: const EdgeInsets.all(12),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: AppConstants.spacing8,
-                        mainAxisSpacing: AppConstants.spacing8,
-                        childAspectRatio: 1.32,
-                      ),
+                      gridDelegate: compact
+                          ? const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: AppConstants.spacing8,
+                              mainAxisSpacing: AppConstants.spacing8,
+                              mainAxisExtent: 92,
+                            )
+                          : SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: _posProductGridCrossAxisCount(
+                                  constraints.maxWidth),
+                              crossAxisSpacing: AppConstants.spacing8,
+                              mainAxisSpacing: AppConstants.spacing8,
+                              childAspectRatio: 1.32,
+                            ),
                       itemCount: products.length,
                       itemBuilder: (_, i) {
                         final p = products[i];
@@ -702,6 +709,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         return _ProductTile(
                           product: p,
                           cartQty: qty,
+                          compact: compact,
                           onAdd: () => _addToCart(p),
                           onRemove: () => _updateQty(p, -1),
                         );
@@ -1019,7 +1027,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 ],
                 const SizedBox(height: 8),
                 AppButton(
-                  label: widget.isQuoteMode ? 'Continuer' : 'Checkout',
+                  label: widget.isQuoteMode ? 'Continuer' : 'Encaisser',
                   onPressed:
                       _cart.isEmpty ? null : () => _startEmbeddedCheckout(),
                   icon: Icons.arrow_forward_rounded,
@@ -1040,13 +1048,128 @@ class _ProductTile extends StatelessWidget {
   final int cartQty;
   final VoidCallback onAdd;
   final VoidCallback onRemove;
+  /// Phone layout: two tiles per row, price and controls on one line.
+  final bool compact;
 
   const _ProductTile({
     required this.product,
     required this.cartQty,
     required this.onAdd,
     required this.onRemove,
+    this.compact = false,
   });
+
+  Widget _stepButton({
+    required IconData icon,
+    required Color background,
+    required Color foreground,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 16, color: foreground),
+      ),
+    );
+  }
+
+  Widget _buildCompact(BuildContext context, bool isDark) {
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: product.isLowStock ? AppColors.amber : AppColors.deepGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    product.name,
+                    style: AppTextStyles.caption(color: ink)
+                        .copyWith(fontWeight: FontWeight.w600, height: 1.2),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      CurrencyFormatter.local(context, product.priceHtg),
+                      style: AppTextStyles.caption(
+                        color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                      ).copyWith(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Stock : ${product.stockQuantity}',
+                      style: AppTextStyles.caption(
+                        color: product.isLowStock ? AppColors.amber : AppColors.darkGray,
+                      ).copyWith(fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (cartQty > 0) ...[
+                _stepButton(
+                  icon: Icons.remove,
+                  background: AppColors.boldRed.withValues(alpha: 0.1),
+                  foreground: AppColors.boldRed,
+                  onTap: onRemove,
+                ),
+                SizedBox(
+                  width: 24,
+                  child: Text(
+                    '$cartQty',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body(color: ink)
+                        .copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+              _stepButton(
+                icon: Icons.add,
+                background: AppColors.amber,
+                foreground: AppColors.nearBlack,
+                onTap: onAdd,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1071,7 +1194,7 @@ class _ProductTile extends StatelessWidget {
           ),
           boxShadow: isDark ? AppColors.cardShadowDark : AppColors.cardShadow,
         ),
-        child: Padding(
+        child: compact ? _buildCompact(context, isDark) : Padding(
           padding: const EdgeInsets.fromLTRB(
             AppConstants.spacing12,
             2,
