@@ -19,7 +19,7 @@ void showTenderMovementsPanel(
       opaque: false,
       barrierColor: Colors.black.withValues(alpha: 0.45),
       barrierDismissible: true,
-      barrierLabel: 'Dismiss',
+      barrierLabel: 'Fermer',
       pageBuilder: (_, __, ___) => TenderMovementsPanel(
         movements: movements,
         tender: tender,
@@ -107,7 +107,7 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
     final isDark = widget.isDark;
     final tender = widget.tender;
 
-    final title = tender?.label ?? 'All movements';
+    final title = tender?.label ?? 'Tous les mouvements';
     final accentColor = tender != null
         ? paymentTenderColor(tender, isDark: isDark)
         : (isDark ? AppColors.skyBlue : AppColors.primaryBlue);
@@ -172,7 +172,7 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                                     )),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${filtered.length} movement${filtered.length == 1 ? '' : 's'}',
+                                  '${filtered.length} mouvement${filtered.length == 1 ? '' : 's'}',
                                   style: AppTextStyles.caption(
                                       color: textSecondary),
                                 ),
@@ -198,7 +198,7 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                       child: TextField(
                         controller: _searchCtrl,
                         decoration: InputDecoration(
-                          hintText: 'Search description…',
+                          hintText: 'Rechercher une description…',
                           prefixIcon:
                               const Icon(Icons.search_rounded, size: 18),
                           suffixIcon: _query.isNotEmpty
@@ -236,12 +236,12 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                         child: Row(
                           children: [
                             for (final e in [
-                              (_TypeFilter.all, 'All', null),
-                              (_TypeFilter.cashIn, 'Cash in',
+                              (_TypeFilter.all, 'Tous', null),
+                              (_TypeFilter.cashIn, 'Entrée',
                                   AppColors.deepGreen),
-                              (_TypeFilter.cashOut, 'Cash out',
+                              (_TypeFilter.cashOut, 'Sortie',
                                   AppColors.boldRed),
-                              (_TypeFilter.adjustment, 'Adjustment',
+                              (_TypeFilter.adjustment, 'Ajustement',
                                   AppColors.amber),
                             ]) ...[
                               _TypeChip(
@@ -273,8 +273,8 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                                   const SizedBox(height: 12),
                                   Text(
                                     _query.isNotEmpty
-                                        ? 'No results for "$_query"'
-                                        : 'No movements for this filter.',
+                                        ? 'Aucun résultat pour « $_query »'
+                                        : 'Aucun mouvement pour ce filtre.',
                                     style: AppTextStyles.body(
                                         color: textSecondary),
                                     textAlign: TextAlign.center,
@@ -394,7 +394,7 @@ class _MovementRow extends StatelessWidget {
         isDark ? AppColors.coolGray : AppColors.darkGray;
 
     final subtitle = [
-      if (isAdj) m.adjustmentAddsToDrawer ? 'Add' : 'Remove',
+      if (isAdj) m.adjustmentAddsToDrawer ? 'Ajouter' : 'Retirer',
       if (m.linkedTableNumber != null) m.linkedTableNumber!,
       if (m.linkedWaiterName != null) m.linkedWaiterName!,
       timeStr,

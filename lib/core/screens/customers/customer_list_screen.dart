@@ -20,7 +20,7 @@ class CustomerListScreen extends ConsumerStatefulWidget {
   final String detailRoute;
   final String formRoute;
   final String collectionsRoute;
-  /// When true, customer detail shows an extra "Hotel" section with stays/balance.
+  /// When true, customer detail shows an extra "Hôtel" section with stays/balance.
   final bool showHotelSection;
   /// When false, the title row and actions (Collections, New) are hidden (for use inside tabbed layout).
   final bool showHeader;
@@ -198,14 +198,14 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Customers',
+                        Text('Clients',
                             style: AppTextStyles.h1(
                                 color: isDark
                                     ? AppColors.warmWhite
                                     : AppColors.primaryBlue)),
                         if (totalOwed > 0)
                           Text(
-                            'Total outstanding: ${CurrencyFormatter.local(context, totalOwed)}',
+                            'Total dû : ${CurrencyFormatter.local(context, totalOwed)}',
                             style:
                                 AppTextStyles.caption(color: AppColors.boldRed),
                           ),
@@ -216,14 +216,14 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                     onPressed: () => context.go(widget.collectionsRoute),
                     icon: const Icon(Icons.account_balance_wallet_outlined,
                         size: 16),
-                    label: const Text('Collections'),
+                    label: const Text('Recouvrements'),
                     style: TextButton.styleFrom(foregroundColor: AppColors.amber),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: () => _openForm(context, isDark),
                     icon: const Icon(Icons.person_add_outlined, size: 16),
-                    label: const Text('New'),
+                    label: const Text('Nouveau'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.amber,
                       foregroundColor: AppColors.nearBlack,
@@ -260,7 +260,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   }),
                   style: AppTextStyles.body().copyWith(fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Search by name or phone…',
+                    hintText: 'Rechercher par nom ou téléphone…',
                     hintStyle: AppTextStyles.caption(),
                     prefixIcon: const Icon(Icons.search, size: 18),
                     prefixIconConstraints: const BoxConstraints(
@@ -284,11 +284,11 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   child: Row(
                     children: _CustomerFilter.values.map((f) {
                       final label = switch (f) {
-                        _CustomerFilter.all => 'All',
-                        _CustomerFilter.withBalance => 'With Balance',
+                        _CustomerFilter.all => 'Tous',
+                        _CustomerFilter.withBalance => 'Avec solde',
                         _CustomerFilter.settled => 'Settled',
-                        _CustomerFilter.blocked => 'Blocked',
-                        _CustomerFilter.inactive => 'Inactive',
+                        _CustomerFilter.blocked => 'Bloqué',
+                        _CustomerFilter.inactive => 'Inactif',
                       };
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
@@ -345,8 +345,8 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
               child: paginated.isEmpty
                   ? const EmptyState(
                       icon: Icons.people_outline,
-                      title: 'No customers found',
-                      message: 'Add a customer or change the filter.',
+                      title: 'Aucun client trouvé',
+                      message: 'Ajoutez un client ou changez le filtre.',
                     )
                   : ListView.separated(
                       itemCount: paginated.length,
@@ -626,7 +626,7 @@ class _CustomerCard extends StatelessWidget {
                               color: AppColors.boldRed.withValues(alpha: 0.4)),
                         ),
                         child: Text(
-                          'BLOCKED',
+                          'BLOQUÉ',
                           style: AppTextStyles.caption(color: AppColors.boldRed)
                               .copyWith(fontSize: 10, fontWeight: FontWeight.w700),
                         ),
@@ -652,7 +652,7 @@ class _CustomerCard extends StatelessWidget {
                       .copyWith(fontSize: 11, fontWeight: FontWeight.w700),
                 ),
                 Text(
-                  'owes',
+                  'doit',
                   style: AppTextStyles.caption().copyWith(fontSize: 10),
                 ),
               ],

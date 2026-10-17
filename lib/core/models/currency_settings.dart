@@ -43,9 +43,9 @@ class CurrencySettings {
   /// Default mock: Haiti + HTG (matches previous app behavior).
   static const CurrencySettings haitiDefault = CurrencySettings(
     countryCode: 'HT',
-    countryName: 'Haiti',
+    countryName: 'Haïti',
     localCurrencyCode: 'HTG',
-    localCurrencyName: 'Haitian Gourde',
+    localCurrencyName: 'Gourde haïtienne',
     usdToLocalRate: 135.0,
     mode: BusinessCurrencyMode.both,
   );

@@ -214,7 +214,7 @@ class _ItemCardState extends State<_ItemCard> {
                 if (widget.item.kitchenSent) ...[
                   const SizedBox(width: 4),
                   Tooltip(
-                    message: 'Sent to kitchen',
+                    message: 'Envoyé en cuisine',
                     child: Icon(Icons.check_circle,
                         size: 12, color: AppColors.deepGreen),
                   ),
@@ -265,7 +265,7 @@ class _ItemCardState extends State<_ItemCard> {
                 // Note toggle
                 _IconTap(
                   onTap: () => setState(() => _noteOpen = !_noteOpen),
-                  tooltip: hasNote ? 'View/edit note' : 'Add note',
+                  tooltip: hasNote ? 'Voir / modifier la note' : 'Ajouter une note',
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -297,7 +297,7 @@ class _ItemCardState extends State<_ItemCard> {
                 if (isCustom && canEdit)
                   _IconTap(
                     onTap: () => widget.onEditCustom(widget.index),
-                    tooltip: 'Edit item',
+                    tooltip: 'Modifier l\'article',
                     child: Icon(Icons.tune,
                         size: 14,
                         color: widget.primary.withValues(alpha: 0.75)),
@@ -307,7 +307,7 @@ class _ItemCardState extends State<_ItemCard> {
                 if (canEdit)
                   _IconTap(
                     onTap: () => widget.onRemove(widget.index),
-                    tooltip: 'Remove',
+                    tooltip: 'Retirer',
                     child: const Icon(Icons.delete_outline,
                         size: 14, color: AppColors.error),
                   ),
@@ -344,7 +344,7 @@ class _ItemCardState extends State<_ItemCard> {
                                   ),
                                   decoration: InputDecoration(
                                     isDense: true,
-                                    hintText: 'e.g. no onion, extra spicy…',
+                                    hintText: 'p. ex. sans oignon, très épicé…',
                                     hintStyle: TextStyle(
                                         fontSize: 10.5, color: muted),
                                     contentPadding:
@@ -514,7 +514,7 @@ Future<void> printReservationPreOrderSlip(
         ? rawNote
         : '—';
     final sub = isCustom
-        ? 'Custom · ${p.customItem!.isFood ? "Food" : "Drink"}'
+        ? 'Custom · ${p.customItem!.isFood ? "Cuisine" : "Boisson"}'
         : 'Menu · ${p.catalogItem!.category}';
 
     return pw.Padding(
@@ -560,20 +560,20 @@ Future<void> printReservationPreOrderSlip(
       build: (ctx) => pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text('Pre-order slip',
+          pw.Text('Bon de précommande',
               style: pw.TextStyle(
                   fontSize: 18, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
-          pw.Text('Guest: ${reservation.guestName}'),
-          pw.Text('Phone: ${reservation.phone}'),
+          pw.Text('Client : ${reservation.guestName}'),
+          pw.Text('Téléphone : ${reservation.phone}'),
           pw.Text(
-              'Reservation: $when · Party ${reservation.partySize}'),
+              'Réservation : $when · ${reservation.partySize} personnes'),
           if (reservation.specialNotes != null &&
               reservation.specialNotes!.trim().isNotEmpty)
             pw.Padding(
               padding: const pw.EdgeInsets.only(top: 6),
               child: pw.Text(
-                  'Notes: ${reservation.specialNotes}'),
+                  'Notes : ${reservation.specialNotes}'),
             ),
           pw.SizedBox(height: 16),
           pw.Container(
@@ -585,18 +585,18 @@ Future<void> printReservationPreOrderSlip(
             child: pw.Row(children: [
               pw.Expanded(
                   flex: 3,
-                  child: pw.Text('Item',
+                  child: pw.Text('Article',
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold))),
               pw.SizedBox(
                   width: 36,
-                  child: pw.Text('Qty',
+                  child: pw.Text('Qté',
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold),
                       textAlign: pw.TextAlign.center)),
               pw.SizedBox(
                   width: 72,
-                  child: pw.Text('Price',
+                  child: pw.Text('Prix',
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold),
                       textAlign: pw.TextAlign.right)),

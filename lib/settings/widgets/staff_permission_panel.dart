@@ -49,7 +49,7 @@ class StaffPermissionPanel extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Permissions',
+                          'Droits',
                           style: AppTextStyles.h3(
                             color: isDark
                                 ? AppColors.warmWhite
@@ -82,7 +82,7 @@ class StaffPermissionPanel extends ConsumerWidget {
                 padding: const EdgeInsets.all(AppConstants.spacing16),
                 children: [
                   Text(
-                    'Toggle to override the role default. Use reset to inherit.',
+                    'Activez pour remplacer le droit du rôle. Réinitialisez pour hériter.',
                     style: AppTextStyles.caption(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
@@ -112,11 +112,11 @@ class StaffPermissionPanel extends ConsumerWidget {
                       .clearUserOverrides(entry.id);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Overrides cleared — role defaults apply')),
+                      const SnackBar(content: Text('Exceptions effacées — les droits du rôle s\'appliquent')),
                     );
                   }
                 },
-                child: const Text('Clear all overrides'),
+                child: const Text('Effacer les exceptions'),
               ),
             ),
           ],
@@ -153,8 +153,8 @@ class _PermissionRow extends StatelessWidget {
         title: Text(permissionLabel(id), style: AppTextStyles.body()),
         subtitle: Text(
           permissionOverride == null
-              ? 'Role default: ${roleDefault ? 'On' : 'Off'}'
-              : 'Custom override',
+              ? 'Droit du rôle : ${roleDefault ? 'On' : 'Off'}'
+              : 'Exception personnalisée',
           style: AppTextStyles.caption(
             color: isDark ? AppColors.coolGray : AppColors.darkGray,
           ),
@@ -165,7 +165,7 @@ class _PermissionRow extends StatelessWidget {
             if (permissionOverride != null)
               TextButton(
                 onPressed: onReset,
-                child: const Text('Reset'),
+                child: const Text('Réinitialiser'),
               ),
             Switch(
               value: effective,
@@ -183,7 +183,7 @@ void showStaffPermissionPanel(BuildContext context, StaffDirectoryEntry entry) {
   showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'Dismiss',
+    barrierLabel: 'Fermer',
     transitionDuration: const Duration(milliseconds: 200),
     pageBuilder: (ctx, anim, sec) {
       return Align(

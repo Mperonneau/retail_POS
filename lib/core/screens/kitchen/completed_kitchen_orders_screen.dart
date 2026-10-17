@@ -46,8 +46,8 @@ String _formatOrderType(String t) {
   switch (t) {
     case 'dine_in':      return 'Dine-in';
     case 'takeout':      return 'Takeout';
-    case 'delivery':     return 'Delivery';
-    case 'room_service': return 'Room service';
+    case 'delivery':     return 'Livraison';
+    case 'room_service': return 'Service en chambre';
     case 'reservation':  return 'Reservation';
     default:             return t;
   }
@@ -79,7 +79,7 @@ String _hotelClientName(MockHotelRestaurantOrder o) {
   final r = o.reservationGuestName?.trim();
   if (r != null && r.isNotEmpty) return r;
   final room = o.roomNumber?.trim();
-  if (room != null && room.isNotEmpty) return 'Room $room';
+  if (room != null && room.isNotEmpty) return 'Chambre $room';
   final t = o.tableName?.trim();
   if (t != null && t.isNotEmpty) return t;
   return '—';
@@ -209,16 +209,16 @@ class _CompletedKitchenOrdersScreenState
     if (!_canReverseToday(e)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Send back is only allowed for tickets completed today.'),
+        content: Text('Le renvoi n\'est possible que pour les tickets terminés aujourd\'hui.'),
       ));
       return;
     }
     if (_needsAdminForReverse(e)) {
       final ok = await showAdminApprovalDialog(
         context, ref,
-        message: 'Completed more than 3 hours ago. Enter admin approval to send back.',
+        message: 'Terminé il y a plus de 3 heures. Saisissez l\'autorisation admin pour renvoyer.',
         isDark: isDark,
-        title: 'Admin approval',
+        title: 'Autorisation admin',
       );
       if (ok != true) return;
     }
@@ -233,7 +233,7 @@ class _CompletedKitchenOrdersScreenState
     popDrawer?.call();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ticket sent back to kitchen.')),
+      const SnackBar(content: Text('Ticket renvoyé en cuisine.')),
     );
     context.go(_kitchenRoute);
   }
@@ -242,7 +242,7 @@ class _CompletedKitchenOrdersScreenState
     showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'Ticket detail',
+      barrierLabel: 'Détail du ticket',
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 220),
       transitionBuilder: (ctx, anim, _, child) => SlideTransition(
@@ -296,10 +296,10 @@ class _CompletedKitchenOrdersScreenState
             child: filtered.isEmpty
                 ? EmptyState(
                     icon: Icons.check_circle_outline,
-                    title: 'No completed tickets',
+                    title: 'Aucun ticket terminé',
                     message: _searchCtrl.text.trim().isNotEmpty || _filterDate != null
-                        ? 'Try adjusting the search or date filter.'
-                        : 'Completed kitchen tickets will appear here.',
+                        ? 'Modifiez la recherche ou le filtre de date.'
+                        : 'Les tickets cuisine terminés apparaîtront ici.',
                   )
                 : LayoutBuilder(builder: (ctx, c) {
                     final wide = c.maxWidth >= AppConstants.mobileBreakpoint;
@@ -360,7 +360,7 @@ class _Header extends StatelessWidget {
           const SizedBox(width: AppConstants.spacing12),
           Expanded(
             child: Text(
-              'Completed kitchen orders',
+              'Commandes cuisine terminées',
               style: AppTextStyles.h2(color: AppColors.white),
             ),
           ),
@@ -380,7 +380,7 @@ class _Header extends StatelessWidget {
           TextButton.icon(
             onPressed: () => context.go(kitchenRoute),
             icon: const Icon(Icons.soup_kitchen_outlined, size: 18, color: AppColors.white),
-            label: const Text('Kitchen', style: TextStyle(color: AppColors.white)),
+            label: const Text('Cuisine', style: TextStyle(color: AppColors.white)),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.white,
               backgroundColor: Colors.white.withValues(alpha: 0.12),
@@ -434,7 +434,7 @@ class _FilterBar extends StatelessWidget {
         final wide = c.maxWidth >= AppConstants.mobileBreakpoint;
         final searchField = _PillTextField(
           controller: searchCtrl,
-          hint: 'Search order # or client…',
+          hint: 'Rechercher une commande ou un client…',
           icon: Icons.search,
           isDark: isDark,
           surfaceColor: surfaceColor,
@@ -569,7 +569,7 @@ class _DateFilterButton extends StatelessWidget {
                 Icon(Icons.calendar_today_outlined, size: 15, color: fg),
                 const SizedBox(width: 6),
                 Text(
-                  active ? DateFormatter.shortDate(filterDate!) : 'Filter by date',
+                  active ? DateFormatter.shortDate(filterDate!) : 'Filtrer par date',
                   style: AppTextStyles.caption(color: fg).copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
@@ -648,7 +648,7 @@ class _CompactOrderRow extends StatelessWidget {
                 children: [
                   Icon(Icons.undo, size: 13, color: AppColors.amber),
                   const SizedBox(width: 4),
-                  Text('Send back',
+                  Text('Renvoyer',
                       style: AppTextStyles.caption(color: AppColors.amber)
                           .copyWith(fontWeight: FontWeight.w600)),
                 ],
@@ -656,7 +656,7 @@ class _CompactOrderRow extends StatelessWidget {
             ),
           )
         : Tooltip(
-            message: 'Only available for today\'s completed tickets',
+            message: 'Réservé aux tickets terminés aujourd\'hui',
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -665,7 +665,7 @@ class _CompactOrderRow extends StatelessWidget {
                     color: (isDark ? AppColors.coolGray : const Color(0xFFCCCCCC))
                         .withValues(alpha: 0.4)),
               ),
-              child: Text('Not today',
+              child: Text('Pas aujourd\'hui',
                   style: AppTextStyles.caption(
                       color: isDark ? AppColors.coolGray : const Color(0xFFAAAAAA))),
             ),
@@ -1068,7 +1068,7 @@ class _DetailPanel extends StatelessWidget {
                         Expanded(
                           child: _MetaCard(
                             icon: Icons.check_circle_outline,
-                            label: 'Completed',
+                            label: 'Terminé',
                             value: '${DateFormatter.shortDate(entry.completedAt)}\n'
                                 '${DateFormatter.timeOfDay(entry.completedAt)}',
                             isDark: isDark,
@@ -1079,7 +1079,7 @@ class _DetailPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: AppConstants.spacing16),
                     // Kitchen lines
-                    Text('Kitchen items',
+                    Text('Articles cuisine',
                         style: AppTextStyles.caption(
                           color: isDark ? AppColors.coolGray : AppColors.darkGray,
                         ).copyWith(letterSpacing: 0.8, fontWeight: FontWeight.w600)),
@@ -1123,20 +1123,20 @@ class _DetailPanel extends StatelessWidget {
                   if (!canRev)
                     _StatusNote(
                       icon: Icons.block_outlined,
-                      text: 'Send back is only available for tickets completed today.',
+                      text: 'Le renvoi n\'est possible que pour les tickets terminés aujourd\'hui.',
                       color: AppColors.boldRed,
                     )
                   else if (needsAdmin)
                     _StatusNote(
                       icon: Icons.admin_panel_settings_outlined,
-                      text: 'Completed over 3 hours ago — admin approval required.',
+                      text: 'Terminé depuis plus de 3 heures — approbation admin requise.',
                       color: AppColors.amber,
                     ),
                   const SizedBox(height: 8),
                   FilledButton.icon(
                     onPressed: canRev ? onReverse : null,
                     icon: const Icon(Icons.undo, size: 18),
-                    label: const Text('Send back to kitchen'),
+                    label: const Text('Renvoyer en cuisine'),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

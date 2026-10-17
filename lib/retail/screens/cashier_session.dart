@@ -35,11 +35,11 @@ class _CashierSessionState extends State<CashierSession> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cashier Session', style: AppTextStyles.h1(
+            Text('Session de caisse', style: AppTextStyles.h1(
               color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
             )),
             const SizedBox(height: AppConstants.spacing4),
-            Text('Roseline · Session opened at 08:00 AM', style: AppTextStyles.caption()),
+            Text('Roseline · Session ouverte à 08:00', style: AppTextStyles.caption()),
             const SizedBox(height: AppConstants.spacing24),
 
             // Session status banner
@@ -58,10 +58,10 @@ class _CashierSessionState extends State<CashierSession> {
                       color: _sessionOpen ? AppColors.deepGreen : AppColors.amber),
                   const SizedBox(width: 12),
                   Expanded(child: Text(
-                    _sessionOpen ? 'Session is currently OPEN' : 'Session CLOSED',
+                    _sessionOpen ? 'La session est OUVERTE' : 'Session FERMÉE',
                     style: AppTextStyles.body(color: _sessionOpen ? AppColors.deepGreen : AppColors.amber),
                   )),
-                  Text(_sessionOpen ? 'Today' : 'Ended at 18:00',
+                  Text(_sessionOpen ? 'Aujourd\'hui' : 'Terminée à 18:00',
                       style: AppTextStyles.caption()),
                 ],
               ),
@@ -72,19 +72,19 @@ class _CashierSessionState extends State<CashierSession> {
             Row(
               children: [
                 Expanded(child: AppCard(child: Column(children: [
-                  Text("Starting Cash", style: AppTextStyles.caption()),
+                  Text("Fond de caisse", style: AppTextStyles.caption()),
                   const SizedBox(height: 4),
                   Text(CurrencyFormatter.local(context, _startingCash), style: AppTextStyles.price().copyWith(fontSize: 14)),
                 ]))),
                 const SizedBox(width: 12),
                 Expanded(child: AppCard(child: Column(children: [
-                  Text("Total Sales", style: AppTextStyles.caption()),
+                  Text("Ventes totales", style: AppTextStyles.caption()),
                   const SizedBox(height: 4),
                   Text(CurrencyFormatter.local(context, _totalSales), style: AppTextStyles.price(color: AppColors.deepGreen).copyWith(fontSize: 14)),
                 ]))),
                 const SizedBox(width: 12),
                 Expanded(child: AppCard(child: Column(children: [
-                  Text("Expected Cash", style: AppTextStyles.caption()),
+                  Text("Espèces attendues", style: AppTextStyles.caption()),
                   const SizedBox(height: 4),
                   Text(CurrencyFormatter.local(context, _expectedCash), style: AppTextStyles.price(color: isDark ? AppColors.skyBlue : AppColors.primaryBlue).copyWith(fontSize: 14)),
                 ]))),
@@ -97,20 +97,20 @@ class _CashierSessionState extends State<CashierSession> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Sales by Payment Method', style: AppTextStyles.h3()),
+                  Text('Ventes par moyen de paiement', style: AppTextStyles.h3()),
                   const SizedBox(height: AppConstants.spacing16),
                   _PayMethodRow(label: 'MonCash', amount: 28400, color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
                   const SizedBox(height: 8),
-                  _PayMethodRow(label: 'Cash HTG', amount: 15800, color: AppColors.deepGreen),
+                  _PayMethodRow(label: 'Espèces HTG', amount: 15800, color: AppColors.deepGreen),
                   const SizedBox(height: 8),
-                  _PayMethodRow(label: 'Card (Stripe)', amount: 4000, color: AppColors.statusMaintenance),
+                  _PayMethodRow(label: 'Carte (Stripe)', amount: 4000, color: AppColors.statusMaintenance),
                 ],
               ),
             ),
 
             if (_sessionOpen) ...[
               const SizedBox(height: AppConstants.spacing24),
-              Text('Close Session', style: AppTextStyles.h2(
+              Text('Fermer la session', style: AppTextStyles.h2(
                 color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
               )),
               const SizedBox(height: AppConstants.spacing16),
@@ -118,12 +118,12 @@ class _CashierSessionState extends State<CashierSession> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Count your cash drawer', style: AppTextStyles.body()),
+                    Text('Comptez le tiroir-caisse', style: AppTextStyles.body()),
                     const SizedBox(height: AppConstants.spacing12),
                     TextField(
                       onChanged: (v) => setState(() => _countedCash = double.tryParse(v) ?? 0),
                       decoration: InputDecoration(
-                        labelText: 'Actual Cash in Drawer (HTG)',
+                        labelText: 'Espèces réelles dans le tiroir (HTG)',
                         prefixText: 'HTG ',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                       ),
@@ -136,7 +136,7 @@ class _CashierSessionState extends State<CashierSession> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Expected:', style: AppTextStyles.body()),
+                          Text('Attendu :', style: AppTextStyles.body()),
                           Text(CurrencyFormatter.local(context, _expectedCash), style: AppTextStyles.body()),
                         ],
                       ),
@@ -144,7 +144,7 @@ class _CashierSessionState extends State<CashierSession> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Counted:', style: AppTextStyles.body()),
+                          Text('Compté :', style: AppTextStyles.body()),
                           Text(CurrencyFormatter.local(context, _countedCash), style: AppTextStyles.body()),
                         ],
                       ),
@@ -152,7 +152,7 @@ class _CashierSessionState extends State<CashierSession> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Variance:', style: AppTextStyles.body().copyWith(fontWeight: FontWeight.w700)),
+                          Text('Écart :', style: AppTextStyles.body().copyWith(fontWeight: FontWeight.w700)),
                           Text(
                             '${_variance >= 0 ? '+' : ''}${CurrencyFormatter.local(context, _variance)}',
                             style: AppTextStyles.price(
@@ -167,7 +167,7 @@ class _CashierSessionState extends State<CashierSession> {
               ),
               const SizedBox(height: AppConstants.spacing16),
               AppButton(
-                label: 'Close Session & Submit Report',
+                label: 'Fermer la session et envoyer le rapport',
                 onPressed: () => setState(() => _sessionOpen = false),
                 variant: AppButtonVariant.danger,
                 icon: Icons.lock_outlined,

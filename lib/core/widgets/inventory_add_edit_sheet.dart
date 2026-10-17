@@ -34,13 +34,13 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
   String? _errorName;
 
   final _categories = [
-    'Dry Goods',
-    'Meat',
-    'Seafood',
-    'Produce',
-    'Beverages',
-    'Pantry',
-    'Other',
+    'Épicerie sèche',
+    'Viande',
+    'Fruits de mer',
+    'Fruits et légumes',
+    'Boissons',
+    'Garde-manger',
+    'Autre',
   ];
 
   @override
@@ -52,7 +52,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
     _minCtrl = TextEditingController(
         text: e?.minThreshold.toStringAsFixed(0) ?? '');
     _unit = (e != null && inventoryUnitOptions.contains(e.unit)) ? e.unit : 'KG';
-    _category = (e != null && _categories.contains(e.category)) ? e.category : 'Dry Goods';
+    _category = (e != null && _categories.contains(e.category)) ? e.category : 'Épicerie sèche';
     _type = e?.type ?? InventoryItemType.food;
   }
 
@@ -68,7 +68,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
     setState(() => _errorName = null);
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      setState(() => _errorName = 'Item name is required');
+      setState(() => _errorName = 'Le nom de l\'article est obligatoire');
       return;
     }
     widget.onSave(MockInventoryItem(
@@ -99,7 +99,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.existing == null ? 'Add Inventory Item' : 'Edit Inventory Item',
+              widget.existing == null ? 'Ajouter un article' : 'Modifier l\'article',
               style: AppTextStyles.h2(
                   color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
             ),
@@ -107,7 +107,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
             TextField(
               controller: _nameCtrl,
               decoration: InputDecoration(
-                labelText: 'Item Name *',
+                labelText: 'Nom de l\'article *',
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
               ),
@@ -119,7 +119,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
                 child: DropdownButtonFormField<String>(
                   initialValue: _unit,
                   decoration: InputDecoration(
-                    labelText: 'Unit',
+                    labelText: 'Unité',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                   ),
@@ -134,7 +134,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
                 child: DropdownButtonFormField<String>(
                   initialValue: _category,
                   decoration: InputDecoration(
-                    labelText: 'Category',
+                    labelText: 'Catégorie',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                   ),
@@ -154,8 +154,8 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
                     borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
               ),
               items: const [
-                DropdownMenuItem(value: InventoryItemType.food, child: Text('Food')),
-                DropdownMenuItem(value: InventoryItemType.drink, child: Text('Drink')),
+                DropdownMenuItem(value: InventoryItemType.food, child: Text('Cuisine')),
+                DropdownMenuItem(value: InventoryItemType.drink, child: Text('Boisson')),
               ],
               onChanged: (v) => setState(() => _type = v!),
             ),
@@ -165,7 +165,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
                 child: TextField(
                   controller: _qtyCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Current Quantity',
+                    labelText: 'Quantité actuelle',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                   ),
@@ -191,7 +191,7 @@ class _InventoryAddEditSheetState extends State<InventoryAddEditSheet> {
             ]),
             const SizedBox(height: AppConstants.spacing24),
             AppButton(
-              label: widget.existing == null ? 'Save Item' : 'Update Item',
+              label: widget.existing == null ? 'Enregistrer l\'article' : 'Mettre à jour l\'article',
               onPressed: _save,
             ),
             const SizedBox(height: AppConstants.spacing8),

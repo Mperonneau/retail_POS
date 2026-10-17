@@ -1,11 +1,11 @@
 {
-    "name": "retail_pos",
-    "short_name": "retail_pos",
+    "name": "Caisse détail",
+    "short_name": "Caisse détail",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Retail POS — BizManager Haiti retail module",
+    "description": "Caisse détail — BizManager Haïti",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

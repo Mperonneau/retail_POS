@@ -84,11 +84,11 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-032',
     paidAt: DateTime(2026, 4, 16, 14, 22),
     receiptName: 'William Desroches',
-    source: 'Room 204',
+    source: 'Chambre 204',
     items: const [
-      OrderHistoryItem(name: 'Room service — Club sandwich', quantity: 2, priceHtg: 1100),
-      OrderHistoryItem(name: 'Room service — Jus d\'orange', quantity: 2, priceHtg: 400),
-      OrderHistoryItem(name: 'Room service — Dessert', quantity: 1, priceHtg: 750),
+      OrderHistoryItem(name: 'Service en chambre — club sandwich', quantity: 2, priceHtg: 1100),
+      OrderHistoryItem(name: 'Service en chambre — jus d\'orange', quantity: 2, priceHtg: 400),
+      OrderHistoryItem(name: 'Service en chambre — dessert', quantity: 1, priceHtg: 750),
     ],
     serviceChargePercent: 10,
     taxPercent: 10,
@@ -106,7 +106,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
           paidAt: DateTime(2026, 4, 16, 14, 19),
           amountHtg: 3905,
           country: 'US',
-          payerNote: 'Please bring extra napkins, thank you.',
+          payerNote: 'Apportez des serviettes en plus, merci.',
           methodBrand: 'Mastercard',
           last4: '3311',
         ),
@@ -183,7 +183,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-005',
     paidAt: DateTime(2026, 3, 6, 14, 0),
     receiptName: 'Marie-Claire Joseph',
-    source: 'Room 101',
+    source: 'Chambre 101',
     items: const [
       OrderHistoryItem(name: 'Club Sandwich', quantity: 2, priceHtg: 850),
       OrderHistoryItem(name: 'Smoothie Mangue', quantity: 2, priceHtg: 350),
@@ -198,7 +198,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-006',
     paidAt: DateTime(2026, 3, 6, 11, 30),
     receiptName: 'Pierre Laguerre',
-    source: 'Room 204',
+    source: 'Chambre 204',
     items: const [
       OrderHistoryItem(name: 'Breakfast platter', quantity: 1, priceHtg: 1200),
       OrderHistoryItem(name: 'Fresh Orange Juice', quantity: 2, priceHtg: 300),
@@ -215,11 +215,11 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-006A',
     paidAt: DateTime(2026, 3, 6, 20, 45),
     receiptName: 'Sophie Martelly',
-    source: 'Room 305 (Stay + Room + Restaurant)',
+    source: 'Chambre 305 (séjour + chambre + restaurant)',
     items: const [
-      OrderHistoryItem(name: 'Room 305 — Stay 05 Mar 2026 to 07 Mar 2026', quantity: 1, priceHtg: 15000),
-      OrderHistoryItem(name: 'In-room: Continental breakfast', quantity: 1, priceHtg: 950),
-      OrderHistoryItem(name: 'In-room: Minibar', quantity: 1, priceHtg: 450),
+      OrderHistoryItem(name: 'Chambre 305 — séjour du 5 mars 2026 au 7 mars 2026', quantity: 1, priceHtg: 15000),
+      OrderHistoryItem(name: 'En chambre : petit-déjeuner continental', quantity: 1, priceHtg: 950),
+      OrderHistoryItem(name: 'En chambre : minibar', quantity: 1, priceHtg: 450),
       OrderHistoryItem(name: 'Restaurant: Poulet en sauce', quantity: 1, priceHtg: 950),
       OrderHistoryItem(name: 'Restaurant: Riz National', quantity: 1, priceHtg: 300),
       OrderHistoryItem(name: 'Restaurant: Prestige Beer', quantity: 2, priceHtg: 400),
@@ -250,7 +250,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-008',
     paidAt: DateTime(2026, 3, 5, 10, 5),
     receiptName: 'Supermarché Caraïbe',
-    source: 'POS',
+    source: 'Caisse',
     items: const [
       OrderHistoryItem(name: 'Savon Palmolive ×12', quantity: 1, priceHtg: 1440),
       OrderHistoryItem(name: 'Huile Végétale 1L', quantity: 6, priceHtg: 580),
@@ -266,7 +266,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-009',
     paidAt: DateTime(2026, 3, 4, 15, 45),
     receiptName: 'Roseline Janvier',
-    source: 'POS',
+    source: 'Caisse',
     items: const [
       OrderHistoryItem(name: 'Farine Blé 2kg', quantity: 3, priceHtg: 420),
       OrderHistoryItem(name: 'Lait en poudre 400g', quantity: 2, priceHtg: 680),
@@ -301,7 +301,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     source: 'Table Banquet 1',
     items: const [
       OrderHistoryItem(name: 'Buffet dînatoire pp', quantity: 15, priceHtg: 3000),
-      OrderHistoryItem(name: 'Open bar forfait', quantity: 1, priceHtg: 25000),
+      OrderHistoryItem(name: 'Forfait open bar', quantity: 1, priceHtg: 25000),
     ],
     serviceChargePercent: 10,
     taxPercent: 10,
@@ -313,7 +313,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-012',
     paidAt: DateTime(2026, 3, 3, 9, 15),
     receiptName: null,
-    source: 'POS',
+    source: 'Caisse',
     items: const [
       OrderHistoryItem(name: 'Bottes de légumes', quantity: 5, priceHtg: 200),
       OrderHistoryItem(name: 'Épices mélangées', quantity: 2, priceHtg: 350),
@@ -344,7 +344,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-014',
     paidAt: DateTime(2026, 3, 2, 13, 30),
     receiptName: 'Denise Toussaint',
-    source: 'Room 305',
+    source: 'Chambre 305',
     items: const [
       OrderHistoryItem(name: 'Salade niçoise', quantity: 1, priceHtg: 700),
       OrderHistoryItem(name: 'Eau minérale', quantity: 2, priceHtg: 150),
@@ -393,7 +393,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-017',
     paidAt: DateTime(2026, 2, 27, 11, 0),
     receiptName: null,
-    source: 'POS',
+    source: 'Caisse',
     items: const [
       OrderHistoryItem(name: 'Détergent 1L', quantity: 4, priceHtg: 360),
       OrderHistoryItem(name: 'Papier hygiénique ×6', quantity: 2, priceHtg: 780),
@@ -408,7 +408,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-018',
     paidAt: DateTime(2026, 2, 26, 20, 30),
     receiptName: 'Christiane Mondesir',
-    source: 'Room 402',
+    source: 'Chambre 402',
     items: const [
       OrderHistoryItem(name: 'Filet de bœuf', quantity: 2, priceHtg: 2800),
       OrderHistoryItem(name: 'Gratin dauphinois', quantity: 2, priceHtg: 700),
@@ -440,7 +440,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-020',
     paidAt: DateTime(2026, 2, 24, 16, 50),
     receiptName: 'Groupe scolaire Ste-Anne',
-    source: 'POS',
+    source: 'Caisse',
     items: const [
       OrderHistoryItem(name: 'Cahiers ×50', quantity: 1, priceHtg: 3750),
       OrderHistoryItem(name: 'Stylos bille ×20', quantity: 1, priceHtg: 600),
@@ -458,7 +458,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptName: null,
     source: 'Table 10',
     items: const [
-      OrderHistoryItem(name: 'Conch salad', quantity: 2, priceHtg: 1600),
+      OrderHistoryItem(name: 'Salade de lambi', quantity: 2, priceHtg: 1600),
       OrderHistoryItem(name: 'Coco froid', quantity: 2, priceHtg: 300),
     ],
     serviceChargePercent: 10,
@@ -471,7 +471,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-022',
     paidAt: DateTime(2026, 2, 22, 12, 15),
     receiptName: 'Stéphane et Nadège',
-    source: 'Room 201',
+    source: 'Chambre 201',
     items: const [
       OrderHistoryItem(name: 'Petit-déjeuner continental', quantity: 2, priceHtg: 1100),
       OrderHistoryItem(name: 'Café express', quantity: 2, priceHtg: 280),
@@ -502,7 +502,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-024',
     paidAt: DateTime(2026, 2, 20, 10, 40),
     receiptName: 'Colette Rémy',
-    source: 'POS',
+    source: 'Caisse',
     items: const [
       OrderHistoryItem(name: 'Produits beauté ×3', quantity: 1, priceHtg: 2200),
       OrderHistoryItem(name: 'Shampooing', quantity: 2, priceHtg: 480),
@@ -534,9 +534,9 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-026',
     paidAt: DateTime(2026, 2, 18, 14, 25),
     receiptName: null,
-    source: 'Room 303',
+    source: 'Chambre 303',
     items: const [
-      OrderHistoryItem(name: 'Room service burger', quantity: 1, priceHtg: 1300),
+      OrderHistoryItem(name: 'Burger en chambre', quantity: 1, priceHtg: 1300),
       OrderHistoryItem(name: 'Fries', quantity: 1, priceHtg: 400),
       OrderHistoryItem(name: 'Soda 330ml', quantity: 2, priceHtg: 200),
     ],
@@ -550,7 +550,7 @@ final List<OrderHistoryRecord> mockOrderHistory = [
     receiptNumber: 'RCP-2026-027',
     paidAt: DateTime(2026, 2, 17, 9, 10),
     receiptName: 'Wilner Alphonse',
-    source: 'POS',
+    source: 'Caisse',
     items: const [
       OrderHistoryItem(name: 'Boîte de conserve ×10', quantity: 2, priceHtg: 1500),
       OrderHistoryItem(name: 'Pain de mie', quantity: 3, priceHtg: 260),

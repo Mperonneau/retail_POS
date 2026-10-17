@@ -37,17 +37,17 @@ class OrderHistoryDetailPage extends StatelessWidget {
         actions: [
           _ActionBtn(
             icon: Icons.share_outlined,
-            label: 'Share',
+            label: 'Partager',
             onTap: () => _showWhatsAppDialog(context),
           ),
           _ActionBtn(
             icon: Icons.email_outlined,
-            label: 'Email',
+            label: 'E-mail',
             onTap: () => _showEmailDialog(context),
           ),
           _ActionBtn(
             icon: Icons.print_outlined,
-            label: 'Print',
+            label: 'Imprimer',
             onTap: () => _showPrintDialog(context, record),
           ),
           const SizedBox(width: 8),
@@ -68,13 +68,13 @@ class OrderHistoryDetailPage extends StatelessWidget {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send via WhatsApp'),
+            title: const Text('Envoyer par WhatsApp'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: 'Numéro de téléphone',
                   hintText: '+509 XXXX-XXXX',
                   prefixIcon: const Icon(Icons.phone_outlined),
                   errorText: err,
@@ -86,19 +86,19 @@ class OrderHistoryDetailPage extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
               FilledButton(
                 onPressed: () {
                   if (ctrl.text.trim().isEmpty) {
-                    setD(() => err = 'Please enter a phone number.');
+                    setD(() => err = 'Veuillez saisir un numéro de téléphone.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Receipt sent via WhatsApp'), behavior: SnackBarBehavior.floating),
+                    const SnackBar(content: Text('Reçu envoyé par WhatsApp'), behavior: SnackBarBehavior.floating),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );
@@ -115,13 +115,13 @@ class OrderHistoryDetailPage extends StatelessWidget {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send Receipt to Email'),
+            title: const Text('Envoyer le reçu par e-mail'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Email Address',
+                  labelText: 'Adresse e-mail',
                   hintText: 'email@example.com',
                   prefixIcon: const Icon(Icons.email_outlined),
                   errorText: err,
@@ -133,20 +133,20 @@ class OrderHistoryDetailPage extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
               FilledButton(
                 onPressed: () {
                   final email = ctrl.text.trim();
                   if (email.isEmpty || !email.contains('@')) {
-                    setD(() => err = 'Please enter a valid email address.');
+                    setD(() => err = 'Veuillez saisir une adresse e-mail valide.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Receipt sent to email'), behavior: SnackBarBehavior.floating),
+                    const SnackBar(content: Text('Reçu envoyé par e-mail'), behavior: SnackBarBehavior.floating),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );
@@ -161,10 +161,10 @@ void _showPrintDialog(BuildContext context, OrderHistoryRecord record) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Print Receipt'),
+      title: const Text('Imprimer le reçu'),
       content: Text(name == null || name.isEmpty
-          ? 'Receipt ${record.receiptNumber} sent to the printer.'
-          : 'Receipt for $name sent to the printer.'),
+          ? 'Reçu ${record.receiptNumber} envoyé à l\'imprimante.'
+          : 'Reçu pour $name envoyé à l\'imprimante.'),
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
@@ -194,13 +194,13 @@ class OrderHistoryDetailContent extends StatelessWidget {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send via WhatsApp'),
+            title: const Text('Envoyer par WhatsApp'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: 'Numéro de téléphone',
                   hintText: '+509 XXXX-XXXX',
                   prefixIcon: const Icon(Icons.phone_outlined),
                   errorText: err,
@@ -212,19 +212,19 @@ class OrderHistoryDetailContent extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
               FilledButton(
                 onPressed: () {
                   if (ctrl.text.trim().isEmpty) {
-                    setD(() => err = 'Please enter a phone number.');
+                    setD(() => err = 'Veuillez saisir un numéro de téléphone.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Receipt sent via WhatsApp'), behavior: SnackBarBehavior.floating),
+                    const SnackBar(content: Text('Reçu envoyé par WhatsApp'), behavior: SnackBarBehavior.floating),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );
@@ -241,13 +241,13 @@ class OrderHistoryDetailContent extends StatelessWidget {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send Receipt to Email'),
+            title: const Text('Envoyer le reçu par e-mail'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Email Address',
+                  labelText: 'Adresse e-mail',
                   hintText: 'email@example.com',
                   prefixIcon: const Icon(Icons.email_outlined),
                   errorText: err,
@@ -259,20 +259,20 @@ class OrderHistoryDetailContent extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
               FilledButton(
                 onPressed: () {
                   final email = ctrl.text.trim();
                   if (email.isEmpty || !email.contains('@')) {
-                    setD(() => err = 'Please enter a valid email address.');
+                    setD(() => err = 'Veuillez saisir une adresse e-mail valide.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Receipt sent to email'), behavior: SnackBarBehavior.floating),
+                    const SnackBar(content: Text('Reçu envoyé par e-mail'), behavior: SnackBarBehavior.floating),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );
@@ -357,21 +357,21 @@ class OrderHistoryDetailContent extends StatelessWidget {
                 icon: Icon(Icons.send_outlined,
                     size: 18,
                     color: isDark ? AppColors.coolGray : AppColors.darkGray),
-                tooltip: 'Share via WhatsApp',
+                tooltip: 'Partager par WhatsApp',
               ),
               IconButton(
                 onPressed: () => _showEmailDialog(context),
                 icon: Icon(Icons.email_outlined,
                     size: 18,
                     color: isDark ? AppColors.coolGray : AppColors.darkGray),
-                tooltip: 'Send to Email',
+                tooltip: 'Envoyer par e-mail',
               ),
               IconButton(
                 onPressed: () => _showPrintDialog(context, record),
                 icon: Icon(Icons.print_outlined,
                     size: 18,
                     color: isDark ? AppColors.coolGray : AppColors.darkGray),
-                tooltip: 'Print',
+                tooltip: 'Imprimer',
               ),
               if (onClose != null)
                 IconButton(
@@ -379,7 +379,7 @@ class OrderHistoryDetailContent extends StatelessWidget {
                   icon: Icon(Icons.close,
                       size: 18,
                       color: isDark ? AppColors.coolGray : AppColors.darkGray),
-                  tooltip: 'Close',
+                  tooltip: 'Fermer',
                 ),
             ],
           ),
@@ -424,7 +424,7 @@ class OrderHistoryDetailContent extends StatelessWidget {
         // Items
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text('Items',
+          child: Text('Articles',
               style: AppTextStyles.h3(
                   color: isDark ? AppColors.amber : AppColors.amber)),
         ),
@@ -446,22 +446,22 @@ class OrderHistoryDetailContent extends StatelessWidget {
         const Divider(height: 1),
         // Charges summary
         _SummaryRow(
-            label: 'Subtotal',
+            label: 'Sous-total',
             value: CurrencyFormatter.local(context, record.subtotal),
             isDark: isDark),
         if (_showServiceChargeRow(record))
           _SummaryRow(
-              label: 'Service charge (${record.serviceChargePercent.toInt()}%)',
+              label: 'Frais de service (${record.serviceChargePercent.toInt()} %)',
               value: CurrencyFormatter.local(context, record.serviceChargeAmount),
               isDark: isDark),
         if (record.taxPercent > 0)
           _SummaryRow(
-              label: 'Tax (${record.taxPercent.toInt()}%)',
+              label: 'Taxe (${record.taxPercent.toInt()} %)',
               value: CurrencyFormatter.local(context, record.taxAmount),
               isDark: isDark),
         if (record.discountPercent > 0)
           _SummaryRow(
-              label: 'Discount (${record.discountPercent.toInt()}%)',
+              label: 'Remise (${record.discountPercent.toInt()} %)',
               value: '-${CurrencyFormatter.local(context, record.discountAmount)}',
               isDark: isDark,
               valueColor: AppColors.boldRed),
@@ -503,7 +503,7 @@ class OrderHistoryDetailContent extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Text(
-            'Payment',
+            'Paiement',
             style: AppTextStyles.h3(
                 color: isDark ? AppColors.amber : AppColors.amber),
           ),
@@ -576,8 +576,8 @@ class _ModuleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (module) {
       OrderHistoryModule.restaurant => ('Restaurant', AppColors.primaryBlue),
-      OrderHistoryModule.hotel => ('Hotel', AppColors.deepGreen),
-      OrderHistoryModule.retail => ('Retail', AppColors.amber),
+      OrderHistoryModule.hotel => ('Hôtel', AppColors.deepGreen),
+      OrderHistoryModule.retail => ('Détail', AppColors.amber),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -611,12 +611,12 @@ class _ActionBtn extends StatelessWidget {
 
 String _formatDateFull(DateTime dt) {
   final months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
   ];
   final h = dt.hour.toString().padLeft(2, '0');
   final m = dt.minute.toString().padLeft(2, '0');
-  return '${dt.day} ${months[dt.month - 1]} ${dt.year} at $h:$m';
+  return '${dt.day} ${months[dt.month - 1]} ${dt.year} à $h:$m';
 }
 
 // ── Lines table ───────────────────────────────────────────────────────────────
@@ -647,10 +647,10 @@ class _LinesTable extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           color: hdrBg,
           child: Row(children: [
-            SizedBox(width: 28, child: Text('Qty', style: hdr(), textAlign: TextAlign.center)),
+            SizedBox(width: 28, child: Text('Qté', style: hdr(), textAlign: TextAlign.center)),
             const SizedBox(width: 8),
-            Expanded(child: Text('Item', style: hdr())),
-            SizedBox(width: 70, child: Text('Unit', style: hdr(), textAlign: TextAlign.right)),
+            Expanded(child: Text('Article', style: hdr())),
+            SizedBox(width: 70, child: Text('Unité', style: hdr(), textAlign: TextAlign.right)),
             const SizedBox(width: 6),
             SizedBox(width: 70, child: Text('Total', style: hdr(), textAlign: TextAlign.right)),
           ]),

@@ -28,33 +28,33 @@ Color statusTypeAccentColor(StatusType type, {required bool isDark}) {
 _StatusConfig _statusConfigForType(StatusType type, bool isDark) {
   switch (type) {
     case StatusType.available:
-      return _StatusConfig(isDark ? AppColors.mediumGreen : AppColors.deepGreen, 'Available');
+      return _StatusConfig(isDark ? AppColors.mediumGreen : AppColors.deepGreen, 'Disponible');
     case StatusType.occupied:
-      return _StatusConfig(isDark ? AppColors.coralRed : AppColors.boldRed, 'Occupied');
+      return _StatusConfig(isDark ? AppColors.coralRed : AppColors.boldRed, 'Occupé');
     case StatusType.billRequested:
-      return _StatusConfig(AppColors.amber, 'Bill Requested');
+      return _StatusConfig(AppColors.amber, 'Addition demandée');
     case StatusType.reserved:
-      return _StatusConfig(AppColors.statusReserved, 'Reserved');
+      return _StatusConfig(AppColors.statusReserved, 'Réservé');
     case StatusType.maintenance:
-      return _StatusConfig(AppColors.statusMaintenance, 'Maintenance');
+      return _StatusConfig(AppColors.statusMaintenance, 'Entretien');
     case StatusType.cleaning:
-      return _StatusConfig(AppColors.skyBlue, 'Cleaning');
+      return _StatusConfig(AppColors.skyBlue, 'Ménage');
     case StatusType.checkoutToday:
-      return _StatusConfig(AppColors.statusCheckoutToday, 'Checkout Today');
+      return _StatusConfig(AppColors.statusCheckoutToday, 'Départ aujourd\'hui');
     case StatusType.pending:
-      return _StatusConfig(AppColors.amber, 'Pending');
+      return _StatusConfig(AppColors.amber, 'En attente');
     case StatusType.inProgress:
-      return _StatusConfig(AppColors.skyBlue, 'In Progress');
+      return _StatusConfig(AppColors.skyBlue, 'En cours');
     case StatusType.done:
-      return _StatusConfig(isDark ? AppColors.mediumGreen : AppColors.deepGreen, 'Done');
+      return _StatusConfig(isDark ? AppColors.mediumGreen : AppColors.deepGreen, 'Terminé');
     case StatusType.lowStock:
-      return _StatusConfig(AppColors.amber, 'Low Stock');
+      return _StatusConfig(AppColors.amber, 'Stock bas');
     case StatusType.outOfStock:
-      return _StatusConfig(isDark ? AppColors.coralRed : AppColors.boldRed, 'Out of Stock');
+      return _StatusConfig(isDark ? AppColors.coralRed : AppColors.boldRed, 'Rupture de stock');
     case StatusType.active:
-      return _StatusConfig(isDark ? AppColors.mediumGreen : AppColors.deepGreen, 'Active');
+      return _StatusConfig(isDark ? AppColors.mediumGreen : AppColors.deepGreen, 'Actif');
     case StatusType.inactive:
-      return _StatusConfig(isDark ? AppColors.coolGray : AppColors.darkGray, 'Inactive');
+      return _StatusConfig(isDark ? AppColors.coolGray : AppColors.darkGray, 'Inactif');
   }
 }
 

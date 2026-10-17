@@ -15,7 +15,7 @@ class MenuFilterSearchBar extends StatelessWidget {
     required this.searchController,
     required this.onSearchChanged,
     required this.searchQuery,
-    this.hintText = 'Search menu…',
+    this.hintText = 'Rechercher dans le menu…',
   });
 
   final List<String> categories;

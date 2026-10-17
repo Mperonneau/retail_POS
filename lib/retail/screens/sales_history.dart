@@ -37,23 +37,23 @@ class _SalesHistoryState extends ConsumerState<SalesHistory> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Filter Sales',
+                Text('Filtrer les ventes',
                     style: AppTextStyles.h2(
                         color: isDark
                             ? AppColors.warmWhite
                             : AppColors.nearBlack)),
                 const SizedBox(height: AppConstants.spacing16),
-                Text('Payment Method', style: AppTextStyles.inputLabel()),
+                Text('Moyen de paiement', style: AppTextStyles.inputLabel()),
                 const SizedBox(height: AppConstants.spacing8),
                 Wrap(
                   spacing: 8,
-                  children: ['All', 'MonCash', 'Cash', 'Stripe', 'Credit']
+                  children: ['Tous', 'MonCash', 'Espèces', 'Stripe', 'Crédit']
                       .map((m) => FilterChip(
                             label: Text(m),
-                            selected: (m == 'All' && tempPayment == null) ||
+                            selected: (m == 'Tous' && tempPayment == null) ||
                                 tempPayment == m,
                             onSelected: (_) => setSheetState(
-                                () => tempPayment = m == 'All' ? null : m),
+                                () => tempPayment = m == 'Tous' ? null : m),
                           ))
                       .toList(),
                 ),
@@ -66,7 +66,7 @@ class _SalesHistoryState extends ConsumerState<SalesHistory> {
                         setState(() => _filterPayment = null);
                         Navigator.pop(ctx);
                       },
-                      child: const Text('Reset'),
+                      child: const Text('Réinitialiser'),
                     ),
                   ),
                   const SizedBox(width: AppConstants.spacing12),
@@ -80,7 +80,7 @@ class _SalesHistoryState extends ConsumerState<SalesHistory> {
                         backgroundColor: AppColors.amber,
                         foregroundColor: AppColors.nearBlack,
                       ),
-                      child: const Text('Apply'),
+                      child: const Text('Appliquer'),
                     ),
                   ),
                 ]),
@@ -114,7 +114,7 @@ class _SalesHistoryState extends ConsumerState<SalesHistory> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sales History',
+            Text('Historique des ventes',
                 style: AppTextStyles.h1(
                   color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
                 )),
@@ -126,7 +126,7 @@ class _SalesHistoryState extends ConsumerState<SalesHistory> {
                   child: TextField(
                     onChanged: (v) => setState(() => _searchText = v),
                     decoration: InputDecoration(
-                      hintText: 'Search transactions...',
+                      hintText: 'Rechercher des transactions...',
                       prefixIcon: const Icon(Icons.search, size: 20),
                       border: OutlineInputBorder(
                           borderRadius:
@@ -195,7 +195,7 @@ class _SaleCard extends StatelessWidget {
     switch (sale.paymentMethod) {
       case 'MonCash':
         return AppColors.primaryBlue;
-      case 'Cash':
+      case 'Espèces':
         return AppColors.deepGreen;
       case 'Stripe':
         return AppColors.statusMaintenance;
@@ -229,7 +229,7 @@ class _SaleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  sale.items.map((i) => '${i.quantity}x ${i.name}').join(', '),
+                  sale.items.map((i) => '${i.quantity}× ${i.name}').join(', '),
                   style: AppTextStyles.body(
                       color:
                           isDark ? AppColors.warmWhite : AppColors.nearBlack),

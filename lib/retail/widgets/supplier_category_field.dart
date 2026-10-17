@@ -185,7 +185,7 @@ class _SupplierCategoryFieldState extends ConsumerState<SupplierCategoryField> {
           children: [
             Expanded(
               child: Text(
-                'Product categories',
+                'Catégories de produits',
                 style: AppTextStyles.h3(
                   color: textPrimary,
                 ),
@@ -193,9 +193,9 @@ class _SupplierCategoryFieldState extends ConsumerState<SupplierCategoryField> {
             ),
             Tooltip(
               message:
-                  'List the kinds of products this supplier sells (for example: '
-                  'groceries, construction materials, beverages). This helps you '
-                  'search and filter suppliers. You can add more than one.',
+                  'Indiquez les types de produits de ce fournisseur (par exemple : '
+                  'épicerie, matériaux, boissons). Cela aide à '
+                  'rechercher et filtrer les fournisseurs. Vous pouvez en ajouter plusieurs.',
               child: Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Icon(
@@ -209,8 +209,8 @@ class _SupplierCategoryFieldState extends ConsumerState<SupplierCategoryField> {
         ),
         const SizedBox(height: AppConstants.spacing8),
         Text(
-          'What kinds of products does this supplier sell? Pick from suggestions, '
-          'browse by product area, or type your own — you can add several.',
+          'Que vend ce fournisseur ? Choisissez parmi les suggestions, '
+          'parcourez par famille, ou saisissez les vôtres — vous pouvez en ajouter plusieurs.',
           style: AppTextStyles.caption(color: textSecondary),
         ),
         const SizedBox(height: AppConstants.spacing12),
@@ -251,11 +251,11 @@ class _SupplierCategoryFieldState extends ConsumerState<SupplierCategoryField> {
                   focusNode: _focusNode,
                   textCapitalization: TextCapitalization.words,
                   decoration: fieldDec(
-                    'Search or add product category',
-                    hint: 'Type to see product types',
+                    'Rechercher ou ajouter une catégorie',
+                    hint: 'Saisissez pour voir les types',
                   ).copyWith(
                     suffixIcon: IconButton(
-                      tooltip: 'Add product category',
+                      tooltip: 'Ajouter une catégorie',
                       onPressed: _tryAddFromText,
                       icon: Icon(
                         Icons.add_circle_outline_rounded,
@@ -330,7 +330,7 @@ class _SupplierCategoryFieldState extends ConsumerState<SupplierCategoryField> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Browse product categories',
+                        'Parcourir les catégories',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -446,7 +446,7 @@ class _SupplierCategoryDomainPickerState
                 children: [
                   if (_domain != null)
                     IconButton(
-                      tooltip: 'Back',
+                      tooltip: 'Retour',
                       onPressed: () {
                         setState(() {
                           _domain = null;
@@ -458,7 +458,7 @@ class _SupplierCategoryDomainPickerState
                   Expanded(
                     child: Text(
                       _domain == null
-                          ? 'Choose a product area'
+                          ? 'Choisissez une famille de produits'
                           : _domain!.label,
                       style: AppTextStyles.h2(
                         color:
@@ -482,7 +482,7 @@ class _SupplierCategoryDomainPickerState
                   controller: _searchCtrl,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'Search product categories…',
+                    hintText: 'Rechercher des catégories…',
                     prefixIcon: const Icon(Icons.search_rounded, size: 22),
                     filled: true,
                     fillColor: isDark
@@ -519,7 +519,7 @@ class _SupplierCategoryDomainPickerState
             Padding(
               padding: const EdgeInsets.all(AppConstants.spacing16),
               child: Text(
-                'Tap a product category to add or remove it for this supplier.',
+                'Touchez une catégorie pour l\'ajouter ou la retirer pour ce fournisseur.',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -590,7 +590,7 @@ class _DomainList extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${d.categories.length} product types',
+                          '${d.categories.length} types de produits',
                           style: AppTextStyles.caption(
                             color: isDark
                                 ? AppColors.coolGray
@@ -642,7 +642,7 @@ class _CategoryList extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.spacing24),
           child: Text(
-            'No product categories match your search.',
+            'Aucune catégorie de produit ne correspond.',
             style: AppTextStyles.body(
               color: isDark ? AppColors.coolGray : AppColors.darkGray,
             ),

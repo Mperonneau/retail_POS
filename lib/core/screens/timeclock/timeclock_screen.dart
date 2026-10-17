@@ -88,8 +88,8 @@ class _TimeclockScreenState extends ConsumerState<TimeclockScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   PageHeader(
-                    title: 'Timeclock',
-                    subtitle: 'Track employee hours and attendance',
+                    title: 'Pointage',
+                    subtitle: 'Suivre les heures et la présence',
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -125,7 +125,7 @@ class _TimeclockScreenState extends ConsumerState<TimeclockScreen> {
           // ── Employee tiles ─────────────────────────────────────────────
           if (active.isEmpty)
             const SliverFillRemaining(
-              child: Center(child: Text('No active employees.')),
+              child: Center(child: Text('Aucun employé actif.')),
             )
           else
             SliverPadding(
@@ -177,10 +177,10 @@ class _TimeclockScreenState extends ConsumerState<TimeclockScreen> {
         start: _customStart ?? now.subtract(const Duration(days: 13)),
         end: _customEnd ?? now,
       ),
-      helpText: 'Select date range',
-      saveText: 'Apply filter',
-      fieldStartLabelText: 'Start date',
-      fieldEndLabelText: 'End date',
+      helpText: 'Choisir la période',
+      saveText: 'Appliquer le filtre',
+      fieldStartLabelText: 'Date de début',
+      fieldEndLabelText: 'Date de fin',
       builder: (context, child) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
@@ -220,7 +220,7 @@ class _TimeclockScreenState extends ConsumerState<TimeclockScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'How to select a range',
+                            'Comment choisir une période',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -229,9 +229,9 @@ class _TimeclockScreenState extends ConsumerState<TimeclockScreen> {
                           ),
                           const SizedBox(height: 4),
                           for (final (num, text) in [
-                            (1, 'Tap the start date on the calendar.'),
-                            (2, 'Tap the end date.'),
-                            (3, 'Tap Apply filter to apply the range.'),
+                            (1, 'Touchez la date de début sur le calendrier.'),
+                            (2, 'Touchez la date de fin.'),
+                            (3, 'Touchez Appliquer le filtre pour valider la période.'),
                           ])
                             Padding(
                               padding: const EdgeInsets.only(bottom: 2),
@@ -343,7 +343,7 @@ class _PeriodBar extends StatelessWidget {
             if (customLabel != null) ...[
               const SizedBox(width: 2),
               Tooltip(
-                message: 'Clear custom range',
+                message: 'Effacer la période',
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -489,7 +489,7 @@ class _MonthPickerDialog extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Monthly hours (PDF)',
+                          'Heures du mois (PDF)',
                           style: AppTextStyles.h2(color: textColor),
                         ),
                         Text(
@@ -585,8 +585,8 @@ class _MonthlyHoursPdfControlState extends ConsumerState<_MonthlyHoursPdfControl
           SnackBar(
             content: Text(
               kDebugMode
-                  ? 'Could not create PDF: $e'
-                  : 'Could not create PDF. Please try again.',
+                  ? 'Impossible de créer le PDF : $e'
+                  : 'Impossible de créer le PDF. Veuillez réessayer.',
             ),
             backgroundColor: AppColors.error,
           ),
@@ -604,7 +604,7 @@ class _MonthlyHoursPdfControlState extends ConsumerState<_MonthlyHoursPdfControl
         widget.isDark ? const Color(0xFF9AAABF) : const Color(0xFF5A6A7E);
 
     return Tooltip(
-      message: 'Download monthly hours summary (PDF)',
+      message: 'Télécharger le résumé mensuel des heures (PDF)',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -629,7 +629,7 @@ class _MonthlyHoursPdfControlState extends ConsumerState<_MonthlyHoursPdfControl
                           size: 16, color: accent),
                       const SizedBox(width: 6),
                       Text(
-                        'Monthly PDF',
+                        'PDF mensuel',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -771,7 +771,7 @@ class _EmployeeTile extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                'Clocked in',
+                                'En service',
                                 style: AppTextStyles.caption(
                                         color: AppColors.deepGreen)
                                     .copyWith(
@@ -868,9 +868,9 @@ class _TileDetail extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(16, 10, isAdmin ? 60 : 16, 6),
           child: Row(children: [
             _hdr('Date', 3, labelColor),
-            _hdr('Clock In', 2, labelColor),
-            _hdr('Clock Out', 2, labelColor),
-            _hdr('Hours', 2, labelColor),
+            _hdr('Pointer l\'arrivée', 2, labelColor),
+            _hdr('Pointer le départ', 2, labelColor),
+            _hdr('Heures', 2, labelColor),
           ]),
         ),
         Divider(height: 1, thickness: 1, color: divColor),
@@ -1029,7 +1029,7 @@ class _DataRowState extends ConsumerState<_DataRow> {
                                 color: accent.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: Text('Today',
+                              child: Text('Aujourd\'hui',
                                   style: AppTextStyles.caption(color: accent)
                                       .copyWith(
                                           fontWeight: FontWeight.w700,
@@ -1076,7 +1076,7 @@ class _DataRowState extends ConsumerState<_DataRow> {
                                   color: AppColors.deepGreen,
                                 ),
                               ),
-                              Text('In progress',
+                              Text('En cours',
                                   style: AppTextStyles.caption(
                                           color: AppColors.deepGreen)
                                       .copyWith(fontWeight: FontWeight.w600)),
@@ -1114,7 +1114,7 @@ class _DataRowState extends ConsumerState<_DataRow> {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                     child: Text(
-                      _editing ? 'Close' : 'Edit',
+                      _editing ? 'Fermer' : 'Modifier',
                       style: AppTextStyles.caption(color: accent)
                           .copyWith(fontWeight: FontWeight.w600),
                     ),
@@ -1186,7 +1186,7 @@ class _DataRowState extends ConsumerState<_DataRow> {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_draftClockIn!),
-      helpText: 'Select clock-in time',
+      helpText: 'Choisir l\'heure d\'arrivée',
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -1203,7 +1203,7 @@ class _DataRowState extends ConsumerState<_DataRow> {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_draftClockOut!),
-      helpText: 'Select clock-out time',
+      helpText: 'Choisir l\'heure de départ',
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -1264,9 +1264,9 @@ Future<Uint8List> _buildTimesheetPdfBytes({
         decoration: const pw.BoxDecoration(color: PdfColors.grey200),
         children: [
           _pdfCell('Date', bold: true),
-          _pdfCell('Clock in', bold: true),
-          _pdfCell('Clock out', bold: true),
-          _pdfCell('Hours', bold: true, align: pw.TextAlign.right),
+          _pdfCell('Arrivée', bold: true),
+          _pdfCell('Départ', bold: true),
+          _pdfCell('Heures', bold: true, align: pw.TextAlign.right),
         ],
       );
 
@@ -1275,7 +1275,7 @@ Future<Uint8List> _buildTimesheetPdfBytes({
           _pdfCell(dayFmt.format(e.clockIn)),
           _pdfCell(timeFmt.format(e.clockIn)),
           _pdfCell(
-            e.clockOut != null ? timeFmt.format(e.clockOut!) : 'Open',
+            e.clockOut != null ? timeFmt.format(e.clockOut!) : 'Ouvert',
           ),
           _pdfCell(e.durationLabel, align: pw.TextAlign.right),
         ],
@@ -1286,7 +1286,7 @@ Future<Uint8List> _buildTimesheetPdfBytes({
           pw.Padding(
             padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
             child: pw.Text(
-              'No shifts recorded in this period.',
+              'Aucun quart sur cette période.',
               style: pw.TextStyle(
                 fontSize: 9,
                 color: PdfColors.grey700,
@@ -1307,7 +1307,7 @@ Future<Uint8List> _buildTimesheetPdfBytes({
       margin: const pw.EdgeInsets.all(40),
       build: (ctx) => [
         pw.Text(
-          'Timesheet',
+          'Feuille de temps',
           style: pw.TextStyle(
             fontSize: 22,
             fontWeight: pw.FontWeight.bold,
@@ -1341,7 +1341,7 @@ Future<Uint8List> _buildTimesheetPdfBytes({
         ),
         pw.SizedBox(height: 14),
         pw.Text(
-          'Total: ${formatDuration(total)}',
+          'Total : ${formatDuration(total)}',
           style: pw.TextStyle(
             fontSize: 12,
             fontWeight: pw.FontWeight.bold,
@@ -1397,7 +1397,7 @@ Future<Uint8List> _buildMonthlyHoursSummaryPdf({
       children: [
         _pdfCell('Employee', bold: true),
         _pdfCell('Role', bold: true),
-        _pdfCell('Total hours', bold: true, align: pw.TextAlign.right),
+        _pdfCell('Heures totales', bold: true, align: pw.TextAlign.right),
       ],
     ),
   ];
@@ -1428,7 +1428,7 @@ Future<Uint8List> _buildMonthlyHoursSummaryPdf({
       margin: const pw.EdgeInsets.all(40),
       build: (ctx) => [
         pw.Text(
-          'Monthly hours summary',
+          'Résumé des heures du mois',
           style: pw.TextStyle(
             fontSize: 22,
             fontWeight: pw.FontWeight.bold,
@@ -1448,7 +1448,7 @@ Future<Uint8List> _buildMonthlyHoursSummaryPdf({
         ),
         pw.SizedBox(height: 4),
         pw.Text(
-          'Totals per employee only — no shift-level detail.',
+          'Totaux par employé seulement — pas le détail des quarts.',
           style: pw.TextStyle(
             fontSize: 9,
             color: PdfColors.grey700,
@@ -1467,7 +1467,7 @@ Future<Uint8List> _buildMonthlyHoursSummaryPdf({
         ),
         pw.SizedBox(height: 12),
         pw.Text(
-          'All staff (active): ${staffActiveSorted.length} · Combined hours: ${formatDuration(grandTotal)}',
+          'Personnel actif : ${staffActiveSorted.length} · Heures cumulées : ${formatDuration(grandTotal)}',
           style: pw.TextStyle(
             fontSize: 11,
             fontWeight: pw.FontWeight.bold,
@@ -1536,8 +1536,8 @@ class _ExpandedTimesheetToolbarState extends ConsumerState<_ExpandedTimesheetToo
           SnackBar(
             content: Text(
               kDebugMode
-                  ? 'Could not create PDF: $e'
-                  : 'Could not create PDF. Please try again.',
+                  ? 'Impossible de créer le PDF : $e'
+                  : 'Impossible de créer le PDF. Veuillez réessayer.',
             ),
             backgroundColor: AppColors.error,
           ),
@@ -1630,15 +1630,15 @@ class _ExpandedTimesheetToolbarState extends ConsumerState<_ExpandedTimesheetToo
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final compact = constraints.maxWidth < 520;
-                  final printLabel = compact ? 'Print' : 'Print timesheet';
+                  final printLabel = compact ? 'Imprimer' : 'Imprimer la feuille de temps';
 
                   Widget addBtn() => Tooltip(
-                        message: 'Add a manual shift',
+                        message: 'Ajouter un quart manuel',
                         child: OutlinedButton.icon(
                           onPressed: _openAddShiftModal,
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: Text(
-                            'Add shift',
+                            'Ajouter un quart',
                             style: GoogleFonts.poppins(
                               fontSize: compact ? 11 : 12,
                               fontWeight: FontWeight.w600,
@@ -1649,7 +1649,7 @@ class _ExpandedTimesheetToolbarState extends ConsumerState<_ExpandedTimesheetToo
                       );
 
                   Widget downloadBtn() => Tooltip(
-                        message: 'Download timesheet as PDF',
+                        message: 'Télécharger la feuille de temps en PDF',
                         child: OutlinedButton.icon(
                           onPressed:
                               _busyDownload ? null : () => _downloadPdf(),
@@ -1664,7 +1664,7 @@ class _ExpandedTimesheetToolbarState extends ConsumerState<_ExpandedTimesheetToo
                                 )
                               : Icon(Icons.download_outlined, size: 18),
                           label: Text(
-                            'Download',
+                            'Télécharger',
                             style: GoogleFonts.poppins(
                               fontSize: compact ? 11 : 12,
                               fontWeight: FontWeight.w600,
@@ -1675,7 +1675,7 @@ class _ExpandedTimesheetToolbarState extends ConsumerState<_ExpandedTimesheetToo
                       );
 
                   Widget printBtn() => Tooltip(
-                        message: 'Preview date range and print',
+                        message: 'Aperçu de la période et impression',
                         child: OutlinedButton.icon(
                           onPressed: () => _openPrintDialog(),
                           icon: const Icon(Icons.print_outlined, size: 18),
@@ -1810,7 +1810,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
     final picked = await showTimePicker(
       context: context,
       initialTime: _timeIn ?? const TimeOfDay(hour: 8, minute: 0),
-      helpText: 'Clock in',
+      helpText: 'Arrivée',
     );
     if (picked == null || !mounted) return;
     setState(() => _timeIn = picked);
@@ -1823,7 +1823,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
     final picked = await showTimePicker(
       context: context,
       initialTime: _timeOut ?? const TimeOfDay(hour: 16, minute: 0),
-      helpText: 'Clock out',
+      helpText: 'Départ',
     );
     if (picked == null || !mounted) return;
     setState(() => _timeOut = picked);
@@ -1835,7 +1835,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
   void _save() {
     if (_timeIn == null || _timeOut == null) {
       _showAlert(
-        'Please set both clock-in and clock-out times.',
+        'Indiquez l\'heure d\'arrivée et l\'heure de départ.',
         isError: false,
       );
       return;
@@ -1844,7 +1844,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
     final clockOut = _toDateTime(_timeOut!);
     if (!clockOut.isAfter(clockIn)) {
       _showAlert(
-        'Clock-out must be after clock-in.',
+        'Le départ doit être après l\'arrivée.',
         isError: true,
       );
       return;
@@ -1868,7 +1868,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
     Navigator.of(context).pop();
     messenger?.showSnackBar(
       SnackBar(
-        content: Text('Shift added for ${widget.employeeName}'),
+        content: Text('Vacation ajoutée pour ${widget.employeeName}'),
         backgroundColor: AppColors.deepGreen,
       ),
     );
@@ -1943,7 +1943,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        hasValue ? value : 'Tap to set time',
+                        hasValue ? value : 'Touchez pour régler l\'heure',
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight:
@@ -2015,7 +2015,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Add shift',
+                          'Ajouter un quart',
                           style: GoogleFonts.poppins(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -2050,7 +2050,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded,
                         color: Colors.white70, size: 22),
-                    tooltip: 'Close',
+                    tooltip: 'Fermer',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                         minWidth: 36, minHeight: 36),
@@ -2080,7 +2080,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                       icon: Icons.login_rounded,
                       iconBg: AppColors.deepGreen.withValues(alpha: 0.12),
                       iconFg: AppColors.deepGreen,
-                      label: 'CLOCK IN',
+                      label: 'ARRIVÉE',
                       value: _timeIn != null
                           ? timeFmt.format(_toDateTime(_timeIn!))
                           : null,
@@ -2093,7 +2093,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                       iconFg: isDark
                           ? AppColors.coralRed
                           : AppColors.boldRed,
-                      label: 'CLOCK OUT',
+                      label: 'DÉPART',
                       value: _timeOut != null
                           ? timeFmt.format(_toDateTime(_timeOut!))
                           : null,
@@ -2110,7 +2110,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                         final label = valid
                             ? '${dur.inHours}h '
                               '${(dur.inMinutes % 60).toString().padLeft(2, '0')}m'
-                            : 'Invalid range';
+                            : 'Période invalide';
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 220),
                           curve: Curves.easeOut,
@@ -2134,7 +2134,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                                   color: valid ? accent : AppColors.boldRed),
                               const SizedBox(width: 8),
                               Text(
-                                'Shift duration',
+                                'Durée du quart',
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
                                   color: labelColor,
@@ -2249,7 +2249,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                         splashFactory: NoSplash.splashFactory,
                       ),
                       child: Text(
-                        'Cancel',
+                        'Annuler',
                         style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600),
@@ -2263,7 +2263,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                       onPressed: _save,
                       icon: const Icon(Icons.check_rounded, size: 18),
                       label: Text(
-                        'Save shift',
+                        'Enregistrer le quart',
                         style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600),
@@ -2393,7 +2393,7 @@ class _InlineEditor extends StatelessWidget {
         runSpacing: 10,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text('Edit entry:',
+          Text('Modifier l\'entrée :',
               style: AppTextStyles.caption(color: labelColor)
                   .copyWith(fontWeight: FontWeight.w600)),
           OutlinedButton.icon(
@@ -2425,12 +2425,12 @@ class _InlineEditor extends StatelessWidget {
           const SizedBox(width: 4),
           TextButton(
             onPressed: onCancel,
-            child: Text('Cancel', style: TextStyle(color: labelColor)),
+            child: Text('Annuler', style: TextStyle(color: labelColor)),
           ),
           ElevatedButton.icon(
             onPressed: onSave,
             icon: const Icon(Icons.check_rounded, size: 15),
-            label: const Text('Save'),
+            label: const Text('Enregistrer'),
             style: ElevatedButton.styleFrom(
               backgroundColor: accent,
               foregroundColor: Colors.white,
@@ -2505,7 +2505,7 @@ class _PrintDialogState extends State<_PrintDialog> {
                 const Icon(Icons.print_outlined, color: AppColors.primaryBlue),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: Text('Print Timesheet',
+                    child: Text('Imprimer la feuille de temps',
                         style: AppTextStyles.h2(color: textColor))),
                 IconButton(
                     icon: const Icon(Icons.close),
@@ -2522,7 +2522,7 @@ class _PrintDialogState extends State<_PrintDialog> {
                 ),
                 const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('to')),
+                    child: Text('à')),
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.calendar_today_outlined, size: 14),
@@ -2536,7 +2536,7 @@ class _PrintDialogState extends State<_PrintDialog> {
                 Expanded(
                     child: Text(widget.employeeName,
                         style: AppTextStyles.h2(color: textColor))),
-                Text('Total: ${formatDuration(total)}',
+                Text('Total : ${formatDuration(total)}',
                     style: AppTextStyles.price(color: accent)),
               ]),
               const SizedBox(height: 8),
@@ -2545,9 +2545,9 @@ class _PrintDialogState extends State<_PrintDialog> {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(children: [
                   _ph('Date', 3, labelColor),
-                  _ph('Clock In', 2, labelColor),
-                  _ph('Clock Out', 2, labelColor),
-                  _ph('Hours', 2, labelColor),
+                  _ph('Pointer l\'arrivée', 2, labelColor),
+                  _ph('Pointer le départ', 2, labelColor),
+                  _ph('Heures', 2, labelColor),
                 ]),
               ),
               Divider(height: 1),
@@ -2573,7 +2573,7 @@ class _PrintDialogState extends State<_PrintDialog> {
                             child: Text(
                                 e.clockOut != null
                                     ? timeFmt.format(e.clockOut!)
-                                    : 'Open',
+                                    : 'Ouvert',
                                 style: AppTextStyles.body(
                                     color: e.isOpen
                                         ? AppColors.deepGreen
@@ -2599,12 +2599,12 @@ class _PrintDialogState extends State<_PrintDialog> {
                   children: [
                     TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel')),
+                        child: const Text('Annuler')),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
                       onPressed: () => _doPrint(context),
                       icon: const Icon(Icons.print_outlined, size: 16),
-                      label: const Text('Print'),
+                      label: const Text('Imprimer'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryBlue,
                         foregroundColor: Colors.white,
@@ -2654,7 +2654,7 @@ class _PrintDialogState extends State<_PrintDialog> {
   void _doPrint(BuildContext ctx) {
     Navigator.pop(ctx);
     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-      content: Text('Timesheet for ${widget.employeeName} sent to printer.'),
+      content: Text('Feuille de temps de ${widget.employeeName} envoyée à l\'imprimante.'),
       backgroundColor: AppColors.deepGreen,
     ));
   }

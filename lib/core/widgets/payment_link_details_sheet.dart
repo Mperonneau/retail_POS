@@ -134,7 +134,7 @@ class PaymentLinesDetailBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Payment Confirmed',
+                      'Paiement confirmé',
                       style: AppTextStyles.h2(
                         color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                       ),
@@ -178,7 +178,7 @@ class PaymentLinesDetailBlock extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  'Total paid',
+                  'Total payé',
                   style: AppTextStyles.body(
                           color: isDark ? AppColors.skyBlue : AppColors.primaryBlue)
                       .copyWith(fontWeight: FontWeight.w700),
@@ -244,7 +244,7 @@ class _LinkPaymentCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Payment Link',
+                    'Lien de paiement',
                     style: AppTextStyles.body(color: accent)
                         .copyWith(fontWeight: FontWeight.w700),
                   ),
@@ -264,7 +264,7 @@ class _LinkPaymentCard extends StatelessWidget {
               children: [
                 _DetailRow(
                   icon: Icons.access_time_rounded,
-                  label: 'Paid at',
+                  label: 'Payé à',
                   value: _formatDateTime(line.paidAt),
                   isDark: isDark,
                 ),
@@ -273,7 +273,7 @@ class _LinkPaymentCard extends StatelessWidget {
                   // Method — brand + masked card
                   _DetailRow(
                     icon: _methodIcon(d),
-                    label: 'Method',
+                    label: 'Moyen',
                     value: _methodLabel(d),
                     isDark: isDark,
                   ),
@@ -288,7 +288,7 @@ class _LinkPaymentCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     _DetailRow(
                       icon: Icons.public_rounded,
-                      label: 'Country',
+                      label: 'Pays',
                       value: _countryLabel(d.country!),
                       isDark: isDark,
                     ),
@@ -317,7 +317,7 @@ class _LinkPaymentCard extends StatelessWidget {
     final parts = <String>[];
     if (d.methodBrand != null) parts.add(d.methodBrand!);
     if (d.last4 != null) parts.add('•••• ${d.last4}');
-    return parts.isEmpty ? 'Online' : parts.join('  ');
+    return parts.isEmpty ? 'En ligne' : parts.join('  ');
   }
 }
 
@@ -360,7 +360,7 @@ class _CashPaymentCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Cash',
+                    'Espèces',
                     style: AppTextStyles.body(color: accent)
                         .copyWith(fontWeight: FontWeight.w700),
                   ),
@@ -378,7 +378,7 @@ class _CashPaymentCard extends StatelessWidget {
               children: [
                 _DetailRow(
                   icon: Icons.access_time_rounded,
-                  label: 'Recorded at',
+                  label: 'Enregistré à',
                   value: _formatDateTime(line.paidAt),
                   isDark: isDark,
                 ),
@@ -386,7 +386,7 @@ class _CashPaymentCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   _DetailRow(
                     icon: Icons.person_outline,
-                    label: 'Recorded by',
+                    label: 'Enregistré par',
                     value: line.recordedBy!,
                     isDark: isDark,
                   ),
@@ -559,7 +559,7 @@ class _NoteRow extends StatelessWidget {
                   size: 12, color: AppColors.amber),
               const SizedBox(width: 5),
               Text(
-                'Note from payer',
+                'Note du payeur',
                 style: AppTextStyles.caption(color: AppColors.amber)
                     .copyWith(fontWeight: FontWeight.w700, fontSize: 11),
               ),
@@ -583,8 +583,8 @@ class _NoteRow extends StatelessWidget {
 
 String _formatDateTime(DateTime dt) {
   final months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
   ];
   final h = dt.hour.toString().padLeft(2, '0');
   final m = dt.minute.toString().padLeft(2, '0');
@@ -593,15 +593,15 @@ String _formatDateTime(DateTime dt) {
 
 String _countryLabel(String code) {
   const map = {
-    'HT': '🇭🇹  Haiti',
-    'US': '🇺🇸  United States',
+    'HT': '🇭🇹  Haïti',
+    'US': '🇺🇸  États-Unis',
     'FR': '🇫🇷  France',
     'CA': '🇨🇦  Canada',
-    'DO': '🇩🇴  Dominican Republic',
-    'JM': '🇯🇲  Jamaica',
+    'DO': '🇩🇴  République dominicaine',
+    'JM': '🇯🇲  Jamaïque',
     'CU': '🇨🇺  Cuba',
-    'GB': '🇬🇧  United Kingdom',
-    'DE': '🇩🇪  Germany',
+    'GB': '🇬🇧  Royaume-Uni',
+    'DE': '🇩🇪  Allemagne',
   };
   return map[code.toUpperCase()] ?? code.toUpperCase();
 }

@@ -241,7 +241,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Suppliers',
+                            'Fournisseurs',
                             style: AppTextStyles.h1(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -268,7 +268,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                             ),
                           ),
                           child: Text(
-                            '${suppliers.length} supplier${suppliers.length == 1 ? '' : 's'}',
+                            '${suppliers.length} fournisseur${suppliers.length == 1 ? '' : 's'}',
                             style: AppTextStyles.caption(
                               color: isDark
                                   ? AppColors.skyBlue
@@ -280,7 +280,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                     ),
                   ),
                   AppButton(
-                    label: 'Add Supplier',
+                    label: 'Ajouter un fournisseur',
                     onPressed: () => useSideDrawer
                         ? _openAddDrawer()
                         : _openMobileAddPanel(),
@@ -307,7 +307,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
               ),
               const SizedBox(height: AppConstants.spacing8),
               Text(
-                'Manage suppliers, contacts, and product categories they supply.',
+                'Gérez les fournisseurs, les contacts et les catégories qu\'ils fournissent.',
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
                 ),
@@ -337,7 +337,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                     ? Padding(
                         padding: const EdgeInsets.all(AppConstants.spacing24),
                         child: Text(
-                          'No suppliers match your search.',
+                          'Aucun fournisseur ne correspond.',
                           style: AppTextStyles.body(
                             color: isDark
                                 ? AppColors.coolGray
@@ -524,7 +524,7 @@ class _SupplierTopPagination extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Previous page',
+          tooltip: 'Page précédente',
           onPressed: onPrevious,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(
@@ -546,7 +546,7 @@ class _SupplierTopPagination extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Next page',
+          tooltip: 'Page suivante',
           onPressed: onNext,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(
@@ -596,7 +596,7 @@ class _SupplierFilterRow extends StatelessWidget {
       controller: searchController,
       onChanged: onSearchChanged,
       decoration: InputDecoration(
-        hintText: 'Search by name, product category, contact…',
+        hintText: 'Rechercher par nom, catégorie, contact…',
         prefixIcon: const Icon(Icons.search_rounded, size: 20),
         filled: true,
         fillColor: fill,
@@ -628,7 +628,7 @@ class _SupplierFilterRow extends StatelessWidget {
       fill: fill,
       borderColor: borderColor,
       active: active,
-      label: categoryFilter ?? 'All product categories',
+      label: categoryFilter ?? 'Toutes les catégories',
       categories: categories,
       onChanged: onCategoryChanged,
     );
@@ -736,7 +736,7 @@ class _CategoryFilterButton extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'All product categories',
+              'Toutes les catégories',
               style: AppTextStyles.body(
                 color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
               ),
@@ -828,7 +828,7 @@ class _SupplierGridTile extends StatelessWidget {
         : AppColors.lightBlue.withValues(alpha: 0.35);
 
     final categoriesText = supplier.categories.isEmpty
-        ? 'No product categories'
+        ? 'Aucune catégorie de produit'
         : supplier.categories.join(' · ');
 
     final phone = supplier.phone.isNotEmpty
@@ -943,7 +943,7 @@ class _SupplierListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final categoriesText = supplier.categories.isEmpty
-        ? 'No product categories'
+        ? 'Aucune catégorie de produit'
         : supplier.categories.join(' · ');
 
     return Material(
@@ -1119,7 +1119,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
                   if (s.categories.isNotEmpty) ...[
                     const SizedBox(height: AppConstants.spacing8),
                     Text(
-                      'Product categories',
+                      'Catégories de produits',
                       style: AppTextStyles.caption(color: textSecondary),
                     ),
                     const SizedBox(height: AppConstants.spacing8),
@@ -1159,7 +1159,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
             ),
             if (widget.onClose != null)
               IconButton(
-                tooltip: 'Close',
+                tooltip: 'Fermer',
                 onPressed: widget.onClose,
                 icon: const Icon(Icons.close_rounded),
               ),
@@ -1168,27 +1168,27 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
         const SizedBox(height: AppConstants.spacing20),
         // ── Info fields ──────────────────────────────────────────────
         _InfoSection(
-          title: 'Contact information',
+          title: 'Coordonnées',
           isDark: isDark,
           children: [
             if (s.phone.isNotEmpty)
               _InfoRow(
                 icon: Icons.phone_outlined,
-                label: 'Phone',
+                label: 'Téléphone',
                 value: s.phone,
                 isDark: isDark,
               ),
             if (s.email.isNotEmpty)
               _InfoRow(
                 icon: Icons.email_outlined,
-                label: 'Email',
+                label: 'E-mail',
                 value: s.email,
                 isDark: isDark,
               ),
             if (s.location.isNotEmpty)
               _InfoRow(
                 icon: Icons.location_on_outlined,
-                label: 'Location',
+                label: 'Lieu',
                 value: s.location,
                 isDark: isDark,
               ),
@@ -1197,7 +1197,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
                 padding:
                     const EdgeInsets.symmetric(vertical: AppConstants.spacing8),
                 child: Text(
-                  'No contact information added.',
+                  'Aucune coordonnée ajoutée.',
                   style: AppTextStyles.caption(color: textSecondary),
                 ),
               ),
@@ -1223,7 +1223,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
           trailing: TextButton.icon(
             onPressed: () => _openAddContact(context, s),
             icon: const Icon(Icons.add, size: 16),
-            label: const Text('Add'),
+            label: const Text('Ajouter'),
             style: TextButton.styleFrom(
               foregroundColor:
                   isDark ? AppColors.skyBlue : AppColors.primaryBlue,
@@ -1238,7 +1238,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
                     padding: const EdgeInsets.symmetric(
                         vertical: AppConstants.spacing8),
                     child: Text(
-                      'No contacts added yet.',
+                      'Aucun contact pour le moment.',
                       style: AppTextStyles.caption(color: textSecondary),
                     ),
                   ),
@@ -1505,7 +1505,7 @@ class _ContactRow extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Edit contact',
+                tooltip: 'Modifier le contact',
                 onPressed: onEdit,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
@@ -1517,7 +1517,7 @@ class _ContactRow extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Remove contact',
+                tooltip: 'Retirer le contact',
                 onPressed: onDelete,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
@@ -1569,7 +1569,7 @@ class _PanelActionBar extends StatelessWidget {
           AppConstants.spacing8 + bottomInset,
         ),
         child: AppButton(
-          label: 'Edit Supplier',
+          label: 'Modifier le fournisseur',
           icon: Icons.edit_outlined,
           variant: AppButtonVariant.secondary,
           onPressed: onEdit,
@@ -1695,38 +1695,38 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
     final scrollableFields = <Widget>[
       if (!widget.embedded) ...[
         Text(
-          isEdit ? 'Edit Supplier' : 'New Supplier',
+          isEdit ? 'Modifier le fournisseur' : 'Nouveau fournisseur',
           style: AppTextStyles.h2(color: textPrimary),
         ),
         const SizedBox(height: AppConstants.spacing20),
       ],
       TextField(
         controller: _nameCtrl,
-        decoration: dec('Company name'),
+        decoration: dec('Nom de l\'entreprise'),
         textCapitalization: TextCapitalization.words,
       ),
       const SizedBox(height: AppConstants.spacing12),
       TextField(
         controller: _phoneCtrl,
-        decoration: dec('Phone'),
+        decoration: dec('Téléphone'),
         keyboardType: TextInputType.phone,
         inputFormatters: InputFormatters.phone,
       ),
       const SizedBox(height: AppConstants.spacing12),
       TextField(
         controller: _emailCtrl,
-        decoration: dec('Email'),
+        decoration: dec('E-mail'),
         keyboardType: TextInputType.emailAddress,
       ),
       const SizedBox(height: AppConstants.spacing12),
       TextField(
         controller: _locationCtrl,
-        decoration: dec('Location / Address'),
+        decoration: dec('Lieu / adresse'),
       ),
       const SizedBox(height: AppConstants.spacing12),
       TextField(
         controller: _noteCtrl,
-        decoration: dec('Note (optional)'),
+        decoration: dec('Note (facultatif)'),
         maxLines: 3,
       ),
       const SizedBox(height: AppConstants.spacing16),
@@ -1761,7 +1761,7 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
             child: SizedBox(
               height: h,
               child: AppButton(
-                label: isEdit ? 'Save changes' : 'Add Supplier',
+                label: isEdit ? 'Enregistrer' : 'Ajouter un fournisseur',
                 icon: isEdit ? Icons.save_outlined : Icons.add,
                 onPressed: _save,
                 fullWidth: true,
@@ -1776,7 +1776,7 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
               child: OutlinedButton(
                 onPressed: widget.onCancel,
                 style: cancelStyle,
-                child: const Text('Cancel'),
+                child: const Text('Annuler'),
               ),
             ),
           ),
@@ -1800,12 +1800,12 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
                   children: [
                     Expanded(
                       child: Text(
-                        isEdit ? 'Edit Supplier' : 'New Supplier',
+                        isEdit ? 'Modifier le fournisseur' : 'Nouveau fournisseur',
                         style: AppTextStyles.h2(color: textPrimary),
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Close',
+                      tooltip: 'Fermer',
                       onPressed: widget.onCancel,
                       icon: const Icon(Icons.close_rounded),
                     ),
@@ -1958,7 +1958,7 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            isEdit ? 'Edit Contact' : 'Add Contact',
+            isEdit ? 'Modifier le contact' : 'Ajouter un contact',
             style: AppTextStyles.h2(
               color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
             ),
@@ -1971,26 +1971,26 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
           const SizedBox(height: AppConstants.spacing20),
           TextField(
             controller: _nameCtrl,
-            decoration: dec('Full name'),
+            decoration: dec('Nom complet'),
             textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: AppConstants.spacing12),
           TextField(
             controller: _titleCtrl,
-            decoration: dec('Title / Role (optional)'),
+            decoration: dec('Titre / rôle (facultatif)'),
             textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: AppConstants.spacing12),
           TextField(
             controller: _phoneCtrl,
-            decoration: dec('Phone'),
+            decoration: dec('Téléphone'),
             keyboardType: TextInputType.phone,
             inputFormatters: InputFormatters.phone,
           ),
           const SizedBox(height: AppConstants.spacing12),
           TextField(
             controller: _emailCtrl,
-            decoration: dec('Email (optional)'),
+            decoration: dec('E-mail (facultatif)'),
             keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: AppConstants.spacing24),
@@ -2003,14 +2003,14 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
                     padding: const EdgeInsets.symmetric(
                         vertical: AppConstants.buttonHeight / 2),
                   ),
-                  child: const Text('Cancel'),
+                  child: const Text('Annuler'),
                 ),
               ),
               const SizedBox(width: AppConstants.spacing12),
               Expanded(
                 flex: 2,
                 child: AppButton(
-                  label: isEdit ? 'Save contact' : 'Add contact',
+                  label: isEdit ? 'Enregistrer le contact' : 'Ajouter un contact',
                   icon:
                       isEdit ? Icons.save_outlined : Icons.person_add_outlined,
                   onPressed: _save,

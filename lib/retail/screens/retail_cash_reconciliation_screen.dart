@@ -52,7 +52,7 @@ class _RetailCashReconciliationScreenState
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(
-          child: Text('No active session.', style: AppTextStyles.body()),
+          child: Text('Aucune session active.', style: AppTextStyles.body()),
         ),
       );
     }
@@ -74,14 +74,14 @@ class _RetailCashReconciliationScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Close & Reconcile',
+                Text('Fermer et rapprocher',
                     style: AppTextStyles.h1(
                         color: isDark
                             ? AppColors.warmWhite
                             : AppColors.primaryBlue)),
                 const SizedBox(height: AppConstants.spacing8),
                 Text(
-                  'Count the cash in the drawer and enter the actual amount below.',
+                  'Comptez l\'argent du tiroir et saisissez le montant réel ci-dessous.',
                   style: AppTextStyles.body(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray),
                 ),
@@ -92,27 +92,27 @@ class _RetailCashReconciliationScreenState
                   child: Column(
                     children: [
                       _RecRow(
-                        label: 'Opening Balance',
+                        label: 'Solde d\'ouverture',
                         value: CurrencyFormatter.local(context, session.openingBalanceHtg),
                         isDark: isDark,
                       ),
                       const Divider(height: 16),
                       _RecRow(
-                        label: 'Total Cash In',
+                        label: 'Total des entrées',
                         value: '+ ${CurrencyFormatter.local(context, state.totalIn)}',
                         isDark: isDark,
                         valueColor: AppColors.deepGreen,
                       ),
                       const SizedBox(height: 4),
                       _RecRow(
-                        label: 'Total Cash Out',
+                        label: 'Total des sorties',
                         value: '- ${CurrencyFormatter.local(context, state.totalOut)}',
                         isDark: isDark,
                         valueColor: AppColors.boldRed,
                       ),
                       const Divider(height: 16),
                       _RecRow(
-                        label: 'Expected in Drawer',
+                        label: 'Attendu dans le tiroir',
                         value: CurrencyFormatter.local(context, state.expectedBalance),
                         isDark: isDark,
                         bold: true,
@@ -129,7 +129,7 @@ class _RetailCashReconciliationScreenState
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: InputFormatters.decimalAmount,
                   decoration: InputDecoration(
-                    labelText: 'Actual cash counted (HTG) *',
+                    labelText: 'Espèces comptées (HTG) *',
                     prefixText: 'HTG ',
                     border: OutlineInputBorder(
                         borderRadius:
@@ -144,7 +144,7 @@ class _RetailCashReconciliationScreenState
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: InputFormatters.decimalAmount,
                   decoration: InputDecoration(
-                    labelText: 'Actual cash counted (USD) — optional',
+                    labelText: 'Espèces comptées (USD) — facultatif',
                     prefixText: '\$ ',
                     border: OutlineInputBorder(
                         borderRadius:
@@ -155,7 +155,7 @@ class _RetailCashReconciliationScreenState
                 TextField(
                   controller: _noteCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Closing notes — optional',
+                    labelText: 'Notes de clôture — facultatif',
                     border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusInput)),
@@ -205,8 +205,8 @@ class _RetailCashReconciliationScreenState
                                 diff == 0
                                     ? 'Balanced'
                                     : diff > 0
-                                        ? 'Over by ${CurrencyFormatter.local(context, diff.abs())}'
-                                        : 'Short by ${CurrencyFormatter.local(context, diff.abs())}',
+                                        ? 'Excédent de ${CurrencyFormatter.local(context, diff.abs())}'
+                                        : 'Manque de ${CurrencyFormatter.local(context, diff.abs())}',
                                 style: AppTextStyles.body(
                                     color: diff >= 0
                                         ? AppColors.deepGreen
@@ -214,7 +214,7 @@ class _RetailCashReconciliationScreenState
                               ),
                               if (diff != 0)
                                 Text(
-                                  'Difference from expected balance',
+                                  'Écart avec le solde attendu',
                                   style: AppTextStyles.caption(),
                                 ),
                             ],
@@ -227,14 +227,14 @@ class _RetailCashReconciliationScreenState
 
                 const SizedBox(height: AppConstants.spacing24),
                 AppButton(
-                  label: 'Close Drawer',
+                  label: 'Fermer le tiroir',
                   onPressed:
                       _actualCtrl.text.isNotEmpty ? () => _close(state) : null,
                   icon: Icons.lock_outlined,
                 ),
                 const SizedBox(height: AppConstants.spacing8),
                 AppButton(
-                  label: 'Back to Cash Control',
+                  label: 'Retour au contrôle de caisse',
                   onPressed: () => context.go(AppRoutes.retailCashControl),
                   variant: AppButtonVariant.ghost,
                 ),
@@ -310,13 +310,13 @@ class _ConfirmedView extends StatelessWidget {
                   color: AppColors.deepGreen, size: 44),
             ),
             const SizedBox(height: AppConstants.spacing24),
-            Text('Drawer Closed',
+            Text('Tiroir fermé',
                 style: AppTextStyles.h1(
                     color:
                         isDark ? AppColors.warmWhite : AppColors.primaryBlue)),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'Session reconciled and closed successfully.',
+              'Session rapprochée et fermée.',
               style: AppTextStyles.body(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
               textAlign: TextAlign.center,
@@ -328,21 +328,21 @@ class _ConfirmedView extends StatelessWidget {
                 child: Column(
                   children: [
                     _RecRow(
-                      label: 'Total In',
+                      label: 'Total des entrées',
                       value: CurrencyFormatter.local(context, state.totalIn),
                       isDark: isDark,
                       valueColor: AppColors.deepGreen,
                     ),
                     const SizedBox(height: 8),
                     _RecRow(
-                      label: 'Total Out',
+                      label: 'Total des sorties',
                       value: CurrencyFormatter.local(context, state.totalOut),
                       isDark: isDark,
                       valueColor: AppColors.boldRed,
                     ),
                     const Divider(height: 16),
                     _RecRow(
-                      label: 'Net Cash',
+                      label: 'Espèces nettes',
                       value:
                           CurrencyFormatter.local(context, state.totalIn - state.totalOut),
                       isDark: isDark,
@@ -356,7 +356,7 @@ class _ConfirmedView extends StatelessWidget {
             SizedBox(
               width: 320,
               child: AppButton(
-                label: 'Back to Dashboard',
+                label: 'Retour au tableau de bord',
                 onPressed: () => context.go(AppRoutes.retailDashboard),
                 icon: Icons.dashboard_outlined,
               ),

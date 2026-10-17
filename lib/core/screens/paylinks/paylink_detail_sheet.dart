@@ -96,15 +96,15 @@ class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
   void _cancel(BuildContext ctx) {
     _showConfirmModal(
       ctx,
-      title: 'Cancel this paylink?',
+      title: 'Annuler ce lien de paiement ?',
       message:
-          'The payer will no longer be able to use this link. This action cannot be undone.',
-      confirmLabel: 'Cancel Link',
+          'Le payeur ne pourra plus utiliser ce lien. Cette action est définitive.',
+      confirmLabel: 'Annuler le lien',
       confirmColor: AppColors.boldRed,
       onConfirm: () {
         ref.read(widget.payLinkProvider.notifier).cancel(_link.id);
         Navigator.pop(ctx);
-        _showSuccessModal(ctx, title: 'Link Canceled', message: 'The paylink has been canceled.');
+        _showSuccessModal(ctx, title: 'Lien annulé', message: 'Le lien de paiement a été annulé.');
       },
     );
   }
@@ -113,16 +113,16 @@ class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
     final channel = _channelName(_link.channel);
     _showConfirmModal(
       ctx,
-      title: 'Resend paylink?',
-      message: 'Re-send the link to ${_link.sentTo} via $channel?',
-      confirmLabel: 'Resend',
+      title: 'Renvoyer le lien de paiement ?',
+      message: 'Renvoyer le lien à ${_link.sentTo} via $channel ?',
+      confirmLabel: 'Renvoyer',
       confirmColor: AppColors.primaryBlue,
       onConfirm: () {
         Navigator.pop(ctx);
         _showSuccessModal(
           ctx,
-          title: 'Link Resent',
-          message: 'Paylink resent to ${_link.sentTo} via $channel.',
+          title: 'Lien renvoyé',
+          message: 'Lien renvoyé à ${_link.sentTo} via $channel.',
         );
       },
     );
@@ -276,7 +276,7 @@ class _AmountBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Total Amount',
+                Text('Montant total',
                     style: AppTextStyles.caption(color: mutedColor)
                         .copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
@@ -336,11 +336,11 @@ class _ActiveSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('LINK DETAILS', mutedColor: mutedColor),
+        _SectionLabel('DÉTAILS DU LIEN', mutedColor: mutedColor),
         const SizedBox(height: 10),
         _InfoRow(
           icon: Icons.access_time_rounded,
-          label: 'Sent',
+          label: 'Envoyé',
           value: _formatDateTime(link.createdAt),
           mutedColor: mutedColor,
           textColor: textColor,
@@ -348,7 +348,7 @@ class _ActiveSection extends StatelessWidget {
         const SizedBox(height: 8),
         _InfoRow(
           icon: _channelIcon(link.channel),
-          label: 'Channel',
+          label: 'Canal',
           value: _channelName(link.channel),
           mutedColor: mutedColor,
           textColor: textColor,
@@ -356,7 +356,7 @@ class _ActiveSection extends StatelessWidget {
         const SizedBox(height: 8),
         _InfoRow(
           icon: Icons.send_rounded,
-          label: 'Sent to',
+          label: 'Envoyé à',
           value: link.sentTo,
           mutedColor: mutedColor,
           textColor: textColor,
@@ -366,7 +366,7 @@ class _ActiveSection extends StatelessWidget {
           const SizedBox(height: 8),
           _InfoRow(
             icon: Icons.email_outlined,
-            label: 'Email',
+            label: 'E-mail',
             value: link.payerEmail!,
             mutedColor: mutedColor,
             textColor: textColor,
@@ -376,7 +376,7 @@ class _ActiveSection extends StatelessWidget {
           const SizedBox(height: 8),
           _InfoRow(
             icon: Icons.event_outlined,
-            label: 'Expires',
+            label: 'Expire',
             value: _formatDate(link.expiresAt!),
             mutedColor: mutedColor,
             textColor: textColor,
@@ -392,14 +392,14 @@ class _ActiveSection extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text('PAYER CONTACT',
+              child: Text('CONTACT DU PAYEUR',
                   style: AppTextStyles.caption(color: mutedColor)
                       .copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.6, fontSize: 10)),
             ),
             GestureDetector(
               onTap: onEditToggle,
               child: Text(
-                editing ? 'Cancel edit' : 'Edit',
+                editing ? 'Annuler la modification' : 'Modifier',
                 style: AppTextStyles.caption(
                     color: isDark ? AppColors.skyBlue : AppColors.primaryBlue)
                     .copyWith(fontWeight: FontWeight.w600),
@@ -412,7 +412,7 @@ class _ActiveSection extends StatelessWidget {
         if (!editing) ...[
           _InfoRow(
             icon: Icons.phone_outlined,
-            label: 'Phone',
+            label: 'Téléphone',
             value: phoneCtrl.text.isEmpty ? '—' : phoneCtrl.text,
             mutedColor: mutedColor,
             textColor: textColor,
@@ -421,7 +421,7 @@ class _ActiveSection extends StatelessWidget {
             const SizedBox(height: 8),
             _InfoRow(
               icon: Icons.email_outlined,
-              label: 'Email',
+              label: 'E-mail',
               value: emailCtrl.text,
               mutedColor: mutedColor,
               textColor: textColor,
@@ -447,7 +447,7 @@ class _ActiveSection extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text('Save & Update',
+              child: const Text('Enregistrer et mettre à jour',
                   style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
@@ -464,7 +464,7 @@ class _ActiveSection extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onResend,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Resend Link'),
+                label: const Text('Renvoyer le lien'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                   minimumSize: const Size(0, 46),
@@ -482,7 +482,7 @@ class _ActiveSection extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onCancel,
                 icon: const Icon(Icons.cancel_outlined, size: 16),
-                label: const Text('Cancel Link'),
+                label: const Text('Annuler le lien'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.boldRed,
                   minimumSize: const Size(0, 46),
@@ -524,7 +524,7 @@ class _PaidSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('PAYMENT CONFIRMATION', mutedColor: mutedColor),
+        _SectionLabel('CONFIRMATION DU PAIEMENT', mutedColor: mutedColor),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(14),
@@ -537,8 +537,8 @@ class _PaidSection extends StatelessWidget {
             children: [
               _InfoRow(
                 icon: Icons.check_circle_rounded,
-                label: 'Status',
-                value: 'Payment received',
+                label: 'Statut',
+                value: 'Paiement reçu',
                 mutedColor: mutedColor,
                 textColor: AppColors.deepGreen,
                 valueColor: AppColors.deepGreen,
@@ -547,7 +547,7 @@ class _PaidSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.event_rounded,
-                  label: 'Paid on',
+                  label: 'Payé le',
                   value: _formatDateTime(link.paidAt!),
                   mutedColor: mutedColor,
                   textColor: textColor,
@@ -557,7 +557,7 @@ class _PaidSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.receipt_rounded,
-                  label: 'Transaction ID',
+                  label: 'N° de transaction',
                   value: link.paymentTransactionId!,
                   mutedColor: mutedColor,
                   textColor: textColor,
@@ -567,7 +567,7 @@ class _PaidSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.credit_card_rounded,
-                  label: 'Last 4 digits',
+                  label: '4 derniers chiffres',
                   value: '•••• ${link.paymentLast4}',
                   mutedColor: mutedColor,
                   textColor: textColor,
@@ -577,7 +577,7 @@ class _PaidSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.payments_outlined,
-                  label: 'Method',
+                  label: 'Moyen',
                   value: link.paymentMethod!,
                   mutedColor: mutedColor,
                   textColor: textColor,
@@ -603,7 +603,7 @@ class _PaidSection extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Amount credited to client\'s store balance.',
+                  'Montant crédité sur l\'avoir magasin du client.',
                   style: AppTextStyles.caption(color: AppColors.deepGreen)
                       .copyWith(fontWeight: FontWeight.w600),
                 ),
@@ -613,7 +613,7 @@ class _PaidSection extends StatelessWidget {
         ),
 
         const SizedBox(height: 16),
-        _SectionLabel('SENT TO', mutedColor: mutedColor),
+        _SectionLabel('ENVOYÉ À', mutedColor: mutedColor),
         const SizedBox(height: 8),
         _InfoRow(
           icon: _channelIcon(link.channel),
@@ -661,17 +661,17 @@ class _InactiveSection extends StatelessWidget {
           child: Column(
             children: [
               if (link.canceledAt != null)
-                _InfoRow(icon: Icons.cancel_outlined, label: 'Canceled on',
+                _InfoRow(icon: Icons.cancel_outlined, label: 'Annulé le',
                     value: _formatDateTime(link.canceledAt!), mutedColor: mutedColor,
                     textColor: textColor, valueColor: AppColors.boldRed),
               if (link.canceledBy != null) ...[
                 const SizedBox(height: 8),
-                _InfoRow(icon: Icons.person_outline_rounded, label: 'Canceled by',
+                _InfoRow(icon: Icons.person_outline_rounded, label: 'Annulé par',
                     value: link.canceledBy!, mutedColor: mutedColor, textColor: textColor),
               ],
               if (link.isExpired) ...[
                 const SizedBox(height: 8),
-                _InfoRow(icon: Icons.event_outlined, label: 'Expired on',
+                _InfoRow(icon: Icons.event_outlined, label: 'Expiré le',
                     value: _formatDate(link.expiresAt!), mutedColor: mutedColor,
                     textColor: textColor, valueColor: AppColors.amber),
               ],
@@ -679,12 +679,12 @@ class _InactiveSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _SectionLabel('ORIGINAL LINK', mutedColor: mutedColor),
+        _SectionLabel('LIEN D\'ORIGINE', mutedColor: mutedColor),
         const SizedBox(height: 8),
-        _InfoRow(icon: Icons.access_time_rounded, label: 'Created',
+        _InfoRow(icon: Icons.access_time_rounded, label: 'Créé',
             value: _formatDateTime(link.createdAt), mutedColor: mutedColor, textColor: textColor),
         const SizedBox(height: 8),
-        _InfoRow(icon: _channelIcon(link.channel), label: 'Was sent to',
+        _InfoRow(icon: _channelIcon(link.channel), label: 'A été envoyé à',
             value: link.sentTo, mutedColor: mutedColor, textColor: textColor),
       ],
     );
@@ -731,13 +731,13 @@ class _EditableContactFields extends StatelessWidget {
         TextField(
           controller: phoneCtrl,
           keyboardType: TextInputType.phone,
-          decoration: _dec('Phone number', Icons.phone_outlined),
+          decoration: _dec('Numéro de téléphone', Icons.phone_outlined),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: emailCtrl,
           keyboardType: TextInputType.emailAddress,
-          decoration: _dec('Email address (optional)', Icons.email_outlined),
+          decoration: _dec('Adresse e-mail (facultatif)', Icons.email_outlined),
         ),
         const SizedBox(height: 10),
         Row(
@@ -751,7 +751,7 @@ class _EditableContactFields extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             _MiniChannelChip(
-              label: 'Email',
+              label: 'E-mail',
               icon: Icons.email_outlined,
               color: AppColors.primaryBlue,
               selected: channel == PayLinkChannel.email,
@@ -827,9 +827,9 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, label) = switch (status) {
-      PayLinkStatus.active     => (AppColors.amber, 'Active'),
-      PayLinkStatus.paidUnused => (AppColors.deepGreen, 'Paid'),
-      PayLinkStatus.inactive   => (AppColors.coolGray, 'Inactive'),
+      PayLinkStatus.active     => (AppColors.amber, 'Actif'),
+      PayLinkStatus.paidUnused => (AppColors.deepGreen, 'Payé'),
+      PayLinkStatus.inactive   => (AppColors.coolGray, 'Inactif'),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -947,7 +947,7 @@ void _showConfirmModal(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Keep'),
+          child: const Text('Garder'),
         ),
         FilledButton(
           onPressed: () {
@@ -1011,7 +1011,7 @@ void _showSuccessModal(
 
 String _channelName(PayLinkChannel c) => switch (c) {
       PayLinkChannel.whatsApp => 'WhatsApp',
-      PayLinkChannel.email    => 'Email',
+      PayLinkChannel.email    => 'E-mail',
       PayLinkChannel.sms      => 'SMS',
     };
 
@@ -1022,7 +1022,7 @@ IconData _channelIcon(PayLinkChannel c) => switch (c) {
     };
 
 String _formatDate(DateTime d) {
-  final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  final months = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
   return '${d.day} ${months[d.month - 1]} ${d.year}';
 }
 

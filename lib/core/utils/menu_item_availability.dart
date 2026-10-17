@@ -1,7 +1,7 @@
 import '../mock/mock_restaurant_data.dart';
 
 /// Beverage category label used in the demo catalog and menu admin.
-const String menuDrinksCategory = 'Drinks';
+const String menuDrinksCategory = 'Boissons';
 
 enum MenuItemUnavailabilityReason {
   none,
@@ -97,12 +97,12 @@ class MenuItemOrderability {
       case MenuItemUnavailabilityReason.manuallyOutOfStock:
         return 'This item is marked as out of stock. If you believe this is a mistake, contact an admin.';
       case MenuItemUnavailabilityReason.inventoryNotLinked:
-        return 'This drink is not linked to inventory. Contact an admin.';
+        return 'Cette boisson n\'est pas liée au stock. Contactez un admin.';
       case MenuItemUnavailabilityReason.inventoryDepleted:
         return 'No stock left in inventory for this item. Contact an admin or update inventory.';
       case MenuItemUnavailabilityReason.inventoryInsufficient:
         final n = inventoryOnHand ?? 0;
-        return 'Not enough stock for this quantity (only ${_formatStockQty(n)} available). Reduce the count or contact an admin.';
+        return 'Stock insuffisant pour cette quantité (seulement ${_formatStockQty(n)} disponible). Réduisez la quantité ou contactez un admin.';
     }
   }
 
@@ -112,13 +112,13 @@ class MenuItemOrderability {
       case MenuItemUnavailabilityReason.none:
         return '';
       case MenuItemUnavailabilityReason.manuallyOutOfStock:
-        return 'Out of stock';
+        return 'Rupture de stock';
       case MenuItemUnavailabilityReason.inventoryNotLinked:
-        return 'Not linked';
+        return 'Non lié';
       case MenuItemUnavailabilityReason.inventoryDepleted:
-        return 'Out of stock';
+        return 'Rupture de stock';
       case MenuItemUnavailabilityReason.inventoryInsufficient:
-        return 'Not enough stock';
+        return 'Stock insuffisant';
     }
   }
 }

@@ -70,7 +70,7 @@ Future<void> showPrepaidAddBlockedDialog(
                   const SizedBox(height: 14),
                   // Main message — prominent
                   Text(
-                    'Prepaid balance: ${CurrencyFormatter.local(ctx, headroom)} available',
+                    'Solde prépayé : ${CurrencyFormatter.local(ctx, headroom)} disponible',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.h3(
                       color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
@@ -92,7 +92,7 @@ Future<void> showPrepaidAddBlockedDialog(
                   const SizedBox(height: 12),
                   // Note
                   Text(
-                    'These items would exceed the prepaid amount (incl. service & tax). Remove items or adjust the prepaid value.',
+                    'Ces articles dépassent le montant prépayé (service et taxe inclus). Retirez des articles ou ajustez le prépaiement.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.caption(color: muted),
                   ),
@@ -113,7 +113,7 @@ Future<void> showPrepaidAddBlockedDialog(
                             borderRadius: BorderRadius.circular(10)),
                         minimumSize: const Size(double.infinity, 44),
                       ),
-                      child: const Text('Got it',
+                      child: const Text('Compris',
                           style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),

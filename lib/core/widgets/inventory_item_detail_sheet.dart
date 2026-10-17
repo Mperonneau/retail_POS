@@ -50,18 +50,18 @@ void _showAddStockDialog(
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text('Add Stock — ${item.name}'),
+      title: Text('Ajouter du stock — ${item.name}'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Current: ${item.quantity} ${item.unit}',
+          Text('Actuel : ${item.quantity} ${item.unit}',
               style: AppTextStyles.caption()),
           const SizedBox(height: AppConstants.spacing12),
           TextField(
             controller: ctrl,
             decoration: InputDecoration(
-              labelText: 'Quantity to add',
+              labelText: 'Quantité à ajouter',
               suffixText: item.unit,
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
@@ -76,7 +76,7 @@ void _showAddStockDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Cancel'),
+          child: const Text('Annuler'),
         ),
         TextButton(
           onPressed: () {
@@ -90,7 +90,7 @@ void _showAddStockDialog(
             }
             Navigator.pop(ctx);
           },
-          child: const Text('Add'),
+          child: const Text('Ajouter'),
         ),
       ],
     ),
@@ -101,7 +101,7 @@ void _showAdjustSheet(
     BuildContext context, WidgetRef ref, MockInventoryItem item) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final amtCtrl = TextEditingController();
-  final noteCtrl = TextEditingController(text: 'Balance adjustment');
+  final noteCtrl = TextEditingController(text: 'Ajustement de solde');
   bool isAdd = true;
 
   showAppBottomSheet(
@@ -120,14 +120,14 @@ void _showAdjustSheet(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Adjustment',
+              Text('Ajustement',
                   style: AppTextStyles.h2(
                       color: isDark
                           ? AppColors.warmWhite
                           : AppColors.nearBlack)),
               const SizedBox(height: 8),
               Text(
-                'Choose to add or subtract an amount from the balance.',
+                'Choisissez d\'ajouter ou de retirer un montant du solde.',
                 style: AppTextStyles.caption(),
               ),
               const SizedBox(height: AppConstants.spacing24),
@@ -135,7 +135,7 @@ void _showAdjustSheet(
                 children: [
                   Expanded(
                     child: _AdjustmentOptionChip(
-                      label: 'Add an amount',
+                      label: 'Ajouter un montant',
                       icon: Icons.add_circle_outline,
                       isSelected: isAdd,
                       isDark: isDark,
@@ -145,7 +145,7 @@ void _showAdjustSheet(
                   const SizedBox(width: AppConstants.spacing12),
                   Expanded(
                     child: _AdjustmentOptionChip(
-                      label: 'Subtract an amount',
+                      label: 'Retirer un montant',
                       icon: Icons.remove_circle_outline,
                       isSelected: !isAdd,
                       isDark: isDark,
@@ -161,7 +161,7 @@ void _showAdjustSheet(
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: InputFormatters.decimalAmount,
                 decoration: InputDecoration(
-                  labelText: 'Amount (${item.unit})',
+                  labelText: 'Quantité (${item.unit})',
                   filled: true,
                   fillColor: isDark
                       ? AppColors.darkBackground
@@ -175,7 +175,7 @@ void _showAdjustSheet(
               TextField(
                 controller: noteCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Reason / description',
+                  labelText: 'Motif / description',
                   filled: true,
                   fillColor: isDark
                       ? AppColors.darkBackground
@@ -199,14 +199,14 @@ void _showAdjustSheet(
                                 ? AppColors.coolGray
                                 : AppColors.darkGray),
                       ),
-                      child: const Text('Cancel'),
+                      child: const Text('Annuler'),
                     ),
                   ),
                   const SizedBox(width: AppConstants.spacing12),
                   Expanded(
                     flex: 2,
                     child: AppButton(
-                      label: 'Apply Adjustment',
+                      label: 'Appliquer l\'ajustement',
                       onPressed: () {
                         final amount = double.tryParse(amtCtrl.text) ?? 0;
                         if (amount <= 0) return;
@@ -366,20 +366,20 @@ class _InventoryItemDetailContentState
             Row(
               children: [
                 _StatCard(
-                  label: 'Total Balance',
+                  label: 'Solde total',
                   value: '${currentItem.quantity.toStringAsFixed(currentItem.quantity == currentItem.quantity.truncate() ? 0 : 1)} ${currentItem.unit}',
                   isDark: isDark,
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 _StatCard(
-                  label: 'Added Today',
+                  label: 'Ajouté aujourd\'hui',
                   value: '${totalAddToday.toStringAsFixed(0)} ${currentItem.unit}',
                   isDark: isDark,
                   valueColor: AppColors.deepGreen,
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 _StatCard(
-                  label: 'Used Today',
+                  label: 'Utilisé aujourd\'hui',
                   value: '${totalUseToday.toStringAsFixed(0)} ${currentItem.unit}',
                   isDark: isDark,
                   valueColor: AppColors.boldRed,
@@ -389,14 +389,14 @@ class _InventoryItemDetailContentState
             const SizedBox(height: AppConstants.spacing24),
             // Daily ledger
             Text(
-              'Daily Ledger',
+              'Journal du jour',
               style: AppTextStyles.h3(
                   color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
             ),
             const SizedBox(height: AppConstants.spacing12),
             if (allSummaries.isEmpty)
               Text(
-                'No transactions yet.',
+                'Aucune transaction pour le moment.',
                 style: AppTextStyles.caption(),
               )
             else ...[
@@ -416,7 +416,7 @@ class _InventoryItemDetailContentState
                   SizedBox(
                     width: 56,
                     child: Text(
-                      'Added',
+                      'Ajouté',
                       style: AppTextStyles.caption().copyWith(
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -426,7 +426,7 @@ class _InventoryItemDetailContentState
                   SizedBox(
                     width: 56,
                     child: Text(
-                      'Used',
+                      'Utilisé',
                       style: AppTextStyles.caption().copyWith(
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -436,7 +436,7 @@ class _InventoryItemDetailContentState
                   SizedBox(
                     width: 72,
                     child: Text(
-                      'Balance',
+                      'Solde',
                       style: AppTextStyles.caption().copyWith(
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -455,7 +455,7 @@ class _InventoryItemDetailContentState
                       Expanded(
                         flex: 2,
                         child: Text(
-                          isToday ? 'Today' : DateFormatter.shortDate(s.date),
+                          isToday ? 'Aujourd\'hui' : DateFormatter.shortDate(s.date),
                           style: AppTextStyles.body(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -496,7 +496,7 @@ class _InventoryItemDetailContentState
                   child: TextButton(
                     onPressed: () =>
                         setState(() => _daysShown += _initialDaysCount),
-                    child: const Text('Load more'),
+                    child: const Text('Charger plus'),
                   ),
                 ),
             ],
@@ -506,7 +506,7 @@ class _InventoryItemDetailContentState
               children: [
                 Expanded(
                   child: AppButton(
-                    label: 'Add Stock',
+                    label: 'Ajouter du stock',
                     onPressed: () =>
                         _showAddStockDialog(context, ref, currentItem),
                     icon: Icons.add,
@@ -517,7 +517,7 @@ class _InventoryItemDetailContentState
                 if (widget.onEdit != null) ...[
                   Expanded(
                     child: AppButton(
-                      label: 'Edit Item',
+                      label: 'Modifier l\'article',
                       onPressed: () {
                         Navigator.pop(context);
                         widget.onEdit!(currentItem);
@@ -530,7 +530,7 @@ class _InventoryItemDetailContentState
                 ],
                 Expanded(
                   child: AppButton(
-                    label: 'Adjust Stock',
+                    label: 'Ajuster le stock',
                     onPressed: () => _showAdjustSheet(context, ref, currentItem),
                     icon: Icons.tune,
                     variant: AppButtonVariant.secondary,
@@ -570,7 +570,7 @@ class _LowStockItemsList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Items running low on stock',
+            'Articles en stock bas',
             style: AppTextStyles.h2(
                 color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
           ),

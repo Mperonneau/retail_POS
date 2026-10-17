@@ -79,9 +79,9 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
     await showPaymentLinkSuccessDialog(
       context,
       isDark: isDark,
-      title: 'Paylink ${created.reference} has been created and sent.',
+      title: 'Le lien ${created.reference} a été créé et envoyé.',
       pathOrUrl: path,
-      subtitle: 'Copy or share the link with the client or payer if needed.',
+      subtitle: 'Copiez ou partagez le lien avec le client ou le payeur si besoin.',
     );
   }
 
@@ -102,10 +102,10 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                   color: AppColors.deepGreen, size: 20),
             ),
             const SizedBox(width: 10),
-            const Text('Link Resent'),
+            const Text('Lien renvoyé'),
           ],
         ),
-        content: Text('Paylink ${link.reference} was resent to ${link.sentTo}.'),
+        content: Text('Le lien ${link.reference} a été renvoyé à ${link.sentTo}.'),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
@@ -127,13 +127,13 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Cancel paylink?'),
+        title: const Text('Annuler le lien de paiement ?'),
         content: Text(
-            'Cancel ${link.reference} for ${link.customerName}? The payer will no longer be able to pay.'),
+            'Annuler ${link.reference} pour ${link.customerName} ? Le payeur ne pourra plus payer.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Keep'),
+            child: const Text('Garder'),
           ),
           FilledButton(
             onPressed: () {
@@ -147,7 +147,7 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
               minimumSize: const Size(0, 40),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Cancel Link'),
+            child: const Text('Annuler le lien'),
           ),
         ],
       ),
@@ -163,10 +163,10 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
           children: [
             Icon(Icons.info_outline_rounded, color: AppColors.coolGray),
             SizedBox(width: 8),
-            Text('Link Canceled'),
+            Text('Lien annulé'),
           ],
         ),
-        content: Text('${link.reference} has been canceled successfully.'),
+        content: Text('${link.reference} a été annulé.'),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
@@ -187,7 +187,7 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
     final state = ref.watch(widget.payLinkProvider);
 
     final tabs = [state.active, state.paid, state.inactive];
-    final tabLabels = ['Active', 'Paid', 'Inactive'];
+    final tabLabels = ['Actif', 'Payé', 'Inactif'];
     final filtered = _filtered(tabs[_tab]);
 
     final pageCount = (filtered.length / _kPageSize).ceil().clamp(1, 999);
@@ -259,8 +259,8 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                         const SizedBox(height: 10),
                         Text(
                           _query.isNotEmpty
-                              ? 'No results for "$_query"'
-                              : 'No ${tabLabels[_tab].toLowerCase()} paylinks',
+                              ? 'Aucun résultat pour « $_query »'
+                              : 'Aucun lien ${tabLabels[_tab].toLowerCase()}',
                           style: AppTextStyles.body(
                               color: isDark ? AppColors.coolGray : AppColors.darkGray),
                         ),
@@ -269,7 +269,7 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                           TextButton.icon(
                             onPressed: _openNewPaylink,
                             icon: const Icon(Icons.add, size: 16),
-                            label: const Text('Create Paylink'),
+                            label: const Text('Créer un lien de paiement'),
                           ),
                         ],
                       ],
@@ -336,11 +336,11 @@ class _PageHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Paylinks',
+                Text('Liens',
                     style: AppTextStyles.h1(
                         color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
                 const SizedBox(height: 2),
-                Text('Send payment links to clients',
+                Text('Envoyer des liens de paiement aux clients',
                     style: AppTextStyles.caption(color: AppColors.coolGray)),
               ],
             ),
@@ -348,7 +348,7 @@ class _PageHeader extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onNewPaylink,
             icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('New Paylink'),
+            label: const Text('Nouveau lien de paiement'),
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(0, 44),
               padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -524,7 +524,7 @@ class _SearchField extends StatelessWidget {
         style: AppTextStyles.body(color: isDark ? AppColors.warmWhite : AppColors.nearBlack)
             .copyWith(fontSize: 13),
         decoration: InputDecoration(
-          hintText: 'Search name, ref, phone…',
+          hintText: 'Rechercher nom, réf., téléphone…',
           hintStyle: AppTextStyles.caption(color: AppColors.coolGray)
               .copyWith(fontSize: 12),
           prefixIcon: const Icon(Icons.search_rounded, size: 16, color: AppColors.coolGray),
@@ -575,7 +575,7 @@ class _TableHeader extends StatelessWidget {
         children: [
           Expanded(
             flex: 5,
-            child: Text('CLIENT / REF',
+            child: Text('CLIENT / RÉF',
                 style: AppTextStyles.caption(color: color)
                     .copyWith(fontWeight: FontWeight.w700, fontSize: 10, letterSpacing: 0.5)),
           ),
@@ -587,7 +587,7 @@ class _TableHeader extends StatelessWidget {
           ),
           Expanded(
             flex: 3,
-            child: Text('AMOUNT',
+            child: Text('MONTANT',
                 textAlign: TextAlign.right,
                 style: AppTextStyles.caption(color: color)
                     .copyWith(fontWeight: FontWeight.w700, fontSize: 10, letterSpacing: 0.5)),
@@ -684,14 +684,14 @@ class _PayLinkRow extends StatelessWidget {
                     _ActionIcon(
                       icon: Icons.refresh_rounded,
                       color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
-                      tooltip: 'Resend',
+                      tooltip: 'Renvoyer',
                       onTap: onResend,
                     ),
                     const SizedBox(width: 4),
                     _ActionIcon(
                       icon: Icons.cancel_outlined,
                       color: AppColors.boldRed,
-                      tooltip: 'Cancel',
+                      tooltip: 'Annuler',
                       onTap: onCancel,
                     ),
                     const SizedBox(width: 4),
@@ -886,6 +886,6 @@ class _PagBtn extends StatelessWidget {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _shortDate(DateTime d) {
-  final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  final months = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
   return '${d.day} ${months[d.month - 1]}';
 }

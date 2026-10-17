@@ -108,7 +108,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Products',
+                            'Produits',
                             style: AppTextStyles.h1(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -135,7 +135,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                             ),
                           ),
                           child: Text(
-                            '${allProducts.length} product${allProducts.length == 1 ? '' : 's'}',
+                            '${allProducts.length} produit${allProducts.length == 1 ? '' : 's'}',
                             style: AppTextStyles.caption(
                               color: isDark
                                   ? AppColors.skyBlue
@@ -147,7 +147,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                     ),
                   ),
                   AppButton(
-                    label: 'Add Product',
+                    label: 'Ajouter un produit',
                     onPressed: () => _showProductSheet(context, null),
                     icon: Icons.add,
                     fullWidth: false,
@@ -172,7 +172,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
               ),
               const SizedBox(height: AppConstants.spacing8),
               Text(
-                'Manage catalog, pricing, and stock levels.',
+                'Gérez le catalogue, les prix et les stocks.',
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
                 ),
@@ -202,12 +202,12 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                         child: allProducts.isEmpty
                             ? const EmptyState(
                                 icon: Icons.inventory_outlined,
-                                title: 'No products',
+                                title: 'Aucun produit',
                                 message:
-                                    'Add your first product to get started.',
+                                    'Ajoutez votre premier produit pour commencer.',
                               )
                             : Text(
-                                'No products match your search.',
+                                'Aucun produit ne correspond à votre recherche.',
                                 style: AppTextStyles.body(
                                   color: isDark
                                       ? AppColors.coolGray
@@ -322,7 +322,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                 Icons.edit_outlined,
                 color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
               ),
-              title: const Text('Edit Product'),
+              title: const Text('Modifier le produit'),
               onTap: () {
                 Navigator.pop(context);
                 _showProductSheet(context, product);
@@ -332,7 +332,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
               leading:
                   const Icon(Icons.delete_outline, color: AppColors.boldRed),
               title: const Text(
-                'Delete Product',
+                'Supprimer le produit',
                 style: TextStyle(color: AppColors.boldRed),
               ),
               onTap: () {
@@ -350,12 +350,12 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Product'),
-        content: Text('Remove "${product.name}" from inventory?'),
+        title: const Text('Supprimer le produit'),
+        content: Text('Retirer « ${product.name} » de l\'inventaire ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('Annuler'),
           ),
           TextButton(
             onPressed: () {
@@ -363,13 +363,13 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
               ref.read(mockProductsProvider.notifier).remove(product.id);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${product.name} removed'),
+                  content: Text('${product.name} retiré'),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
             child: const Text(
-              'Delete',
+              'Supprimer',
               style: TextStyle(color: AppColors.boldRed),
             ),
           ),
@@ -405,7 +405,7 @@ class _ProductTopPagination extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Previous page',
+          tooltip: 'Page précédente',
           onPressed: onPrevious,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(
@@ -427,7 +427,7 @@ class _ProductTopPagination extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Next page',
+          tooltip: 'Page suivante',
           onPressed: onNext,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(
@@ -478,11 +478,11 @@ class _ProductFilterRow extends StatelessWidget {
       controller: searchController,
       onChanged: onSearchChanged,
       decoration: InputDecoration(
-        hintText: 'Search by name, category, barcode…',
+        hintText: 'Rechercher par nom, catégorie, code-barres…',
         prefixIcon: const Icon(Icons.search_rounded, size: 20),
         suffixIcon: searchController.text.isNotEmpty
             ? IconButton(
-                tooltip: 'Clear search',
+                tooltip: 'Effacer la recherche',
                 onPressed: () {
                   searchController.clear();
                   onSearchChanged('');
@@ -526,7 +526,7 @@ class _ProductFilterRow extends StatelessWidget {
       fill: fill,
       borderColor: borderColor,
       active: active,
-      label: categoryFilter ?? 'All categories',
+      label: categoryFilter ?? 'Toutes les catégories',
       categoryFilter: categoryFilter,
       categories: categories,
       onChanged: onCategoryChanged,
@@ -637,7 +637,7 @@ class _ProductCategoryFilterButton extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'All categories',
+              'Toutes les catégories',
               style: AppTextStyles.body(
                 color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
               ),
@@ -784,7 +784,7 @@ class _ProductGridTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '${product.category} · ${product.margin.toStringAsFixed(0)}% mrg',
+                            '${product.category} · ${product.margin.toStringAsFixed(0)} % marge',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.caption(
@@ -901,7 +901,7 @@ class _ProductListTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${product.category} · ${product.margin.toStringAsFixed(0)}% mrg',
+                      '${product.category} · ${product.margin.toStringAsFixed(0)} % marge',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(
@@ -935,7 +935,7 @@ class _ProductListTile extends StatelessWidget {
                         ? StatusType.lowStock
                         : StatusType.active,
                     customLabel: product.isLowStock
-                        ? 'Low ${product.stockQuantity}'
+                        ? 'Bas ${product.stockQuantity}'
                         : '${product.stockQuantity}',
                     compact: true,
                     micro: true,
@@ -1038,30 +1038,30 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     });
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      setState(() => _errorName = 'Product name is required');
+      setState(() => _errorName = 'Le nom du produit est obligatoire');
       return;
     }
     final cat = _category.trim();
     if (cat.isEmpty) {
-      setState(() => _errorCategory = 'Category is required');
+      setState(() => _errorCategory = 'La catégorie est obligatoire');
       return;
     }
     final s = ref.read(currencySettingsProvider);
     final priceRaw = _priceCtrl.text.trim();
     final priceParsed = double.tryParse(priceRaw);
     if (priceRaw.isEmpty || priceParsed == null || priceParsed <= 0) {
-      setState(() => _errorPrice = 'Price is required');
+      setState(() => _errorPrice = 'Le prix est obligatoire');
       return;
     }
     final stockRaw = _stockCtrl.text.trim();
     if (stockRaw.isEmpty) {
-      setState(() => _errorStockInitial = 'Stock Initial is required');
+      setState(() => _errorStockInitial = 'Le stock initial est obligatoire');
       return;
     }
     final stockQty = int.tryParse(stockRaw);
     if (stockQty == null || stockQty < 0) {
       setState(
-        () => _errorStockInitial = 'Enter a valid whole number (0 or more)',
+        () => _errorStockInitial = 'Saisissez un nombre entier valide (0 ou plus)',
       );
       return;
     }
@@ -1132,13 +1132,13 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.existing == null ? 'Add Product' : 'Edit Product',
+            widget.existing == null ? 'Ajouter un produit' : 'Modifier le produit',
             style: AppTextStyles.h2(color: textPrimary),
           ),
           const SizedBox(height: AppConstants.spacing20),
           TextField(
             controller: _nameCtrl,
-            decoration: fieldDec(label: 'Product Name *'),
+            decoration: fieldDec(label: 'Nom du produit *'),
           ),
           FormFieldError(text: _errorName),
           const SizedBox(height: AppConstants.spacing16),
@@ -1204,9 +1204,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 child: TextField(
                   controller: _stockCtrl,
                   decoration: fieldDec(
-                    label: 'Stock Initial *',
+                    label: 'Stock initial *',
                     helperText:
-                        'Units on hand when adding this product.',
+                        'Unités en stock au moment d\'ajouter ce produit.',
                     errorText: _errorStockInitial,
                   ),
                   keyboardType: TextInputType.number,
@@ -1223,8 +1223,8 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 child: TextField(
                   controller: _minCtrl,
                   decoration: fieldDec(
-                    label: 'Min Stock',
-                    helperText: 'Flags low stock when at or below this.',
+                    label: 'Stock minimum',
+                    helperText: 'Signale un stock bas à ce seuil ou en dessous.',
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: InputFormatters.digitsOnly,
@@ -1236,14 +1236,14 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
           TextField(
             controller: _barcodeCtrl,
             decoration: fieldDec(
-              label: 'Barcode (optional)',
+              label: 'Code-barres (facultatif)',
               helperText:
-                  'Enter the code from the product label, or use the scanner '
-                  'to capture it with the camera.',
+                  'Saisissez le code de l\'étiquette, ou utilisez le scanner '
+                  'pour le lire avec la caméra.',
               suffixIcon: BarcodeScanScreen.isSupported
                   ? IconButton(
                       icon: const Icon(Icons.document_scanner_outlined, size: 22),
-                      tooltip: 'Scan barcode',
+                      tooltip: 'Scanner le code-barres',
                       onPressed: _openBarcodeScanner,
                     )
                   : null,
@@ -1269,8 +1269,8 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 flex: 2,
                 child: AppButton(
                   label: widget.existing == null
-                      ? 'Save Product'
-                      : 'Update Product',
+                      ? 'Enregistrer le produit'
+                      : 'Mettre à jour le produit',
                   onPressed: _save,
                   compact: true,
                 ),
@@ -1291,7 +1291,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                         ),
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
               ),

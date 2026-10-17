@@ -12,8 +12,8 @@ enum RetailFulfillmentMode {
 
 extension RetailFulfillmentModeLabel on RetailFulfillmentMode {
   String get label => switch (this) {
-        RetailFulfillmentMode.inStore => 'In store',
-        RetailFulfillmentMode.pickup => 'Pickup',
-        RetailFulfillmentMode.delivery => 'Delivery',
+        RetailFulfillmentMode.inStore => 'En magasin',
+        RetailFulfillmentMode.pickup => 'Retrait',
+        RetailFulfillmentMode.delivery => 'Livraison',
       };
 }

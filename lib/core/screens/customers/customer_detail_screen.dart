@@ -161,7 +161,7 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         vertical: AppConstants.spacing12),
-                    child: Text('No transactions yet.',
+                    child: Text('Aucune transaction pour le moment.',
                         style: AppTextStyles.caption(
                             color: isDark
                                 ? AppColors.coolGray
@@ -185,7 +185,7 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: Text('Load more',
+                      child: Text('Charger plus',
                           style: AppTextStyles.caption(
                               color: isDark
                                   ? AppColors.skyBlue
@@ -221,7 +221,7 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
             ref.read(customerProvider.notifier).blockCustomer(
                   c.id,
                   reason: reason,
-                  blockedBy: 'Manager',
+                  blockedBy: 'Gérant',
                 ),
       ),
     );
@@ -238,7 +238,7 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
             ref.read(customerProvider.notifier).postAdjustment(
                   customerId: c.id,
                   amountHtg: amount,
-                  cashierName: 'Manager',
+                  cashierName: 'Gérant',
                   description: description,
                 ),
       ),
@@ -444,7 +444,7 @@ class _ModalActions extends StatelessWidget {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.radiusButton)),
           ),
-          child: Text('Cancel',
+          child: Text('Annuler',
               style: AppTextStyles.caption()
                   .copyWith(fontWeight: FontWeight.w600)),
         ),
@@ -513,7 +513,7 @@ class _BlockDialogState extends State<_BlockDialog> {
   Widget build(BuildContext context) {
     return _AppModal(
       isDark: widget.isDark,
-      title: 'Block from Credit',
+      title: 'Bloquer le crédit',
       icon: Icons.block_outlined,
       iconColor: AppColors.boldRed,
       child: Column(
@@ -545,7 +545,7 @@ class _BlockDialogState extends State<_BlockDialog> {
           const SizedBox(height: 14),
           _DenseField(
             controller: _reasonCtrl,
-            label: 'Reason for blocking',
+            label: 'Motif du blocage',
             isDark: widget.isDark,
             maxLines: 2,
           ),
@@ -559,7 +559,7 @@ class _BlockDialogState extends State<_BlockDialog> {
               widget.onConfirm(reason);
               Navigator.pop(context);
             },
-            confirmLabel: 'Confirm Block',
+            confirmLabel: 'Confirmer le blocage',
             confirmIcon: Icons.block_outlined,
             confirmColor: AppColors.boldRed,
           ),
@@ -590,7 +590,7 @@ class _AdjustmentDialog extends StatefulWidget {
 
 class _AdjustmentDialogState extends State<_AdjustmentDialog> {
   final _amtCtrl = TextEditingController();
-  final _descCtrl = TextEditingController(text: 'Balance adjustment');
+  final _descCtrl = TextEditingController(text: 'Ajustement de solde');
   bool _isAdd = true;
 
   @override
@@ -607,20 +607,20 @@ class _AdjustmentDialogState extends State<_AdjustmentDialog> {
 
     return _AppModal(
       isDark: isDark,
-      title: 'Balance Adjustment',
+      title: 'Ajustement du solde',
       icon: Icons.tune_outlined,
       iconColor: accentBlue,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Choose to add or subtract an amount from the balance.',
+          Text('Choisissez d\'ajouter ou de retirer un montant du solde.',
               style: AppTextStyles.caption()),
           const SizedBox(height: 14),
           Row(children: [
             Expanded(
               child: _AdjustmentOptionChip(
-                label: 'Add',
+                label: 'Ajouter',
                 icon: Icons.add_circle_outline,
                 isSelected: _isAdd,
                 isDark: isDark,
@@ -630,7 +630,7 @@ class _AdjustmentDialogState extends State<_AdjustmentDialog> {
             const SizedBox(width: 10),
             Expanded(
               child: _AdjustmentOptionChip(
-                label: 'Subtract',
+                label: 'Retirer',
                 icon: Icons.remove_circle_outline,
                 isSelected: !_isAdd,
                 isDark: isDark,
@@ -641,7 +641,7 @@ class _AdjustmentDialogState extends State<_AdjustmentDialog> {
           const SizedBox(height: 12),
           _DenseField(
             controller: _amtCtrl,
-            label: 'Amount (HTG)',
+            label: 'Montant (HTG)',
             prefixText: 'HTG ',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: InputFormatters.decimalAmount,
@@ -650,7 +650,7 @@ class _AdjustmentDialogState extends State<_AdjustmentDialog> {
           const SizedBox(height: 10),
           _DenseField(
             controller: _descCtrl,
-            label: 'Reason / description',
+            label: 'Motif / description',
             isDark: isDark,
           ),
           const SizedBox(height: 20),
@@ -663,12 +663,12 @@ class _AdjustmentDialogState extends State<_AdjustmentDialog> {
               widget.onConfirm(
                 _isAdd ? amount : -amount,
                 _descCtrl.text.trim().isEmpty
-                    ? 'Balance adjustment'
+                    ? 'Ajustement de solde'
                     : _descCtrl.text.trim(),
               );
               Navigator.pop(context);
             },
-            confirmLabel: 'Apply Adjustment',
+            confirmLabel: 'Appliquer l\'ajustement',
             confirmIcon: Icons.tune_outlined,
             confirmColor: accentBlue,
           ),
@@ -732,7 +732,7 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
             Flexible(
               child: notes.isEmpty
                   ? _DialogEmptyState(
-                      message: 'No notes yet',
+                      message: 'Aucune note',
                       icon: Icons.sticky_note_2_outlined,
                       isDark: isDark,
                     )
@@ -770,13 +770,13 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Add a note',
+                  Text('Ajouter une note',
                       style: AppTextStyles.caption()
                           .copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
                   _DenseField(
                     controller: _textCtrl,
-                    label: 'e.g. Called customer, could not reach',
+                    label: 'p. ex. client appelé, injoignable',
                     isDark: isDark,
                     maxLines: 2,
                   ),
@@ -792,12 +792,12 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
                           ref.read(customerProvider.notifier).addNote(
                                 customerId: widget.customer.id,
                                 text: text,
-                                createdBy: 'Manager',
+                                createdBy: 'Gérant',
                               );
                           _textCtrl.clear();
                         },
                         icon: const Icon(Icons.add, size: 13),
-                        label: Text('Add Note',
+                        label: Text('Ajouter une note',
                             style: AppTextStyles.caption().copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.nearBlack)),
@@ -871,7 +871,7 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
           children: [
             // ── Header ──────────────────────────────────────────────────
             _DialogHeader(
-              title: 'Payment Schedules',
+              title: 'Échéanciers',
               subtitle: total > 0
                   ? '${widget.customer.name}  ·  ${CurrencyFormatter.local(context, total)} total'
                   : widget.customer.name,
@@ -885,7 +885,7 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
             Flexible(
               child: schedules.isEmpty
                   ? _DialogEmptyState(
-                      message: 'No schedules yet',
+                      message: 'Aucune échéance',
                       icon: Icons.event_outlined,
                       isDark: isDark,
                     )
@@ -934,7 +934,7 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Add a schedule',
+                  Text('Ajouter une échéance',
                       style: AppTextStyles.caption()
                           .copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
@@ -942,7 +942,7 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                     Expanded(
                       child: _DenseField(
                         controller: _dateCtrl,
-                        label: 'Date (tap to pick)',
+                        label: 'Date (touchez pour choisir)',
                         isDark: isDark,
                         readOnly: true,
                         onTap: () async {
@@ -964,7 +964,7 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                     Expanded(
                       child: _DenseField(
                         controller: _amtCtrl,
-                        label: 'Amount',
+                        label: 'Montant',
                         prefixText: 'HTG ',
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
@@ -1002,7 +1002,7 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                           _dateCtrl.clear();
                         },
                         icon: const Icon(Icons.add, size: 13),
-                        label: Text('Add',
+                        label: Text('Ajouter',
                             style: AppTextStyles.caption().copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.nearBlack)),
@@ -1225,7 +1225,7 @@ class _PanelHeader extends StatelessWidget {
                         border: Border.all(
                             color: AppColors.boldRed.withValues(alpha: 0.4)),
                       ),
-                      child: Text('BLOCKED',
+                      child: Text('BLOQUÉ',
                           style: AppTextStyles.caption(color: AppColors.boldRed)
                               .copyWith(
                                   fontSize: 8, fontWeight: FontWeight.w700)),
@@ -1243,7 +1243,7 @@ class _PanelHeader extends StatelessWidget {
                 if (storeCreditBalance > 0.009) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Store credit ${CurrencyFormatter.local(context, storeCreditBalance)}',
+                    'Avoir magasin ${CurrencyFormatter.local(context, storeCreditBalance)}',
                     style: AppTextStyles.caption(color: AppColors.deepGreen)
                         .copyWith(fontWeight: FontWeight.w700),
                   ),
@@ -1260,7 +1260,7 @@ class _PanelHeader extends StatelessWidget {
               icon: Icon(Icons.edit_outlined, size: 16),
               color: isDark ? AppColors.coolGray : AppColors.darkGray,
               onPressed: onEdit,
-              tooltip: 'Edit customer',
+              tooltip: 'Modifier le client',
             ),
           ),
           SizedBox(
@@ -1271,7 +1271,7 @@ class _PanelHeader extends StatelessWidget {
               icon: Icon(Icons.close, size: 16),
               color: isDark ? AppColors.coolGray : AppColors.darkGray,
               onPressed: onClose,
-              tooltip: 'Close',
+              tooltip: 'Fermer',
             ),
           ),
         ],
@@ -1306,14 +1306,14 @@ class _BlockedBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Credit Blocked',
+                Text('Crédit bloqué',
                     style: AppTextStyles.caption(color: AppColors.boldRed)
                         .copyWith(fontWeight: FontWeight.w700)),
                 if (customer.blockedReason != null)
                   Text(customer.blockedReason!, style: AppTextStyles.caption()),
                 if (customer.blockedBy != null && customer.blockedAt != null)
                   Text(
-                      'By ${customer.blockedBy} · ${customer.blockedAt!.day}/${customer.blockedAt!.month}/${customer.blockedAt!.year}',
+                      'Par ${customer.blockedBy} · ${customer.blockedAt!.day}/${customer.blockedAt!.month}/${customer.blockedAt!.year}',
                       style: AppTextStyles.caption()),
               ],
             ),
@@ -1350,7 +1350,7 @@ class _StatsRow extends StatelessWidget {
           ),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Outstanding',
+            Text('Impayé',
                 style: AppTextStyles.caption(color: balanceColor)),
             const SizedBox(height: 2),
             Text(CurrencyFormatter.local(context, balance),
@@ -1373,12 +1373,12 @@ class _StatsRow extends StatelessWidget {
           ),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Credit Limit', style: AppTextStyles.caption()),
+            Text('Limite de crédit', style: AppTextStyles.caption()),
             const SizedBox(height: 2),
             Text(
                 customer.creditLimitHtg != null
                     ? CurrencyFormatter.local(context, customer.creditLimitHtg!)
-                    : 'No limit',
+                    : 'Sans limite',
                 style: AppTextStyles.body(color: limitColor)
                     .copyWith(fontWeight: FontWeight.w700, fontSize: 13),
                 overflow: TextOverflow.ellipsis),
@@ -1425,7 +1425,7 @@ class _StoreCreditSection extends StatelessWidget {
           border: Border.all(color: secondary.withValues(alpha: 0.15)),
         ),
         child: Text(
-          'Add government ID or date of birth (with first and last name) to use store credit.',
+          'Ajoutez une pièce d\'identité ou la date de naissance (avec prénom et nom) pour utiliser le crédit magasin.',
           style: AppTextStyles.caption(color: secondary),
         ),
       );
@@ -1444,7 +1444,7 @@ class _StoreCreditSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Store credit',
+            'Crédit magasin',
             style: AppTextStyles.caption(color: AppColors.deepGreen)
                 .copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.4),
           ),
@@ -1457,7 +1457,7 @@ class _StoreCreditSection extends StatelessWidget {
           if (history.isNotEmpty) ...[
             const SizedBox(height: AppConstants.spacing12),
             Text(
-              'History',
+              'Historique',
               style: AppTextStyles.caption(color: secondary)
                   .copyWith(fontWeight: FontWeight.w700),
             ),
@@ -1506,7 +1506,7 @@ class _StoreCreditSection extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'Load more',
+                  'Charger plus',
                   style: AppTextStyles.caption(
                     color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                   ).copyWith(fontWeight: FontWeight.w600),
@@ -1589,7 +1589,7 @@ class _ActionButtons extends StatelessWidget {
       children: [
         if (balance > 0)
           _CompactBtn(
-            label: 'Payment',
+            label: 'Paiement',
             icon: Icons.payments_outlined,
             height: h,
             textStyle: textStyle,
@@ -1608,7 +1608,7 @@ class _ActionButtons extends StatelessWidget {
           color: accentBlue,
         ),
         _CompactBtn(
-          label: 'Adjust',
+          label: 'Ajuster',
           icon: Icons.tune_outlined,
           height: h,
           textStyle: textStyle,
@@ -1626,7 +1626,7 @@ class _ActionButtons extends StatelessWidget {
           color: accentGreen,
         ),
         _CompactBtn(
-          label: 'Schedules',
+          label: 'Échéances',
           icon: Icons.event_outlined,
           height: h,
           textStyle: textStyle,
@@ -1977,7 +1977,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Credit Blocked',
+                          Text('Crédit bloqué',
                               style:
                                   AppTextStyles.body(color: AppColors.boldRed)
                                       .copyWith(fontWeight: FontWeight.w700)),
@@ -1986,7 +1986,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                                 style: AppTextStyles.caption()),
                           if (customer.blockedBy != null)
                             Text(
-                                'By ${customer.blockedBy} on ${_dateStr(customer.blockedAt!)}',
+                                'Par ${customer.blockedBy} le ${_dateStr(customer.blockedAt!)}',
                                 style: AppTextStyles.caption()),
                         ],
                       ),
@@ -2005,7 +2005,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                 Row(
                   children: [
                     _StatCard(
-                      label: 'Outstanding',
+                      label: 'Impayé',
                       value: CurrencyFormatter.local(context, balance),
                       color:
                           balance > 0 ? AppColors.boldRed : AppColors.deepGreen,
@@ -2013,11 +2013,11 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     ),
                     const SizedBox(width: AppConstants.spacing12),
                     _StatCard(
-                      label: 'Credit Limit',
+                      label: 'Limite de crédit',
                       value: customer.creditLimitHtg != null
                           ? CurrencyFormatter.local(
                               context, customer.creditLimitHtg!)
-                          : 'No limit',
+                          : 'Sans limite',
                       color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       isDark: isDark,
                     ),
@@ -2072,7 +2072,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   builder: (context, constraints) {
                     final isNarrow = constraints.maxWidth < 400;
                     final takePayment = AppButton(
-                      label: 'Take Payment',
+                      label: 'Encaisser',
                       onPressed: () =>
                           _showTakePayment(context, customer, balance, isDark),
                       icon: Icons.payments_outlined,
@@ -2080,8 +2080,8 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     );
                     final blockBtn = AppButton(
                       label: customer.isCreditBlocked
-                          ? 'Unblock Credit'
-                          : 'Block from Credit',
+                          ? 'Débloquer le crédit'
+                          : 'Bloquer le crédit',
                       onPressed: () {
                         if (customer.isCreditBlocked) {
                           ref
@@ -2098,7 +2098,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                       fullWidth: true,
                     );
                     final adjustmentBtn = AppButton(
-                      label: 'Adjustment',
+                      label: 'Ajustement',
                       onPressed: () =>
                           _showAdjustment(context, customer, balance, isDark),
                       variant: AppButtonVariant.secondary,
@@ -2138,7 +2138,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   TextField(
                     controller: _blockReasonCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Reason for blocking (required)',
+                      labelText: 'Motif du blocage (obligatoire)',
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppConstants.radiusInput)),
@@ -2147,14 +2147,14 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   ),
                   const SizedBox(height: AppConstants.spacing8),
                   AppButton(
-                    label: 'Confirm Block',
+                    label: 'Confirmer le blocage',
                     onPressed: () {
                       final reason = _blockReasonCtrl.text.trim();
                       if (reason.isEmpty) return;
                       ref.read(customerProvider.notifier).blockCustomer(
                             customer.id,
                             reason: reason,
-                            blockedBy: 'Manager',
+                            blockedBy: 'Gérant',
                           );
                       setState(() => _showBlockForm = false);
                       _blockReasonCtrl.clear();
@@ -2170,7 +2170,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text('Transaction History',
+                      child: Text('Historique des transactions',
                           style: AppTextStyles.h2(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -2186,7 +2186,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.all(AppConstants.spacing24),
-                      child: Text('No transactions yet.',
+                      child: Text('Aucune transaction pour le moment.',
                           style: AppTextStyles.body(
                               color: isDark
                                   ? AppColors.coolGray
@@ -2208,7 +2208,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                             setState(
                                 () => _transactionsShown += _initialTxCount);
                           },
-                          child: const Text('Load More'),
+                          child: const Text('Charger plus'),
                         ),
                       ),
                     ),
@@ -2283,7 +2283,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Outstanding',
+                        Text('Impayé',
                             style: AppTextStyles.caption(
                                 color: AppColors.boldRed)),
                         Text(CurrencyFormatter.local(context, balance),
@@ -2303,7 +2303,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: InputFormatters.decimalAmount,
               decoration: InputDecoration(
-                labelText: 'Amount received (HTG)',
+                labelText: 'Montant reçu (HTG)',
                 prefixText: 'HTG ',
                 filled: true,
                 fillColor:
@@ -2326,21 +2326,21 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                           color:
                               isDark ? AppColors.coolGray : AppColors.darkGray),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 Expanded(
                   flex: 2,
                   child: AppButton(
-                    label: 'Confirm Payment',
+                    label: 'Confirmer le paiement',
                     onPressed: () {
                       final amount = double.tryParse(amtCtrl.text) ?? 0;
                       if (amount <= 0) return;
                       ref.read(customerProvider.notifier).postPayment(
                             customerId: c.id,
                             amountHtg: amount.clamp(0, balance),
-                            cashierName: 'Cashier',
+                            cashierName: 'Caissier',
                           );
                       Navigator.pop(context);
                     },
@@ -2359,7 +2359,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
   void _showAdjustment(
       BuildContext context, Customer c, double balance, bool isDark) {
     final amtCtrl = TextEditingController();
-    final descCtrl = TextEditingController(text: 'Balance adjustment');
+    final descCtrl = TextEditingController(text: 'Ajustement de solde');
     bool isAdd = true; // true = add, false = subtract
     showModalBottomSheet(
       context: context,
@@ -2383,14 +2383,14 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Adjustment',
+                  Text('Ajustement',
                       style: AppTextStyles.h2(
                           color: isDark
                               ? AppColors.warmWhite
                               : AppColors.nearBlack)),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose to add or subtract an amount from the balance.',
+                    'Choisissez d\'ajouter ou de retirer un montant du solde.',
                     style: AppTextStyles.caption(),
                   ),
                   const SizedBox(height: AppConstants.spacing24),
@@ -2398,7 +2398,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     children: [
                       Expanded(
                         child: _AdjustmentOptionChip(
-                          label: 'Add an amount',
+                          label: 'Ajouter un montant',
                           icon: Icons.add_circle_outline,
                           isSelected: isAdd,
                           isDark: isDark,
@@ -2408,7 +2408,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                       const SizedBox(width: AppConstants.spacing12),
                       Expanded(
                         child: _AdjustmentOptionChip(
-                          label: 'Subtract an amount',
+                          label: 'Retirer un montant',
                           icon: Icons.remove_circle_outline,
                           isSelected: !isAdd,
                           isDark: isDark,
@@ -2424,7 +2424,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                         const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: InputFormatters.decimalAmount,
                     decoration: InputDecoration(
-                      labelText: 'Amount (HTG)',
+                      labelText: 'Montant (HTG)',
                       prefixText: 'HTG ',
                       filled: true,
                       fillColor: isDark
@@ -2439,7 +2439,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   TextField(
                     controller: descCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Reason / description',
+                      labelText: 'Motif / description',
                       filled: true,
                       fillColor: isDark
                           ? AppColors.darkBackground
@@ -2463,14 +2463,14 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                                     ? AppColors.coolGray
                                     : AppColors.darkGray),
                           ),
-                          child: const Text('Cancel'),
+                          child: const Text('Annuler'),
                         ),
                       ),
                       const SizedBox(width: AppConstants.spacing12),
                       Expanded(
                         flex: 2,
                         child: AppButton(
-                          label: 'Apply Adjustment',
+                          label: 'Appliquer l\'ajustement',
                           onPressed: () {
                             final amount = double.tryParse(amtCtrl.text) ?? 0;
                             if (amount <= 0) return;
@@ -2478,9 +2478,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                             ref.read(customerProvider.notifier).postAdjustment(
                                   customerId: c.id,
                                   amountHtg: signedAmount,
-                                  cashierName: 'Manager',
+                                  cashierName: 'Gérant',
                                   description: descCtrl.text.trim().isEmpty
-                                      ? 'Balance adjustment'
+                                      ? 'Ajustement de solde'
                                       : descCtrl.text.trim(),
                                 );
                             Navigator.pop(ctx);
@@ -2516,7 +2516,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Add Note',
+            Text('Ajouter une note',
                 style: AppTextStyles.h2(
                     color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
             const SizedBox(height: AppConstants.spacing24),
@@ -2524,7 +2524,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
               controller: textCtrl,
               maxLines: 3,
               decoration: InputDecoration(
-                labelText: 'Note (e.g. Called customer, could not reach)',
+                labelText: 'Note (ex. client appelé, injoignable)',
                 filled: true,
                 fillColor:
                     isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
@@ -2546,21 +2546,21 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                           color:
                               isDark ? AppColors.coolGray : AppColors.darkGray),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 Expanded(
                   flex: 2,
                   child: AppButton(
-                    label: 'Save Note',
+                    label: 'Enregistrer la note',
                     onPressed: () {
                       final text = textCtrl.text.trim();
                       if (text.isEmpty) return;
                       ref.read(customerProvider.notifier).addNote(
                             customerId: c.id,
                             text: text,
-                            createdBy: 'Manager',
+                            createdBy: 'Gérant',
                           );
                       Navigator.pop(context);
                     },
@@ -2593,12 +2593,12 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Add Payment Schedule',
+            Text('Ajouter une échéance',
                 style: AppTextStyles.h2(
                     color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
             const SizedBox(height: 8),
             Text(
-              'Schedule when the customer intends to pay (date + amount).',
+              'Planifiez quand le client compte payer (date + montant).',
               style: AppTextStyles.caption(),
             ),
             const SizedBox(height: AppConstants.spacing24),
@@ -2606,7 +2606,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
               controller: dateCtrl,
               readOnly: true,
               decoration: InputDecoration(
-                labelText: 'Date (tap to pick)',
+                labelText: 'Date (touchez pour choisir)',
                 filled: true,
                 fillColor:
                     isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
@@ -2633,7 +2633,7 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: InputFormatters.decimalAmount,
               decoration: InputDecoration(
-                labelText: 'Amount (HTG)',
+                labelText: 'Montant (HTG)',
                 prefixText: 'HTG ',
                 filled: true,
                 fillColor:
@@ -2656,14 +2656,14 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                           color:
                               isDark ? AppColors.coolGray : AppColors.darkGray),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 Expanded(
                   flex: 2,
                   child: AppButton(
-                    label: 'Add Schedule',
+                    label: 'Ajouter une échéance',
                     onPressed: () {
                       final amount = double.tryParse(amtCtrl.text) ?? 0;
                       if (amount <= 0) return;
@@ -2726,7 +2726,7 @@ class _HotelSection extends StatelessWidget {
                     size: 20,
                     color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
                 const SizedBox(width: 8),
-                Text('Hotel',
+                Text('Hôtel',
                     style: AppTextStyles.h2(
                         color: isDark
                             ? AppColors.warmWhite
@@ -2735,7 +2735,7 @@ class _HotelSection extends StatelessWidget {
             ),
             const SizedBox(height: AppConstants.spacing12),
             Text(
-              'No hotel stays',
+              'Aucun séjour',
               style: AppTextStyles.body(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
             ),
@@ -2755,7 +2755,7 @@ class _HotelSection extends StatelessWidget {
                   size: 20,
                   color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
               const SizedBox(width: 8),
-              Text('Hotel',
+              Text('Hôtel',
                   style: AppTextStyles.h2(
                       color:
                           isDark ? AppColors.warmWhite : AppColors.nearBlack)),
@@ -2800,7 +2800,7 @@ class _HotelStayRow extends StatelessWidget {
         ),
         const SizedBox(height: AppConstants.spacing8),
         Text(
-          '${stay.totalGuests} guest${stay.totalGuests > 1 ? 's' : ''} · ${stay.totalDays} day${stay.totalDays > 1 ? 's' : ''}',
+          '${stay.totalGuests} client${stay.totalGuests > 1 ? 's' : ''} · ${stay.totalDays} jour${stay.totalDays > 1 ? 's' : ''}',
           style: AppTextStyles.caption(
               color: isDark ? AppColors.coolGray : AppColors.darkGray),
         ),
@@ -2808,7 +2808,7 @@ class _HotelStayRow extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Amount',
+            Text('Montant',
                 style: AppTextStyles.caption(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray)),
             Text(
@@ -2823,7 +2823,7 @@ class _HotelStayRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Paid',
+              Text('Payé',
                   style: AppTextStyles.caption(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray)),
               Text(
@@ -2838,7 +2838,7 @@ class _HotelStayRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Balance',
+              Text('Solde',
                   style: AppTextStyles.caption(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray)),
               Text(
@@ -3085,7 +3085,7 @@ class _NotesSection extends StatelessWidget {
               TextButton.icon(
                 onPressed: onAddNote,
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Note'),
+                label: const Text('Ajouter une note'),
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -3101,7 +3101,7 @@ class _NotesSection extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(AppConstants.spacing16),
                 child: Text(
-                  'No notes yet.',
+                  'Aucune note pour le moment.',
                   style: AppTextStyles.body(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray),
                 ),
@@ -3115,7 +3115,7 @@ class _NotesSection extends StatelessWidget {
                       children: [
                         Text(n.text, style: AppTextStyles.body()),
                         Text(
-                          '${n.createdAt.day}/${n.createdAt.month}/${n.createdAt.year} · By ${n.createdBy}',
+                          '${n.createdAt.day}/${n.createdAt.month}/${n.createdAt.year} · Par ${n.createdBy}',
                           style: AppTextStyles.caption(),
                         ),
                       ],
@@ -3169,7 +3169,7 @@ class _SchedulesSection extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Payment Schedules',
+                        'Échéanciers',
                         style: AppTextStyles.body(
                                 color: isDark
                                     ? AppColors.warmWhite
@@ -3189,7 +3189,7 @@ class _SchedulesSection extends StatelessWidget {
               TextButton.icon(
                 onPressed: onAddSchedule,
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Schedule'),
+                label: const Text('Ajouter une échéance'),
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -3205,7 +3205,7 @@ class _SchedulesSection extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(AppConstants.spacing16),
                 child: Text(
-                  'No payment schedules yet.',
+                  'Aucun échéancier de paiement.',
                   style: AppTextStyles.body(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray),
                 ),

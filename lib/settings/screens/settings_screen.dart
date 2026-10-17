@@ -36,14 +36,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _tabs = [
-    'Business',
-    'Currency',
-    'Language',
-    'Appearance',
-    'Tax & Fees',
-    'Permissions',
-    'Staff',
-    'Subscription'
+    'Commerce',
+    'Devise',
+    'Langue',
+    'Apparence',
+    'Taxes et frais',
+    'Droits',
+    'Personnel',
+    'Abonnement'
   ];
 
   @override
@@ -73,14 +73,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: 8,
               children: [
-                Text('Settings',
+                Text('Paramètres',
                     style: AppTextStyles.h1(
                       color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
                     )),
                 TextButton.icon(
                   onPressed: () => context.push(AppRoutes.devices),
                   icon: const Icon(Icons.devices_other_outlined, size: 18),
-                  label: const Text('Connected devices'),
+                  label: const Text('Appareils connectés'),
                 ),
               ],
             ),
@@ -148,14 +148,14 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Edit Business Profile',
+              Text('Modifier le profil',
                   style: AppTextStyles.h2(
                       color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
               const SizedBox(height: AppConstants.spacing16),
               TextField(
                 controller: nameCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Business Name',
+                  labelText: 'Nom du commerce',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                 ),
@@ -164,7 +164,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
               TextField(
                 controller: ownerCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Owner Name',
+                  labelText: 'Nom du propriétaire',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                 ),
@@ -173,7 +173,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
               TextField(
                 controller: addressCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Address',
+                  labelText: 'Adresse',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                 ),
@@ -184,7 +184,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
                   child: TextField(
                     controller: phoneCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Phone',
+                      labelText: 'Téléphone',
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppConstants.radiusInput)),
@@ -198,7 +198,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
                   child: TextField(
                     controller: emailCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'E-mail',
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppConstants.radiusInput)),
@@ -213,7 +213,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing12),
@@ -231,7 +231,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
                       backgroundColor: AppColors.amber,
                       foregroundColor: AppColors.nearBlack,
                     ),
-                    child: const Text('Save'),
+                    child: const Text('Enregistrer'),
                   ),
                 ),
               ]),
@@ -260,15 +260,15 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Customize Receipt',
+            Text('Personnaliser le reçu',
                 style: AppTextStyles.h2(
                     color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
             const SizedBox(height: AppConstants.spacing16),
             TextField(
               controller: headerCtrl,
               decoration: InputDecoration(
-                labelText: 'Receipt Header',
-                helperText: 'Shown at top of every receipt',
+                labelText: 'En-tête du reçu',
+                helperText: 'Affiché en haut de chaque reçu',
                 border: OutlineInputBorder(
                     borderRadius:
                         BorderRadius.circular(AppConstants.radiusInput)),
@@ -278,8 +278,8 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
             TextField(
               controller: footerCtrl,
               decoration: InputDecoration(
-                labelText: 'Receipt Footer',
-                helperText: 'Thank-you message at the bottom',
+                labelText: 'Pied du reçu',
+                helperText: 'Message de remerciement en bas',
                 border: OutlineInputBorder(
                     borderRadius:
                         BorderRadius.circular(AppConstants.radiusInput)),
@@ -290,7 +290,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: const Text('Annuler'),
                 ),
               ),
               const SizedBox(width: AppConstants.spacing12),
@@ -307,7 +307,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
                     backgroundColor: AppColors.amber,
                     foregroundColor: AppColors.nearBlack,
                   ),
-                  child: const Text('Save'),
+                  child: const Text('Enregistrer'),
                 ),
               ),
             ]),
@@ -332,19 +332,19 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Business Profile', style: AppTextStyles.h3()),
+                Text('Profil du commerce', style: AppTextStyles.h3()),
                 const SizedBox(height: AppConstants.spacing16),
                 _SettingsRow(
-                    label: 'Business Name',
+                    label: 'Nom du commerce',
                     value: auth.businessName ?? 'Hôtel Karibe'),
                 _SettingsRow(
-                    label: 'Owner', value: auth.userName ?? 'Jean-Marc Dupont'),
-                _SettingsRow(label: 'Address', value: _address),
-                _SettingsRow(label: 'Phone', value: _phone),
-                _SettingsRow(label: 'Email', value: _email),
+                    label: 'Propriétaire', value: auth.userName ?? 'Jean-Marc Dupont'),
+                _SettingsRow(label: 'Adresse', value: _address),
+                _SettingsRow(label: 'Téléphone', value: _phone),
+                _SettingsRow(label: 'E-mail', value: _email),
                 const SizedBox(height: AppConstants.spacing16),
                 AppButton(
-                    label: 'Edit Business Profile',
+                    label: 'Modifier le profil',
                     onPressed: () => _showEditProfileSheet(context, isDark, auth),
                     variant: AppButtonVariant.secondary,
                     icon: Icons.edit_outlined),
@@ -356,15 +356,15 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Module Settings', style: AppTextStyles.h3()),
+                Text('Paramètres du module', style: AppTextStyles.h3()),
                 const SizedBox(height: AppConstants.spacing16),
                 _SettingsRow(
-                    label: 'Active Module', value: 'Hotel & Restaurant'),
-                _SettingsRow(label: 'Receipt Header', value: _receiptHeader),
-                _SettingsRow(label: 'Receipt Footer', value: _receiptFooter),
+                    label: 'Module actif', value: 'Hôtel et restaurant'),
+                _SettingsRow(label: 'En-tête du reçu', value: _receiptHeader),
+                _SettingsRow(label: 'Pied du reçu', value: _receiptFooter),
                 const SizedBox(height: AppConstants.spacing16),
                 AppButton(
-                    label: 'Customize Receipt',
+                    label: 'Personnaliser le reçu',
                     onPressed: () => _showCustomizeReceiptSheet(context, isDark),
                     variant: AppButtonVariant.secondary,
                     icon: Icons.receipt_outlined),
@@ -377,10 +377,10 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Retail checkout', style: AppTextStyles.h3()),
+                  Text('Encaissement', style: AppTextStyles.h3()),
                   const SizedBox(height: AppConstants.spacing8),
                   Text(
-                    'Turn off options you do not use. If both Pickup and Delivery are off, checkout only asks for client. In store is always the default when options are shown.',
+                    'Désactivez les options inutiles. Si le retrait et la livraison sont désactivés, l\'encaissement ne demande que le client. En magasin reste le choix par défaut.',
                     style: AppTextStyles.caption(
                       color: isDark
                           ? AppColors.coolGray
@@ -392,7 +392,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Pickup (collect later at store)',
+                          'Retrait (à récupérer au magasin)',
                           style: AppTextStyles.body(),
                         ),
                       ),
@@ -409,7 +409,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Delivery',
+                          'Livraison',
                           style: AppTextStyles.body(),
                         ),
                       ),
@@ -428,7 +428,7 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
           ],
           const SizedBox(height: AppConstants.spacing24),
           AppButton(
-            label: 'Log Out',
+            label: 'Déconnexion',
             onPressed: () {
               logoutCompletely(ref);
               context.go(AppRoutes.login);
@@ -494,10 +494,10 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Currency Settings', style: AppTextStyles.h3()),
+                Text('Paramètres de devise', style: AppTextStyles.h3()),
                 const SizedBox(height: AppConstants.spacing8),
                 Text(
-                  'One exchange rate for your whole business. It applies to every module (restaurant, hotel, retail) and updates USD amounts on screen and when taking cash in USD.',
+                  'Un seul taux pour tout le commerce. Il s\'applique à chaque module (restaurant, hôtel, détail) et met à jour les montants USD à l\'écran et pour les espèces en USD.',
                   style: AppTextStyles.caption(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? AppColors.coolGray
@@ -508,7 +508,7 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                 DropdownButtonFormField<String>(
                   value: _countryCode,
                   decoration: InputDecoration(
-                    labelText: 'Country',
+                    labelText: 'Pays',
                     border: OutlineInputBorder(
                       borderRadius:
                           BorderRadius.circular(AppConstants.radiusInput),
@@ -545,7 +545,7 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                     controller: _rateCtrl,
                     onChanged: (_) => setState(() => _rateError = null),
                     decoration: InputDecoration(
-                      labelText: 'Exchange rate (1 USD = ? $localCode)',
+                      labelText: 'Taux de change (1 USD = ? $localCode)',
                       errorText: _rateError,
                       border: OutlineInputBorder(
                         borderRadius:
@@ -578,7 +578,7 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                       tilePadding: EdgeInsets.zero,
                       childrenPadding: const EdgeInsets.only(top: 8),
                       title: Text(
-                        'Pricing mode (optional)',
+                        'Mode de prix (facultatif)',
                         style: AppTextStyles.body().copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).brightness == Brightness.dark
@@ -587,7 +587,7 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                         ),
                       ),
                       subtitle: Text(
-                        'Default: local currency with USD reference and optional USD cash.',
+                        'Par défaut : devise locale avec référence USD et espèces en USD en option.',
                         style: AppTextStyles.caption(
                           color: Theme.of(context).brightness == Brightness.dark
                               ? AppColors.coolGray
@@ -599,17 +599,17 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                           (
                             BusinessCurrencyMode.both,
                             'Local + USD reference',
-                            'Recommended: $localCode primary; USD on totals and optional cash',
+                            'Recommandé : $localCode en principal ; USD sur les totaux et espèces en option',
                           ),
                           (
                             BusinessCurrencyMode.localOnly,
-                            'Local only',
-                            'Prices and cash in $localCode',
+                            'Local seulement',
+                            'Prix et espèces en $localCode',
                           ),
                           (
                             BusinessCurrencyMode.usdOnly,
-                            'USD only',
-                            'US Dollar pricing and cash',
+                            'USD seulement',
+                            'Prix et espèces en dollar US',
                           ),
                         ].map((row) {
                           final isSelected = _mode == row.$1;
@@ -665,7 +665,7 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                 ] else if (c != null && c.currencyCode == 'USD') ...[
                   const SizedBox(height: AppConstants.spacing12),
                   Text(
-                    'Prices and cash use US dollars (USD).',
+                    'Les prix et les espèces sont en dollars US (USD).',
                     style: AppTextStyles.caption(
                       color: Theme.of(context).brightness == Brightness.dark
                           ? AppColors.coolGray
@@ -675,14 +675,14 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                 ],
                 const SizedBox(height: AppConstants.spacing16),
                 AppButton(
-                  label: 'Save Currency Settings',
+                  label: 'Enregistrer les devises',
                   onPressed: () {
                     final parsed = double.tryParse(_rateCtrl.text.trim());
                     final nc = countryByCode(_countryCode);
                     if (nc != null &&
                         nc.currencyCode != 'USD' &&
                         (parsed == null || parsed <= 0)) {
-                      setState(() => _rateError = 'Enter a valid exchange rate (must be greater than 0).');
+                      setState(() => _rateError = 'Saisissez un taux de change valide (supérieur à 0).');
                       return;
                     }
                     setState(() => _rateError = null);
@@ -692,7 +692,7 @@ class _CurrencyTabState extends ConsumerState<_CurrencyTab> {
                           usdToLocalRate: parsed ?? 1,
                         );
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Currency settings saved')),
+                      const SnackBar(content: Text('Paramètres de devise enregistrés')),
                     );
                   },
                 ),
@@ -711,7 +711,7 @@ class _LanguageTab extends StatefulWidget {
 }
 
 class _LanguageTabState extends State<_LanguageTab> {
-  String _lang = 'kr';
+  String _lang = 'fr';
 
   @override
   Widget build(BuildContext context) {
@@ -721,12 +721,12 @@ class _LanguageTabState extends State<_LanguageTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Language', style: AppTextStyles.h3()),
+            Text('Langue', style: AppTextStyles.h3()),
             const SizedBox(height: AppConstants.spacing16),
             ...[
-              ('kr', 'Kreyòl Ayisyen', 'Primary language of Haiti'),
-              ('fr', 'Français', 'French'),
-              ('en', 'English', 'English')
+              ('kr', 'Kreyòl Ayisyen', 'Langue principale d\'Haïti'),
+              ('fr', 'Français', 'Français'),
+              ('en', 'Anglais', 'Anglais')
             ].map((l) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -742,9 +742,9 @@ class _LanguageTabState extends State<_LanguageTab> {
               );
             }),
             const SizedBox(height: AppConstants.spacing16),
-            AppButton(label: 'Save Language', onPressed: () {
+            AppButton(label: 'Enregistrer la langue', onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Language settings saved')),
+                const SnackBar(content: Text('Langue enregistrée')),
               );
             }),
           ],
@@ -765,16 +765,16 @@ class _AppearanceTab extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Theme', style: AppTextStyles.h3()),
+            Text('Thème', style: AppTextStyles.h3()),
             const SizedBox(height: AppConstants.spacing16),
             ...[
               (
                 ThemeSetting.auto,
-                'Auto (Time-based)',
-                'Light 6am–6pm · Dark 6pm–6am'
+                'Auto (selon l\'heure)',
+                'Clair 6 h–18 h · Sombre 18 h–6 h'
               ),
-              (ThemeSetting.light, 'Always Light', 'Deep Ocean Blue theme'),
-              (ThemeSetting.dark, 'Always Dark', 'Deep Charcoal Navy theme'),
+              (ThemeSetting.light, 'Toujours clair', 'Thème bleu océan'),
+              (ThemeSetting.dark, 'Toujours sombre', 'Thème bleu nuit'),
             ].map((t) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: RadioListTile<ThemeSetting>(
@@ -840,23 +840,23 @@ class _TaxTabState extends ConsumerState<_TaxTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Tax & Fees', style: AppTextStyles.h3()),
+            Text('Taxes et frais', style: AppTextStyles.h3()),
             const SizedBox(height: AppConstants.spacing16),
             SwitchListTile(
-              title: Text('Enable tax', style: AppTextStyles.body()),
-              subtitle: Text('Apply tax on bills (all modules)',
+              title: Text('Activer la taxe', style: AppTextStyles.body()),
+              subtitle: Text('Appliquer la taxe aux notes (tous les modules)',
                   style: AppTextStyles.caption()),
               value: taxEnabled == true,
               onChanged: (v) => setState(() => _taxEnabled = v),
               activeThumbColor: AppColors.primaryBlue,
               contentPadding: EdgeInsets.zero,
             ),
-            Text('Tax rate (when enabled)', style: AppTextStyles.body()),
+            Text('Taux de taxe (si activé)', style: AppTextStyles.body()),
             const SizedBox(height: AppConstants.spacing8),
             DropdownButtonFormField<double>(
               value: taxPercent,
               decoration: InputDecoration(
-                labelText: 'Tax %',
+                labelText: 'Taxe %',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
                 ),
@@ -871,15 +871,15 @@ class _TaxTabState extends ConsumerState<_TaxTab> {
             ),
             const Divider(height: AppConstants.spacing24),
             SwitchListTile(
-              title: Text('Enable gratuity (service charge)', style: AppTextStyles.body()),
-              subtitle: Text('Add gratuity % to bills (all modules)',
+              title: Text('Activer le service', style: AppTextStyles.body()),
+              subtitle: Text('Ajouter un pourcentage de service aux notes (tous les modules)',
                   style: AppTextStyles.caption()),
               value: gratuityEnabled == true,
               onChanged: (v) => setState(() => _gratuityEnabled = v),
               activeThumbColor: AppColors.primaryBlue,
               contentPadding: EdgeInsets.zero,
             ),
-            Text('Gratuity % (when enabled)', style: AppTextStyles.body()),
+            Text('% de service (si activé)', style: AppTextStyles.body()),
             const SizedBox(height: AppConstants.spacing8),
             DropdownButtonFormField<double>(
               value: gratuityPercent,
@@ -899,25 +899,25 @@ class _TaxTabState extends ConsumerState<_TaxTab> {
             ),
             const Divider(height: AppConstants.spacing24),
             SwitchListTile(
-              title: Text('Allow discount on bills', style: AppTextStyles.body()),
-              subtitle: Text('When off, discount option is hidden (all modules)',
+              title: Text('Autoriser les remises', style: AppTextStyles.body()),
+              subtitle: Text('Si désactivé, la remise est masquée (tous les modules)',
                   style: AppTextStyles.caption()),
               value: discountAllowed == true,
               onChanged: (v) => setState(() => _discountAllowed = v),
               activeThumbColor: AppColors.primaryBlue,
               contentPadding: EdgeInsets.zero,
             ),
-            Text('Discount approval', style: AppTextStyles.body()),
+            Text('Approbation de la remise', style: AppTextStyles.body()),
             const SizedBox(height: AppConstants.spacing4),
-            Text('Code or password required to apply a discount on a bill.',
+            Text('Un code ou un mot de passe est requis pour appliquer une remise.',
                 style: AppTextStyles.caption()),
             const SizedBox(height: AppConstants.spacing8),
             TextField(
               controller: _discountCodeCtrl,
               obscureText: true,
               decoration: InputDecoration(
-                labelText: 'Discount approval code',
-                hintText: 'Enter code admins will use',
+                labelText: 'Code d\'approbation des remises',
+                hintText: 'Saisissez le code des administrateurs',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
                 ),
@@ -925,7 +925,7 @@ class _TaxTabState extends ConsumerState<_TaxTab> {
             ),
             const SizedBox(height: AppConstants.spacing24),
             AppButton(
-              label: 'Save Tax & Fees',
+              label: 'Enregistrer taxes et frais',
               onPressed: () {
                 ref.read(taxEnabledProvider.notifier).state =
                     _taxEnabled ?? ref.read(taxEnabledProvider);
@@ -943,7 +943,7 @@ class _TaxTabState extends ConsumerState<_TaxTab> {
                         : _discountCodeCtrl.text.trim();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tax & fees settings saved')),
+                    const SnackBar(content: Text('Taxes et frais enregistrés')),
                   );
                 }
               },
@@ -980,7 +980,7 @@ class _StaffTab extends ConsumerWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Edit'),
+              title: const Text('Modifier'),
               onTap: () {
                 Navigator.pop(context);
                 _openEditor(context, isDark, existing: entry);
@@ -988,7 +988,7 @@ class _StaffTab extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.admin_panel_settings_outlined),
-              title: const Text('Manage permission'),
+              title: const Text('Gérer les droits'),
               onTap: () {
                 Navigator.pop(context);
                 showStaffPermissionPanel(context, entry);
@@ -999,7 +999,7 @@ class _StaffTab extends ConsumerWidget {
                 entry.isActive ? Icons.block_outlined : Icons.check_circle_outline,
                 color: entry.isActive ? AppColors.amber : AppColors.deepGreen,
               ),
-              title: Text(entry.isActive ? 'Deactivate' : 'Activate'),
+              title: Text(entry.isActive ? 'Deactivate' : 'Activer'),
               onTap: () {
                 ref.read(staffDirectoryProvider.notifier).update(
                       entry.copyWith(isActive: !entry.isActive),
@@ -1009,7 +1009,7 @@ class _StaffTab extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.boldRed),
-              title: const Text('Remove', style: TextStyle(color: AppColors.boldRed)),
+              title: const Text('Retirer', style: TextStyle(color: AppColors.boldRed)),
               onTap: () {
                 ref.read(staffDirectoryProvider.notifier).remove(entry.id);
                 Navigator.pop(context);
@@ -1034,9 +1034,9 @@ class _StaffTab extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Staff Members', style: AppTextStyles.h3())),
+              Expanded(child: Text('Membres du personnel', style: AppTextStyles.h3())),
               AppButton(
-                label: 'Add Staff',
+                label: 'Ajouter un employé',
                 onPressed: () => _openEditor(context, isDark),
                 icon: Icons.person_add_outlined,
                 fullWidth: false,
@@ -1134,28 +1134,28 @@ class _SubscriptionTab extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Manage Subscription'),
+        title: const Text('Gérer l\'abonnement'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Current Plan: Pro (Active)', style: AppTextStyles.body()),
+            Text('Forfait actuel : Pro (actif)', style: AppTextStyles.body()),
             const SizedBox(height: 8),
-            Text('Renews: March 26, 2026', style: AppTextStyles.caption()),
+            Text('Renouvellement : 26 mars 2026', style: AppTextStyles.caption()),
             const SizedBox(height: 16),
-            Text('To upgrade, downgrade, or cancel your subscription, please contact support or visit our billing portal.',
+            Text('Pour changer ou annuler votre abonnement, contactez l\'assistance ou ouvrez le portail de facturation.',
                 style: AppTextStyles.caption()),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.amber,
               foregroundColor: AppColors.nearBlack,
             ),
-            child: const Text('Contact Support'),
+            child: const Text('Contacter l\'assistance'),
           ),
         ],
       ),
@@ -1189,7 +1189,7 @@ class _SubscriptionTab extends StatelessWidget {
                     const Icon(Icons.star_rounded,
                         color: AppColors.amber, size: 28),
                     const SizedBox(width: 8),
-                    Text('Pro Plan',
+                    Text('Forfait Pro',
                         style: AppTextStyles.h2(color: AppColors.white)),
                     const Spacer(),
                     Container(
@@ -1199,16 +1199,16 @@ class _SubscriptionTab extends StatelessWidget {
                         color: AppColors.amber,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('Active',
+                      child: Text('Actif',
                           style: AppTextStyles.caption(
                               color: AppColors.nearBlack)),
                     ),
                   ],
                 ),
                 const SizedBox(height: AppConstants.spacing16),
-                Text('Renews: March 26, 2026',
+                Text('Renouvellement : 26 mars 2026',
                     style: AppTextStyles.body(color: Colors.white70)),
-                Text('All modules · Unlimited staff · Priority support',
+                Text('Tous les modules · Personnel illimité · Assistance prioritaire',
                     style: AppTextStyles.caption(color: Colors.white54)),
               ],
             ),
@@ -1218,17 +1218,17 @@ class _SubscriptionTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Plan Features', style: AppTextStyles.h3()),
+                Text('Fonctions du forfait', style: AppTextStyles.h3()),
                 const SizedBox(height: AppConstants.spacing12),
                 ...[
-                  'Hotel & Restaurant module',
-                  'Retail module',
-                  'MonCash integration',
-                  'Stripe card payments',
-                  'Offline mode',
-                  'Multi-language (KR/FR/EN)',
-                  'Unlimited transactions',
-                  'Priority email support',
+                  'Module hôtel et restaurant',
+                  'Module détail',
+                  'Intégration MonCash',
+                  'Paiements carte Stripe',
+                  'Mode hors ligne',
+                  'Plusieurs langues (KR/FR/EN)',
+                  'Transactions illimitées',
+                  'Assistance e-mail prioritaire',
                 ].map((f) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
@@ -1245,7 +1245,7 @@ class _SubscriptionTab extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.spacing16),
           AppButton(
-              label: 'Manage Subscription',
+              label: 'Gérer l\'abonnement',
               onPressed: () => _showManageSubscriptionDialog(context),
               variant: AppButtonVariant.secondary,
               icon: Icons.manage_accounts_outlined),

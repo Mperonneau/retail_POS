@@ -9,17 +9,17 @@ import '../../utils/currency_formatter.dart';
 
 /// Category tab order (matches typical menu sections).
 const _kCategoryOrder = [
-  'Starters',
-  'Mains',
-  'Sides',
-  'Drinks',
+  'Entrées',
+  'Plats',
+  'Accompagnements',
+  'Boissons',
   'Desserts',
-  'Specials',
+  'Suggestions',
 ];
 
 List<String> _buildCategoryTabs(List<MockMenuItem> menu) {
   final present = menu.map((m) => m.category).toSet();
-  final tabs = <String>['All'];
+  final tabs = <String>['Tous'];
   for (final c in _kCategoryOrder) {
     if (present.contains(c)) tabs.add(c);
   }
@@ -98,7 +98,7 @@ class PreOrderMenuPickerGrid extends StatefulWidget {
 
 class _PreOrderMenuPickerGridState extends State<PreOrderMenuPickerGrid> {
   late List<String> _tabs;
-  String _selectedTab = 'All';
+  String _selectedTab = 'Tous';
 
   @override
   void initState() {
@@ -112,13 +112,13 @@ class _PreOrderMenuPickerGridState extends State<PreOrderMenuPickerGrid> {
     if (oldWidget.menuItems.length != widget.menuItems.length) {
       _tabs = _buildCategoryTabs(widget.menuItems);
       if (!_tabs.contains(_selectedTab)) {
-        _selectedTab = 'All';
+        _selectedTab = 'Tous';
       }
     }
   }
 
   List<MockMenuItem> get _filtered {
-    if (_selectedTab == 'All') return widget.menuItems;
+    if (_selectedTab == 'Tous') return widget.menuItems;
     return widget.menuItems.where((m) => m.category == _selectedTab).toList();
   }
 
@@ -139,7 +139,7 @@ class _PreOrderMenuPickerGridState extends State<PreOrderMenuPickerGrid> {
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
           child: Text(
-            'Add from menu',
+            'Ajouter depuis la carte',
             style: AppTextStyles.h2(color: textPrimary).copyWith(fontSize: 18),
           ),
         ),
@@ -200,7 +200,7 @@ class _PreOrderMenuPickerGridState extends State<PreOrderMenuPickerGrid> {
               if (list.isEmpty) {
                 return Center(
                   child: Text(
-                    'No items in this category',
+                    'Aucun article dans cette catégorie',
                     style: AppTextStyles.body(color: muted),
                   ),
                 );
@@ -428,7 +428,7 @@ Future<void> showPreOrderMenuPickerSheet({
                             ..showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  '${m.name} added to pre-order',
+                                  '${m.name} ajouté à la précommande',
                                   style: AppTextStyles.body(
                                     color: isDark
                                         ? AppColors.warmWhite

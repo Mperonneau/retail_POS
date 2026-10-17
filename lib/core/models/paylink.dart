@@ -75,7 +75,7 @@ class PayLink {
     this.canceledAt,
     this.expiresAt,
     required this.reference,
-    this.createdBy = 'Staff',
+    this.createdBy = 'Personnel',
     this.note,
     this.linkedOrderId,
     this.paymentTransactionId,
@@ -191,7 +191,7 @@ class PayLinkNotifier extends StateNotifier<PayLinkState> {
     required double amountHtg,
     required PayLinkChannel channel,
     required String sentTo,
-    String createdBy = 'Staff',
+    String createdBy = 'Personnel',
     String? note,
     DateTime? expiresAt,
     PayLinkSource source = PayLinkSource.standalone,
@@ -243,12 +243,12 @@ class PayLinkNotifier extends StateNotifier<PayLinkState> {
     _ref.read(_customerProvider.notifier).issueStoreCredit(
       customerId: link.customerId,
       amountHtg: link.amountHtg,
-      description: 'Paylink ${link.reference} — payment received',
+      description: 'Lien ${link.reference} — paiement reçu',
       recordedBy: 'System',
     );
   }
 
-  void cancel(String id, {String canceledBy = 'Staff'}) {
+  void cancel(String id, {String canceledBy = 'Personnel'}) {
     _update(
       id,
       (l) => l.copyWith(
@@ -338,7 +338,7 @@ PayLinkState _buildSeedState() {
       channel: PayLinkChannel.email, sentTo: 'marie.beaumont@email.com',
       createdAt: now.subtract(const Duration(days: 3)),
       paidAt: now.subtract(const Duration(days: 2)),
-      reference: 'PL-2026-0021', createdBy: 'Cashier',
+      reference: 'PL-2026-0021', createdBy: 'Caissier',
       paymentTransactionId: 'TXN-MC-2026-88421',
       paymentLast4: '4829', paymentMethod: 'MonCash',
     ),
@@ -349,7 +349,7 @@ PayLinkState _buildSeedState() {
       channel: PayLinkChannel.email, sentTo: 'admin@ecole-sl.ht',
       createdAt: now.subtract(const Duration(days: 5)),
       paidAt: now.subtract(const Duration(days: 4)),
-      reference: 'PL-2026-0022', createdBy: 'Manager',
+      reference: 'PL-2026-0022', createdBy: 'Gérant',
       paymentTransactionId: 'TXN-MC-2026-77310',
       paymentLast4: '1122', paymentMethod: 'MonCash',
       note: 'School semester prepaid',
@@ -361,9 +361,9 @@ PayLinkState _buildSeedState() {
       channel: PayLinkChannel.email, sentTo: 'hotel@montjoli.ht',
       createdAt: now.subtract(const Duration(days: 1)),
       paidAt: now.subtract(const Duration(hours: 6)),
-      reference: 'PL-2026-0023', createdBy: 'Manager',
+      reference: 'PL-2026-0023', createdBy: 'Gérant',
       paymentTransactionId: 'TXN-CARD-2026-55901',
-      paymentLast4: '7743', paymentMethod: 'Card',
+      paymentLast4: '7743', paymentMethod: 'Carte',
     ),
   ];
 
@@ -376,8 +376,8 @@ PayLinkState _buildSeedState() {
       sentTo: '+509 4111-2222',
       createdAt: now.subtract(const Duration(days: 12)),
       canceledAt: now.subtract(const Duration(days: 10)),
-      reference: 'PL-2026-0024', createdBy: 'Staff',
-      note: 'Client canceled order', canceledBy: 'Manager',
+      reference: 'PL-2026-0024', createdBy: 'Personnel',
+      note: 'Commande annulée par le client', canceledBy: 'Gérant',
     ),
     PayLink(
       id: 'pl_i2', customerId: 'c4', customerName: 'Rosnel Dupont',
@@ -387,8 +387,8 @@ PayLinkState _buildSeedState() {
       createdAt: now.subtract(const Duration(days: 30)),
       canceledAt: now.subtract(const Duration(days: 28)),
       expiresAt: now.subtract(const Duration(days: 20)),
-      reference: 'PL-2026-0025', createdBy: 'Cashier',
-      note: 'Link expired without payment', canceledBy: 'System',
+      reference: 'PL-2026-0025', createdBy: 'Caissier',
+      note: 'Lien expiré sans paiement', canceledBy: 'System',
     ),
   ];
 
@@ -420,7 +420,7 @@ PayLink _active(
     sentTo: sentTo,
     createdAt: now.subtract(Duration(hours: hoursAgo)),
     reference: reference,
-    createdBy: 'Staff',
+    createdBy: 'Personnel',
   );
 }
 

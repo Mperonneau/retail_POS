@@ -18,7 +18,7 @@ void showTipsPanel(BuildContext context, bool isDark) {
       opaque: false,
       barrierColor: Colors.black.withValues(alpha: 0.45),
       barrierDismissible: true,
-      barrierLabel: 'Dismiss',
+      barrierLabel: 'Fermer',
       pageBuilder: (_, __, ___) => TipsPanel(isDark: isDark),
       transitionsBuilder: (_, animation, __, child) => SlideTransition(
         position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
@@ -121,7 +121,7 @@ class _TipsPanelState extends ConsumerState<TipsPanel> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Total outstanding tips',
+                                'Pourboires impayés',
                                 style: AppTextStyles.caption(
                                     color: AppColors.amber),
                               ),
@@ -163,7 +163,7 @@ class _TipsPanelState extends ConsumerState<TipsPanel> {
                                             : AppColors.darkGray),
                                     const SizedBox(height: 12),
                                     Text(
-                                      'No tip entries yet.',
+                                      'Aucun pourboire pour le moment.',
                                       style: AppTextStyles.body(
                                           color: isDark
                                               ? AppColors.coolGray
@@ -223,7 +223,7 @@ class _TipsPanelState extends ConsumerState<TipsPanel> {
     if (confirmed == true) {
       ref
           .read(tipProvider.notifier)
-          .payOut(waiterName: waiter, recordedBy: 'Manager');
+          .payOut(waiterName: waiter, recordedBy: 'Gérant');
     }
   }
 }
@@ -310,7 +310,7 @@ class _WaiterSection extends StatelessWidget {
                                 Icon(Icons.check_circle_outline,
                                     size: 12, color: AppColors.deepGreen),
                                 const SizedBox(width: 3),
-                                Text('Paid',
+                                Text('Payé',
                                     style: AppTextStyles.caption(
                                         color: AppColors.deepGreen)),
                               ])
@@ -339,7 +339,7 @@ class _WaiterSection extends StatelessWidget {
                   // Action buttons
                   if (!isPaid)
                     _ActionButton(
-                      label: 'Pay Out',
+                      label: 'Verser',
                       icon: Icons.payments_outlined,
                       color: AppColors.deepGreen,
                       isDark: isDark,
@@ -347,7 +347,7 @@ class _WaiterSection extends StatelessWidget {
                     ),
                   const SizedBox(width: 6),
                   _ActionButton(
-                    label: 'Adjust',
+                    label: 'Ajuster',
                     icon: Icons.tune_outlined,
                     color: AppColors.amber,
                     isDark: isDark,
@@ -461,7 +461,7 @@ class _PayOutDialog extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Pay Out Tips',
+                        Text('Verser les pourboires',
                             style: AppTextStyles.h2(color: textColor)),
                         Text(waiter,
                             style: AppTextStyles.caption(
@@ -505,7 +505,7 @@ class _PayOutDialog extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Amount to pay out',
+                    Text('Montant à verser',
                         style: AppTextStyles.caption(color: subColor)),
                     const SizedBox(height: 6),
                     Text(CurrencyFormatter.local(context, balHtg),
@@ -521,7 +521,7 @@ class _PayOutDialog extends StatelessWidget {
               const SizedBox(height: 16),
 
               Text(
-                'This will set $waiter\'s tip balance to zero.',
+                'Cela remettra le solde de pourboires de $waiter à zéro.',
                 style: AppTextStyles.body(color: subColor)
                     .copyWith(fontSize: 13),
               ),
@@ -545,7 +545,7 @@ class _PayOutDialog extends StatelessWidget {
                               borderRadius: BorderRadius.circular(
                                   AppConstants.radiusButton)),
                         ),
-                        child: const Text('Cancel',
+                        child: const Text('Annuler',
                             style:
                                 TextStyle(fontWeight: FontWeight.w600)),
                       ),
@@ -565,7 +565,7 @@ class _PayOutDialog extends StatelessWidget {
                               borderRadius: BorderRadius.circular(
                                   AppConstants.radiusButton)),
                         ),
-                        child: const Text('Confirm Pay Out',
+                        child: const Text('Confirmer le versement',
                             style:
                                 TextStyle(fontWeight: FontWeight.w700)),
                       ),
@@ -669,7 +669,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Adjust Tips',
+                        Text('Ajuster les pourboires',
                             style: AppTextStyles.h2(color: textColor)),
                         Text(widget.waiter,
                             style: AppTextStyles.caption(
@@ -706,7 +706,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                 children: [
                   Expanded(
                     child: _ToggleBtn(
-                      label: '+ Add',
+                      label: '+ Ajouter',
                       active: !_isSubtraction,
                       color: addColor,
                       isDark: isDark,
@@ -716,7 +716,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _ToggleBtn(
-                      label: '− Subtract',
+                      label: '− Retirer',
                       active: _isSubtraction,
                       color: subColor,
                       isDark: isDark,
@@ -733,7 +733,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                   Expanded(
                     child: _DialogField(
                       controller: _htgCtrl,
-                      label: 'Amount HTG *',
+                      label: 'Montant HTG *',
                       prefix: 'HTG ',
                       isDark: isDark,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -745,7 +745,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                   Expanded(
                     child: _DialogField(
                       controller: _usdCtrl,
-                      label: 'Amount USD',
+                      label: 'Montant USD',
                       prefix: '\$ ',
                       isDark: isDark,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -760,12 +760,12 @@ class _AdjustDialogState extends State<_AdjustDialog> {
               // ── Reason ────────────────────────────────────────────────
               _DialogField(
                 controller: _reasonCtrl,
-                label: 'Reason *',
+                label: 'Motif *',
                 isDark: isDark,
               ),
               const SizedBox(height: 6),
               Text(
-                '* HTG amount and reason are required.',
+                '* Le montant en HTG et le motif sont obligatoires.',
                 style: AppTextStyles.caption(color: labelColor)
                     .copyWith(fontSize: 11),
               ),
@@ -789,7 +789,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                               borderRadius: BorderRadius.circular(
                                   AppConstants.radiusButton)),
                         ),
-                        child: const Text('Cancel',
+                        child: const Text('Annuler',
                             style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ),
@@ -809,7 +809,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                                   AppConstants.radiusButton)),
                         ),
                         child: Text(
-                          _isSubtraction ? 'Subtract' : 'Add',
+                          _isSubtraction ? 'Retirer' : 'Ajouter',
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -959,9 +959,9 @@ class _PanelHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Waitress Tips',
+                Text('Pourboires serveuse',
                     style: AppTextStyles.h2(color: textColor)),
-                Text('Manage tips & payouts',
+                Text('Gérer les pourboires et versements',
                     style: AppTextStyles.caption()),
               ],
             ),
@@ -986,7 +986,7 @@ class _PanelHeader extends StatelessWidget {
                       size: 14, color: AppColors.skyBlue),
                   const SizedBox(width: 5),
                   Text(
-                    'History',
+                    'Historique',
                     style: AppTextStyles.caption(color: AppColors.skyBlue)
                         .copyWith(
                             fontSize: 12, fontWeight: FontWeight.w600),

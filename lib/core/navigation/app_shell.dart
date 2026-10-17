@@ -49,84 +49,84 @@ class _NavGroup {
 // ── Flat destination lists (used for index mapping & non-hotel modules) ──
 
 final _restaurantDestinations = <_NavDestination>[
-  _NavDestination(label: 'Dashboard', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.restaurantDashboard),
+  _NavDestination(label: 'Tableau de bord', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.restaurantDashboard),
   _NavDestination(label: 'Tables', icon: Icons.table_bar_outlined, selectedIcon: Icons.table_bar, route: AppRoutes.restaurantTables),
-  _NavDestination(label: 'Reservations', icon: Icons.event_seat_outlined, selectedIcon: Icons.event_seat, route: AppRoutes.restaurantReservations),
+  _NavDestination(label: 'Réservations', icon: Icons.event_seat_outlined, selectedIcon: Icons.event_seat, route: AppRoutes.restaurantReservations),
   _NavDestination(label: 'Menu', icon: Icons.menu_book_outlined, selectedIcon: Icons.menu_book, route: AppRoutes.restaurantMenu),
-  _NavDestination(label: 'Orders', icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, route: AppRoutes.restaurantOrders),
-  _NavDestination(label: 'Paylinks', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.restaurantPayLinks),
-  _NavDestination(label: 'Order History', icon: Icons.history_outlined, selectedIcon: Icons.history, route: AppRoutes.restaurantOrderHistory),
-  _NavDestination(label: 'Kitchen', icon: Icons.soup_kitchen_outlined, selectedIcon: Icons.soup_kitchen, route: AppRoutes.restaurantKitchen),
-  _NavDestination(label: 'Completed kitchen', icon: Icons.check_circle_outline, selectedIcon: Icons.check_circle, route: AppRoutes.restaurantKitchenCompleted),
-  _NavDestination(label: 'Inventory', icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, route: AppRoutes.restaurantInventory),
-  _NavDestination(label: 'Cash Control', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.restaurantCashControl),
-  _NavDestination(label: 'Customers', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.restaurantCustomers),
-  _NavDestination(label: 'Reports', icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, route: AppRoutes.restaurantReports),
-  _NavDestination(label: 'Timeclock', icon: Icons.access_time_outlined, selectedIcon: Icons.access_time_filled, route: AppRoutes.restaurantTimeclock),
-  _NavDestination(label: 'Settings', icon: Icons.settings_outlined, selectedIcon: Icons.settings, route: AppRoutes.restaurantSettings),
+  _NavDestination(label: 'Commandes', icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, route: AppRoutes.restaurantOrders),
+  _NavDestination(label: 'Liens', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.restaurantPayLinks),
+  _NavDestination(label: 'Historique', icon: Icons.history_outlined, selectedIcon: Icons.history, route: AppRoutes.restaurantOrderHistory),
+  _NavDestination(label: 'Cuisine', icon: Icons.soup_kitchen_outlined, selectedIcon: Icons.soup_kitchen, route: AppRoutes.restaurantKitchen),
+  _NavDestination(label: 'Cuisine terminée', icon: Icons.check_circle_outline, selectedIcon: Icons.check_circle, route: AppRoutes.restaurantKitchenCompleted),
+  _NavDestination(label: 'Inventaire', icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, route: AppRoutes.restaurantInventory),
+  _NavDestination(label: 'Contrôle de caisse', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.restaurantCashControl),
+  _NavDestination(label: 'Clients', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.restaurantCustomers),
+  _NavDestination(label: 'Rapports', icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, route: AppRoutes.restaurantReports),
+  _NavDestination(label: 'Pointage', icon: Icons.access_time_outlined, selectedIcon: Icons.access_time_filled, route: AppRoutes.restaurantTimeclock),
+  _NavDestination(label: 'Paramètres', icon: Icons.settings_outlined, selectedIcon: Icons.settings, route: AppRoutes.restaurantSettings),
 ];
 
 final _retailDestinations = <_NavDestination>[
-  _NavDestination(label: 'POS', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.retailPos),
-  _NavDestination(label: 'Products', icon: Icons.inventory_outlined, selectedIcon: Icons.inventory, route: AppRoutes.retailProducts),
-  _NavDestination(label: 'Orders', icon: Icons.manage_search_outlined, selectedIcon: Icons.manage_search, route: AppRoutes.retailOrderHistory),
-  _NavDestination(label: 'Paylinks', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.retailPayLinks),
-  _NavDestination(label: 'Quotes', icon: Icons.request_quote_outlined, selectedIcon: Icons.request_quote, route: AppRoutes.retailQuotes),
-  _NavDestination(label: 'Customers', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.retailCustomers),
-  _NavDestination(label: 'Suppliers', icon: Icons.local_shipping_outlined, selectedIcon: Icons.local_shipping, route: AppRoutes.retailSuppliers),
-  _NavDestination(label: 'Inventory', icon: Icons.warehouse_outlined, selectedIcon: Icons.warehouse, route: AppRoutes.retailInventory),
-  _NavDestination(label: 'Cash Control', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.retailCashControl),
-  _NavDestination(label: 'Reports', icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, route: AppRoutes.retailReports),
-  _NavDestination(label: 'Timeclock', icon: Icons.access_time_outlined, selectedIcon: Icons.access_time_filled, route: AppRoutes.retailTimeclock),
-  _NavDestination(label: 'Dashboard', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.retailDashboard),
-  _NavDestination(label: 'Settings', icon: Icons.settings_outlined, selectedIcon: Icons.settings, route: AppRoutes.retailSettings),
+  _NavDestination(label: 'Caisse', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.retailPos),
+  _NavDestination(label: 'Produits', icon: Icons.inventory_outlined, selectedIcon: Icons.inventory, route: AppRoutes.retailProducts),
+  _NavDestination(label: 'Commandes', icon: Icons.manage_search_outlined, selectedIcon: Icons.manage_search, route: AppRoutes.retailOrderHistory),
+  _NavDestination(label: 'Liens', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.retailPayLinks),
+  _NavDestination(label: 'Devis', icon: Icons.request_quote_outlined, selectedIcon: Icons.request_quote, route: AppRoutes.retailQuotes),
+  _NavDestination(label: 'Clients', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.retailCustomers),
+  _NavDestination(label: 'Fournisseurs', icon: Icons.local_shipping_outlined, selectedIcon: Icons.local_shipping, route: AppRoutes.retailSuppliers),
+  _NavDestination(label: 'Inventaire', icon: Icons.warehouse_outlined, selectedIcon: Icons.warehouse, route: AppRoutes.retailInventory),
+  _NavDestination(label: 'Contrôle de caisse', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.retailCashControl),
+  _NavDestination(label: 'Rapports', icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, route: AppRoutes.retailReports),
+  _NavDestination(label: 'Pointage', icon: Icons.access_time_outlined, selectedIcon: Icons.access_time_filled, route: AppRoutes.retailTimeclock),
+  _NavDestination(label: 'Tableau de bord', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.retailDashboard),
+  _NavDestination(label: 'Paramètres', icon: Icons.settings_outlined, selectedIcon: Icons.settings, route: AppRoutes.retailSettings),
 ];
 
 // Hotel + Restaurant grouped navigation
 final _hotelNavGroups = <_NavGroup>[
   _NavGroup(
-    label: 'HOTEL',
+    label: 'HÔTEL',
     destinations: [
-      _NavDestination(label: 'Dashboard', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.hotelDashboard),
-      _NavDestination(label: 'Rooms', icon: Icons.hotel_outlined, selectedIcon: Icons.hotel, route: AppRoutes.hotelRooms),
-      _NavDestination(label: 'Reservations', icon: Icons.calendar_month_outlined, selectedIcon: Icons.calendar_month, route: AppRoutes.hotelReservations),
-      _NavDestination(label: 'Check In', icon: Icons.login_outlined, selectedIcon: Icons.login, route: AppRoutes.hotelCheckIn),
-      _NavDestination(label: 'Check Out', icon: Icons.logout_outlined, selectedIcon: Icons.logout, route: AppRoutes.hotelCheckOut),
-      _NavDestination(label: 'Housekeeping', icon: Icons.cleaning_services_outlined, selectedIcon: Icons.cleaning_services, route: AppRoutes.hotelHousekeeping),
-      _NavDestination(label: 'Room Service', icon: Icons.room_service_outlined, selectedIcon: Icons.room_service, route: AppRoutes.hotelRoomService),
-      _NavDestination(label: 'Guests', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.hotelGuests),
-      _NavDestination(label: 'Hotel Reports', icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, route: AppRoutes.hotelReports),
-      _NavDestination(label: 'Cash Control', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.hotelFrontDeskCashControl),
+      _NavDestination(label: 'Tableau de bord', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.hotelDashboard),
+      _NavDestination(label: 'Chambres', icon: Icons.hotel_outlined, selectedIcon: Icons.hotel, route: AppRoutes.hotelRooms),
+      _NavDestination(label: 'Réservations', icon: Icons.calendar_month_outlined, selectedIcon: Icons.calendar_month, route: AppRoutes.hotelReservations),
+      _NavDestination(label: 'Arrivée', icon: Icons.login_outlined, selectedIcon: Icons.login, route: AppRoutes.hotelCheckIn),
+      _NavDestination(label: 'Départ', icon: Icons.logout_outlined, selectedIcon: Icons.logout, route: AppRoutes.hotelCheckOut),
+      _NavDestination(label: 'Entretien', icon: Icons.cleaning_services_outlined, selectedIcon: Icons.cleaning_services, route: AppRoutes.hotelHousekeeping),
+      _NavDestination(label: 'Service en chambre', icon: Icons.room_service_outlined, selectedIcon: Icons.room_service, route: AppRoutes.hotelRoomService),
+      _NavDestination(label: 'Clients', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.hotelGuests),
+      _NavDestination(label: 'Rapports hôtel', icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, route: AppRoutes.hotelReports),
+      _NavDestination(label: 'Contrôle de caisse', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.hotelFrontDeskCashControl),
     ],
   ),
   _NavGroup(
     label: 'RESTAURANT',
     destinations: [
       _NavDestination(label: 'Tables', icon: Icons.table_bar_outlined, selectedIcon: Icons.table_bar, route: AppRoutes.hotelRestaurantTables),
-      _NavDestination(label: 'Reservations', icon: Icons.event_seat_outlined, selectedIcon: Icons.event_seat, route: AppRoutes.hotelRestaurantReservations),
+      _NavDestination(label: 'Réservations', icon: Icons.event_seat_outlined, selectedIcon: Icons.event_seat, route: AppRoutes.hotelRestaurantReservations),
       _NavDestination(label: 'Menu', icon: Icons.menu_book_outlined, selectedIcon: Icons.menu_book, route: AppRoutes.hotelRestaurantMenu),
-      _NavDestination(label: 'Orders', icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, route: AppRoutes.hotelRestaurantOrders),
-      _NavDestination(label: 'Paylinks', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.hotelPayLinks),
-      _NavDestination(label: 'Kitchen', icon: Icons.soup_kitchen_outlined, selectedIcon: Icons.soup_kitchen, route: AppRoutes.hotelRestaurantKitchen),
-      _NavDestination(label: 'Completed kitchen', icon: Icons.check_circle_outline, selectedIcon: Icons.check_circle, route: AppRoutes.hotelRestaurantKitchenCompleted),
-      _NavDestination(label: 'Billing', icon: Icons.request_quote_outlined, selectedIcon: Icons.request_quote, route: AppRoutes.hotelRestaurantBilling),
-      _NavDestination(label: 'Inventory', icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, route: AppRoutes.hotelRestaurantInventory),
-      _NavDestination(label: 'Cash Control', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.hotelCashControl),
-      _NavDestination(label: 'Rest. Reports', icon: Icons.analytics_outlined, selectedIcon: Icons.analytics, route: AppRoutes.hotelRestaurantReports),
+      _NavDestination(label: 'Commandes', icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, route: AppRoutes.hotelRestaurantOrders),
+      _NavDestination(label: 'Liens', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.hotelPayLinks),
+      _NavDestination(label: 'Cuisine', icon: Icons.soup_kitchen_outlined, selectedIcon: Icons.soup_kitchen, route: AppRoutes.hotelRestaurantKitchen),
+      _NavDestination(label: 'Cuisine terminée', icon: Icons.check_circle_outline, selectedIcon: Icons.check_circle, route: AppRoutes.hotelRestaurantKitchenCompleted),
+      _NavDestination(label: 'Facturation', icon: Icons.request_quote_outlined, selectedIcon: Icons.request_quote, route: AppRoutes.hotelRestaurantBilling),
+      _NavDestination(label: 'Inventaire', icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, route: AppRoutes.hotelRestaurantInventory),
+      _NavDestination(label: 'Contrôle de caisse', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.hotelCashControl),
+      _NavDestination(label: 'Rapports resto', icon: Icons.analytics_outlined, selectedIcon: Icons.analytics, route: AppRoutes.hotelRestaurantReports),
     ],
   ),
   _NavGroup(
-    label: 'ORDERS',
+    label: 'COMMANDES',
     destinations: [
-      _NavDestination(label: 'Order History', icon: Icons.manage_search_outlined, selectedIcon: Icons.manage_search, route: AppRoutes.hotelOrderHistory),
-      _NavDestination(label: 'Customers', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.hotelCustomers),
+      _NavDestination(label: 'Historique', icon: Icons.manage_search_outlined, selectedIcon: Icons.manage_search, route: AppRoutes.hotelOrderHistory),
+      _NavDestination(label: 'Clients', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.hotelCustomers),
     ],
   ),
   _NavGroup(
     label: null,
     destinations: [
-      _NavDestination(label: 'Timeclock', icon: Icons.access_time_outlined, selectedIcon: Icons.access_time_filled, route: AppRoutes.hotelTimeclock),
-      _NavDestination(label: 'Settings', icon: Icons.settings_outlined, selectedIcon: Icons.settings, route: AppRoutes.hotelSettings),
+      _NavDestination(label: 'Pointage', icon: Icons.access_time_outlined, selectedIcon: Icons.access_time_filled, route: AppRoutes.hotelTimeclock),
+      _NavDestination(label: 'Paramètres', icon: Icons.settings_outlined, selectedIcon: Icons.settings, route: AppRoutes.hotelSettings),
     ],
   ),
 ];
@@ -136,18 +136,18 @@ final _hotelDestinationsFlat = _hotelNavGroups.expand((g) => g.destinations).toL
 
 // Mobile bottom nav items for hotel module (top 5 most-used)
 final _hotelMobileDestinations = <_NavDestination>[
-  _NavDestination(label: 'Dashboard', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.hotelDashboard),
-  _NavDestination(label: 'Rooms', icon: Icons.hotel_outlined, selectedIcon: Icons.hotel, route: AppRoutes.hotelRooms),
+  _NavDestination(label: 'Tableau de bord', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.hotelDashboard),
+  _NavDestination(label: 'Chambres', icon: Icons.hotel_outlined, selectedIcon: Icons.hotel, route: AppRoutes.hotelRooms),
   _NavDestination(label: 'Tables', icon: Icons.table_bar_outlined, selectedIcon: Icons.table_bar, route: AppRoutes.hotelRestaurantTables),
-  _NavDestination(label: 'Orders', icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, route: AppRoutes.hotelRestaurantOrders),
-  _NavDestination(label: 'Kitchen', icon: Icons.soup_kitchen_outlined, selectedIcon: Icons.soup_kitchen, route: AppRoutes.hotelRestaurantKitchen),
+  _NavDestination(label: 'Commandes', icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, route: AppRoutes.hotelRestaurantOrders),
+  _NavDestination(label: 'Cuisine', icon: Icons.soup_kitchen_outlined, selectedIcon: Icons.soup_kitchen, route: AppRoutes.hotelRestaurantKitchen),
 ];
 
 List<_NavDestination> _fallbackNav(ActiveModule module) {
   final r = dashboardPathForModule(module);
   return [
     _NavDestination(
-      label: 'Dashboard',
+      label: 'Tableau de bord',
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard,
       route: r,
@@ -228,8 +228,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   /// Picks the nav item whose [route] best matches [location]. Uses the **longest**
-  /// matching route so e.g. `/restaurant/kitchen/completed` selects "Completed kitchen",
-  /// not "Kitchen" (which would match first with a naive prefix check).
+  /// matching route so e.g. `/restaurant/kitchen/completed` selects "Cuisine terminée",
+  /// not "Cuisine" (which would match first with a naive prefix check).
   int _selectedIndex(String location, List<_NavDestination> list) {
     var bestIndex = 0;
     var bestLen = -1;
@@ -258,9 +258,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       case ActiveModule.restaurant:
         return 'Restaurant';
       case ActiveModule.hotel:
-        return 'Hotel + Restaurant';
+        return 'Hôtel + restaurant';
       case ActiveModule.retail:
-        return 'Retail';
+        return 'Détail';
     }
   }
 
@@ -360,8 +360,8 @@ class _DesktopLayout extends ConsumerWidget {
             navGroups: navGroups,
             selectedIndex: selectedIndex,
             moduleLabel: moduleLabel,
-            businessName: authState.businessName ?? 'BizManager Haiti',
-            userName: authState.userName ?? 'Manager',
+            businessName: authState.businessName ?? 'BizManager Haïti',
+            userName: authState.userName ?? 'Gérant',
             onDestinationSelected: onDestinationSelected,
             isCollapsed: isCollapsed,
             onToggleCollapsed: () =>
@@ -581,7 +581,7 @@ class _Sidebar extends ConsumerWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'Log out',
+                                'Déconnexion',
                                 style: AppTextStyles.navItem(
                                     color: AppColors.sidebarIcon),
                                 maxLines: 1,
@@ -607,7 +607,7 @@ class _Sidebar extends ConsumerWidget {
     );
     return showExpandedContent
         ? content
-        : Tooltip(message: 'Log out — return to PIN', child: content);
+        : Tooltip(message: 'Déconnexion — retour au code PIN', child: content);
   }
 
   @override
@@ -616,7 +616,7 @@ class _Sidebar extends ConsumerWidget {
     final displayFirstName =
         firstNameFromDisplayName(staff?.employeeName ?? userName);
     final roleSubtitle =
-        staff != null ? staffRoleDisplayLabel(staff.role) : 'Manager';
+        staff != null ? staffRoleDisplayLabel(staff.role) : 'Gérant';
 
     // Sidebar width is fixed (rail vs full); do not use parent Row constraints —
     // they are unbounded horizontally, which breaks flex children inside list rows.
@@ -639,7 +639,7 @@ class _Sidebar extends ConsumerWidget {
                   : MainAxisAlignment.center,
               children: [
                 Tooltip(
-                  message: isCollapsed ? 'Expand menu' : 'Collapse menu',
+                  message: isCollapsed ? 'Développer le menu' : 'Réduire le menu',
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -910,7 +910,7 @@ class _TabletLayout extends ConsumerWidget {
                           child: IconButton(
                             icon: const Icon(Icons.logout_outlined),
                             onPressed: () => endStaffSessionToPin(ref, context),
-                            tooltip: 'Log out — return to PIN',
+                            tooltip: 'Déconnexion — retour au code PIN',
                             style: IconButton.styleFrom(
                               foregroundColor: isDark
                                   ? AppColors.coolGray
@@ -1046,11 +1046,11 @@ class _TopBar extends ConsumerWidget {
 
   void _showNotificationsSheet(BuildContext context, bool isDark) {
     final notifications = [
-      (Icons.table_restaurant_outlined, 'Table 5 waiting 25+ min', '2 min ago', AppColors.boldRed),
-      (Icons.inventory_2_outlined, 'Low stock: Rhum Barbancourt (3 left)', '10 min ago', AppColors.amber),
-      (Icons.hotel_outlined, 'Room 204 — Check-out overdue', '30 min ago', AppColors.amber),
-      (Icons.payment_outlined, 'Payment confirmed — HTG 4,500', '1 hr ago', AppColors.deepGreen),
-      (Icons.person_outline, 'New reservation: Dupont · Mar 1', '2 hr ago', AppColors.primaryBlue),
+      (Icons.table_restaurant_outlined, 'Table 5 en attente depuis 25 min', 'il y a 2 min', AppColors.boldRed),
+      (Icons.inventory_2_outlined, 'Stock bas : Rhum Barbancourt (3 restants)', 'il y a 10 min', AppColors.amber),
+      (Icons.hotel_outlined, 'Chambre 204 — départ en retard', 'il y a 30 min', AppColors.amber),
+      (Icons.payment_outlined, 'Paiement confirmé — 4 500 HTG', 'il y a 1 h', AppColors.deepGreen),
+      (Icons.person_outline, 'Nouvelle réservation : Dupont · 1 mars', 'il y a 2 h', AppColors.primaryBlue),
     ];
 
     showAppBottomSheet(
@@ -1075,7 +1075,7 @@ class _TopBar extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Mark all read'),
+                    child: const Text('Tout marquer comme lu'),
                   ),
                 ],
               ),
@@ -1166,7 +1166,7 @@ class _TopBar extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        authState.businessName ?? 'BizManager Haiti',
+                        authState.businessName ?? 'BizManager Haïti',
                         style: AppTextStyles.h3(
                           color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
                         ),
@@ -1238,7 +1238,7 @@ class _TopBar extends ConsumerWidget {
               size: compact ? 22 : 24,
               color: isDark ? AppColors.coolGray : AppColors.darkGray,
             ),
-            tooltip: 'Log out — return to PIN',
+            tooltip: 'Déconnexion — retour au code PIN',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
@@ -1325,7 +1325,7 @@ class _MobileSideMenu extends ConsumerWidget {
                 children: [
                   Text(
                     (auth.businessName ?? '').isEmpty
-                        ? 'Retail POS'
+                        ? 'Caisse détail'
                         : auth.businessName!,
                     style: AppTextStyles.h2(color: accent),
                   ),
@@ -1365,7 +1365,7 @@ class _MobileSideMenu extends ConsumerWidget {
                   ListTile(
                     leading: Icon(Icons.devices_other_outlined, color: muted),
                     title: Text(
-                      'Connected devices',
+                      'Appareils connectés',
                       style: AppTextStyles.body(color: ink),
                     ),
                     onTap: () {

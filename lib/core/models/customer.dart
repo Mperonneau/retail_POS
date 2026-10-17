@@ -198,7 +198,7 @@ class CustomerTransaction {
   final String description;
   final DateTime timestamp;
   final bool receiptSent;
-  /// Payment method label (e.g. "Cash", "MonCash", "Card"). Only set for payment type.
+  /// Payment method label (e.g. "Espèces", "MonCash", "Carte"). Only set for payment type.
   final String? paymentMethodLabel;
   /// Receipt number for account payments (e.g. "PAY-2026-001").
   final String? receiptNumber;
@@ -246,7 +246,7 @@ class StoreCreditLedgerEntry {
     required this.description,
     required this.createdAt,
     this.orderId,
-    this.recordedBy = 'Staff',
+    this.recordedBy = 'Personnel',
   });
 }
 
@@ -378,7 +378,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
     required double amountHtg,
     required String description,
     String? orderId,
-    String recordedBy = 'Staff',
+    String recordedBy = 'Personnel',
   }) {
     if (amountHtg <= 0) return;
     _storeCreditCounter++;
@@ -407,7 +407,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
     required double amountHtg,
     required String description,
     String? orderId,
-    String recordedBy = 'Staff',
+    String recordedBy = 'Personnel',
   }) {
     if (amountHtg <= 0) return;
     final available = state.storeCreditBalanceFor(customerId);
@@ -498,7 +498,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
     required String customerId,
     required double amountHtg,
     required String cashierName,
-    String description = 'Payment received',
+    String description = 'Paiement reçu',
     String? paymentMethodLabel,
     String? receiptNumber,
   }) {
@@ -658,7 +658,7 @@ CustomerState _buildSeedState() {
       phone: '+509 4111-2222',
       address: 'Delmas 33',
       creditLimitHtg: 50000,
-      notes: 'Business account',
+      notes: 'Compte professionnel',
       createdAt: now.subtract(const Duration(days: 200)),
     ),
     Customer(
@@ -666,8 +666,8 @@ CustomerState _buildSeedState() {
       name: 'Rosnel Dupont',
       phone: '+509 3222-9900',
       isCreditBlocked: true,
-      blockedReason: 'Outstanding balance unpaid for 45+ days',
-      blockedBy: 'Manager',
+      blockedReason: 'Solde impayé depuis plus de 45 jours',
+      blockedBy: 'Gérant',
       blockedAt: now.subtract(const Duration(days: 5)),
       createdAt: now.subtract(const Duration(days: 180)),
     ),
@@ -765,8 +765,8 @@ CustomerState _buildSeedState() {
       balanceAfterHtg: 2400,
       linkedTableName: 'Table 3',
       serverName: 'Marie-Carmel',
-      cashierName: 'Cashier',
-      description: 'Dinner — Table 3',
+      cashierName: 'Caissier',
+      description: 'Dîner — Table 3',
       timestamp: now.subtract(const Duration(days: 3)),
     ),
     // c2 — charge then payments, balance 4,693 HTG
@@ -777,10 +777,10 @@ CustomerState _buildSeedState() {
       amountHtg: 5750,
       paidAmountHtg: 0,
       balanceAfterHtg: 5750,
-      linkedTableName: 'Terrace A',
+      linkedTableName: 'Terrasse A',
       serverName: 'Joseph',
-      cashierName: 'Cashier',
-      description: 'Lunch with family — Terrace A',
+      cashierName: 'Caissier',
+      description: 'Déjeuner en famille — Terrasse A',
       timestamp: now.subtract(const Duration(days: 1)),
     ),
     CustomerTransaction(
@@ -789,8 +789,8 @@ CustomerState _buildSeedState() {
       type: CustomerTransactionType.payment,
       amountHtg: 900,
       balanceAfterHtg: 4850,
-      cashierName: 'Cashier',
-      description: 'Payment received',
+      cashierName: 'Caissier',
+      description: 'Paiement reçu',
       timestamp: now.subtract(const Duration(days: 1)),
     ),
     CustomerTransaction(
@@ -799,8 +799,8 @@ CustomerState _buildSeedState() {
       type: CustomerTransactionType.payment,
       amountHtg: 67,
       balanceAfterHtg: 4783,
-      cashierName: 'Cashier',
-      description: 'Payment received',
+      cashierName: 'Caissier',
+      description: 'Paiement reçu',
       timestamp: now.subtract(const Duration(days: 1)),
     ),
     CustomerTransaction(
@@ -809,8 +809,8 @@ CustomerState _buildSeedState() {
       type: CustomerTransactionType.payment,
       amountHtg: 90,
       balanceAfterHtg: 4693,
-      cashierName: 'Cashier',
-      description: 'Payment received',
+      cashierName: 'Caissier',
+      description: 'Paiement reçu',
       timestamp: now.subtract(const Duration(days: 1)),
     ),
     // c3 — owes 12,000 HTG
@@ -821,10 +821,10 @@ CustomerState _buildSeedState() {
       amountHtg: 18500,
       paidAmountHtg: 6500,
       balanceAfterHtg: 12000,
-      linkedTableName: 'VIP Room',
+      linkedTableName: 'Salon VIP',
       serverName: 'Claudine',
-      cashierName: 'Cashier',
-      description: 'Corporate event — VIP Room',
+      cashierName: 'Caissier',
+      description: 'Événement — salon VIP',
       timestamp: now.subtract(const Duration(days: 7)),
     ),
     // c4 (blocked) — owes 8,900 HTG
@@ -837,8 +837,8 @@ CustomerState _buildSeedState() {
       balanceAfterHtg: 8900,
       linkedTableName: 'Table 2',
       serverName: 'Pierre',
-      cashierName: 'Cashier',
-      description: 'Dinner — Table 2',
+      cashierName: 'Caissier',
+      description: 'Dîner — Table 2',
       timestamp: now.subtract(const Duration(days: 50)),
     ),
     // c5 — owes 24,000 HTG
@@ -849,10 +849,10 @@ CustomerState _buildSeedState() {
       amountHtg: 45000,
       paidAmountHtg: 21000,
       balanceAfterHtg: 24000,
-      linkedTableName: 'VIP Room',
+      linkedTableName: 'Salon VIP',
       serverName: 'Claudine',
-      cashierName: 'Cashier',
-      description: 'Group dinner — VIP Room',
+      cashierName: 'Caissier',
+      description: 'Dîner de groupe — salon VIP',
       timestamp: now.subtract(const Duration(days: 14)),
     ),
     // c6 — owes 1,500 HTG
@@ -863,7 +863,7 @@ CustomerState _buildSeedState() {
       amountHtg: 1500,
       paidAmountHtg: 0,
       balanceAfterHtg: 1500,
-      cashierName: 'Cashier',
+      cashierName: 'Caissier',
       description: 'Lunch',
       timestamp: now.subtract(const Duration(days: 2)),
     ),
@@ -875,8 +875,8 @@ CustomerState _buildSeedState() {
       amountHtg: 8000,
       paidAmountHtg: 0,
       balanceAfterHtg: 8000,
-      cashierName: 'Cashier',
-      description: 'Bulk order',
+      cashierName: 'Caissier',
+      description: 'Commande en gros',
       timestamp: now.subtract(const Duration(days: 5)),
     ),
     // c8 — settled (had balance, paid)
@@ -887,7 +887,7 @@ CustomerState _buildSeedState() {
       amountHtg: 500,
       paidAmountHtg: 0,
       balanceAfterHtg: 500,
-      cashierName: 'Cashier',
+      cashierName: 'Caissier',
       description: 'Coffee',
       timestamp: now.subtract(const Duration(days: 10)),
     ),
@@ -897,8 +897,8 @@ CustomerState _buildSeedState() {
       type: CustomerTransactionType.payment,
       amountHtg: 500,
       balanceAfterHtg: 0,
-      cashierName: 'Cashier',
-      description: 'Payment received',
+      cashierName: 'Caissier',
+      description: 'Paiement reçu',
       timestamp: now.subtract(const Duration(days: 9)),
     ),
     // c9 — owes 15,000 HTG
@@ -909,8 +909,8 @@ CustomerState _buildSeedState() {
       amountHtg: 15000,
       paidAmountHtg: 0,
       balanceAfterHtg: 15000,
-      cashierName: 'Cashier',
-      description: 'School supplies',
+      cashierName: 'Caissier',
+      description: 'Fournitures scolaires',
       timestamp: now.subtract(const Duration(days: 12)),
     ),
     // c10, c11, c12 — no transactions (settled/zero balance)
@@ -922,7 +922,7 @@ CustomerState _buildSeedState() {
       amountHtg: 3200,
       paidAmountHtg: 0,
       balanceAfterHtg: 3200,
-      cashierName: 'Cashier',
+      cashierName: 'Caissier',
       description: 'Medical supplies',
       timestamp: now.subtract(const Duration(days: 4)),
     ),
@@ -934,7 +934,7 @@ CustomerState _buildSeedState() {
       amountHtg: 200,
       paidAmountHtg: 0,
       balanceAfterHtg: 200,
-      cashierName: 'Cashier',
+      cashierName: 'Caissier',
       description: 'Snack',
       timestamp: now.subtract(const Duration(days: 7)),
     ),
@@ -944,8 +944,8 @@ CustomerState _buildSeedState() {
       type: CustomerTransactionType.payment,
       amountHtg: 200,
       balanceAfterHtg: 0,
-      cashierName: 'Cashier',
-      description: 'Payment received',
+      cashierName: 'Caissier',
+      description: 'Paiement reçu',
       timestamp: now.subtract(const Duration(days: 6)),
     ),
     // c15 — owes 5,000 HTG
@@ -956,7 +956,7 @@ CustomerState _buildSeedState() {
       amountHtg: 5000,
       paidAmountHtg: 0,
       balanceAfterHtg: 5000,
-      cashierName: 'Cashier',
+      cashierName: 'Caissier',
       description: 'Groceries',
       timestamp: now.subtract(const Duration(days: 3)),
     ),
@@ -968,7 +968,7 @@ CustomerState _buildSeedState() {
       customerId: 'c1',
       kind: StoreCreditEntryKind.issued,
       amountHtg: 5000,
-      description: 'Unused prepaid — returned to guest account',
+      description: 'Prépayé non utilisé — rendu au compte client',
       createdAt: now.subtract(const Duration(days: 4)),
     ),
     StoreCreditLedgerEntry(
@@ -976,7 +976,7 @@ CustomerState _buildSeedState() {
       customerId: 'c1',
       kind: StoreCreditEntryKind.redeemed,
       amountHtg: 800,
-      description: 'Applied to restaurant bill',
+      description: 'Appliqué à la note du restaurant',
       orderId: '101',
       createdAt: now.subtract(const Duration(days: 2)),
     ),
@@ -985,7 +985,7 @@ CustomerState _buildSeedState() {
       customerId: 'c2',
       kind: StoreCreditEntryKind.issued,
       amountHtg: 2200,
-      description: 'Goodwill credit — manager approval',
+      description: 'Avoir commercial — approbation du gérant',
       createdAt: now.subtract(const Duration(days: 6)),
     ),
   ];

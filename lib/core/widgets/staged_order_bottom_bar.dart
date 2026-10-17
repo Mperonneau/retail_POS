@@ -41,7 +41,7 @@ class StagedOrderBottomBar extends StatelessWidget {
             final viewBtn = OutlinedButton.icon(
               onPressed: onView,
               icon: const Icon(Icons.visibility_outlined, size: 14),
-              label: const Text('View'),
+              label: const Text('Voir'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.white,
                 side: BorderSide(color: AppColors.white.withValues(alpha: 0.4)),
@@ -63,12 +63,12 @@ class StagedOrderBottomBar extends StatelessWidget {
                 textStyle: AppTextStyles.button(color: AppColors.white)
                     .copyWith(fontSize: 12),
               ),
-              child: const Text('Cancel'),
+              child: const Text('Annuler'),
             );
             final addBtn = FilledButton.icon(
               onPressed: onConfirm,
               icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text('Add to Order'),
+              label: const Text('Ajouter à la commande'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.amber,
                 foregroundColor: AppColors.nearBlack,
@@ -118,7 +118,7 @@ class StagedOrderBottomBar extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Subtotal',
+                                'Sous-total',
                                 style: AppTextStyles.caption(
                                   color: AppColors.white.withValues(alpha: 0.6),
                                 ),
@@ -154,7 +154,7 @@ class StagedOrderBottomBar extends StatelessWidget {
                   cancelBtn,
                   const Spacer(),
                   Text(
-                    'Subtotal',
+                    'Sous-total',
                     style: AppTextStyles.caption(
                       color: AppColors.white.withValues(alpha: 0.6),
                     ),
@@ -200,7 +200,7 @@ class _StagedChip extends StatelessWidget {
           const SizedBox(width: 5),
           Flexible(
             child: Text(
-              '$count item${count > 1 ? 's' : ''} staged',
+              '$count article${count > 1 ? 's' : ''} en attente',
               style: AppTextStyles.caption(color: AppColors.amber)
                   .copyWith(fontWeight: FontWeight.w600),
               overflow: TextOverflow.ellipsis,

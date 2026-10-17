@@ -26,7 +26,7 @@ class RetailReports extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Retail Reports', style: AppTextStyles.h1(
+            Text('Rapports détail', style: AppTextStyles.h1(
               color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
             )),
             const SizedBox(height: AppConstants.spacing24),
@@ -41,21 +41,21 @@ class RetailReports extends ConsumerWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _KpiCard('Total Revenue', 'HTG 248,500', '+14.2%', true),
+                  _KpiCard('Chiffre d\'affaires', 'HTG 248,500', '+14.2%', true),
                   _KpiCard('Gross Profit', 'HTG 68,300', '+9.8%', true),
-                  _KpiCard('Transactions', '152', '+18 vs last week', false),
-                  _KpiCard('Inventory Value', CurrencyFormatter.compact(totalInventoryValue), null, false),
+                  _KpiCard('Transactions', '152', '+18 vs la semaine dernière', false),
+                  _KpiCard('Valeur du stock', CurrencyFormatter.compact(totalInventoryValue), null, false),
                 ],
               );
             }),
             const SizedBox(height: AppConstants.spacing32),
             // Sales chart
-            SectionHeader(title: 'Daily Sales — This Week'),
+            SectionHeader(title: 'Ventes du jour — cette semaine'),
             const SizedBox(height: AppConstants.spacing16),
             AppCard(child: SizedBox(height: 200, child: _buildSalesChart(isDark))),
             const SizedBox(height: AppConstants.spacing32),
             // Top products
-            SectionHeader(title: 'Best Sellers'),
+            SectionHeader(title: 'Meilleures ventes'),
             const SizedBox(height: AppConstants.spacing16),
             AppCard(
               padding: EdgeInsets.zero,
@@ -82,7 +82,7 @@ class RetailReports extends ConsumerWidget {
                               Text(p.$1, style: AppTextStyles.body(color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
                               Text(p.$2, style: AppTextStyles.caption()),
                             ])),
-                            Text('${p.$3} units', style: AppTextStyles.caption()),
+                            Text('${p.$3} unités', style: AppTextStyles.caption()),
                             const SizedBox(width: 12),
                             Text(CurrencyFormatter.local(context, p.$4), style: AppTextStyles.body(
                               color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
@@ -98,23 +98,23 @@ class RetailReports extends ConsumerWidget {
             ),
             const SizedBox(height: AppConstants.spacing32),
             // Customer credit summary
-            SectionHeader(title: 'Customer Credit Summary'),
+            SectionHeader(title: 'Résumé du crédit client'),
             const SizedBox(height: AppConstants.spacing16),
             AppCard(
               child: Column(
                 children: [
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Total Credit Extended', style: AppTextStyles.body()),
+                    Text('Crédit total accordé', style: AppTextStyles.body()),
                     Text('HTG 375,000', style: AppTextStyles.price().copyWith(fontSize: 13)),
                   ]),
                   const SizedBox(height: 8),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Total Outstanding', style: AppTextStyles.body()),
+                    Text('Total impayé', style: AppTextStyles.body()),
                     Text('HTG 97,700', style: AppTextStyles.price(color: AppColors.boldRed).copyWith(fontSize: 13)),
                   ]),
                   const SizedBox(height: 8),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Customers with balance', style: AppTextStyles.body()),
+                    Text('Clients avec solde', style: AppTextStyles.body()),
                     Text('4 of 5', style: AppTextStyles.price().copyWith(fontSize: 13)),
                   ]),
                 ],
@@ -137,7 +137,7 @@ class RetailReports extends ConsumerWidget {
       borderData: FlBorderData(show: false),
       titlesData: FlTitlesData(
         bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, _) {
-          const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
           return Padding(padding: const EdgeInsets.only(top: 6),
               child: Text(days[v.toInt()], style: AppTextStyles.caption(color: textColor).copyWith(fontSize: 9)));
         })),

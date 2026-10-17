@@ -12,14 +12,14 @@ enum RetailOrderStatus {
 
 extension RetailOrderStatusExt on RetailOrderStatus {
   String get label => switch (this) {
-        RetailOrderStatus.paid => 'Paid',
-        RetailOrderStatus.ready => 'Ready',
-        RetailOrderStatus.pickedUp => 'Picked Up',
-        RetailOrderStatus.delivered => 'Delivered',
-        RetailOrderStatus.completed => 'Completed',
+        RetailOrderStatus.paid => 'Payé',
+        RetailOrderStatus.ready => 'Prêt',
+        RetailOrderStatus.pickedUp => 'Retiré',
+        RetailOrderStatus.delivered => 'Livré',
+        RetailOrderStatus.completed => 'Terminé',
       };
 
-  /// Terminal statuses belong to the "Completed" tab.
+  /// Terminal statuses belong to the "Terminé" tab.
   bool get isTerminal =>
       this == RetailOrderStatus.pickedUp ||
       this == RetailOrderStatus.delivered ||
@@ -31,8 +31,8 @@ enum RetailPaymentSource { pos, paymentLink }
 
 extension RetailPaymentSourceExt on RetailPaymentSource {
   String get label => switch (this) {
-        RetailPaymentSource.pos => 'POS',
-        RetailPaymentSource.paymentLink => 'Payment Link',
+        RetailPaymentSource.pos => 'Caisse',
+        RetailPaymentSource.paymentLink => 'Lien de paiement',
       };
 }
 

@@ -51,7 +51,7 @@ Future<void> showPaymentLinkSuccessDialog(
   return showDialog<void>(
     context: context,
     builder: (ctx) {
-      const headline = 'Link has been sent';
+      const headline = 'Le lien a été envoyé';
       final linkCopied = <bool>[false];
       return StatefulBuilder(
         builder: (context, setModalState) {
@@ -104,8 +104,8 @@ Future<void> showPaymentLinkSuccessDialog(
                   ],
                   const SizedBox(height: 12),
                   Text(
-                    'You can copy or share the link for the client or the payer. '
-                    'It was not active before you sent it.',
+                    'Vous pouvez copier ou partager le lien avec le client ou le payeur. '
+                    'Il n\'était pas actif avant l\'envoi.',
                     style: AppTextStyles.caption(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
@@ -209,7 +209,7 @@ Future<void> showPaymentLinkSuccessDialog(
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text(
-                  'Close',
+                  'Fermer',
                   style: AppTextStyles.button(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray,
                   ),
@@ -218,7 +218,7 @@ Future<void> showPaymentLinkSuccessDialog(
               OutlinedButton.icon(
                 onPressed: () => Share.share(fullUrl, subject: title),
                 icon: const Icon(Icons.share_rounded, size: 18),
-                label: const Text('Share'),
+                label: const Text('Partager'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primaryBlue,
                   side: BorderSide(
@@ -239,11 +239,11 @@ Future<void> showPaymentLinkSuccessDialog(
 
 /// Shared dialog for sending a payment link via WhatsApp, Email, or SMS.
 ///
-/// The checkout URL is **not** shown until the user taps "Send Link" and the
+/// The checkout URL is **not** shown until the user taps "Envoyer le lien" and the
 /// parent flow creates the link — use [showPaymentLinkSuccessDialog] with the
 /// same path you would have passed as [linkPathForSuccess].
 ///
-/// Returns [PaymentLinkSendResult] when the user taps "Send Link", or null on cancel.
+/// Returns [PaymentLinkSendResult] when the user taps "Envoyer le lien", or null on cancel.
 class PaymentLinkDialog extends StatefulWidget {
   final String referenceLabel;
   final String? description;
@@ -323,13 +323,13 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
     if (_channel == null) return null;
     if (_channel == PaymentLinkChannel.email &&
         _emailCtrl.text.trim().isEmpty) {
-      return "Enter the payer's email to send via Email";
+      return "Saisissez l'e-mail du payeur pour l'envoi par e-mail";
     }
     if (_channel != PaymentLinkChannel.email &&
         _phoneCtrl.text.trim().isEmpty) {
       final name =
           _channel == PaymentLinkChannel.whatsApp ? 'WhatsApp' : 'SMS';
-      return "Enter the payer's phone number to send via $name";
+      return "Saisissez le téléphone du payeur pour l'envoi via $name";
     }
     return null;
   }
@@ -338,8 +338,8 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
     final desc = widget.description ??
-        "Enter the payer's phone or email below (who will actually pay), "
-        'then choose how to send. The payment is applied to this order once completed.';
+        "Saisissez ci-dessous le téléphone ou l'e-mail du payeur, "
+        'puis choisissez le mode d\'envoi. Le paiement sera appliqué à cette commande une fois terminé.';
 
     return AlertDialog(
       backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
@@ -363,7 +363,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Send Payment Link',
+                Text('Envoyer le lien de paiement',
                     style: AppTextStyles.h3(
                         color: isDark
                             ? AppColors.warmWhite
@@ -412,7 +412,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'The payment link is created only when you tap “Send link”.',
+                        'Le lien de paiement est créé seulement quand vous touchez « Envoyer le lien ».',
                         style: AppTextStyles.caption(
                           color: isDark ? AppColors.coolGray : AppColors.darkGray,
                         ),
@@ -422,10 +422,10 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 ),
               ),
               const SizedBox(height: 16),
-              _SectionLabel(label: 'PAYER CONTACT', isDark: isDark),
+              _SectionLabel(label: 'CONTACT DU PAYEUR', isDark: isDark),
               const SizedBox(height: 4),
               Text(
-                'Who will receive the link to pay. This is not pre-filled; enter the payer, not the client on file, unless they are the same person.',
+                'Qui recevra le lien de paiement. Ce n\'est pas prérempli : saisissez le payeur, pas le client du dossier, sauf si c\'est la même personne.',
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
                 ),
@@ -440,7 +440,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 enableSuggestions: false,
                 autocorrect: false,
                 decoration: InputDecoration(
-                  labelText: 'Payer phone number',
+                  labelText: 'Téléphone du payeur',
                   prefixIcon: const Icon(Icons.phone_outlined, size: 18),
                   border: OutlineInputBorder(
                     borderRadius:
@@ -460,7 +460,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 enableSuggestions: false,
                 autocorrect: false,
                 decoration: InputDecoration(
-                  labelText: 'Payer email address',
+                  labelText: 'E-mail du payeur',
                   prefixIcon: const Icon(Icons.email_outlined, size: 18),
                   border: OutlineInputBorder(
                     borderRadius:
@@ -472,7 +472,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 ),
               ),
               const SizedBox(height: 16),
-              _SectionLabel(label: 'SEND VIA', isDark: isDark),
+              _SectionLabel(label: 'ENVOYER PAR', isDark: isDark),
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -491,7 +491,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                   Expanded(
                     child: _ChannelChip(
                       icon: Icons.email_outlined,
-                      label: 'Email',
+                      label: 'E-mail',
                       color: AppColors.primaryBlue,
                       selected: _channel == PaymentLinkChannel.email,
                       isDark: isDark,
@@ -516,12 +516,12 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
               if (widget.allowPrepaidAmount) ...[
                 const SizedBox(height: 16),
                 _SectionLabel(
-                    label: 'PREPAID AMOUNT (OPTIONAL)', isDark: isDark),
+                    label: 'MONTANT PRÉPAYÉ (FACULTATIF)', isDark: isDark),
                 const SizedBox(height: 6),
                 Text(
-                  'The guest spends against that balance on this bill (tax and service '
-                  'included in estimates). Orders above the prepaid balance are blocked '
-                  'until adjusted.',
+                  'Le client utilise ce solde sur cette note (taxe et service '
+                  'inclus dans l\'estimation). Au-delà du prépaiement, les commandes sont bloquées '
+                  'tant que le montant n\'est pas ajusté.',
                   style: AppTextStyles.caption(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray,
                   ),
@@ -530,7 +530,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    'Set prepaid amount (HTG)',
+                    'Définir le prépaiement (HTG)',
                     style: AppTextStyles.body(
                       color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                     ),
@@ -546,7 +546,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Prepaid amount (HTG)',
+                      labelText: 'Montant prépayé (HTG)',
                       prefixIcon:
                           const Icon(Icons.payments_outlined, size: 18),
                       border: OutlineInputBorder(
@@ -608,7 +608,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Cancel',
+          child: Text('Annuler',
               style: AppTextStyles.button(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         ),
@@ -626,7 +626,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                   )
               : null,
           icon: const Icon(Icons.send_rounded, size: 16),
-          label: const Text('Send Link'),
+          label: const Text('Envoyer le lien'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.deepGreen,
             foregroundColor: AppColors.white,

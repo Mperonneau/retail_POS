@@ -19,13 +19,13 @@ extension PaymentTenderX on PaymentTender {
   String get label {
     switch (this) {
       case PaymentTender.cashHtg:
-        return 'Cash (HTG)';
+        return 'Espèces (HTG)';
       case PaymentTender.cashUsd:
-        return 'Cash (USD)';
+        return 'Espèces (USD)';
       case PaymentTender.moncash:
         return 'MonCash';
       case PaymentTender.card:
-        return 'Credit / debit card';
+        return 'Carte de crédit / débit';
       case PaymentTender.check:
         return 'Check';
     }
@@ -340,7 +340,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
       : _hotelFrontDesk = hotelFrontDesk,
         _retail = retail,
         assert(!(hotelFrontDesk && retail),
-            'CashSessionNotifier: hotelFrontDesk and retail are mutually exclusive'),
+            'CashSessionNotifier : hôtel réception et détail s\'excluent'),
         super(_buildInitialState());
 
   final bool _hotelFrontDesk;
@@ -386,7 +386,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 101.00,
         tipsHtg: 500,
         tipsUsd: 5.00,
-        description: 'Table payment — cash',
+        description: 'Paiement table — espèces',
         linkedOrderId: '103',
         linkedTableNumber: 'Table 4',
         linkedWaiterName: 'Claudine',
@@ -400,7 +400,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 8500,
         tipsHtg: 400,
-        description: 'Table payment — MonCash',
+        description: 'Paiement table — MonCash',
         linkedOrderId: '102',
         linkedTableNumber: 'Table 6',
         linkedWaiterName: 'Pierre',
@@ -416,7 +416,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 33.00,
         tipsHtg: 200,
         tipsUsd: 2.00,
-        description: 'Table payment — cash',
+        description: 'Paiement table — espèces',
         linkedOrderId: '101',
         linkedTableNumber: 'Table 2',
         linkedWaiterName: 'Marie-Carmel',
@@ -430,7 +430,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 6200,
         tipsHtg: 300,
-        description: 'Table payment — card',
+        description: 'Paiement table — carte',
         linkedOrderId: '105',
         linkedTableNumber: 'Table 1',
         linkedWaiterName: 'Claudine',
@@ -445,8 +445,8 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountHtg: 0,
         amountUsd: 45.00,
         tipsUsd: 5.00,
-        description: 'Table payment — USD cash',
-        linkedTableNumber: 'Terrace A',
+        description: 'Paiement table — espèces USD',
+        linkedTableNumber: 'Terrasse A',
         linkedWaiterName: 'Pierre',
         timestamp: base.subtract(const Duration(minutes: 25)),
         recordedBy: 'Pierre',
@@ -458,8 +458,8 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 300,
         amountUsd: 3.00,
-        description: 'Extra tip - walk-in',
-        linkedTableNumber: 'Terrace B',
+        description: 'Pourboire supplémentaire — comptoir',
+        linkedTableNumber: 'Terrasse B',
         linkedWaiterName: 'Pierre',
         timestamp: base.subtract(const Duration(minutes: 30)),
         recordedBy: 'Pierre',
@@ -473,7 +473,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 25.00,
         description: 'Collection — Jean-Pierre Dupont',
         timestamp: base.subtract(const Duration(minutes: 38)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
       CashMovement(
@@ -484,7 +484,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         description: 'MonCash — group lunch prepay',
         linkedTableNumber: 'Table 8',
         timestamp: base.subtract(const Duration(minutes: 15)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.moncash,
       ),
       CashMovement(
@@ -495,7 +495,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 7.50,
         description: 'Cleaning supplies',
         timestamp: base.subtract(const Duration(minutes: 55)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
       CashMovement(
@@ -506,7 +506,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 50.00,
         description: 'Morning bank drop',
         timestamp: base.subtract(const Duration(minutes: 90)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
     ];
@@ -525,7 +525,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 0,
         tipsHtg: 400,
         tipsUsd: 0,
-        description: 'POS sale — cash',
+        description: 'Vente caisse — espèces',
         linkedOrderId: '2',
         linkedTableNumber: 'RCP-2042',
         linkedWaiterName: 'Roseline',
@@ -540,7 +540,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountHtg: 9450,
         amountUsd: 0,
         tipsHtg: 0,
-        description: 'POS sale — MonCash',
+        description: 'Vente caisse — MonCash',
         linkedOrderId: '5',
         linkedTableNumber: 'RCP-2039',
         linkedWaiterName: 'Marcel',
@@ -555,7 +555,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountHtg: 0,
         amountUsd: 62.00,
         tipsUsd: 2.00,
-        description: 'POS sale — USD cash',
+        description: 'Vente caisse — espèces USD',
         linkedOrderId: '3',
         linkedTableNumber: 'RCP-2040',
         linkedWaiterName: 'Marcel',
@@ -569,7 +569,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 22100,
         amountUsd: 0,
-        description: 'POS sale — card',
+        description: 'Vente caisse — carte',
         linkedOrderId: '4',
         linkedTableNumber: 'RCP-2037',
         linkedWaiterName: 'Roseline',
@@ -583,7 +583,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 5600,
         amountUsd: 0,
-        description: 'Walk-in cash — groceries',
+        description: 'Comptoir — épicerie, espèces',
         linkedTableNumber: 'RCP-2043',
         linkedWaiterName: 'Roseline',
         timestamp: base.subtract(const Duration(minutes: 15)),
@@ -596,9 +596,9 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 18750,
         amountUsd: 0,
-        description: 'Wholesale account payment',
+        description: 'Paiement compte grossiste',
         timestamp: base.subtract(const Duration(minutes: 61)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
       CashMovement(
@@ -607,9 +607,9 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashOut,
         amountHtg: 1200,
         amountUsd: 0,
-        description: 'Petty cash — receipt paper',
+        description: 'Petite caisse — papier reçu',
         timestamp: base.subtract(const Duration(minutes: 72)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
       CashMovement(
@@ -620,7 +620,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 150.00,
         description: 'Mid-day bank deposit',
         timestamp: base.subtract(const Duration(minutes: 95)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
     ];
@@ -637,8 +637,8 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 18500,
         amountUsd: 0,
-        description: 'Room 201 — checkout balance',
-        linkedTableNumber: 'Room 201',
+        description: 'Chambre 201 — solde au départ',
+        linkedTableNumber: 'Chambre 201',
         timestamp: base.subtract(const Duration(minutes: 55)),
         recordedBy: 'Réception',
         tender: PaymentTender.cashHtg,
@@ -649,7 +649,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 12400,
         amountUsd: 0,
-        description: 'MonCash — guest deposit',
+        description: 'MonCash — acompte client',
         timestamp: base.subtract(const Duration(minutes: 48)),
         recordedBy: 'Réception',
         tender: PaymentTender.moncash,
@@ -660,7 +660,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 32000,
         amountUsd: 0,
-        description: 'Card — OTA prepayment',
+        description: 'Carte — prépaiement OTA',
         timestamp: base.subtract(const Duration(minutes: 35)),
         recordedBy: 'Réception',
         tender: PaymentTender.card,
@@ -682,7 +682,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashIn,
         amountHtg: 0,
         amountUsd: 45,
-        description: 'USD cash — minibar',
+        description: 'Espèces USD — minibar',
         timestamp: base.subtract(const Duration(minutes: 15)),
         recordedBy: 'Réception',
         tender: PaymentTender.cashUsd,
@@ -693,9 +693,9 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         type: CashMovementType.cashOut,
         amountHtg: 2000,
         amountUsd: 0,
-        description: 'Change fund to restaurant',
+        description: 'Fonds de caisse vers le restaurant',
         timestamp: base.subtract(const Duration(minutes: 60)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
       CashMovement(
@@ -706,7 +706,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         amountUsd: 0,
         description: 'Bank deposit',
         timestamp: base.subtract(const Duration(minutes: 120)),
-        recordedBy: 'Manager',
+        recordedBy: 'Gérant',
         tender: PaymentTender.cashHtg,
       ),
     ];
@@ -747,7 +747,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
     state = state.copyWith(movements: [...state.movements, movement]);
   }
 
-  void closeSession({String? note, String closedBy = 'Manager'}) {
+  void closeSession({String? note, String closedBy = 'Gérant'}) {
     final session = state.activeSession;
     if (session == null) return;
 
@@ -811,13 +811,13 @@ CashControlState _buildInitialState() {
   // Yesterday — balanced
   final sess1 = CashSession(
     id: 'session_seed_1',
-    openedBy: 'Manager',
+    openedBy: 'Gérant',
     openedAt: day(1, 8, 0),
     closedAt: day(1, 16, 30),
     openingBalanceHtg: 3000,
     openingBalanceUsd: 30,
     status: CashSessionStatus.closed,
-    closingNote: 'All clear, perfectly balanced.',
+    closingNote: 'Tout est juste, caisse équilibrée.',
   );
   final summary1 = SessionSummary(
     session: sess1,
@@ -827,19 +827,19 @@ CashControlState _buildInitialState() {
     totalOutUsd: 82.00,
     finalBalanceHtg: 23250,
     finalBalanceUsd: 232.50,
-    closedBy: 'Manager',
+    closedBy: 'Gérant',
   );
 
   // 2 days ago — short
   final sess2 = CashSession(
     id: 'session_seed_2',
-    openedBy: 'Manager',
+    openedBy: 'Gérant',
     openedAt: day(2, 7, 30),
     closedAt: day(2, 15, 45),
     openingBalanceHtg: 5000,
     openingBalanceUsd: 50,
     status: CashSessionStatus.closed,
-    closingNote: 'Short HTG 400 — recount confirmed, investigating.',
+    closingNote: 'Manque de 400 HTG — recomptage confirmé, en cours de vérification.',
   );
   final summary2 = SessionSummary(
     session: sess2,
@@ -861,7 +861,7 @@ CashControlState _buildInitialState() {
     openingBalanceHtg: 2500,
     openingBalanceUsd: 25,
     status: CashSessionStatus.closed,
-    closingNote: 'Smooth shift, no issues.',
+    closingNote: 'Service calme, rien à signaler.',
   );
   final summary3 = SessionSummary(
     session: sess3,
@@ -879,7 +879,7 @@ CashControlState _buildInitialState() {
   // 8 days ago — balanced
   final sess4 = CashSession(
     id: 'session_seed_4',
-    openedBy: 'Manager',
+    openedBy: 'Gérant',
     openedAt: day(8, 8, 0),
     closedAt: day(8, 16, 0),
     openingBalanceHtg: 4000,
@@ -895,7 +895,7 @@ CashControlState _buildInitialState() {
     totalOutUsd: 120.00,
     finalBalanceHtg: 33500,
     finalBalanceUsd: 335.00,
-    closedBy: 'Manager',
+    closedBy: 'Gérant',
   );
 
   // 10 days ago — short
@@ -923,7 +923,7 @@ CashControlState _buildInitialState() {
   // 12 days ago — balanced
   final sess6 = CashSession(
     id: 'session_seed_6',
-    openedBy: 'Manager',
+    openedBy: 'Gérant',
     openedAt: day(12, 8, 30),
     closedAt: day(12, 17, 15),
     openingBalanceHtg: 3000,
@@ -939,7 +939,7 @@ CashControlState _buildInitialState() {
     totalOutUsd: 78.00,
     finalBalanceHtg: 20800,
     finalBalanceUsd: 208.00,
-    closedBy: 'Manager',
+    closedBy: 'Gérant',
   );
 
   // ── Two weeks ago ─────────────────────────────────────────────────────────
@@ -968,13 +968,13 @@ CashControlState _buildInitialState() {
   // 18 days ago — short
   final sess8 = CashSession(
     id: 'session_seed_8',
-    openedBy: 'Manager',
+    openedBy: 'Gérant',
     openedAt: day(18, 7, 30),
     closedAt: day(18, 16, 0),
     openingBalanceHtg: 4500,
     openingBalanceUsd: 45,
     status: CashSessionStatus.closed,
-    closingNote: 'Over USD 10 — extra bill found in tray.',
+    closingNote: 'Excédent de 10 USD — un billet en trop dans le tiroir.',
   );
   final summary8 = SessionSummary(
     session: sess8,
@@ -984,7 +984,7 @@ CashControlState _buildInitialState() {
     totalOutUsd: 100.00,
     finalBalanceHtg: 27500,
     finalBalanceUsd: 285.00,
-    closedBy: 'Manager',
+    closedBy: 'Gérant',
   );
 
   return CashControlState(sessionHistory: [

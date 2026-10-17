@@ -15,10 +15,10 @@ class OfflineBanner extends ConsumerWidget {
     if (!session.ready || session.online) return const SizedBox.shrink();
     final waiting = session.outboxIds.length;
     final message = waiting == 0
-        ? 'You are offline. Sales stay on this device and sync when the connection returns.'
+        ? 'Vous êtes hors ligne. Les ventes restent sur cet appareil et se synchronisent au retour de la connexion.'
         : waiting == 1
-            ? 'You are offline. 1 sale is saved on this device.'
-            : 'You are offline. $waiting sales are saved on this device.';
+            ? 'Vous êtes hors ligne. 1 vente est enregistrée sur cet appareil.'
+            : 'Vous êtes hors ligne. $waiting ventes sont enregistrées sur cet appareil.';
     return Material(
       color: AppColors.amber,
       child: Padding(

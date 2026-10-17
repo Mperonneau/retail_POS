@@ -3,16 +3,16 @@ import 'package:intl/intl.dart';
 class DateFormatter {
   DateFormatter._();
 
-  /// e.g. "Mar 3, 2026"
-  static String shortDate(DateTime dt) => DateFormat('MMM d, y').format(dt);
+  /// e.g. "3 mars 2026"
+  static String shortDate(DateTime dt) => DateFormat('d MMM y', 'fr').format(dt);
 
-  /// e.g. "Today, Mar 3"  — used in page subtitles
+  /// e.g. "Aujourd'hui, 3 mars" — used in page subtitles
   static String todayLabel() =>
-      'Today, ${DateFormat('MMM d').format(DateTime.now())}';
+      "Aujourd'hui, ${DateFormat('d MMM', 'fr').format(DateTime.now())}";
 
-  /// e.g. "Tue, Mar 3"  — used in the top bar
+  /// e.g. "mar. 3 mars" — used in the top bar
   static String topBarDate() =>
-      DateFormat('EEE, MMM d').format(DateTime.now());
+      DateFormat('EEE d MMM', 'fr').format(DateTime.now());
 
   /// e.g. "13:42"
   static String timeOfDay(DateTime dt) => DateFormat('HH:mm').format(dt);

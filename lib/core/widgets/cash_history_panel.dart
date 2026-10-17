@@ -20,7 +20,7 @@ void showCashHistoryPanel(
       opaque: false,
       barrierColor: Colors.black.withValues(alpha: 0.45),
       barrierDismissible: true,
-      barrierLabel: 'Dismiss',
+      barrierLabel: 'Fermer',
       pageBuilder: (_, __, ___) => CashHistoryPanel(
         isDark: isDark,
         sessionProvider: sessionProvider ?? cashSessionProvider,
@@ -134,7 +134,7 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
     final filtered =
         state.sessionHistory.where(_inWindow).toList();
 
-    // "Load more" is relevant only when not in custom-range mode and
+    // "Charger plus" is relevant only when not in custom-range mode and
     // there are sessions older than the current effective start
     final hasOlder = !_isCustomRange &&
         state.sessionHistory
@@ -168,8 +168,8 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
                   children: [
                     // ── Header ───────────────────────────────────────────
                     _PanelHeader(
-                      title: 'Session History',
-                      subtitle: '$totalShown session(s) shown',
+                      title: 'Historique des sessions',
+                      subtitle: '$totalShown session(s) affichée(s)',
                       icon: Icons.history_rounded,
                       isDark: isDark,
                     ),
@@ -202,7 +202,7 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
                                             : AppColors.darkGray),
                                     const SizedBox(height: 12),
                                     Text(
-                                      'No session history yet.\nOpen and close a drawer to begin.',
+                                      'Aucun historique de session.\nOuvrez puis fermez un tiroir pour commencer.',
                                       style: AppTextStyles.body(
                                           color: isDark
                                               ? AppColors.coolGray
@@ -230,7 +230,7 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
                                     padding: const EdgeInsets.only(
                                         left: 4, bottom: 10),
                                     child: Text(
-                                      'PREVIOUS SESSIONS',
+                                      'SESSIONS PRÉCÉDENTES',
                                       style: AppTextStyles.caption(
                                               color: isDark
                                                   ? AppColors.coolGray
@@ -250,7 +250,7 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
                                         vertical: 32),
                                     child: Center(
                                       child: Text(
-                                        'No sessions in this date range.',
+                                        'Aucune session sur cette période.',
                                         style: AppTextStyles.body(
                                             color: isDark
                                                 ? AppColors.coolGray
@@ -287,7 +287,7 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
                                         const EdgeInsets.only(top: 8),
                                     child: Center(
                                       child: Text(
-                                        'All sessions loaded',
+                                        'Toutes les sessions sont chargées',
                                         style: AppTextStyles.caption(
                                             color: isDark
                                                 ? AppColors.coolGray
@@ -398,13 +398,13 @@ class _DateFilterBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          dateChip('From', from, onFromTap, isCustomRange),
+          dateChip('De', from, onFromTap, isCustomRange),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Icon(Icons.arrow_forward_rounded,
                 size: 13, color: labelColor),
           ),
-          dateChip('To', to, onToTap, isCustomRange),
+          dateChip('À', to, onToTap, isCustomRange),
           const Spacer(),
           if (onClear != null)
             GestureDetector(
@@ -424,7 +424,7 @@ class _DateFilterBar extends StatelessWidget {
                     Icon(Icons.close_rounded,
                         size: 12, color: AppColors.boldRed),
                     const SizedBox(width: 3),
-                    Text('Clear',
+                    Text('Effacer',
                         style: AppTextStyles.caption(
                                 color: AppColors.boldRed)
                             .copyWith(fontWeight: FontWeight.w600)),
@@ -467,7 +467,7 @@ class _LoadMoreButton extends StatelessWidget {
             Icon(Icons.expand_more_rounded, size: 16, color: fg),
             const SizedBox(width: 6),
             Text(
-              'Load previous week',
+              'Semaine précédente',
               style: AppTextStyles.body(color: fg)
                   .copyWith(fontWeight: FontWeight.w600, fontSize: 13),
             ),
@@ -508,7 +508,7 @@ class _ActiveSessionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Opened ${_timeStr(session.openedAt)} by ${session.openedBy}',
+                  'Ouvert à ${_timeStr(session.openedAt)} par ${session.openedBy}',
                   style: AppTextStyles.caption(),
                 ),
               ],
@@ -533,7 +533,7 @@ class _ActiveSessionCard extends StatelessWidget {
                         color: badgeColor, shape: BoxShape.circle)),
                 const SizedBox(width: 4),
                 Text(
-                  isOpen ? 'OPEN' : 'CLOSED',
+                  isOpen ? 'OUVERT' : 'FERMÉ',
                   style: AppTextStyles.caption(color: badgeColor)
                       .copyWith(fontWeight: FontWeight.w700),
                 ),
@@ -544,13 +544,13 @@ class _ActiveSessionCard extends StatelessWidget {
       ),
       rows: [
         _StatRow(
-          label: 'Opening balance',
+          label: 'Solde d\'ouverture',
           htg: session.openingBalanceHtg,
           usd: session.openingBalanceUsd,
           isDark: isDark,
         ),
         _StatRow(
-          label: 'Cash In',
+          label: 'Entrée de caisse',
           htg: state.totalIn,
           usd: state.totalInUsd,
           isDark: isDark,
@@ -558,7 +558,7 @@ class _ActiveSessionCard extends StatelessWidget {
           sign: '+',
         ),
         _StatRow(
-          label: 'Cash Out',
+          label: 'Sortie de caisse',
           htg: state.totalOut,
           usd: state.totalOutUsd,
           isDark: isDark,
@@ -566,7 +566,7 @@ class _ActiveSessionCard extends StatelessWidget {
           sign: '-',
         ),
         _StatRow(
-          label: 'Expected balance',
+          label: 'Solde attendu',
           htg: state.expectedBalance,
           usd: state.expectedBalanceUsd,
           isDark: isDark,
@@ -611,7 +611,7 @@ class _ClosedSessionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_timeStr(session.openedAt)} – ${_timeStr(session.closedAt!)}  ·  Closed by ${summary.closedBy}',
+                  '${_timeStr(session.openedAt)} – ${_timeStr(session.closedAt!)}  ·  Fermé par ${summary.closedBy}',
                   style: AppTextStyles.caption(),
                 ),
               ],
@@ -636,13 +636,13 @@ class _ClosedSessionCard extends StatelessWidget {
       ),
       rows: [
         _StatRow(
-          label: 'Opening balance',
+          label: 'Solde d\'ouverture',
           htg: session.openingBalanceHtg,
           usd: session.openingBalanceUsd,
           isDark: isDark,
         ),
         _StatRow(
-          label: 'Cash In',
+          label: 'Entrée de caisse',
           htg: summary.totalInHtg,
           usd: summary.totalInUsd,
           isDark: isDark,
@@ -650,7 +650,7 @@ class _ClosedSessionCard extends StatelessWidget {
           sign: '+',
         ),
         _StatRow(
-          label: 'Cash Out',
+          label: 'Sortie de caisse',
           htg: summary.totalOutHtg,
           usd: summary.totalOutUsd,
           isDark: isDark,
@@ -658,7 +658,7 @@ class _ClosedSessionCard extends StatelessWidget {
           sign: '-',
         ),
         _StatRow(
-          label: 'Final balance',
+          label: 'Solde final',
           htg: summary.finalBalanceHtg,
           usd: summary.finalBalanceUsd,
           isDark: isDark,
@@ -667,7 +667,7 @@ class _ClosedSessionCard extends StatelessWidget {
         ),
         if (!balanced)
           _StatRow(
-            label: summary.overShortHtg < 0 ? 'Short' : 'Over',
+            label: summary.overShortHtg < 0 ? 'Manque' : 'Excédent',
             htg: summary.overShortHtg.abs(),
             usd: summary.overShortUsd.abs(),
             isDark: isDark,
@@ -911,10 +911,10 @@ String _timeStr(DateTime dt) =>
 
 // e.g. "Mon 24 Feb"
 String _shortDate(DateTime dt) {
-  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekdays = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'
   ];
   return '${weekdays[dt.weekday - 1]} ${dt.day} ${months[dt.month - 1]}';
 }
@@ -924,7 +924,7 @@ String _dateLabel(DateTime dt) {
   final today = DateTime(now.year, now.month, now.day);
   final date = DateTime(dt.year, dt.month, dt.day);
   final diff = today.difference(date).inDays;
-  if (diff == 0) return 'Today';
-  if (diff == 1) return 'Yesterday';
+  if (diff == 0) return 'Aujourd\'hui';
+  if (diff == 1) return 'Hier';
   return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
 }

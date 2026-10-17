@@ -26,7 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   String? _emailError;
   String? _passwordError;
-  String _selectedLang = 'EN';
+  String _selectedLang = 'FR';
 
   @override
   void dispose() {
@@ -37,8 +37,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _onLogin() async {
     setState(() {
-      _emailError = _emailCtrl.text.isEmpty ? 'Email or phone is required' : null;
-      _passwordError = _passwordCtrl.text.isEmpty ? 'Password is required' : null;
+      _emailError = _emailCtrl.text.isEmpty ? 'L\'e-mail ou le téléphone est obligatoire' : null;
+      _passwordError = _passwordCtrl.text.isEmpty ? 'Le mot de passe est obligatoire' : null;
     });
     if (_emailError != null || _passwordError != null) return;
 
@@ -139,24 +139,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   color: AppColors.amber, size: 22),
                             ),
                             const SizedBox(width: 10),
-                            Text('BizManager Haiti',
+                            Text('BizManager Haïti',
                                 style: AppTextStyles.h3(color: isDark ? AppColors.skyBlue : AppColors.primaryBlue)),
                           ],
                         ),
                         const SizedBox(height: AppConstants.spacing24),
-                        Text('Welcome back',
+                        Text('Bon retour',
                             style: AppTextStyles.h1(
                               color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                             )),
                         const SizedBox(height: AppConstants.spacing4),
-                        Text('Sign in to continue',
+                        Text('Connectez-vous pour continuer',
                             style: AppTextStyles.body(
                               color: isDark ? AppColors.coolGray : AppColors.darkGray,
                             )),
                         const SizedBox(height: AppConstants.spacing32),
                         AppInput(
-                          label: 'Email or Phone Number',
-                          hint: 'e.g. manager@hotel.ht',
+                          label: 'E-mail ou téléphone',
+                          hint: 'ex. gerant@commerce.ht',
                           controller: _emailCtrl,
                           errorText: _emailError,
                           prefixIcon: Icons.person_outline,
@@ -166,8 +166,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: AppConstants.spacing16),
                         AppInput(
-                          label: 'Password',
-                          hint: 'Enter your password',
+                          label: 'Mot de passe',
+                          hint: 'Saisissez votre mot de passe',
                           controller: _passwordCtrl,
                           errorText: _passwordError,
                           obscureText: true,
@@ -192,7 +192,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             const SizedBox(width: 8),
                             Flexible(
-                              child: Text('Remember me',
+                              child: Text('Se souvenir de moi',
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyles.body(
                                     color: isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -205,14 +205,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              child: Text('Forgot Password?',
+                              child: Text('Mot de passe oublié ?',
                                   style: AppTextStyles.body(color: isDark ? AppColors.skyBlue : AppColors.primaryBlue)),
                             ),
                           ],
                         ),
                         const SizedBox(height: AppConstants.spacing24),
                         AppButton(
-                          label: 'Sign In',
+                          label: 'Se connecter',
                           onPressed: _onLogin,
                           isLoading: _isLoading,
                         ),
@@ -221,7 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Text("Don't have an account? ",
+                            Text("Vous n'avez pas de compte ? ",
                                 style: AppTextStyles.body(
                                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
                                 )),
@@ -232,7 +232,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              child: Text('Register',
+                              child: Text('Créer un compte',
                                   style: AppTextStyles.body(color: isDark ? AppColors.skyBlue : AppColors.primaryBlue)
                                       .copyWith(fontWeight: FontWeight.w600)),
                             ),
@@ -284,7 +284,7 @@ class _LanguageSelector extends StatelessWidget {
       itemBuilder: (_) => [
         const PopupMenuItem(value: 'KR', child: Text('Kreyòl')),
         const PopupMenuItem(value: 'FR', child: Text('Français')),
-        const PopupMenuItem(value: 'EN', child: Text('English')),
+        const PopupMenuItem(value: 'EN', child: Text('Anglais')),
       ],
     );
   }

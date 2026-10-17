@@ -106,7 +106,7 @@ class _NewPayLinkModalState extends ConsumerState<_NewPayLinkModal> {
           sentTo: _contactCtrl.text.trim(),
           note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
           expiresAt: _expiresAt,
-          createdBy: 'Staff',
+          createdBy: 'Personnel',
         );
 
     Navigator.of(context).pop<PayLink?>(link);
@@ -272,15 +272,15 @@ class _ModalHeader extends StatelessWidget {
               children: [
                 Text(
                   step == _ModalStep.pickCustomer
-                      ? 'New Paylink'
-                      : 'Send to ${customer?.displayFirstLastName ?? ''}',
+                      ? 'Nouveau lien de paiement'
+                      : 'Envoyer à ${customer?.displayFirstLastName ?? ''}',
                   style: AppTextStyles.h3(color: textColor)
                       .copyWith(fontWeight: FontWeight.w800, fontSize: 17),
                 ),
                 Text(
                   step == _ModalStep.pickCustomer
-                      ? 'Select a client to send a paylink to'
-                      : 'Set amount and delivery channel',
+                      ? 'Choisissez un client pour le lien de paiement'
+                      : 'Indiquez le montant et le canal',
                   style: AppTextStyles.caption(color: mutedColor),
                 ),
               ],
@@ -291,7 +291,7 @@ class _ModalHeader extends StatelessWidget {
               onPressed: onBack,
               icon: const Icon(Icons.arrow_back_rounded),
               color: mutedColor,
-              tooltip: 'Back',
+              tooltip: 'Retour',
             )
           else
             IconButton(
@@ -379,7 +379,7 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
             controller: widget.searchCtrl,
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: 'Search client name or phone…',
+              hintText: 'Rechercher un client ou un téléphone…',
               prefixIcon: const Icon(Icons.search_rounded, size: 22),
               filled: true,
               fillColor: isDark ? AppColors.darkSurface : AppColors.white,
@@ -413,7 +413,7 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
             child: OutlinedButton.icon(
               onPressed: widget.onCreateTap,
               icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
-              label: const Text('Create new client'),
+              label: const Text('Créer un client'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryBlue,
                 side: BorderSide(
@@ -442,7 +442,7 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
                             color: widget.mutedColor.withValues(alpha: 0.5)),
                         const SizedBox(height: 8),
                         Text(
-                          'Type a name or phone number to find a client.',
+                          'Saisissez un nom ou un téléphone pour trouver un client.',
                           textAlign: TextAlign.center,
                           style: AppTextStyles.caption(color: widget.mutedColor)
                               .copyWith(height: 1.5),
@@ -456,7 +456,7 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
                       padding: const EdgeInsets.all(24),
                       child: Center(
                         child: Text(
-                          'No matches. Try a different name or number, or create a new client.',
+                          'Aucun résultat. Essayez un autre nom ou numéro, ou créez un client.',
                           textAlign: TextAlign.center,
                           style: AppTextStyles.caption(color: widget.mutedColor)
                               .copyWith(height: 1.4),
@@ -509,7 +509,7 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
                                     const SizedBox(height: 2),
                                     Text(
                                       c.phone.isEmpty || c.phone == '—'
-                                          ? 'No phone on file'
+                                          ? 'Aucun téléphone enregistré'
                                           : c.phone,
                                       style: AppTextStyles.caption(
                                           color: widget.mutedColor),
@@ -543,7 +543,7 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
 
 // ─── Quick-create customer ────────────────────────────────────────────────────
 
-const _idDocTypes = ['Passport', 'National ID', 'Driver license', 'NIF / Tax ID', 'Other'];
+const _idDocTypes = ['Passeport', 'Carte d\'identité', 'Permis de conduire', 'NIF', 'Autre'];
 
 class _QuickCreateCustomer extends ConsumerStatefulWidget {
   final bool isDark;
@@ -589,14 +589,14 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
     final fn = _firstCtrl.text.trim();
     final ln = _lastCtrl.text.trim();
     if (fn.isEmpty || ln.isEmpty) {
-      setState(() => _error = 'First and last name are required.');
+      setState(() => _error = 'Le prénom et le nom sont obligatoires.');
       return;
     }
     final govRaw = _idCtrl.text.trim();
     final gov = govRaw.isEmpty ? null : '$_idType · $govRaw';
     if (gov == null && _dob == null) {
       setState(() => _error =
-          'Add a government ID or date of birth to identify this client.');
+          'Ajoutez une pièce d\'identité ou la date de naissance pour identifier ce client.');
       return;
     }
     final phone = _phoneCtrl.text.trim();
@@ -649,7 +649,7 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
   @override
   Widget build(BuildContext context) {
     final dobLabel = _dob == null
-        ? 'Date of birth (if no ID)'
+        ? 'Date de naissance (si pas de pièce)'
         : '${_dob!.year}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}';
 
     return SingleChildScrollView(
@@ -663,7 +663,7 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'New client will be saved to your client list.',
+            'Le nouveau client sera ajouté à votre liste.',
             style: AppTextStyles.caption(color: widget.mutedColor)
                 .copyWith(height: 1.4),
           ),
@@ -671,19 +671,19 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
           TextField(
             controller: _firstCtrl,
             textCapitalization: TextCapitalization.words,
-            decoration: _dec('First name *', Icons.badge_outlined),
+            decoration: _dec('Prénom *', Icons.badge_outlined),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _lastCtrl,
             textCapitalization: TextCapitalization.words,
-            decoration: _dec('Last name *', Icons.badge_outlined),
+            decoration: _dec('Nom *', Icons.badge_outlined),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
-            decoration: _dec('Phone (optional)', Icons.phone_outlined),
+            decoration: _dec('Téléphone (facultatif)', Icons.phone_outlined),
           ),
           const SizedBox(height: 14),
           Text(
@@ -694,7 +694,7 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _idType,
-            decoration: _dec('ID type (optional)', Icons.credit_card_outlined),
+            decoration: _dec('Type de pièce (facultatif)', Icons.credit_card_outlined),
             items: _idDocTypes
                 .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                 .toList(),
@@ -705,7 +705,7 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
           const SizedBox(height: 10),
           TextField(
             controller: _idCtrl,
-            decoration: _dec('ID number (optional)', Icons.credit_card_outlined),
+            decoration: _dec('Numéro de pièce (facultatif)', Icons.credit_card_outlined),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
@@ -751,7 +751,7 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Save & continue',
+            child: const Text('Enregistrer et continuer',
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
@@ -831,8 +831,8 @@ class _PayLinkForm extends StatelessWidget {
         double.tryParse(amountCtrl.text.replaceAll(',', '').trim());
 
     final expiryLabel = expiresAt == null
-        ? 'Set expiry date (optional)'
-        : 'Expires ${expiresAt!.day}/${expiresAt!.month}/${expiresAt!.year}';
+        ? 'Date d\'expiration (facultatif)'
+        : 'Expire le ${expiresAt!.day}/${expiresAt!.month}/${expiresAt!.year}';
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -877,7 +877,7 @@ class _PayLinkForm extends StatelessWidget {
           const SizedBox(height: 16),
 
           // ─ Prepaid amount
-          _SectionLabel(label: 'PREPAID AMOUNT', mutedColor: mutedColor),
+          _SectionLabel(label: 'MONTANT PRÉPAYÉ', mutedColor: mutedColor),
           const SizedBox(height: 6),
           TextField(
             controller: amountCtrl,
@@ -887,7 +887,7 @@ class _PayLinkForm extends StatelessWidget {
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
             ],
-            decoration: _dec('Amount (HTG) *', Icons.payments_outlined),
+            decoration: _dec('Montant (HTG) *', Icons.payments_outlined),
           ),
           if (parsedAmt != null && parsedAmt > 0) ...[
             const SizedBox(height: 4),
@@ -904,7 +904,7 @@ class _PayLinkForm extends StatelessWidget {
           const SizedBox(height: 16),
 
           // ─ Payer contact (not the client record; who receives the link)
-          _SectionLabel(label: 'SEND TO (PAYER)', mutedColor: mutedColor),
+          _SectionLabel(label: 'ENVOYER À (PAYEUR)', mutedColor: mutedColor),
           const SizedBox(height: 6),
           TextField(
             controller: contactCtrl,
@@ -917,8 +917,8 @@ class _PayLinkForm extends StatelessWidget {
             autocorrect: false,
             decoration: _dec(
               channel == PayLinkChannel.email
-                  ? 'Payer email *'
-                  : 'Payer phone *',
+                  ? 'E-mail du payeur *'
+                  : 'Téléphone du payeur *',
               channel == PayLinkChannel.email
                   ? Icons.email_outlined
                   : Icons.phone_outlined,
@@ -928,7 +928,7 @@ class _PayLinkForm extends StatelessWidget {
           const SizedBox(height: 12),
 
           // ─ Channel selector
-          _SectionLabel(label: 'SEND VIA', mutedColor: mutedColor),
+          _SectionLabel(label: 'ENVOYER PAR', mutedColor: mutedColor),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -946,7 +946,7 @@ class _PayLinkForm extends StatelessWidget {
               Expanded(
                 child: _ChannelChip(
                   icon: Icons.email_outlined,
-                  label: 'Email',
+                  label: 'E-mail',
                   color: AppColors.primaryBlue,
                   selected: channel == PayLinkChannel.email,
                   isDark: isDark,
@@ -992,8 +992,8 @@ class _PayLinkForm extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'The payment link and record are created only when you tap Send Paylink. '
-                    'You will get a copy/share screen right after.',
+                    'Le lien et l\'enregistrement ne sont créés que lorsque vous touchez Envoyer le lien. '
+                    'L\'écran de copie et de partage s\'ouvrira juste après.',
                     style: AppTextStyles.caption(
                         color: isDark
                             ? AppColors.coolGray
@@ -1042,7 +1042,7 @@ class _PayLinkForm extends StatelessWidget {
             controller: noteCtrl,
             maxLines: 2,
             decoration: _dec(
-                'Note (optional — visible to staff)', Icons.sticky_note_2_outlined),
+                'Note (facultatif — visible par le personnel)', Icons.sticky_note_2_outlined),
           ),
 
           const SizedBox(height: 20),
@@ -1051,7 +1051,7 @@ class _PayLinkForm extends StatelessWidget {
           FilledButton.icon(
             onPressed: canSend ? onSend : null,
             icon: const Icon(Icons.send_rounded, size: 18),
-            label: const Text('Send Paylink',
+            label: const Text('Envoyer le lien',
                 style: TextStyle(fontWeight: FontWeight.w700)),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,

@@ -58,7 +58,7 @@ Future<void> showMenuItemUnavailableDialog(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Out of Stock',
+                            'Rupture de stock',
                             style: AppTextStyles.h2(
                               color: isDark
                                   ? AppColors.warmWhite

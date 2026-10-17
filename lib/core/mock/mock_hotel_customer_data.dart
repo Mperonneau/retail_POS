@@ -25,7 +25,7 @@ class MockHotelStay {
 final mockHotelStaysByCustomerId = <String, List<MockHotelStay>>{
   'c1': [
     const MockHotelStay(
-      roomName: 'Room 102',
+      roomName: 'Chambre 102',
       totalGuests: 2,
       totalDays: 3,
       amountHtg: 25500,
@@ -36,7 +36,7 @@ final mockHotelStaysByCustomerId = <String, List<MockHotelStay>>{
   ],
   'c2': [
     const MockHotelStay(
-      roomName: 'Room 203',
+      roomName: 'Chambre 203',
       totalGuests: 1,
       totalDays: 2,
       amountHtg: 28000,

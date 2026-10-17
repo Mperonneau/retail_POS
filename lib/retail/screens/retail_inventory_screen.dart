@@ -154,7 +154,7 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Inventory',
+                            'Inventaire',
                             style: AppTextStyles.h1(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -180,7 +180,7 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                             ),
                           ),
                           child: Text(
-                            '${products.length} products',
+                            '${products.length} produits',
                             style: AppTextStyles.caption(
                               color: isDark
                                   ? AppColors.skyBlue
@@ -207,7 +207,7 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
               ),
               const SizedBox(height: AppConstants.spacing8),
               Text(
-                'Track stock like an account: movements, receipts, and daily sales.',
+                'Suivez le stock comme un compte : mouvements, réceptions et ventes du jour.',
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
                 ),
@@ -215,7 +215,7 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
               if (lowStockItems > 0) ...[
                 const SizedBox(height: AppConstants.spacing8),
                 Text(
-                  '$lowStockItems below minimum stock',
+                  '$lowStockItems sous le stock minimum',
                   style: AppTextStyles.caption(
                     color: AppColors.amber,
                   ),
@@ -244,7 +244,7 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                     ? Padding(
                         padding: const EdgeInsets.all(AppConstants.spacing24),
                         child: Text(
-                          'No products match your search.',
+                          'Aucun produit ne correspond à votre recherche.',
                           style: AppTextStyles.body(
                             color:
                                 isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -438,7 +438,7 @@ class _InventoryTopPagination extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Previous page',
+          tooltip: 'Page précédente',
           onPressed: onPrevious,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(
@@ -460,7 +460,7 @@ class _InventoryTopPagination extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Next page',
+          tooltip: 'Page suivante',
           onPressed: onNext,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(
@@ -508,7 +508,7 @@ class _InventoryFilterSearchRow extends StatelessWidget {
       controller: searchController,
       onChanged: onSearchChanged,
       decoration: InputDecoration(
-        hintText: 'Search by name or category…',
+        hintText: 'Rechercher par nom ou catégorie…',
         prefixIcon: const Icon(Icons.search_rounded, size: 20),
         filled: true,
         fillColor: fill,
@@ -540,7 +540,7 @@ class _InventoryFilterSearchRow extends StatelessWidget {
       fill: fill,
       borderColor: borderColor,
       active: active,
-      label: categoryFilter ?? 'All categories',
+      label: categoryFilter ?? 'Toutes les catégories',
       categories: categories,
       onChanged: onCategoryChanged,
     );
@@ -660,7 +660,7 @@ class _CategoryFilterButton extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'All categories',
+              'Toutes les catégories',
               style: AppTextStyles.body(
                 color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
               ),
@@ -833,7 +833,7 @@ class _InventoryProductGridTile extends StatelessWidget {
                               )
                             else
                               Text(
-                                'units',
+                                'unités',
                                 style: AppTextStyles.caption(
                                   color: isDark
                                       ? AppColors.coolGray
@@ -846,7 +846,7 @@ class _InventoryProductGridTile extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Add stock',
+                    tooltip: 'Ajouter du stock',
                     icon: const Icon(
                       Icons.add_circle_outline,
                       size: 20,
@@ -861,7 +861,7 @@ class _InventoryProductGridTile extends StatelessWidget {
                     onPressed: onAddStock,
                   ),
                   IconButton(
-                    tooltip: 'Open details',
+                    tooltip: 'Ouvrir les détails',
                     icon: Icon(
                       Icons.chevron_right_rounded,
                       size: 18,
@@ -978,7 +978,7 @@ class _InventoryProductRow extends StatelessWidget {
                           )
                         else
                           Text(
-                            'units',
+                            'unités',
                             style: AppTextStyles.caption(
                               color: isDark
                                   ? AppColors.coolGray
@@ -1000,7 +1000,7 @@ class _InventoryProductRow extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(
-              tooltip: 'Add stock',
+              tooltip: 'Ajouter du stock',
               icon: const Icon(
                 Icons.add_circle_outline,
                 size: 22,

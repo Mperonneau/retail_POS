@@ -67,7 +67,7 @@ class _PaymentLinkStatusSheetState
       case 'whatsApp':
         return 'WhatsApp';
       case 'email':
-        return 'Email';
+        return 'E-mail';
       case 'sms':
         return 'SMS';
       default:
@@ -101,12 +101,12 @@ class _PaymentLinkStatusSheetState
 
   String get _summaryLabel {
     if (widget.staffPaymentConfirmed) {
-      return 'Staff confirmed · Paid';
+      return 'Confirmé par le personnel · Payé';
     }
     if (widget.paymentLinkRemotePaid) {
-      return 'Customer paid · Confirm at register';
+      return 'Payé par le client · À confirmer en caisse';
     }
-    return 'Waiting for payment';
+    return 'En attente de paiement';
   }
 
   Color _summaryColor(bool isDark) {
@@ -149,7 +149,7 @@ class _PaymentLinkStatusSheetState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Payment Link',
+                  'Lien de paiement',
                   style: AppTextStyles.h3(
                     color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                   ),
@@ -217,7 +217,7 @@ class _PaymentLinkStatusSheetState
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            'Close',
+            'Fermer',
             style: AppTextStyles.button(
               color: isDark ? AppColors.coolGray : AppColors.darkGray,
             ),
@@ -301,7 +301,7 @@ class _PaymentLinkStatusSheetState
         children: [
           _InfoRow(
             icon: Icons.person_outline_rounded,
-            label: 'Sent to',
+            label: 'Envoyé à',
             value: widget.recipient ?? '—',
             labelColor: labelColor,
             valueColor: valueColor,
@@ -317,7 +317,7 @@ class _PaymentLinkStatusSheetState
           const SizedBox(height: 10),
           _InfoRow(
             icon: Icons.schedule_rounded,
-            label: 'Sent',
+            label: 'Envoyé',
             value: _sentTimeLabel,
             labelColor: labelColor,
             valueColor: valueColor,
@@ -326,7 +326,7 @@ class _PaymentLinkStatusSheetState
             const SizedBox(height: 10),
             _InfoRow(
               icon: Icons.savings_outlined,
-              label: 'Prepaid amount',
+              label: 'Montant prépayé',
               value: () {
                 final p = widget.prepaidCapHtg!;
                 final usd = CurrencyFormatter.usdEquivalentOrNull(context, p);
@@ -342,16 +342,16 @@ class _PaymentLinkStatusSheetState
           const SizedBox(height: 10),
           _InfoRow(
             icon: Icons.cloud_done_outlined,
-            label: 'Gateway',
-            value: widget.paymentLinkRemotePaid ? 'Paid' : 'Pending',
+            label: 'Passerelle',
+            value: widget.paymentLinkRemotePaid ? 'Payé' : 'En attente',
             labelColor: labelColor,
             valueColor: valueColor,
           ),
           const SizedBox(height: 10),
           _InfoRow(
             icon: Icons.badge_outlined,
-            label: 'Staff',
-            value: widget.staffPaymentConfirmed ? 'Confirmed' : 'Not confirmed',
+            label: 'Personnel',
+            value: widget.staffPaymentConfirmed ? 'Confirmed' : 'Non confirmé',
             labelColor: labelColor,
             valueColor: valueColor,
           ),
@@ -371,7 +371,7 @@ class _PaymentLinkStatusSheetState
               child: OutlinedButton.icon(
                 onPressed: () => _resendLink(context, isDark),
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Update & Resend'),
+                label: const Text('Mettre à jour et renvoyer'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor:
                       isDark ? AppColors.skyBlue : AppColors.primaryBlue,
@@ -409,7 +409,7 @@ class _PaymentLinkStatusSheetState
                             ? AppColors.mediumGreen
                             : AppColors.deepGreen),
                 label: Text(
-                  'Mark as Paid',
+                  'Marquer payé',
                   style: TextStyle(
                     color:
                         isDark ? AppColors.mediumGreen : AppColors.deepGreen,
@@ -442,7 +442,7 @@ class _PaymentLinkStatusSheetState
       context: context,
       builder: (ctx) => PaymentLinkDialog(
         referenceLabel: widget.orderLabel,
-        description: "Update the payer's contact and resend the payment link.",
+        description: "Mettez à jour le contact du payeur et renvoyez le lien.",
         isDark: isDark,
         allowPrepaidAmount: widget.allowPrepaidAmountOnResend,
         initialPrepaidAmountHtg: widget.prepaidCapHtg,
@@ -458,13 +458,13 @@ class _PaymentLinkStatusSheetState
       context,
       ref,
       message:
-          'This action requires admin authorization. Manually marking '
-          '${widget.orderLabel} as paid should only be done if you can confirm '
-          'the payment was received outside the app.',
+          'Cette action exige une autorisation admin. Ne marquez '
+          '${widget.orderLabel} comme payé que si vous pouvez confirmer que '
+          'le paiement a bien été reçu hors de l\'application.',
       isDark: isDark,
-      title: 'Admin authorization',
-      codeFieldLabel: 'Admin password / code',
-      confirmButtonLabel: 'Authorize',
+      title: 'Autorisation admin',
+      codeFieldLabel: 'Mot de passe ou code admin',
+      confirmButtonLabel: 'Autoriser',
     );
     if (approved == true && mounted) {
       setState(() => _markingPaid = true);
@@ -481,7 +481,7 @@ class _PaymentLinkStatusSheetState
 /// sub-line is shown inside the banner (amount + balance left).
 ///
 /// When [onViewPaymentDetails] is non-null AND [staffPaymentConfirmed] is true,
-/// a secondary "View payment details" row is shown below the main banner.
+/// a secondary "Voir le paiement" row is shown below the main banner.
 class PaymentLinkBillBanner extends StatelessWidget {
   final bool paymentLinkRemotePaid;
   final bool staffPaymentConfirmed;
@@ -510,10 +510,10 @@ class PaymentLinkBillBanner extends StatelessWidget {
         ? (isDark ? AppColors.mediumGreen : AppColors.deepGreen)
         : AppColors.amber;
     final statusLabel = staffPaymentConfirmed
-        ? 'Staff confirmed paid'
+        ? 'Paiement confirmé par le personnel'
         : paymentLinkRemotePaid
-            ? 'Customer paid — confirm at register'
-            : 'Waiting for payment';
+            ? 'Payé par le client — à confirmer en caisse'
+            : 'En attente de paiement';
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
 
     // Prepaid sub-line
@@ -562,7 +562,7 @@ class PaymentLinkBillBanner extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Payment link active',
+                            'Lien de paiement actif',
                             style: AppTextStyles.caption(color: muted).copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
@@ -630,7 +630,7 @@ class PaymentLinkBillBanner extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'View',
+                        'Voir',
                         style:
                             AppTextStyles.caption(color: statusColor).copyWith(
                           fontSize: 11,
@@ -645,7 +645,7 @@ class PaymentLinkBillBanner extends StatelessWidget {
               ),
             ),
 
-            // ── "View payment details" row (only when confirmed) ───────────
+            // ── "Voir le paiement" row (only when confirmed) ───────────
             if (showDetailsRow) ...[
               Container(
                 height: 1,
@@ -663,7 +663,7 @@ class PaymentLinkBillBanner extends StatelessWidget {
                           color: statusColor.withValues(alpha: 0.85)),
                       const SizedBox(width: 7),
                       Text(
-                        'View payment details',
+                        'Voir le paiement',
                         style: AppTextStyles.caption(color: statusColor)
                             .copyWith(
                           fontWeight: FontWeight.w700,

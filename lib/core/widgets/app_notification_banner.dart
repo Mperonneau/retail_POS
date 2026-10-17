@@ -96,7 +96,7 @@ class AppNotificationModal extends ConsumerWidget {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'BizManager Haiti',
+                                        'BizManager Haïti',
                                         style: AppTextStyles.caption(
                                           color: isDark
                                               ? AppColors.coolGray
@@ -107,7 +107,7 @@ class AppNotificationModal extends ConsumerWidget {
                                   ),
                                 ),
                                 Semantics(
-                                  label: 'Close',
+                                  label: 'Fermer',
                                   button: true,
                                   child: InkWell(
                                     onTap: () => ref
@@ -194,13 +194,13 @@ class AppNotificationModal extends ConsumerWidget {
   static String _titleForKind(AppNotificationKind kind) {
     switch (kind) {
       case AppNotificationKind.success:
-        return 'Success';
+        return 'Réussi';
       case AppNotificationKind.info:
         return 'Notice';
       case AppNotificationKind.warning:
         return 'Warning';
       case AppNotificationKind.error:
-        return 'Error';
+        return 'Erreur';
     }
   }
 

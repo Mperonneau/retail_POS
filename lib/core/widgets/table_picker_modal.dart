@@ -52,12 +52,12 @@ Future<MockTable?> showTablePickerModal(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Assign table',
+                        'Assigner une table',
                         style: AppTextStyles.h2(
                             color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
                       ),
                       Text(
-                        '${available.length} table${available.length != 1 ? 's' : ''} available',
+                        '${available.length} table${available.length != 1 ? 's' : ''} libre${available.length != 1 ? 's' : ''}',
                         style: AppTextStyles.caption(color: muted),
                       ),
                     ],
@@ -90,7 +90,7 @@ Future<MockTable?> showTablePickerModal(
                           ),
                           const SizedBox(height: AppConstants.spacing12),
                           Text(
-                            'No tables available',
+                            'Aucune table disponible',
                             style: AppTextStyles.body(color: muted),
                             textAlign: TextAlign.center,
                           ),
@@ -129,7 +129,7 @@ Future<MockTable?> showTablePickerModal(
             style: TextButton.styleFrom(
               foregroundColor: muted,
             ),
-            child: Text('Cancel', style: AppTextStyles.button(color: muted)),
+            child: Text('Annuler', style: AppTextStyles.button(color: muted)),
           ),
         ],
       );
@@ -207,7 +207,7 @@ class _TablePickTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${table.capacity} seats',
+                    '${table.capacity} places',
                     style: AppTextStyles.caption(color: muted),
                     textAlign: TextAlign.center,
                   ),
@@ -221,7 +221,7 @@ class _TablePickTile extends StatelessWidget {
                           color: AppColors.deepGreen.withValues(alpha: 0.3)),
                     ),
                     child: Text(
-                      'Available',
+                      'Disponible',
                       style: AppTextStyles.caption(color: AppColors.deepGreen)
                           .copyWith(fontSize: 9, fontWeight: FontWeight.w700),
                     ),

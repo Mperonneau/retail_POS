@@ -224,111 +224,111 @@ class HotelCleaningServiceDef {
 const List<HotelCleaningServiceDef> kHotelCleaningServiceCatalog = [
   HotelCleaningServiceDef(
     key: 'full_cleaning',
-    title: 'Full cleaning',
+    title: 'Nettoyage complet',
     description:
         'Complete room clean, change towels & bed linens, restock bathroom amenities, trash out.',
   ),
   HotelCleaningServiceDef(
     key: 'full_turnover',
-    title: 'Post-checkout turnover',
+    title: 'Remise en état après départ',
     description:
-        'Strip beds, full clean after guest departure, inspect minibar & damage, restock for next guest.',
+        'Défaire les lits, ménage complet après le départ, vérifier le minibar et les dégâts, préparer pour le client suivant.',
   ),
   HotelCleaningServiceDef(
     key: 'deep_clean',
-    title: 'Deep cleaning',
+    title: 'Nettoyage en profondeur',
     description:
         'Heavy clean: bathroom detail, floors, dusting, inside windows, under furniture when needed.',
   ),
   HotelCleaningServiceDef(
     key: 'light_tidy',
-    title: 'Light tidy / refresh',
+    title: 'Rangement léger',
     description:
-        'Quick straighten, surface wipe, fluff pillows — guest still in room or short touch-up.',
+        'Remise en ordre rapide, essuyer les surfaces, regonfler les oreillers — client encore dans la chambre.',
   ),
   HotelCleaningServiceDef(
     key: 'stayover_service',
-    title: 'Stay-over service',
+    title: 'Service de séjour',
     description:
-        'Guest present: respect belongings, replace used towels, basic bathroom refresh.',
+        'Client présent : respecter les affaires, changer les serviettes utilisées, rafraîchir la salle de bain.',
   ),
   HotelCleaningServiceDef(
     key: 'towel_change',
-    title: 'Towels & linen change',
+    title: 'Changement de linge',
     description:
-        'Replace used towels and/or bed linens only; no full room clean unless combined with other tasks.',
+        'Changer seulement les serviettes et/ou le linge de lit ; pas de ménage complet sauf si combiné à d\'autres tâches.',
   ),
   HotelCleaningServiceDef(
     key: 'bed_make',
-    title: 'Make beds',
+    title: 'Faire les lits',
     description: 'Make beds, fluff pillows, align covers — may skip full linen change.',
   ),
   HotelCleaningServiceDef(
     key: 'bathroom_refresh',
-    title: 'Bathroom refresh',
+    title: 'Rafraîchissement de la salle de bain',
     description:
-        'Sanitize fixtures, mirror, shower/tub wipe; replenish soap, shampoo, toilet paper.',
+        'Désinfecter les équipements, le miroir et la douche ; remplir le savon, le shampoing et le papier toilette.',
   ),
   HotelCleaningServiceDef(
     key: 'vacuum_mop',
-    title: 'Vacuum & mop floors',
-    description: 'All floor surfaces — carpet vacuum, hard floors mopped as standard.',
+    title: 'Aspirer et laver les sols',
+    description: 'Tous les sols — aspirer les tapis, laver les sols durs.',
   ),
   HotelCleaningServiceDef(
     key: 'trash_recycling',
-    title: 'Trash & recycling',
-    description: 'Empty all bins, replace liners, sort recycling per hotel policy.',
+    title: 'Déchets et recyclage',
+    description: 'Vider les poubelles, changer les sacs, trier selon la consigne de l\'hôtel.',
   ),
   HotelCleaningServiceDef(
     key: 'minibar_restock',
-    title: 'Minibar & snacks restock',
-    description: 'Restock minibar items, log charges, check expiry dates.',
+    title: 'Réassort minibar et snacks',
+    description: 'Réapprovisionner le minibar, noter les consommations et vérifier les dates.',
   ),
   HotelCleaningServiceDef(
     key: 'amenities_restock',
-    title: 'Amenities restock',
+    title: 'Réassort des commodités',
     description:
         'Soaps, shampoos, lotions, tissues, coffee/tea supplies, water bottles as needed.',
   ),
   HotelCleaningServiceDef(
     key: 'turn_down',
-    title: 'Evening turn-down',
+    title: 'Préparation du soir',
     description:
-        'Draw curtains, bedside setup, chocolate or welcome note per hotel standard.',
+        'Tirer les rideaux, préparer la table de nuit, chocolat ou mot de bienvenue selon la norme.',
   ),
   HotelCleaningServiceDef(
     key: 'windows_glass',
-    title: 'Windows & mirrors',
+    title: 'Fenêtres et miroirs',
     description: 'Interior glass: windows, mirrors, glass tables — streak-free finish.',
   ),
   HotelCleaningServiceDef(
     key: 'balcony_terrace',
-    title: 'Balcony / terrace',
+    title: 'Balcon / terrasse',
     description: 'Sweep, wipe surfaces, tidy outdoor furniture if applicable.',
   ),
   HotelCleaningServiceDef(
     key: 'disinfect_high_touch',
-    title: 'High-touch disinfect',
+    title: 'Désinfection des surfaces',
     description:
         'Remotes, phones, switches, handles, desk areas — hygiene-focused pass.',
   ),
   HotelCleaningServiceDef(
     key: 'laundry_coordination',
-    title: 'Guest laundry',
+    title: 'Blanchisserie client',
     description:
-        'Pick up / deliver guest laundry or coordinate with laundry — see notes for timing.',
+        'Récupérer ou livrer le linge du client, ou coordonner avec la blanchisserie — voir les notes pour l\'horaire.',
   ),
   HotelCleaningServiceDef(
     key: 'lost_found_check',
-    title: 'Lost & found check',
+    title: 'Vérification des objets trouvés',
     description:
-        'Quick check under bed, closets, drawers for left items after checkout.',
+        'Vérifier sous le lit, dans les placards et les tiroirs les objets oubliés après le départ.',
   ),
   HotelCleaningServiceDef(
     key: 'maintenance_report',
-    title: 'Report maintenance issues',
+    title: 'Signaler un problème d\'entretien',
     description:
-        'Note broken fixtures, leaks, AC/TV issues for engineering — details in notes.',
+        'Signaler le matériel cassé, les fuites et les problèmes de clim ou de TV — détails dans les notes.',
   ),
 ];
 
@@ -532,7 +532,7 @@ final _mockRoomsSeed = [
   MockRoom(
       id: 1,
       number: '101',
-      type: 'Single',
+      type: 'Simple',
       floor: 1,
       status: 'available',
       priceHtg: 5000,
@@ -540,7 +540,7 @@ final _mockRoomsSeed = [
   MockRoom(
       id: 2,
       number: '102',
-      type: 'Single',
+      type: 'Simple',
       floor: 1,
       status: 'occupied',
       guestName: 'Marie Toussaint',
@@ -586,7 +586,7 @@ final _mockRoomsSeed = [
   MockRoom(
       id: 6,
       number: '106',
-      type: 'Single',
+      type: 'Simple',
       floor: 1,
       status: 'available',
       priceHtg: 5000,
@@ -715,7 +715,7 @@ List<MockReservation> _buildMockReservationsSeed() {
         depositHtg: 8500,
         status: 'confirmed',
         roomId: 8, // Room 202 (Double)
-        idType: 'Passport',
+        idType: 'Passeport',
         idNumber: 'P-789456'),
     MockReservation(
         id: 2,
@@ -738,7 +738,7 @@ List<MockReservation> _buildMockReservationsSeed() {
         confirmationCode: 'BM-2026-003',
         guestName: 'Pierre Alexandre',
         phone: '+509 4890-1234',
-        roomType: 'Single',
+        roomType: 'Simple',
         checkInDate: todayStr,
         checkOutDate: tomorrowStr,
         nights: 1,
@@ -775,7 +775,7 @@ List<MockReservation> _buildMockReservationsSeed() {
         depositHtg: 9000,
         status: 'checked_in',
         roomId: 7, // Room 201 (Double)
-        idType: 'Passport',
+        idType: 'Passeport',
         idNumber: 'DE-998877'),
   ];
 }
@@ -787,7 +787,7 @@ final mockGuests = [
       nationality: 'Haïtienne',
       phone: '+509 3234-5678',
       email: 'marie.t@gmail.com',
-      notes: 'Prefers quiet room, 2nd floor'),
+      notes: 'Préfère une chambre calme, 2e étage'),
   MockGuest(
       id: 2,
       name: 'James Williams',
@@ -800,7 +800,7 @@ final mockGuests = [
       nationality: 'Haïtien',
       phone: '+509 4567-8901',
       email: 'dr.charles@uniofhaiti.edu',
-      notes: 'Regular guest, prefers 302'),
+      notes: 'Client habituel, préfère la 302'),
   MockGuest(
       id: 4,
       name: 'Robert Johnson',
@@ -860,7 +860,7 @@ class MockHotelOrderItem {
   final double priceHtg;
   final double priceUsd;
   final String? note;
-  /// Menu category (e.g. 'Drinks', 'Mains'). Used to decide whether the item
+  /// Menu category (e.g. 'Boissons', 'Plats'). Used to decide whether the item
   /// goes to a kitchen batch (food) or is merged directly (drinks).
   final String category;
   final bool isCustom;
@@ -873,13 +873,13 @@ class MockHotelOrderItem {
     required this.priceHtg,
     required this.priceUsd,
     this.note,
-    this.category = 'Mains',
+    this.category = 'Plats',
     this.isCustom = false,
     this.sendToKitchen = false,
     this.customStatus = 'pending',
   });
 
-  bool get isDrink => category == 'Drinks';
+  bool get isDrink => category == 'Boissons';
 
   MockHotelOrderItem copyWith({
     String? name,
@@ -1128,19 +1128,19 @@ final mockHotelRestaurantOrders = [
           quantity: 1,
           priceHtg: 1200,
           priceUsd: 12.00,
-          category: 'Mains'),
+          category: 'Plats'),
       MockHotelOrderItem(
           name: 'Jus de Corossol',
           quantity: 1,
           priceHtg: 200,
           priceUsd: 2.00,
-          category: 'Drinks'),
+          category: 'Boissons'),
       MockHotelOrderItem(
           name: 'Eau Minérale',
           quantity: 2,
           priceHtg: 100,
           priceUsd: 1.00,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 18),
@@ -1153,23 +1153,23 @@ final mockHotelRestaurantOrders = [
     guestName: 'Sandra Moreau',
     items: const [
       MockHotelOrderItem(
-          name: 'Accra (Malanga Fritters)',
+          name: 'Accra (beignets de malanga)',
           quantity: 1,
           priceHtg: 350,
           priceUsd: 3.50,
-          category: 'Starters'),
+          category: 'Entrées'),
       MockHotelOrderItem(
           name: 'Poulet en Sauce',
           quantity: 2,
           priceHtg: 950,
           priceUsd: 9.50,
-          category: 'Mains'),
+          category: 'Plats'),
       MockHotelOrderItem(
           name: 'Prestige Beer',
           quantity: 2,
           priceHtg: 300,
           priceUsd: 3.00,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 35),
@@ -1187,14 +1187,14 @@ final mockHotelRestaurantOrders = [
           quantity: 1,
           priceHtg: 2200,
           priceUsd: 22.00,
-          category: 'Specials'),
+          category: 'Suggestions'),
       MockHotelOrderItem(
           name: 'Rhum Barbancourt',
           quantity: 1,
           priceHtg: 450,
           priceUsd: 4.50,
-          note: 'On the rocks',
-          category: 'Drinks'),
+          note: 'Sur glace',
+          category: 'Boissons'),
       MockHotelOrderItem(
           name: 'Dous Makos',
           quantity: 1,
@@ -1218,7 +1218,7 @@ final mockHotelRestaurantOrders = [
           quantity: 2,
           priceHtg: 180,
           priceUsd: 1.80,
-          category: 'Drinks'),
+          category: 'Boissons'),
       MockHotelOrderItem(
           name: 'Pain Patate',
           quantity: 2,
@@ -1240,19 +1240,19 @@ final mockHotelRestaurantOrders = [
           quantity: 2,
           priceHtg: 650,
           priceUsd: 6.50,
-          category: 'Starters'),
+          category: 'Entrées'),
       MockHotelOrderItem(
-          name: 'Lanbi (Conch)',
+          name: 'Lanbi (lambi)',
           quantity: 2,
           priceHtg: 1800,
           priceUsd: 18.00,
-          category: 'Specials'),
+          category: 'Suggestions'),
       MockHotelOrderItem(
           name: 'Prestige Beer',
           quantity: 4,
           priceHtg: 300,
           priceUsd: 3.00,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 25),
@@ -1261,26 +1261,26 @@ final mockHotelRestaurantOrders = [
   ),
   MockHotelRestaurantOrder(
     id: 206,
-    tableName: 'Terrace A',
+    tableName: 'Terrasse A',
     items: const [
       MockHotelOrderItem(
           name: 'Tassot de Cabrit',
           quantity: 2,
           priceHtg: 1600,
           priceUsd: 16.00,
-          category: 'Mains'),
+          category: 'Plats'),
       MockHotelOrderItem(
-          name: 'Bannann Peze (Fried Plantain)',
+          name: 'Bannann peze',
           quantity: 2,
           priceHtg: 200,
           priceUsd: 2.00,
-          category: 'Sides'),
+          category: 'Accompagnements'),
       MockHotelOrderItem(
           name: 'Rhum Barbancourt',
           quantity: 2,
           priceHtg: 450,
           priceUsd: 4.50,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 12),
@@ -1296,19 +1296,19 @@ final mockHotelRestaurantOrders = [
           quantity: 2,
           priceHtg: 250,
           priceUsd: 2.50,
-          category: 'Starters'),
+          category: 'Entrées'),
       MockHotelOrderItem(
           name: 'Poisson Gros Sel',
           quantity: 1,
           priceHtg: 1400,
           priceUsd: 14.00,
-          category: 'Mains'),
+          category: 'Plats'),
       MockHotelOrderItem(
-          name: 'Akasan (Corn Drink)',
+          name: 'Akasan',
           quantity: 2,
           priceHtg: 150,
           priceUsd: 1.50,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 6),
@@ -1325,13 +1325,13 @@ final mockHotelRestaurantOrders = [
           quantity: 2,
           priceHtg: 1200,
           priceUsd: 12.00,
-          category: 'Mains'),
+          category: 'Plats'),
       MockHotelOrderItem(
           name: 'Prestige Beer',
           quantity: 2,
           priceHtg: 300,
           priceUsd: 3.00,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 4),
@@ -1349,19 +1349,19 @@ final mockHotelRestaurantOrders = [
           quantity: 1,
           priceHtg: 950,
           priceUsd: 9.50,
-          category: 'Mains'),
+          category: 'Plats'),
       MockHotelOrderItem(
           name: 'Diri Djondjon',
           quantity: 1,
           priceHtg: 300,
           priceUsd: 3.00,
-          category: 'Sides'),
+          category: 'Accompagnements'),
       MockHotelOrderItem(
           name: 'Jus de Grenadine',
           quantity: 1,
           priceHtg: 200,
           priceUsd: 2.00,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 2),
@@ -1379,13 +1379,13 @@ final mockHotelRestaurantOrders = [
           quantity: 1,
           priceHtg: 1400,
           priceUsd: 14.00,
-          category: 'Mains'),
+          category: 'Plats'),
       MockHotelOrderItem(
           name: 'Eau Minérale',
           quantity: 1,
           priceHtg: 100,
           priceUsd: 1.00,
-          category: 'Drinks'),
+          category: 'Boissons'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 20),
@@ -1401,7 +1401,7 @@ final mockHotelRestaurantOrders = [
               quantity: 1,
               priceHtg: 1400,
               priceUsd: 14.00,
-              category: 'Mains'),
+              category: 'Plats'),
         ],
         status: 'complete',
         placedAt: DateTime(
@@ -1419,7 +1419,7 @@ final mockHotelRestaurantOrders = [
           quantity: 1,
           priceHtg: 1200,
           priceUsd: 12.00,
-          category: 'Mains'),
+          category: 'Plats'),
     ],
     placedAt: DateTime(
         _hNow.year, _hNow.month, _hNow.day, _hNow.hour, _hNow.minute - 30),
@@ -1435,7 +1435,7 @@ final mockHotelRestaurantOrders = [
               quantity: 1,
               priceHtg: 1200,
               priceUsd: 12.00,
-              category: 'Mains'),
+              category: 'Plats'),
         ],
         status: 'complete',
         placedAt: DateTime(
@@ -1447,14 +1447,14 @@ final mockHotelRestaurantOrders = [
   MockHotelRestaurantOrder(
     id: 212,
     orderType: 'takeout',
-    guestName: 'Older Order Guest',
+    guestName: 'Client — ancienne commande',
     items: const [
       MockHotelOrderItem(
           name: 'Salade de Chou',
           quantity: 1,
           priceHtg: 250,
           priceUsd: 2.50,
-          category: 'Starters'),
+          category: 'Entrées'),
     ],
     placedAt: () {
       final y = DateTime.now().subtract(const Duration(days: 1));
@@ -1471,7 +1471,7 @@ final mockHotelRestaurantOrders = [
               quantity: 1,
               priceHtg: 250,
               priceUsd: 2.50,
-              category: 'Starters'),
+              category: 'Entrées'),
         ],
         status: 'delivered',
         placedAt: () {
@@ -1551,7 +1551,7 @@ class GuestsNotifier extends StateNotifier<List<MockGuest>> {
       }
     }
 
-    final mergedName = name.trim().isNotEmpty ? name.trim() : (existing?.name ?? 'Guest');
+    final mergedName = name.trim().isNotEmpty ? name.trim() : (existing?.name ?? 'Client');
     final nat = nationality.trim().isEmpty ? 'Unknown' : nationality.trim();
 
     if (existing != null) {
@@ -1847,9 +1847,9 @@ class HotelRestaurantOrdersNotifier
   /// Returns `false` if either order has a pending payment link or prepaid cap.
   bool mergeOrders(int survivorId, int absorbedId) {
     final survivor = state.firstWhere((o) => o.id == survivorId,
-        orElse: () => throw ArgumentError('Survivor not found'));
+        orElse: () => throw ArgumentError('Table conservée introuvable'));
     final absorbed = state.firstWhere((o) => o.id == absorbedId,
-        orElse: () => throw ArgumentError('Absorbed not found'));
+        orElse: () => throw ArgumentError('Table absorbée introuvable'));
 
     // One-time merge only — survivor cannot absorb a second table.
     if (survivor.mergedSnapshot != null) return false;
@@ -2141,7 +2141,7 @@ List<MockReservation> individualReservationsFromGroup(MockGroupReservation g) {
       guestName: name,
       phone: g.contactPhone,
       email: g.contactEmail,
-      notes: 'Group reservation',
+      notes: 'Réservation de groupe',
       idType: g.contactIdType,
       idNumber: g.contactIdNumber,
       roomType: alloc.roomType,

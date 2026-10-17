@@ -75,7 +75,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   final Map<int, Timer> _warningTimers = {};
   late final TextEditingController _productSearchController;
   String _search = '';
-  String _category = 'All';
+  String _category = 'Tous';
   double _discountPercent = 0;
 
   /// Embedded checkout (desktop: right column; mobile: slide-over panel).
@@ -110,7 +110,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   bool _mobileCartPanelOpen = false;
 
   final _categories = [
-    'All',
+    'Tous',
     'Alimentation',
     'Boissons',
     'Ménage',
@@ -272,11 +272,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         code = await showDialog<String>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Enter barcode'),
+            title: const Text('Saisir le code-barres'),
             content: TextField(
               controller: ctrl,
               decoration: const InputDecoration(
-                hintText: 'Barcode or SKU',
+                hintText: 'Code-barres ou SKU',
                 border: OutlineInputBorder(),
               ),
               autofocus: true,
@@ -285,11 +285,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: const Text('Annuler'),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-                child: const Text('Search'),
+                child: const Text('Rechercher'),
               ),
             ],
           ),
@@ -316,7 +316,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     if (byBarcode != null) {
       _addToCart(byBarcode);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Added ${byBarcode.name}')),
+        SnackBar(content: Text('${byBarcode.name} ajouté')),
       );
       return;
     }
@@ -327,7 +327,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final id = product.id;
     _warningTimers[id]?.cancel();
     setState(() {
-      _qtyWarnings[id] = 'Only ${product.stockQuantity} available';
+      _qtyWarnings[id] = 'Seulement ${product.stockQuantity} en stock';
     });
     _warningTimers[id] = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
@@ -434,7 +434,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               ),
                               Expanded(
                                 child: Text(
-                                  'Cart',
+                                  'Panier',
                                   style: AppTextStyles.h2(
                                     color: isDark
                                         ? AppColors.warmWhite
@@ -446,7 +446,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                 TextButton(
                                   onPressed: () => setState(() => _cart.clear()),
                                   child: Text(
-                                    'Clear',
+                                    'Effacer',
                                     style: AppTextStyles.caption(
                                         color: AppColors.boldRed),
                                   ),
@@ -474,7 +474,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   Widget _buildProductGrid(BuildContext context) {
     final products = ref.watch(mockProductsProvider).where((p) {
-      final matchCat = _category == 'All' || p.category == _category;
+      final matchCat = _category == 'Tous' || p.category == _category;
       final matchSearch = _search.isEmpty ||
           p.name.toLowerCase().contains(_search.toLowerCase());
       return matchCat && matchSearch && p.active;
@@ -558,12 +558,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       width: categoryWidth,
                       initialSelection: _categories.contains(_category)
                           ? _category
-                          : 'All',
+                          : 'Tous',
                       enableFilter: true,
                       enableSearch: true,
                       requestFocusOnTap: true,
                       menuHeight: menuH,
-                      hintText: 'Category',
+                      hintText: 'Catégorie',
                       leadingIcon: Icon(
                         Icons.category_outlined,
                         size: filterIconSize,
@@ -611,7 +611,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         controller: _productSearchController,
                         textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
-                          hintText: 'Search products or scan barcode...',
+                          hintText: 'Rechercher un produit ou scanner un code-barres...',
                           prefixIcon: Icon(Icons.search, size: filterIconSize),
                           prefixIconConstraints: BoxConstraints.tightFor(
                             height: fieldMinHeight,
@@ -621,7 +621,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   .trim()
                                   .isNotEmpty
                               ? IconButton(
-                                  tooltip: 'Clear search',
+                                  tooltip: 'Effacer la recherche',
                                   onPressed: () {
                                     _productSearchController.clear();
                                   },
@@ -660,7 +660,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     ),
                   ),
                   Tooltip(
-                    message: 'Scan barcode',
+                    message: 'Scanner le code-barres',
                     child: IconButton(
                       icon: const Icon(Icons.qr_code_scanner_outlined),
                       iconSize: 22,
@@ -681,8 +681,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           child: products.isEmpty
               ? const EmptyState(
                   icon: Icons.inventory_outlined,
-                  title: 'No products',
-                  message: 'No products match your search.')
+                  title: 'Aucun produit',
+                  message: 'Aucun produit ne correspond à votre recherche.')
               : LayoutBuilder(
                   builder: (context, constraints) {
                     final crossAxisCount =
@@ -726,7 +726,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               child: Row(
                 children: [
                   Expanded(
-                      child: Text('Cart',
+                      child: Text('Panier',
                           style: AppTextStyles.h2(
                             color: isDark
                                 ? AppColors.warmWhite
@@ -735,7 +735,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   if (_cart.isNotEmpty)
                     TextButton(
                       onPressed: () => setState(() => _cart.clear()),
-                      child: Text('Clear',
+                      child: Text('Effacer',
                           style:
                               AppTextStyles.caption(color: AppColors.boldRed)),
                     ),
@@ -748,7 +748,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             child: _cart.isEmpty
                 ? Center(
                     child: Text(
-                      'Cart is empty',
+                      'Le panier est vide',
                       style: TextStyle(
                         color: isDark
                             ? AppColors.coolGray
@@ -766,7 +766,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             SizedBox(
                               width: 68,
                               child: Text(
-                                'Qty',
+                                'Qté',
                                 style: AppTextStyles.caption(
                                   color: isDark
                                       ? AppColors.coolGray
@@ -776,7 +776,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             ),
                             Expanded(
                               child: Text(
-                                'Item',
+                                'Article',
                                 style: AppTextStyles.caption(
                                   color: isDark
                                       ? AppColors.coolGray
@@ -787,7 +787,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             SizedBox(
                               width: 76,
                               child: Text(
-                                'Unit',
+                                'Unité',
                                 textAlign: TextAlign.right,
                                 style: AppTextStyles.caption(
                                   color: isDark
@@ -888,7 +888,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       child: Align(
                                         alignment: Alignment.center,
                                         child: Tooltip(
-                                          message: 'Remove line',
+                                          message: 'Retirer la ligne',
                                           child: GestureDetector(
                                             onTap: () => _removeLineFromCart(
                                               entry.product,
@@ -941,7 +941,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             child: Column(
               children: [
                 _SummaryRow(
-                  label: 'Subtotal',
+                  label: 'Sous-total',
                   value: CurrencyFormatter.local(context, _subtotal),
                   isDark: isDark,
                 ),
@@ -952,7 +952,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Discount',
+                          'Remise',
                           style: AppTextStyles.caption(
                             color: isDark ? AppColors.coolGray : AppColors.darkGray,
                           ),
@@ -1019,7 +1019,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 ],
                 const SizedBox(height: 8),
                 AppButton(
-                  label: widget.isQuoteMode ? 'Continue' : 'Checkout',
+                  label: widget.isQuoteMode ? 'Continuer' : 'Checkout',
                   onPressed:
                       _cart.isEmpty ? null : () => _startEmbeddedCheckout(),
                   icon: Icons.arrow_forward_rounded,
@@ -1140,7 +1140,7 @@ class _ProductTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Stock: ${product.stockQuantity}',
+                      'Stock : ${product.stockQuantity}',
                       style: AppTextStyles.caption(
                         color: product.isLowStock
                             ? AppColors.amber

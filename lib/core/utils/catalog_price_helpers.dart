@@ -13,8 +13,8 @@ class CatalogPriceLogic {
 
   /// Primary label for the price field.
   static String priceFieldLabel(CurrencySettings s) {
-    if (entryCurrencyIsUsd(s)) return 'Price (USD)';
-    return 'Price (${s.localCurrencyCode})';
+    if (entryCurrencyIsUsd(s)) return 'Prix (USD)';
+    return 'Prix (${s.localCurrencyCode})';
   }
 
   static String priceFieldPrefix(CurrencySettings s) {

@@ -22,7 +22,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
   bool _isProcessing = false;
   bool _isDone = false;
 
-  final _methods = ['MonCash', 'Card', 'Cash', 'Split'];
+  final _methods = ['MonCash', 'Carte', 'Espèces', 'Split'];
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
-        title: Text('Payment', style: AppTextStyles.h2(color: AppColors.white)),
+        title: Text('Paiement', style: AppTextStyles.h2(color: AppColors.white)),
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: AppColors.white,
         leading: IconButton(
@@ -60,7 +60,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Amount Due', style: AppTextStyles.body()),
+              Text('Montant dû', style: AppTextStyles.body()),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -73,7 +73,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.spacing24),
-        Text('Payment Method', style: AppTextStyles.h2(
+        Text('Moyen de paiement', style: AppTextStyles.h2(
           color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
         )),
         const SizedBox(height: AppConstants.spacing12),
@@ -89,9 +89,9 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
             final isSelected = m == _method;
             final icon = m == 'MonCash'
                 ? Icons.phone_android_outlined
-                : m == 'Card'
+                : m == 'Carte'
                     ? Icons.credit_card_outlined
-                    : m == 'Cash'
+                    : m == 'Espèces'
                         ? Icons.payments_outlined
                         : Icons.call_split_outlined;
 
@@ -123,7 +123,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
         Expanded(child: _buildMethodContent(isDark)),
         const SizedBox(height: AppConstants.spacing16),
         AppButton(
-          label: _isProcessing ? 'Processing...' : 'Confirm Payment',
+          label: _isProcessing ? 'Traitement...' : 'Confirmer le paiement',
           onPressed: _isProcessing ? null : _processPayment,
           isLoading: _isProcessing,
           icon: Icons.check_circle_outline,
@@ -141,11 +141,11 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
             children: [
               Icon(Icons.phone_android_outlined, size: 40, color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
               const SizedBox(height: 12),
-              Text('Enter customer phone or scan QR', style: AppTextStyles.body(), textAlign: TextAlign.center),
+              Text('Téléphone du client ou scan QR', style: AppTextStyles.body(), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Customer Phone (MonCash)',
+                  labelText: 'Téléphone du client (MonCash)',
                   prefixIcon: const Icon(Icons.phone_outlined, size: 18),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                 ),
@@ -167,7 +167,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
             ],
           ),
         );
-      case 'Cash':
+      case 'Espèces':
         return AppCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -176,7 +176,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
               const SizedBox(height: 12),
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Cash Received (HTG)',
+                  labelText: 'Espèces reçues (HTG)',
                   prefixText: 'HTG ',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
                 ),
@@ -201,9 +201,9 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Split Payment', style: AppTextStyles.h3()),
+              Text('Paiement partagé', style: AppTextStyles.h3()),
               const SizedBox(height: 12),
-              Text('Combine multiple payment methods', style: AppTextStyles.body()),
+              Text('Combiner plusieurs moyens de paiement', style: AppTextStyles.body()),
               const SizedBox(height: 16),
               Row(children: [
                 Expanded(child: TextField(
@@ -214,7 +214,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
                 )),
                 const SizedBox(width: 8),
                 Expanded(child: TextField(
-                  decoration: InputDecoration(labelText: 'Cash (HTG)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConstants.radiusInput))),
+                  decoration: InputDecoration(labelText: 'Espèces (HTG)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConstants.radiusInput))),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: InputFormatters.decimalAmount,
@@ -235,7 +235,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
               const SizedBox(height: 12),
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Card Number',
+                  labelText: 'Numéro de carte',
                   hintText: '1234 5678 9012 3456',
                   prefixIcon: const Icon(Icons.credit_card, size: 18),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
@@ -259,7 +259,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
                 )),
               ]),
               const SizedBox(height: 4),
-              Text('Powered by Stripe', style: AppTextStyles.caption()),
+              Text('Propulsé par Stripe', style: AppTextStyles.caption()),
             ],
           ),
         );
@@ -280,13 +280,13 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send via WhatsApp'),
+            title: const Text('Envoyer par WhatsApp'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: 'Numéro de téléphone',
                   hintText: '+509 XXXX-XXXX',
                   prefixIcon: const Icon(Icons.phone_outlined),
                   errorText: err,
@@ -299,19 +299,19 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
               TextButton(
                 onPressed: () {
                   if (ctrl.text.trim().isEmpty) {
-                    setD(() => err = 'Please enter a phone number.');
+                    setD(() => err = 'Veuillez saisir un numéro de téléphone.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Receipt sent via WhatsApp'), behavior: SnackBarBehavior.floating),
+                    const SnackBar(content: Text('Reçu envoyé par WhatsApp'), behavior: SnackBarBehavior.floating),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );
@@ -328,13 +328,13 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send Receipt to Email'),
+            title: const Text('Envoyer le reçu par e-mail'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Email Address',
+                  labelText: 'Adresse e-mail',
                   hintText: 'email@example.com',
                   prefixIcon: const Icon(Icons.email_outlined),
                   errorText: err,
@@ -347,20 +347,20 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
               TextButton(
                 onPressed: () {
                   final email = ctrl.text.trim();
                   if (email.isEmpty || !email.contains('@')) {
-                    setD(() => err = 'Please enter a valid email address.');
+                    setD(() => err = 'Veuillez saisir une adresse e-mail valide.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Receipt sent to email'), behavior: SnackBarBehavior.floating),
+                    const SnackBar(content: Text('Reçu envoyé par e-mail'), behavior: SnackBarBehavior.floating),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );
@@ -373,8 +373,8 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Print Receipt'),
-        content: const Text('Receipt sent to the printer successfully.'),
+        title: const Text('Imprimer le reçu'),
+        content: const Text('Reçu envoyé à l\'imprimante.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -392,33 +392,33 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
         children: [
           const Icon(Icons.check_circle_rounded, color: AppColors.deepGreen, size: 80),
           const SizedBox(height: 24),
-          Text('Payment Successful', style: AppTextStyles.h1()),
+          Text('Paiement réussi', style: AppTextStyles.h1()),
           const SizedBox(height: 8),
           Text(CurrencyFormatter.local(context, _total), style: AppTextStyles.price().copyWith(fontSize: 24)),
           const SizedBox(height: 8),
           Text('via $_method', style: AppTextStyles.caption()),
           const SizedBox(height: 32),
           AppButton(
-            label: 'Send Receipt via WhatsApp',
+            label: 'Envoyer le reçu par WhatsApp',
             onPressed: () => _showWhatsAppDialog(context),
             icon: Icons.send_outlined,
           ),
           const SizedBox(height: 8),
           AppButton(
-            label: 'Send Receipt to Email',
+            label: 'Envoyer le reçu par e-mail',
             onPressed: () => _showEmailDialog(context),
             variant: AppButtonVariant.secondary,
             icon: Icons.email_outlined,
           ),
           const SizedBox(height: 8),
           AppButton(
-            label: 'Print Receipt',
+            label: 'Imprimer le reçu',
             onPressed: () => _showPrintDialog(context),
             variant: AppButtonVariant.secondary,
             icon: Icons.print_outlined,
           ),
           const SizedBox(height: 8),
-          AppButton(label: 'Done', onPressed: () => context.pop(), variant: AppButtonVariant.ghost),
+          AppButton(label: 'Terminé', onPressed: () => context.pop(), variant: AppButtonVariant.ghost),
         ],
       ),
     );

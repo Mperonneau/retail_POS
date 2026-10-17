@@ -84,23 +84,23 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
 
     if (_needsTable) {
       if (_tableName == null || _tableName!.isEmpty) {
-        setState(() => _tableError = 'Select a table');
+        setState(() => _tableError = 'Choisir une table');
         return;
       }
     }
     if (_needsRoom) {
       if (_roomId == null) {
-        setState(() => _roomError = 'Select a room');
+        setState(() => _roomError = 'Choisir une chambre');
         return;
       }
     }
     if (_needsDeliveryFields) {
       if (_phoneCtrl.text.trim().isEmpty) {
-        setState(() => _phoneError = 'Phone is required for delivery');
+        setState(() => _phoneError = 'Le téléphone est obligatoire pour la livraison');
         return;
       }
       if (_addressCtrl.text.trim().isEmpty) {
-        setState(() => _addressError = 'Delivery address is required');
+        setState(() => _addressError = 'L\'adresse de livraison est obligatoire');
         return;
       }
     }
@@ -151,7 +151,7 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
         _roomId != null && rooms.any((r) => r.id == _roomId) ? _roomId : null;
 
     return AlertDialog(
-      title: Text('New order',
+      title: Text('Nouvelle commande',
           style: AppTextStyles.h2(
               color: isDark ? AppColors.warmWhite : AppColors.primaryBlue)),
       content: SizedBox(
@@ -161,7 +161,7 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Order type', style: AppTextStyles.caption()),
+              Text('Type de commande', style: AppTextStyles.caption()),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -169,9 +169,9 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
                 children: [
                   _typeChip('dine_in', 'Dine-in', isDark),
                   if (widget.isHotel)
-                    _typeChip('room_service', 'Room service', isDark),
+                    _typeChip('room_service', 'Service en chambre', isDark),
                   _typeChip('takeout', 'Takeout', isDark),
-                  _typeChip('delivery', 'Delivery', isDark),
+                  _typeChip('delivery', 'Livraison', isDark),
                 ],
               ),
               const SizedBox(height: AppConstants.spacing16),
@@ -185,12 +185,12 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
                     border: const OutlineInputBorder(),
                     isDense: true,
                   ),
-                  hint: const Text('Select table'),
+                  hint: const Text('Choisir la table'),
                   items: availableTables
                       .map(
                         (t) => DropdownMenuItem(
                           value: t.name,
-                          child: Text('${t.name} (${t.capacity} seats)'),
+                          child: Text('${t.name} (${t.capacity} places)'),
                         ),
                       )
                       .toList(),
@@ -207,7 +207,7 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
                 ),
               ],
               if (_needsRoom) ...[
-                Text('Room', style: AppTextStyles.caption()),
+                Text('Chambre', style: AppTextStyles.caption()),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<int>(
                   value: roomDropdownValue,
@@ -216,13 +216,13 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
                     border: const OutlineInputBorder(),
                     isDense: true,
                   ),
-                  hint: const Text('Select room'),
+                  hint: const Text('Choisir la chambre'),
                   items: rooms
                       .map(
                         (r) => DropdownMenuItem(
                           value: r.id,
                           child: Text(
-                              'Room ${r.number} · ${r.guestName ?? 'Guest'}'),
+                              'Chambre ${r.number} · ${r.guestName ?? 'Guest'}'),
                         ),
                       )
                       .toList(),
@@ -236,8 +236,8 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
               if (_showCustomerOptional || _needsDeliveryFields) ...[
                 Text(
                   _needsDeliveryFields
-                      ? 'Customer name (optional)'
-                      : 'Customer name (optional)',
+                      ? 'Nom du client (facultatif)'
+                      : 'Nom du client (facultatif)',
                   style: AppTextStyles.caption(),
                 ),
                 const SizedBox(height: 6),
@@ -246,14 +246,14 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     isDense: true,
-                    hintText: 'Name',
+                    hintText: 'Nom',
                   ),
                   onChanged: (_) {},
                 ),
               ],
               if (_needsDeliveryFields) ...[
                 const SizedBox(height: AppConstants.spacing12),
-                Text('Phone', style: AppTextStyles.caption()),
+                Text('Téléphone', style: AppTextStyles.caption()),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _phoneCtrl,
@@ -267,7 +267,7 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
                   onChanged: (_) => setState(() => _phoneError = null),
                 ),
                 const SizedBox(height: AppConstants.spacing12),
-                Text('Delivery address', style: AppTextStyles.caption()),
+                Text('Adresse de livraison', style: AppTextStyles.caption()),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _addressCtrl,
@@ -275,7 +275,7 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
                   decoration: InputDecoration(
                     border: const OutlineInputBorder(),
                     isDense: true,
-                    hintText: 'Full address',
+                    hintText: 'Adresse complète',
                     errorText: _addressError,
                   ),
                   onChanged: (_) => setState(() => _addressError = null),
@@ -288,11 +288,11 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('Annuler'),
         ),
         FilledButton(
           onPressed: _submit,
-          child: const Text('Next'),
+          child: const Text('Suivant'),
         ),
       ],
     );

@@ -91,7 +91,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Complete prepaid order',
+                              'Terminer la commande prépayée',
                               style: AppTextStyles.h3(color: onSurface)
                                   .copyWith(fontWeight: FontWeight.w800),
                             ),
@@ -130,7 +130,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                     child: Column(
                       children: [
                         _SummaryLine(
-                          label: 'Prepaid amount',
+                          label: 'Montant prépayé',
                           value: CurrencyFormatter.local(ctx, prepaidCapHtg),
                           valueColor: AppColors.deepGreen,
                           muted: muted,
@@ -138,7 +138,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                         ),
                         const SizedBox(height: 10),
                         _SummaryLine(
-                          label: 'Est. bill (incl. tax & service)',
+                          label: 'Note estimée (taxes et service inclus)',
                           value: CurrencyFormatter.local(ctx, est),
                           valueColor: onSurface,
                           muted: muted,
@@ -150,7 +150,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                             child: Divider(height: 1),
                           ),
                           _SummaryLine(
-                            label: 'Unused balance',
+                            label: 'Solde inutilisé',
                             value: CurrencyFormatter.local(ctx, balanceLeft),
                             valueColor: AppColors.amber,
                             muted: muted,
@@ -164,7 +164,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                   if (hasUnused) ...[
                     const SizedBox(height: 12),
                     Text(
-                      'Choose how to handle the unused amount, or close the order if you will settle it outside the app.',
+                      'Choisissez quoi faire du montant inutilisé, ou fermez la commande si vous la réglez hors de l\'application.',
                       style: AppTextStyles.caption(color: muted).copyWith(
                         height: 1.35,
                       ),
@@ -172,7 +172,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                   ] else ...[
                     const SizedBox(height: 12),
                     Text(
-                      'The bill is fully covered by the prepaid amount. You can close this order.',
+                      'La note est couverte par le montant prépayé. Vous pouvez fermer cette commande.',
                       style: AppTextStyles.caption(color: muted).copyWith(
                         height: 1.35,
                       ),
@@ -188,7 +188,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                           await markVisitCompleted();
                           if (!context.mounted) return;
                           ref.read(appNotificationProvider.notifier).show(
-                                'Prepaid order completed.',
+                                'Commande prépayée terminée.',
                               );
                         },
                         style: FilledButton.styleFrom(
@@ -200,7 +200,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                           ),
                         ),
                         child: const Text(
-                          'Complete Order',
+                          'Terminer la commande',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -221,13 +221,13 @@ Future<void> showPrepaidCompleteOrderDialog(
                                 customerId: customerId,
                                 amountHtg: balanceLeft,
                                 description:
-                                    'Unused prepaid balance — $orderLabel',
+                                    'Solde prépayé non utilisé — $orderLabel',
                                 orderId: '$orderId',
                               );
                           await markVisitCompleted();
                           if (!context.mounted) return;
                           ref.read(appNotificationProvider.notifier).show(
-                                'Store credit issued — order completed.',
+                                'Avoir magasin émis — commande terminée.',
                               );
                         },
                         style: FilledButton.styleFrom(
@@ -240,7 +240,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                         ),
                         icon: const Icon(Icons.savings_outlined, size: 20),
                         label: const Text(
-                          'Issue store credit',
+                          'Émettre un crédit magasin',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -255,17 +255,17 @@ Future<void> showPrepaidCompleteOrderDialog(
                             context,
                             ref,
                             message:
-                                'Confirm the unused balance of '
+                                'Confirmez que le solde non utilisé de '
                                 '${CurrencyFormatter.local(context, balanceLeft)} '
-                                'was refunded to the guest (cash, card reversal, etc.).',
+                                'a été remboursé au client (espèces, annulation de carte, etc.).',
                             isDark: isDark,
-                            title: 'Record refund',
+                            title: 'Enregistrer un remboursement',
                           );
                           if (ok != true || !context.mounted) return;
                           await markVisitCompleted();
                           if (!context.mounted) return;
                           ref.read(appNotificationProvider.notifier).show(
-                                'Refund recorded — order completed.',
+                                'Remboursement enregistré — commande terminée.',
                               );
                         },
                         style: OutlinedButton.styleFrom(
@@ -281,7 +281,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                         icon: const Icon(Icons.currency_exchange_rounded,
                             size: 20),
                         label: const Text(
-                          'Record refund',
+                          'Enregistrer un remboursement',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -295,22 +295,22 @@ Future<void> showPrepaidCompleteOrderDialog(
                             context,
                             ref,
                             message:
-                                'Complete this order without recording store '
-                                'credit or a refund? Unused balance: '
+                                'Terminer cette commande sans enregistrer d\'avoir '
+                                'ni de remboursement ? Solde non utilisé : '
                                 '${CurrencyFormatter.local(context, balanceLeft)}.',
                             isDark: isDark,
-                            title: 'Complete without credit or refund',
+                            title: 'Terminer sans crédit ni remboursement',
                           );
                           if (ok != true || !context.mounted) return;
                           await markVisitCompleted();
                           if (!context.mounted) return;
                           ref.read(appNotificationProvider.notifier).show(
-                                'Order completed — settle unused balance separately if needed.',
+                                'Commande terminée — réglez le solde non utilisé à part si besoin.',
                                 kind: AppNotificationKind.warning,
                               );
                         },
                         child: Text(
-                          'Complete without credit or refund',
+                          'Terminer sans crédit ni remboursement',
                           style: AppTextStyles.caption(
                             color: isDark
                                 ? AppColors.skyBlue

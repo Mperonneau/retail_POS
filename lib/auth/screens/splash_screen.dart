@@ -100,12 +100,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 ),
                 const SizedBox(height: AppConstants.spacing8),
                 Text(
-                  'Haiti',
+                  'Haïti',
                   style: AppTextStyles.appName(color: AppColors.amber).copyWith(fontSize: 28),
                 ),
                 const SizedBox(height: AppConstants.spacing12),
                 Text(
-                  'Simplifying Business, One Transaction at a Time',
+                  'Simplifier le commerce, une transaction à la fois',
                   style: AppTextStyles.caption(color: AppColors.sidebarIcon),
                   textAlign: TextAlign.center,
                 ),

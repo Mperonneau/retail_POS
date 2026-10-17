@@ -147,7 +147,7 @@ class RetailLedgerDisplayRow {
           dateLabel: DateFormatter.shortDate(
             DateTime(m.enteredAt.year, m.enteredAt.month, m.enteredAt.day),
           ),
-          title: 'Stock in',
+          title: 'Entrée de stock',
           subtitle: _stockInDetails(m),
           inQty: m.quantityDelta,
           outQty: null,
@@ -165,8 +165,8 @@ class RetailLedgerDisplayRow {
           dateLabel: DateFormatter.shortDate(
             DateTime(m.enteredAt.year, m.enteredAt.month, m.enteredAt.day),
           ),
-          title: 'Adjustment',
-          subtitle: m.notes ?? (isUp ? 'Increase' : 'Decrease'),
+          title: 'Ajustement',
+          subtitle: m.notes ?? (isUp ? 'Augmenter' : 'Diminuer'),
           inQty: isUp ? m.quantityDelta : null,
           outQty: isUp ? null : -m.quantityDelta,
           kind: RetailStockMovementKind.adjustment,
@@ -181,8 +181,8 @@ class RetailLedgerDisplayRow {
       delta: qtyDelta,
       sortKey: DateTime(day.year, day.month, day.day, 23, 59, 59),
       dateLabel: DateFormatter.shortDate(d),
-      title: 'Sales (POS)',
-      subtitle: 'Daily total',
+      title: 'Ventes (caisse)',
+      subtitle: 'Total du jour',
       inQty: null,
       outQty: -qtyDelta,
       kind: RetailStockMovementKind.sale,
@@ -199,7 +199,7 @@ class RetailLedgerDisplayRow {
     final recDay = DateTime(m.receivedAt.year, m.receivedAt.month, m.receivedAt.day);
     final entDay = DateTime(m.enteredAt.year, m.enteredAt.month, m.enteredAt.day);
     if (recDay != entDay) {
-      parts.add('Received ${DateFormatter.shortDate(m.receivedAt)}');
+      parts.add('Reçu le ${DateFormatter.shortDate(m.receivedAt)}');
     }
     parts.add('Entered ${DateFormatter.timeOfDay(m.enteredAt)}');
     if (m.notes != null && m.notes!.trim().isNotEmpty) {
@@ -261,9 +261,9 @@ String _ledgerMovementKindMenuLabel(RetailStockMovementKind k) {
     case RetailStockMovementKind.sale:
       return 'Sales';
     case RetailStockMovementKind.stockIn:
-      return 'Stock in';
+      return 'Entrée de stock';
     case RetailStockMovementKind.adjustment:
-      return 'Adjustment';
+      return 'Ajustement';
   }
 }
 
@@ -272,7 +272,7 @@ String _ledgerMovementKindEmptyPhrase(RetailStockMovementKind k) {
     case RetailStockMovementKind.sale:
       return 'sales';
     case RetailStockMovementKind.stockIn:
-      return 'stock in';
+      return 'entrée de stock';
     case RetailStockMovementKind.adjustment:
       return 'adjustments';
   }
@@ -370,7 +370,7 @@ class _RetailProductInventoryPanelState
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Close',
+                  tooltip: 'Fermer',
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close_rounded),
                 ),
@@ -411,7 +411,7 @@ class _RetailProductInventoryPanelState
                 ),
                 if (widget.onClose != null)
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: 'Fermer',
                     onPressed: widget.onClose,
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -423,7 +423,7 @@ class _RetailProductInventoryPanelState
             builder: (context, c) {
               final thin = c.maxWidth < 420;
               final title = Text(
-                'Movement history',
+                'Historique des mouvements',
                 style: AppTextStyles.h3(
                   color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                 ),
@@ -481,7 +481,7 @@ class _RetailProductInventoryPanelState
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing24),
               child: Text(
-                'No stock movements yet.',
+                'Aucun mouvement de stock.',
                 style: AppTextStyles.body(color: isDark ? AppColors.coolGray : AppColors.darkGray),
               ),
             )
@@ -489,7 +489,7 @@ class _RetailProductInventoryPanelState
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing24),
               child: Text(
-                'No movements in ${_inventoryMonthName(_ledgerMonth)} $ledgerYear.',
+                'Aucun mouvement en ${_inventoryMonthName(_ledgerMonth)} $ledgerYear.',
                 style: AppTextStyles.body(color: isDark ? AppColors.coolGray : AppColors.darkGray),
               ),
             )
@@ -639,12 +639,12 @@ class _InlineStockBadges extends StatelessWidget {
         chip(
           icon: Icons.inventory_2_outlined,
           label: 'Stock',
-          value: '$stockQuantity units',
+          value: '$stockQuantity unités',
           accent: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
         ),
         chip(
           icon: Icons.point_of_sale_outlined,
-          label: 'Sales today',
+          label: 'Ventes du jour',
           value: '$salesToday',
           accent: AppColors.amber,
         ),
@@ -752,7 +752,7 @@ class _LedgerMovementKindDropdown extends StatelessWidget {
             DropdownMenuItem<RetailStockMovementKind?>(
               value: null,
               child: Text(
-                'All types',
+                'Tous les types',
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                 ),
@@ -819,14 +819,14 @@ class _LedgerTable extends StatelessWidget {
                         Expanded(
                           flex: 3,
                           child: Text(
-                            'Details',
+                            'Détails',
                             style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                         SizedBox(
                           width: 48,
                           child: Text(
-                            'In',
+                            'Entrée',
                             textAlign: TextAlign.end,
                             style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
                           ),
@@ -834,7 +834,7 @@ class _LedgerTable extends StatelessWidget {
                         SizedBox(
                           width: 48,
                           child: Text(
-                            'Out',
+                            'Sortie',
                             textAlign: TextAlign.end,
                             style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
                           ),
@@ -842,7 +842,7 @@ class _LedgerTable extends StatelessWidget {
                         SizedBox(
                           width: 56,
                           child: Text(
-                            'Balance',
+                            'Solde',
                             textAlign: TextAlign.end,
                             style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
                           ),
@@ -1055,7 +1055,7 @@ class _InventoryActionBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppButton(
-                    label: 'Add stock',
+                    label: 'Ajouter du stock',
                     icon: Icons.add_circle_outline,
                     onPressed: onAddStock,
                     fullWidth: true,
@@ -1063,7 +1063,7 @@ class _InventoryActionBar extends StatelessWidget {
                   ),
                   const SizedBox(height: AppConstants.spacing8),
                   AppButton(
-                    label: 'Adjust balance',
+                    label: 'Ajuster le solde',
                     icon: Icons.tune_rounded,
                     variant: AppButtonVariant.secondary,
                     onPressed: onAdjust,
@@ -1077,7 +1077,7 @@ class _InventoryActionBar extends StatelessWidget {
               children: [
                 Expanded(
                   child: AppButton(
-                    label: 'Add stock',
+                    label: 'Ajouter du stock',
                     icon: Icons.add_circle_outline,
                     onPressed: onAddStock,
                     fullWidth: true,
@@ -1087,7 +1087,7 @@ class _InventoryActionBar extends StatelessWidget {
                 const SizedBox(width: AppConstants.spacing8),
                 Expanded(
                   child: AppButton(
-                    label: 'Adjust balance',
+                    label: 'Ajuster le solde',
                     icon: Icons.tune_rounded,
                     variant: AppButtonVariant.secondary,
                     onPressed: onAdjust,
@@ -1167,7 +1167,7 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Add stock',
+              'Ajouter du stock',
               style: AppTextStyles.h2(
                 color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
               ),
@@ -1184,7 +1184,7 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
               inputFormatters: InputFormatters.digitsOnly,
               decoration: InputDecoration(
                 labelText: 'Quantity',
-                suffixText: 'units',
+                suffixText: 'unités',
                 filled: true,
                 fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
@@ -1206,7 +1206,7 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
               borderRadius: BorderRadius.circular(AppConstants.radiusInput),
               child: InputDecorator(
                 decoration: InputDecoration(
-                  labelText: 'Received date',
+                  labelText: 'Date de réception',
                   filled: true,
                   fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
                   border: OutlineInputBorder(
@@ -1224,7 +1224,7 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
             ),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'Entered in system will be recorded when you save (now).',
+              'Le montant saisi sera enregistré lorsque vous enregistrez (maintenant).',
               style: AppTextStyles.caption(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray,
               ),
@@ -1243,7 +1243,7 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
             ),
             if (suppliers.isNotEmpty) ...[
               const SizedBox(height: AppConstants.spacing8),
-              Text('Quick select', style: AppTextStyles.caption()),
+              Text('Choix rapide', style: AppTextStyles.caption()),
               const SizedBox(height: AppConstants.spacing8),
               Wrap(
                 spacing: AppConstants.spacing8,
@@ -1267,7 +1267,7 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
               controller: _notesCtrl,
               maxLines: 3,
               decoration: InputDecoration(
-                labelText: 'Notes (optional)',
+                labelText: 'Notes (facultatif)',
                 filled: true,
                 fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
@@ -1284,14 +1284,14 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: AppConstants.buttonHeight / 2),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 Expanded(
                   flex: 2,
                   child: AppButton(
-                    label: 'Save stock in',
+                    label: 'Enregistrer l\'entrée de stock',
                     icon: Icons.save_outlined,
                     onPressed: () {
                       final q = int.tryParse(_qtyCtrl.text) ?? 0;
@@ -1335,7 +1335,7 @@ class _AdjustRetailStockSheet extends ConsumerStatefulWidget {
 
 class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet> {
   final _amtCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController(text: 'Inventory correction');
+  final _noteCtrl = TextEditingController(text: 'Correction d\'inventaire');
   bool _isAdd = true;
 
   @override
@@ -1361,7 +1361,7 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Adjust balance',
+            'Ajuster le solde',
             style: AppTextStyles.h2(
               color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
             ),
@@ -1376,7 +1376,7 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
             children: [
               Expanded(
                 child: _AdjChip(
-                  label: 'Increase',
+                  label: 'Augmenter',
                   icon: Icons.add_circle_outline,
                   selected: _isAdd,
                   isDark: isDark,
@@ -1386,7 +1386,7 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
               const SizedBox(width: AppConstants.spacing12),
               Expanded(
                 child: _AdjChip(
-                  label: 'Decrease',
+                  label: 'Diminuer',
                   icon: Icons.remove_circle_outline,
                   selected: !_isAdd,
                   isDark: isDark,
@@ -1430,14 +1430,14 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: AppConstants.buttonHeight / 2),
                   ),
-                  child: const Text('Cancel'),
+                  child: const Text('Annuler'),
                 ),
               ),
               const SizedBox(width: AppConstants.spacing12),
               Expanded(
                 flex: 2,
                 child: AppButton(
-                  label: 'Apply',
+                  label: 'Appliquer',
                   icon: Icons.check_rounded,
                   onPressed: () {
                     final n = int.tryParse(_amtCtrl.text) ?? 0;

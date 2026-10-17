@@ -233,8 +233,8 @@ final mockCustomers = [
 
 final mockSales = [
   MockSale(id: 1, date: DateTime.now().subtract(const Duration(minutes: 10)), cashier: 'Roseline', items: const [MockSaleItem(name: 'Riz Blanc 25kg', quantity: 2, priceHtg: 3200), MockSaleItem(name: 'Huile Végétale 1L', quantity: 3, priceHtg: 600)], paymentMethod: 'MonCash'),
-  MockSale(id: 2, date: DateTime.now().subtract(const Duration(minutes: 25)), cashier: 'Roseline', items: const [MockSaleItem(name: 'Prestige Beer 330ml', quantity: 12, priceHtg: 180), MockSaleItem(name: 'Coca-Cola 355ml', quantity: 6, priceHtg: 120)], paymentMethod: 'Cash', customerName: 'Restaurant Ti Kay'),
-  MockSale(id: 3, date: DateTime.now().subtract(const Duration(hours: 1)), cashier: 'Marcel', items: const [MockSaleItem(name: 'Savon Dettol 100g', quantity: 5, priceHtg: 150), MockSaleItem(name: 'Dentifrice Colgate', quantity: 2, priceHtg: 180), MockSaleItem(name: 'Shampoo Pantene', quantity: 1, priceHtg: 600)], paymentMethod: 'Cash'),
+  MockSale(id: 2, date: DateTime.now().subtract(const Duration(minutes: 25)), cashier: 'Roseline', items: const [MockSaleItem(name: 'Prestige Beer 330ml', quantity: 12, priceHtg: 180), MockSaleItem(name: 'Coca-Cola 355ml', quantity: 6, priceHtg: 120)], paymentMethod: 'Espèces', customerName: 'Restaurant Ti Kay'),
+  MockSale(id: 3, date: DateTime.now().subtract(const Duration(hours: 1)), cashier: 'Marcel', items: const [MockSaleItem(name: 'Savon Dettol 100g', quantity: 5, priceHtg: 150), MockSaleItem(name: 'Dentifrice Colgate', quantity: 2, priceHtg: 180), MockSaleItem(name: 'Shampoo Pantene', quantity: 1, priceHtg: 600)], paymentMethod: 'Espèces'),
   MockSale(id: 4, date: DateTime.now().subtract(const Duration(hours: 2)), cashier: 'Roseline', items: const [MockSaleItem(name: 'Ampoule LED 9W', quantity: 4, priceHtg: 350), MockSaleItem(name: 'Bougies (paquet 10)', quantity: 2, priceHtg: 200)], paymentMethod: 'Stripe'),
   MockSale(id: 5, date: DateTime.now().subtract(const Duration(hours: 3)), cashier: 'Marcel', items: const [MockSaleItem(name: 'Farine de Blé 5kg', quantity: 1, priceHtg: 700), MockSaleItem(name: 'Sucre 5kg', quantity: 1, priceHtg: 800), MockSaleItem(name: 'Huile Végétale 1L', quantity: 2, priceHtg: 600)], paymentMethod: 'MonCash'),
 ];
@@ -268,7 +268,7 @@ final _mockSuppliersSeed = [
   ),
   MockSupplier(
     id: 3,
-    name: 'Importex Haiti',
+    name: 'Importex Haïti',
     phone: '+509 2811-5678',
     email: 'import@importex.ht',
     location: 'Croix-des-Bouquets, Boulevard Toussaint Louverture',
@@ -293,7 +293,7 @@ final _mockSuppliersSeed = [
   ),
   MockSupplier(
     id: 5,
-    name: 'Pharma Distribution Haiti',
+    name: 'Pharma Distribution Haïti',
     phone: '+509 2812-0000',
     email: 'commandes@pharmaht.ht',
     location: 'Turgeau, Rue Capois 12',
@@ -343,7 +343,7 @@ final _mockSuppliersSeed = [
   ),
   MockSupplier(
     id: 9,
-    name: 'Tech Import Haiti',
+    name: 'Tech Import Haïti',
     phone: '+509 3999-0101',
     email: 'sales@techimport.ht',
     location: 'Port-au-Prince, Boulevard Harry Truman',
@@ -781,7 +781,7 @@ final _mockQuotesSeed = <MockRetailQuote>[
       MockQuoteLine(product: _mockProductsSeed[1], quantity: 2, unitPriceHtg: 600),
       MockQuoteLine(product: _mockProductsSeed[3], quantity: 2, unitPriceHtg: 700),
     ],
-    clientName: 'Walk-in',
+    clientName: 'Client de passage',
     clientPhone: '+509 3000-0000',
     fulfillmentMode: RetailFulfillmentMode.inStore,
     discountPercent: 0,
@@ -979,7 +979,7 @@ final _mockQuotesSeed = <MockRetailQuote>[
     lines: [
       MockQuoteLine(product: _mockProductsSeed[9], quantity: 5, unitPriceHtg: 200),
     ],
-    clientName: 'Walk-in',
+    clientName: 'Client de passage',
     clientPhone: '+509 3000-1111',
     fulfillmentMode: RetailFulfillmentMode.inStore,
     discountPercent: 0,
@@ -1112,7 +1112,7 @@ final _mockQuotesSeed = <MockRetailQuote>[
     lines: [
       MockQuoteLine(product: _mockProductsSeed[3], quantity: 1, unitPriceHtg: 700),
     ],
-    clientName: 'Walk-in',
+    clientName: 'Client de passage',
     clientPhone: '+509 3000-9999',
     fulfillmentMode: RetailFulfillmentMode.inStore,
     discountPercent: 0,
@@ -1199,7 +1199,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
         receivedAt: tOpen,
         enteredAt: tOpen.add(const Duration(hours: 3, minutes: 20)),
         supplierName: 'DINASA (Riz & Farine)',
-        notes: 'Opening delivery — pallet receipt',
+        notes: 'Livraison d\'ouverture — réception palette',
       ),
     );
     if (s1 > 0) {
@@ -1212,7 +1212,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
           receivedAt: tSale1.add(const Duration(hours: 14, minutes: 30)),
           enteredAt: tSale1.add(const Duration(hours: 14, minutes: 30)),
           supplierName: null,
-          notes: 'Sale (POS)',
+          notes: 'Vente (caisse)',
         ),
       );
     }
@@ -1226,7 +1226,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
           receivedAt: tSale2.add(const Duration(hours: 11)),
           enteredAt: tSale2.add(const Duration(hours: 11)),
           supplierName: null,
-          notes: 'Sale (POS)',
+          notes: 'Vente (caisse)',
         ),
       );
     }
@@ -1239,8 +1239,8 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
           quantityDelta: rin,
           receivedAt: tIn,
           enteredAt: tIn.add(const Duration(hours: 5, minutes: 45)),
-          supplierName: 'Importex Haiti',
-          notes: 'Restock — partial shipment',
+          supplierName: 'Importex Haïti',
+          notes: 'Réapprovisionnement — livraison partielle',
         ),
       );
     }
@@ -1270,7 +1270,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(3, 14, 20),
       enteredAt: ap(3, 14, 20),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1280,7 +1280,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(4, 11, 5),
       enteredAt: ap(4, 11, 5),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1289,8 +1289,8 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       quantityDelta: 18,
       receivedAt: ap(5, 7, 15),
       enteredAt: ap(5, 7, 22),
-      supplierName: 'Importex Haiti',
-      notes: 'Partial shipment — dock B',
+      supplierName: 'Importex Haïti',
+      notes: 'Livraison partielle — quai B',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1300,7 +1300,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(6, 16, 0),
       enteredAt: ap(6, 16, 10),
       supplierName: null,
-      notes: 'Cycle count correction (+)',
+      notes: 'Correction d\'inventaire (+)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1310,7 +1310,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(7, 10, 45),
       enteredAt: ap(7, 10, 45),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1320,7 +1320,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(9, 6, 0),
       enteredAt: ap(9, 6, 18),
       supplierName: 'Caribbean Electric Supply',
-      notes: 'Express delivery — invoice #A-1042',
+      notes: 'Livraison express — facture n° A-1042',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1330,7 +1330,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(10, 15, 30),
       enteredAt: ap(10, 15, 30),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1350,7 +1350,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(12, 12, 0),
       enteredAt: ap(12, 12, 0),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1360,7 +1360,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(14, 8, 0),
       enteredAt: ap(14, 8, 45),
       supplierName: 'DINASA (Riz & Farine)',
-      notes: 'Bulk order — hotel contract',
+      notes: 'Commande en gros — contrat hôtel',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1370,7 +1370,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(15, 9, 20),
       enteredAt: ap(15, 9, 20),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1380,7 +1380,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(16, 13, 0),
       enteredAt: ap(16, 13, 0),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1390,7 +1390,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(18, 17, 30),
       enteredAt: ap(18, 17, 35),
       supplierName: null,
-      notes: 'Found stock — back storage',
+      notes: 'Stock retrouvé — réserve',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1400,7 +1400,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(20, 10, 0),
       enteredAt: ap(20, 10, 0),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1409,7 +1409,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       quantityDelta: 15,
       receivedAt: ap(22, 7, 0),
       enteredAt: ap(22, 7, 12),
-      supplierName: 'Importex Haiti',
+      supplierName: 'Importex Haïti',
       notes: 'Reorder — weekly route',
     ),
     RetailStockMovement(
@@ -1420,7 +1420,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(24, 16, 20),
       enteredAt: ap(24, 16, 20),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1430,7 +1430,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(26, 11, 0),
       enteredAt: ap(26, 11, 0),
       supplierName: null,
-      notes: 'Sale (POS)',
+      notes: 'Vente (caisse)',
     ),
     RetailStockMovement(
       id: nid(),
@@ -1440,7 +1440,7 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
       receivedAt: ap(28, 8, 30),
       enteredAt: ap(28, 8, 40),
       supplierName: 'Caribbean Electric Supply',
-      notes: 'End-of-month top-up',
+      notes: 'Approvisionnement de fin de mois',
     ),
   ]);
 
@@ -1500,7 +1500,7 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
           receivedAt: saleTime,
           enteredAt: saleTime,
           supplierName: null,
-          notes: 'Sale (POS)',
+          notes: 'Vente (caisse)',
         ),
       );
     }
@@ -1531,7 +1531,7 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
         receivedAt: now,
         enteredAt: now,
         supplierName: null,
-        notes: notes?.trim().isNotEmpty == true ? notes!.trim() : 'Balance adjustment',
+        notes: notes?.trim().isNotEmpty == true ? notes!.trim() : 'Ajustement de solde',
       ),
     ];
   }

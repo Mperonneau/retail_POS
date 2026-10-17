@@ -164,7 +164,7 @@ class MergeOrderBadge extends StatelessWidget {
             Icon(Icons.merge_type_rounded, size: 11, color: color),
             const SizedBox(width: 3),
             Text(
-              'Merged',
+              'Fusionné',
               style: AppTextStyles.caption(color: color).copyWith(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -179,7 +179,7 @@ class MergeOrderBadge extends StatelessWidget {
 
 // ── Merge action cell (in OrderDetailQuickActionsBar) ─────────────────────────
 
-/// Small icon + label column for the "Merge" action in the quick actions bar.
+/// Small icon + label column for the "Fusionner" action in the quick actions bar.
 /// Matches the style of [_QuickActionCell] in order_detail_quick_actions_bar.dart.
 class MergeQuickAction extends StatelessWidget {
   final VoidCallback onTap;
@@ -203,7 +203,7 @@ class MergeQuickAction extends StatelessWidget {
             const Icon(Icons.merge_type_rounded, size: 20, color: color),
             const SizedBox(height: 3),
             Text(
-              'Merge',
+              'Fusionner',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
@@ -295,7 +295,7 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Merge Table',
+                        'Fusionner la table',
                         style: AppTextStyles.h3(
                           color: isDark
                               ? AppColors.warmWhite
@@ -303,7 +303,7 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                         ).copyWith(fontSize: 15),
                       ),
                       Text(
-                        'Surviving table: ${widget.currentTableName}',
+                        'Table conservée : ${widget.currentTableName}',
                         style:
                             AppTextStyles.caption(color: muted).copyWith(fontSize: 11),
                       ),
@@ -345,9 +345,9 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Select a table to merge into ${widget.currentTableName}. '
-                            'The selected table\'s items will be added to this order. '
-                            'The merged table will be removed from the active list.',
+                            'Choisissez une table à fusionner avec ${widget.currentTableName}. '
+                            'Les articles de la table choisie seront ajoutés à cette commande. '
+                            'La table fusionnée sera retirée de la liste active.',
                             style: AppTextStyles.caption(
                                     color: isDark
                                         ? AppColors.warmWhite
@@ -367,7 +367,7 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                     // Available tables
                     if (availables.isNotEmpty) ...[
                       Text(
-                        'SELECT TABLE TO ABSORB',
+                        'CHOISIR LA TABLE À ABSORBER',
                         style: AppTextStyles.caption(color: muted).copyWith(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -388,7 +388,7 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                     if (blocked.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text(
-                        'UNAVAILABLE (PAYMENT PENDING OR PREPAID)',
+                        'INDISPONIBLE (PAIEMENT EN ATTENTE OU PRÉPAYÉ)',
                         style: AppTextStyles.caption(
                                 color: AppColors.warning.withValues(alpha: 0.8))
                             .copyWith(
@@ -433,7 +433,7 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -452,8 +452,8 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                     icon: const Icon(Icons.merge_type_rounded, size: 16),
                     label: Text(
                       _selected == null
-                          ? 'Select a table'
-                          : 'Merge ${_selected!.tableName} → ${widget.currentTableName}',
+                          ? 'Choisir une table'
+                          : 'Fusionner ${_selected!.tableName} → ${widget.currentTableName}',
                       overflow: TextOverflow.ellipsis,
                     ),
                     style: ElevatedButton.styleFrom(
@@ -573,7 +573,7 @@ class _TableOptionTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'Blocked',
+                            'Bloqué',
                             style: AppTextStyles.caption(color: blockedColor)
                                 .copyWith(
                               fontSize: 9.5,
@@ -586,7 +586,7 @@ class _TableOptionTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${option.itemCount} item${option.itemCount != 1 ? 's' : ''} · ${CurrencyFormatter.local(context, option.totalHtg)}',
+                    '${option.itemCount} article${option.itemCount != 1 ? 's' : ''} · ${CurrencyFormatter.local(context, option.totalHtg)}',
                     style: AppTextStyles.caption(color: muted)
                         .copyWith(fontSize: 11),
                   ),
@@ -621,7 +621,7 @@ class _EmptyState extends StatelessWidget {
               size: 40, color: muted.withValues(alpha: 0.4)),
           const SizedBox(height: 10),
           Text(
-            'No other dine-in tables available to merge.',
+            'Aucune autre table en salle à fusionner.',
             style: AppTextStyles.body(color: muted).copyWith(fontSize: 13),
             textAlign: TextAlign.center,
           ),
@@ -672,7 +672,7 @@ class _MergeSuccessDialog extends StatelessWidget {
                 size: 18, color: AppColors.deepGreen),
           ),
           const SizedBox(width: 10),
-          const Text('Tables Merged'),
+          const Text('Tables fusionnées'),
         ],
       ),
       content: SizedBox(
@@ -694,8 +694,8 @@ class _MergeSuccessDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'All items from $absorbedName have been transferred to $survivorName. '
-              '$absorbedName is now available for new guests.',
+              'Tous les articles de $absorbedName ont été transférés vers $survivorName. '
+              '$absorbedName est de nouveau libre.',
               style: AppTextStyles.body(color: muted)
                   .copyWith(fontSize: 13, height: 1.5),
             ),
@@ -715,7 +715,7 @@ class _MergeSuccessDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(vertical: 11),
             ),
-            child: const Text('Got it',
+            child: const Text('Compris',
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ),
@@ -794,7 +794,7 @@ class _MergeBlockedDialog extends StatelessWidget {
                 size: 18, color: warningColor),
           ),
           const SizedBox(width: 10),
-          const Text('Merge Blocked'),
+          const Text('Fusion bloquée'),
         ],
       ),
       content: SizedBox(
@@ -804,7 +804,7 @@ class _MergeBlockedDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Cannot merge $tableName',
+              'Impossible de fusionner $tableName',
               style: AppTextStyles.body(
                       color: isDark ? AppColors.warmWhite : AppColors.nearBlack)
                   .copyWith(fontWeight: FontWeight.w700),
@@ -932,13 +932,13 @@ class _MergeSnapshotDialog extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text('Item',
+                          child: Text('Article',
                               style: AppTextStyles.caption(color: muted)
                                   .copyWith(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w700)),
                         ),
-                        Text('Qty',
+                        Text('Qté',
                             style: AppTextStyles.caption(color: muted)
                                 .copyWith(
                                     fontSize: 10.5,
@@ -946,7 +946,7 @@ class _MergeSnapshotDialog extends StatelessWidget {
                         const SizedBox(width: 16),
                         SizedBox(
                           width: 64,
-                          child: Text('Amount',
+                          child: Text('Montant',
                               style: AppTextStyles.caption(color: muted)
                                   .copyWith(
                                       fontSize: 10.5,
@@ -1056,7 +1056,7 @@ class _MergeSnapshotDialog extends StatelessWidget {
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          child: const Text('Done'),
+          child: const Text('Terminé'),
         ),
       ],
     );

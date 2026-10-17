@@ -59,12 +59,12 @@ class _CustomerManagementState extends ConsumerState<CustomerManagement> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Customers', style: AppTextStyles.h1(color: isDark ? AppColors.warmWhite : AppColors.primaryBlue)),
+        Text('Clients', style: AppTextStyles.h1(color: isDark ? AppColors.warmWhite : AppColors.primaryBlue)),
         const SizedBox(height: AppConstants.spacing16),
         TextField(
           onChanged: (v) => setState(() => _search = v),
           decoration: InputDecoration(
-            hintText: 'Search customers...',
+            hintText: 'Rechercher des clients...',
             prefixIcon: const Icon(Icons.search, size: 20),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
             filled: true,
@@ -96,7 +96,7 @@ class _CustomerManagementState extends ConsumerState<CustomerManagement> {
                     children: [
                       Text(CurrencyFormatter.local(context, c.outstandingBalance),
                           style: AppTextStyles.caption(color: AppColors.boldRed).copyWith(fontWeight: FontWeight.w700)),
-                      Text('owes', style: AppTextStyles.caption()),
+                      Text('doit', style: AppTextStyles.caption()),
                     ],
                   ),
               ],
@@ -124,13 +124,13 @@ class _CustomerManagementState extends ConsumerState<CustomerManagement> {
         const SizedBox(height: AppConstants.spacing16),
         Row(
           children: [
-            Expanded(child: _CreditCard(label: 'Credit Limit', value: CurrencyFormatter.local(context, c.creditLimit), color: AppColors.primaryBlue)),
+            Expanded(child: _CreditCard(label: 'Limite de crédit', value: CurrencyFormatter.local(context, c.creditLimit), color: AppColors.primaryBlue)),
             const SizedBox(width: 12),
-            Expanded(child: _CreditCard(label: 'Outstanding', value: CurrencyFormatter.local(context, c.outstandingBalance), color: c.outstandingBalance > 0 ? AppColors.boldRed : AppColors.deepGreen)),
+            Expanded(child: _CreditCard(label: 'Impayé', value: CurrencyFormatter.local(context, c.outstandingBalance), color: c.outstandingBalance > 0 ? AppColors.boldRed : AppColors.deepGreen)),
           ],
         ),
         const SizedBox(height: AppConstants.spacing16),
-        SectionHeader(title: 'Credit Usage'),
+        SectionHeader(title: 'Utilisation du crédit'),
         const SizedBox(height: AppConstants.spacing8),
         AppCard(
           child: Column(
@@ -138,7 +138,7 @@ class _CustomerManagementState extends ConsumerState<CustomerManagement> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Used', style: AppTextStyles.body()),
+                  Text('Utilisé', style: AppTextStyles.body()),
                   Text('${(c.outstandingBalance / c.creditLimit * 100).toStringAsFixed(0)}%',
                       style: AppTextStyles.body().copyWith(fontWeight: FontWeight.w700)),
                 ],

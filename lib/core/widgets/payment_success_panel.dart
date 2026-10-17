@@ -33,7 +33,7 @@ class PaymentSuccessPanel extends StatelessWidget {
     this.receiptDetailLine,
     required this.onDone,
     this.showHeader = false,
-    this.headerTitle = 'Payment',
+    this.headerTitle = 'Paiement',
     this.onHeaderBack,
     this.onHeaderClose,
     this.doneButton,
@@ -64,7 +64,7 @@ class PaymentSuccessPanel extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.spacing24),
           Text(
-            'Payment Confirmed!',
+            'Paiement confirmé !',
             style: AppTextStyles.h1(
               color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
             ),
@@ -93,20 +93,20 @@ class PaymentSuccessPanel extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.spacing32),
           AppButton(
-            label: 'Send Receipt via WhatsApp',
+            label: 'Envoyer le reçu par WhatsApp',
             onPressed: () => PaymentReceiptDialogs.showWhatsApp(context),
             icon: Icons.send_outlined,
           ),
           const SizedBox(height: AppConstants.spacing12),
           AppButton(
-            label: 'Send Receipt to Email',
+            label: 'Envoyer le reçu par e-mail',
             onPressed: () => PaymentReceiptDialogs.showEmail(context),
             variant: AppButtonVariant.secondary,
             icon: Icons.email_outlined,
           ),
           const SizedBox(height: AppConstants.spacing12),
           AppButton(
-            label: 'Print Receipt',
+            label: 'Imprimer le reçu',
             onPressed: () => PaymentReceiptDialogs.showPrint(
               context,
               receiptName: printReceiptName,
@@ -122,7 +122,7 @@ class PaymentSuccessPanel extends StatelessWidget {
               child: TextButton(
                 onPressed: onDone,
                 child: Text(
-                  'Done',
+                  'Terminé',
                   style: AppTextStyles.button(
                     color:
                         isDark ? AppColors.skyBlue : AppColors.primaryBlue,

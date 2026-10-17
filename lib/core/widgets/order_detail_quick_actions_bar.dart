@@ -20,7 +20,7 @@ class OrderDetailQuickActionsBar extends StatelessWidget {
   /// Shown when Add Items is tapped while disabled (e.g. modal banner). If null, disabled taps do nothing.
   final void Function(String message)? onUserMessage;
 
-  /// When non-null, a purple "Merge" cell is added between Add Items and Cancel Order.
+  /// When non-null, a purple "Fusionner" cell is added between Add Items and Cancel Order.
   /// Only pass for dine-in orders.
   final VoidCallback? onMergeTable;
 
@@ -33,7 +33,7 @@ class OrderDetailQuickActionsBar extends StatelessWidget {
     required this.onCancelOrder,
     this.canAddItems = true,
     this.addItemsDisabledMessage =
-        'This order is paid. Start a new order to add items.',
+        'Cette commande est payée. Ouvrez une nouvelle commande pour ajouter des articles.',
     this.onUserMessage,
     this.onMergeTable,
   });
@@ -55,13 +55,13 @@ class OrderDetailQuickActionsBar extends StatelessWidget {
         children: [
           _QuickActionCell(
             icon: Icons.receipt_long_outlined,
-            label: 'See Bill',
+            label: 'Voir la note',
             color: primary,
             onTap: onSeeBill,
           ),
           _QuickActionCell(
             icon: Icons.add_circle_outline,
-            label: 'Add Items',
+            label: 'Ajouter des articles',
             color: canAddItems ? primary : AppColors.coolGray,
             onTap: onAddItems,
             enabled: canAddItems,
@@ -71,13 +71,13 @@ class OrderDetailQuickActionsBar extends StatelessWidget {
           if (onMergeTable != null)
             _QuickActionCell(
               icon: Icons.merge_type_rounded,
-              label: 'Merge',
+              label: 'Fusionner',
               color: mergeColor,
               onTap: onMergeTable!,
             ),
           _QuickActionCell(
             icon: Icons.cancel_outlined,
-            label: 'Cancel Order',
+            label: 'Annuler la commande',
             color: AppColors.error,
             onTap: onCancelOrder,
           ),

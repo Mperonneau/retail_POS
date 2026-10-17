@@ -9,11 +9,11 @@ import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 
 const _idDocumentTypes = [
-  'Passport',
-  'National ID',
-  'Driver license',
-  'NIF / Tax ID',
-  'Other',
+  'Passeport',
+  'Carte d\'identité',
+  'Permis de conduire',
+  'NIF',
+  'Autre',
 ];
 
 /// Searchable list of all customers (same source as Customers screens) plus
@@ -80,8 +80,8 @@ class _StoreCreditRecipientPickerState
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
-            '${c.displayFirstLastName} needs first & last name and either '
-            'government ID or date of birth before receiving store credit.',
+            '${c.displayFirstLastName} doit avoir un prénom et un nom, et soit '
+            'une pièce d\'identité, soit une date de naissance, avant un avoir magasin.',
             style: const TextStyle(fontSize: 13),
           ),
         ),
@@ -158,7 +158,7 @@ class _StoreCreditRecipientPickerState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _creating ? 'New customer' : 'Issue store credit to',
+                      _creating ? 'Nouveau client' : 'Émettre un avoir magasin à',
                       style: AppTextStyles.h3(color: onSurface)
                           .copyWith(fontWeight: FontWeight.w800, fontSize: 17),
                     ),
@@ -168,7 +168,7 @@ class _StoreCreditRecipientPickerState
                       onPressed: () => setState(() => _creating = false),
                       icon: const Icon(Icons.arrow_back_rounded),
                       color: muted,
-                      tooltip: 'Back',
+                      tooltip: 'Retour',
                     )
                   else
                     IconButton(
@@ -242,7 +242,7 @@ class _CustomerSearchList extends StatelessWidget {
             controller: searchCtrl,
             onChanged: (_) => onSearchChanged(),
             decoration: InputDecoration(
-              hintText: 'Search name or phone…',
+              hintText: 'Rechercher un nom ou un téléphone…',
               prefixIcon: const Icon(Icons.search_rounded, size: 22),
               filled: true,
               fillColor: isDark
@@ -284,7 +284,7 @@ class _CustomerSearchList extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onCreateTap,
               icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
-              label: const Text('Create new customer'),
+              label: const Text('Créer un client'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.deepGreen,
                 side: BorderSide(
@@ -306,8 +306,8 @@ class _CustomerSearchList extends StatelessWidget {
                     padding: const EdgeInsets.all(24),
                     child: Text(
                       searchCtrl.text.trim().isEmpty
-                          ? 'No customers yet. Create one to continue.'
-                          : 'No matches. Try another search or create a customer.',
+                          ? 'Aucun client. Créez-en un pour continuer.'
+                          : 'Aucun résultat. Modifiez la recherche ou créez un client.',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.caption(color: muted)
                           .copyWith(height: 1.4),
@@ -365,7 +365,7 @@ class _CustomerSearchList extends StatelessWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       c.phone.isEmpty || c.phone == '—'
-                                          ? 'No phone on file'
+                                          ? 'Aucun téléphone enregistré'
                                           : c.phone,
                                       style:
                                           AppTextStyles.caption(color: muted),
@@ -487,14 +487,14 @@ class _QuickCustomerForCreditFormState
     final fn = _firstCtrl.text.trim();
     final ln = _lastCtrl.text.trim();
     if (fn.isEmpty || ln.isEmpty) {
-      setState(() => _errorSummary = 'First and last name are required.');
+      setState(() => _errorSummary = 'Le prénom et le nom sont obligatoires.');
       return;
     }
     final gov = _composeGovernmentId();
     if (gov == null && _dob == null) {
       setState(() {
         _errorSummary =
-            'Add a government ID (and number), or date of birth if there is no ID.';
+            'Ajoutez une pièce d\'identité (et son numéro), ou la date de naissance s\'il n\'y en a pas.';
       });
       return;
     }
@@ -522,7 +522,7 @@ class _QuickCustomerForCreditFormState
     final onSurface = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     final dobLabel = _dob == null
-        ? 'Date of birth (required if no ID)'
+        ? 'Date de naissance (obligatoire sans pièce)'
         : '${_dob!.year}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}';
 
     return SingleChildScrollView(
@@ -536,7 +536,7 @@ class _QuickCustomerForCreditFormState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Saved with your customer list. Phone is optional.',
+            'Enregistré dans votre liste de clients. Le téléphone est facultatif.',
             style: AppTextStyles.caption(color: muted).copyWith(height: 1.35),
           ),
           const SizedBox(height: 14),
@@ -544,7 +544,7 @@ class _QuickCustomerForCreditFormState
             controller: _firstCtrl,
             textCapitalization: TextCapitalization.words,
             decoration: _decoration(
-              'First name *',
+              'Prénom *',
               Icons.badge_outlined,
               isDark,
             ),
@@ -554,7 +554,7 @@ class _QuickCustomerForCreditFormState
             controller: _lastCtrl,
             textCapitalization: TextCapitalization.words,
             decoration: _decoration(
-              'Last name *',
+              'Nom *',
               Icons.badge_outlined,
               isDark,
             ),
@@ -564,7 +564,7 @@ class _QuickCustomerForCreditFormState
             controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
             decoration: _decoration(
-              'Phone (optional)',
+              'Téléphone (facultatif)',
               Icons.phone_outlined,
               isDark,
             ),
@@ -579,7 +579,7 @@ class _QuickCustomerForCreditFormState
           DropdownButtonFormField<String>(
             value: _idType,
             decoration: InputDecoration(
-              labelText: 'ID type (optional)',
+              labelText: 'Type de pièce (facultatif)',
               filled: true,
               fillColor: isDark ? AppColors.darkSurface : AppColors.white,
               border: OutlineInputBorder(
@@ -616,7 +616,7 @@ class _QuickCustomerForCreditFormState
           TextField(
             controller: _idNumberCtrl,
             decoration: _decoration(
-              'ID number (optional)',
+              'Numéro de pièce (facultatif)',
               Icons.credit_card_outlined,
               isDark,
             ),
@@ -657,7 +657,7 @@ class _QuickCustomerForCreditFormState
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('Cancel'),
+                  child: const Text('Annuler'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -674,7 +674,7 @@ class _QuickCustomerForCreditFormState
                     ),
                   ),
                   child: const Text(
-                    'Save & select',
+                    'Enregistrer et choisir',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),

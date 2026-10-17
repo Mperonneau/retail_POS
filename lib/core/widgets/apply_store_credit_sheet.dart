@@ -41,14 +41,14 @@ Future<void> showApplyStoreCreditForBill(
     context,
     ref,
     message:
-        'Applying store credit to this bill requires manager authorization.',
+        'Utiliser le crédit magasin sur cette note exige l\'autorisation d\'un gérant.',
     isDark: isDark,
-    title: 'Admin authorization',
+    title: 'Autorisation admin',
   );
   if (approved != true || !context.mounted) return;
   if (maxApplyHtg <= 0.009) {
     ref.read(appNotificationProvider.notifier).show(
-          'No remaining balance to cover with store credit.',
+          'Aucun solde restant à couvrir avec l\'avoir magasin.',
           kind: AppNotificationKind.info,
         );
     return;
@@ -136,7 +136,7 @@ class _ApplyStoreCreditSheetBodyState
     ref.read(customerProvider.notifier).redeemStoreCredit(
           customerId: c.id,
           amountHtg: use,
-          description: 'Applied to Order #${widget.orderId}',
+          description: 'Appliqué à la commande n°${widget.orderId}',
           orderId: '${widget.orderId}',
         );
     switch (widget.billKind) {
@@ -152,7 +152,7 @@ class _ApplyStoreCreditSheetBodyState
         break;
     }
     ref.read(appNotificationProvider.notifier).show(
-          'Store credit applied to Order #${widget.orderId}',
+          'Avoir magasin appliqué à la commande n°${widget.orderId}',
         );
     Navigator.pop(context);
   }
@@ -176,7 +176,7 @@ class _ApplyStoreCreditSheetBodyState
               children: [
                 Expanded(
                   child: Text(
-                    'Apply store credit',
+                    'Appliquer le crédit magasin',
                     style: AppTextStyles.h3(color: primary),
                   ),
                 ),
@@ -188,7 +188,7 @@ class _ApplyStoreCreditSheetBodyState
               ],
             ),
             Text(
-              'Order #${widget.orderId} · up to ${CurrencyFormatter.local(context, widget.maxApplyHtg)}',
+              'Commande n°${widget.orderId} · jusqu\'à ${CurrencyFormatter.local(context, widget.maxApplyHtg)}',
               style: AppTextStyles.caption(color: secondary),
             ),
             const SizedBox(height: 12),
@@ -196,7 +196,7 @@ class _ApplyStoreCreditSheetBodyState
               controller: _searchCtrl,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                labelText: 'Find customer',
+                labelText: 'Trouver un client',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 border: OutlineInputBorder(
                   borderRadius:
@@ -211,7 +211,7 @@ class _ApplyStoreCreditSheetBodyState
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
-                    'No customers with store credit balance and complete ID on file.',
+                    'Aucun client avec un crédit magasin et une pièce d\'identité complète.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.caption(color: secondary),
                   ),
@@ -290,7 +290,7 @@ class _ApplyStoreCreditSheetBodyState
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
                 decoration: InputDecoration(
-                  labelText: 'Amount to apply (HTG)',
+                  labelText: 'Montant à appliquer (HTG)',
                   border: OutlineInputBorder(
                     borderRadius:
                         BorderRadius.circular(AppConstants.radiusInput),
@@ -307,7 +307,7 @@ class _ApplyStoreCreditSheetBodyState
                     backgroundColor: AppColors.deepGreen,
                     foregroundColor: AppColors.white,
                   ),
-                  child: const Text('Apply to bill'),
+                  child: const Text('Appliquer à la note'),
                 ),
               ),
             ],

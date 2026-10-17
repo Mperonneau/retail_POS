@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:retail_pos/core/services/local_store.dart';
 import 'package:retail_pos/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,8 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
+  setUpAll(() async {
     GoogleFonts.config.allowRuntimeFetching = false;
+    Intl.defaultLocale = 'fr';
+    await initializeDateFormatting('fr');
   });
 
   setUp(() {
@@ -26,7 +30,7 @@ void main() {
 
     await _signInToRetailShell(tester, expectDemoPins: true);
 
-    expect(find.text('Retail Dashboard'), findsOneWidget);
+    expect(find.text('Tableau de bord'), findsWidgets);
     expect(find.text('Boutique Soleil'), findsWidgets);
     expect(find.textContaining('Page not found'), findsNothing);
   });
@@ -52,21 +56,21 @@ void main() {
     _expectBottomNavLabelsVisible(tester);
 
     await tester.tap(
-      find.descendant(of: find.byType(NavigationBar), matching: find.text('Orders')),
+      find.descendant(of: find.byType(NavigationBar), matching: find.text('Commandes')),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump();
 
-    expect(find.text('Order History'), findsOneWidget);
+    expect(find.text('Historique'), findsWidgets);
     _expectBottomNavLabelsVisible(tester);
 
     await tester.tap(find.byTooltip('Menu'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Customers'), findsWidgets);
-    expect(find.text('Connected devices'), findsOneWidget);
-    expect(find.text('Inventory'), findsWidgets);
+    expect(find.text('Clients'), findsWidgets);
+    expect(find.text('Appareils connectés'), findsOneWidget);
+    expect(find.text('Inventaire'), findsWidgets);
   });
 }
 
@@ -78,25 +82,25 @@ Future<void> _signInToRetailShell(
   await tester.pump(const Duration(milliseconds: 1600));
   await tester.pump();
 
-  expect(find.text('Connect this device'), findsOneWidget);
-  await tester.tap(find.text('Sign in with email'));
+  expect(find.text('Connecter cet appareil'), findsOneWidget);
+  await tester.tap(find.text('Se connecter par e-mail'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
 
-  expect(find.text('Sign In'), findsOneWidget);
+  expect(find.text('Se connecter'), findsOneWidget);
 
   final fields = find.byType(TextFormField);
   final count = fields.evaluate().length;
   await tester.enterText(fields.at(count - 2), 'manager@shop.ht');
   await tester.enterText(fields.at(count - 1), 'password');
-  await tester.tap(find.text('Sign In'));
+  await tester.tap(find.text('Se connecter'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 900));
   await tester.pump();
 
-  expect(find.text('Enter your passcode'), findsOneWidget);
+  expect(find.text('Entrez votre code'), findsOneWidget);
   if (expectDemoPins) {
-    expect(find.text('Demo PINs'), findsOneWidget);
+    expect(find.text('Codes PIN de démo'), findsOneWidget);
   }
 
   for (var i = 0; i < 4; i++) {
@@ -108,7 +112,7 @@ Future<void> _signInToRetailShell(
 }
 
 void _expectBottomNavLabelsVisible(WidgetTester tester) {
-  const labels = ['POS', 'Products', 'Orders', 'Paylinks', 'Quotes'];
+  const labels = ['Caisse', 'Produits', 'Commandes', 'Liens', 'Devis'];
   final navBar = find.byType(NavigationBar);
   expect(navBar, findsOneWidget);
   expect(

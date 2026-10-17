@@ -15,7 +15,7 @@ void showTipsHistoryPanel(BuildContext context, bool isDark) {
       opaque: false,
       barrierColor: Colors.black.withValues(alpha: 0.45),
       barrierDismissible: true,
-      barrierLabel: 'Dismiss',
+      barrierLabel: 'Fermer',
       pageBuilder: (_, __, ___) => TipsHistoryPanel(isDark: isDark),
       transitionsBuilder: (_, animation, __, child) => SlideTransition(
         position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
@@ -51,7 +51,7 @@ class _TipsHistoryPanelState extends ConsumerState<TipsHistoryPanel> {
     super.dispose();
   }
 
-  // Default window: past 7 days (+ extra weeks loaded via "Load more")
+  // Default window: past 7 days (+ extra weeks loaded via "Charger plus")
   DateTime get _defaultFrom {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day)
@@ -278,9 +278,9 @@ class _TipsHistoryPanelState extends ConsumerState<TipsHistoryPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tips History',
+                Text('Historique des pourboires',
                     style: AppTextStyles.h2(color: textColor)),
-                Text('All tip movements',
+                Text('Tous les mouvements de pourboires',
                     style: AppTextStyles.caption()),
               ],
             ),
@@ -311,11 +311,11 @@ class _TipsHistoryPanelState extends ConsumerState<TipsHistoryPanel> {
           children: [
             Icon(Icons.history_rounded, size: 48, color: color),
             const SizedBox(height: 14),
-            Text('No entries found.',
+            Text('Aucune entrée trouvée.',
                 style: AppTextStyles.body(color: color)),
             const SizedBox(height: 6),
             Text(
-              'Try adjusting the date range\nor the search query.',
+              'Modifiez la période\nou la recherche.',
               style: AppTextStyles.caption().copyWith(height: 1.5),
               textAlign: TextAlign.center,
             ),
@@ -601,7 +601,7 @@ class _SearchField extends StatelessWidget {
       onChanged: onChanged,
       style: TextStyle(fontSize: 13, color: textColor),
       decoration: InputDecoration(
-        hintText: 'Search by waitress name…',
+        hintText: 'Rechercher par nom de serveuse…',
         hintStyle: TextStyle(fontSize: 13, color: hintColor),
         prefixIcon: Icon(Icons.search_rounded, size: 18, color: hintColor),
         isDense: true,
@@ -671,7 +671,7 @@ class _DateFilterBar extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            '— tap to filter',
+            '— touchez pour filtrer',
             style: AppTextStyles.caption(color: labelColor)
                 .copyWith(fontSize: 10),
           ),
@@ -680,7 +680,7 @@ class _DateFilterBar extends StatelessWidget {
           GestureDetector(
             onTap: onPickFrom,
             child: _Chip(
-              label: from != null ? _shortDate(from!) : 'From',
+              label: from != null ? _shortDate(from!) : 'De',
               color: activeColor,
               isDark: isDark,
               filled: from != null,
@@ -696,7 +696,7 @@ class _DateFilterBar extends StatelessWidget {
           GestureDetector(
             onTap: onPickTo,
             child: _Chip(
-              label: to != null ? _shortDate(to!) : 'To',
+              label: to != null ? _shortDate(to!) : 'À',
               color: activeColor,
               isDark: isDark,
               filled: to != null,
@@ -717,7 +717,7 @@ class _DateFilterBar extends StatelessWidget {
                     color: AppColors.boldRed.withValues(alpha: 0.25)),
               ),
               child: Text(
-                'Clear',
+                'Effacer',
                 style: AppTextStyles.caption(color: AppColors.boldRed)
                     .copyWith(fontSize: 11, fontWeight: FontWeight.w600),
               ),
@@ -811,7 +811,7 @@ class _LoadMoreButton extends StatelessWidget {
                 Icon(Icons.expand_more_rounded, size: 16, color: color),
                 const SizedBox(width: 6),
                 Text(
-                  'Load previous week',
+                  'Semaine précédente',
                   style: AppTextStyles.body(color: color)
                       .copyWith(
                           fontSize: 13, fontWeight: FontWeight.w600),
@@ -832,16 +832,16 @@ String _dayLabel(DateTime dt) {
   final today = DateTime(now.year, now.month, now.day);
   final d = DateTime(dt.year, dt.month, dt.day);
   final diff = today.difference(d).inDays;
-  if (diff == 0) return 'Today';
-  if (diff == 1) return 'Yesterday';
+  if (diff == 0) return 'Aujourd\'hui';
+  if (diff == 1) return 'Hier';
   return _shortDate(d);
 }
 
 String _shortDate(DateTime dt) {
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
   ];
-  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekdays = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
   return '${weekdays[dt.weekday - 1]} ${dt.day} ${months[dt.month - 1]}';
 }

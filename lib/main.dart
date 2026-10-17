@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 
 import 'core/navigation/app_router.dart';
 import 'core/providers/staff_session_provider.dart';
@@ -9,8 +12,10 @@ import 'core/theme/app_scroll_behavior.dart';
 import 'core/widgets/app_notification_banner.dart';
 import 'core/widgets/app_update_banner.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Intl.defaultLocale = 'fr';
+  await initializeDateFormatting('fr');
   runApp(const ProviderScope(child: BizManagerApp()));
 }
 
@@ -27,8 +32,15 @@ class BizManagerApp extends ConsumerWidget {
         ref.watch(staffSessionProvider.select((s) => s != null));
 
     return MaterialApp.router(
-      title: 'Retail POS',
+      title: 'Caisse détail',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('fr'),
+      supportedLocales: const [Locale('fr')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,

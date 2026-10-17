@@ -24,13 +24,13 @@ String normalizeOffPremiseStatus(String? raw) {
 String offPremiseStatusLabel(String status) {
   switch (normalizeOffPremiseStatus(status)) {
     case 'pending':
-      return 'Pending';
+      return 'En attente';
     case 'in_progress':
-      return 'In progress';
+      return 'En cours';
     case 'ready':
-      return 'Ready';
+      return 'Prêt';
     case 'complete':
-      return 'Completed';
+      return 'Terminé';
     default:
       return status;
   }
@@ -40,13 +40,13 @@ String offPremiseStatusLabel(String status) {
 String _offPremiseStatusLabelCompact(String status) {
   switch (normalizeOffPremiseStatus(status)) {
     case 'pending':
-      return 'Pending';
+      return 'En attente';
     case 'in_progress':
       return 'In prog.';
     case 'ready':
-      return 'Ready';
+      return 'Prêt';
     case 'complete':
-      return 'Done';
+      return 'Terminé';
     default:
       return offPremiseStatusLabel(status);
   }
@@ -91,7 +91,7 @@ class OffPremisePaymentStatusBadge extends StatelessWidget {
           border: Border.all(color: color.withValues(alpha: 0.32)),
         ),
         child: Text(
-          'PAID',
+          'PAYÉ',
           style: AppTextStyles.caption(color: color).copyWith(
             fontSize: 8,
             fontWeight: FontWeight.w800,
@@ -111,7 +111,7 @@ class OffPremisePaymentStatusBadge extends StatelessWidget {
         border: Border.all(color: fg.withValues(alpha: 0.42)),
       ),
       child: Text(
-        'NOT PAID',
+        'NON PAYÉ',
         style: AppTextStyles.caption(color: fg).copyWith(
           fontSize: 8,
           fontWeight: FontWeight.w800,
@@ -144,7 +144,7 @@ class OffPremiseOrderStatusDropdown extends StatelessWidget {
     final config = _badgeConfig(st, isDark);
 
     return PopupMenuButton<String>(
-      tooltip: 'Order status',
+      tooltip: 'Statut de la commande',
       offset: const Offset(0, 36),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.radiusInput),

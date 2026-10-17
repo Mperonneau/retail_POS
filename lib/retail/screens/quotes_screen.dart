@@ -220,7 +220,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Quotes',
+                              'Devis',
                               style: AppTextStyles.h1(
                                 color: isDark
                                     ? AppColors.warmWhite
@@ -231,7 +231,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                             ),
                           ),
                           AppButton(
-                            label: 'New quote',
+                            label: 'Nouveau devis',
                             onPressed: () => context.push(
                               AppRoutes.retailPos,
                               extra: const RetailPosRouteArgs(quoteMode: true),
@@ -259,7 +259,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Quotes',
+                          'Devis',
                           style: AppTextStyles.h1(
                             color: isDark
                                 ? AppColors.warmWhite
@@ -280,7 +280,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                         const SizedBox(width: AppConstants.spacing12),
                       ],
                       AppButton(
-                        label: 'New quote',
+                        label: 'Nouveau devis',
                         onPressed: () => context.push(
                           AppRoutes.retailPos,
                           extra: const RetailPosRouteArgs(quoteMode: true),
@@ -335,8 +335,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 horizontal: AppConstants.spacing24),
             child: Text(
               _quotesTab == 0
-                  ? '${filtered.length} active quote${filtered.length == 1 ? '' : 's'}'
-                  : '${filtered.length} inactive quote${filtered.length == 1 ? '' : 's'}',
+                  ? '${filtered.length} devis actif${filtered.length == 1 ? '' : 's'}'
+                  : '${filtered.length} devis inactif${filtered.length == 1 ? '' : 's'}',
               style: AppTextStyles.caption(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray,
               ),
@@ -354,18 +354,18 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                             _startDate == null &&
                             _endDate == null
                         ? (_quotesTab == 0
-                            ? 'No active quotes'
-                            : 'No inactive quotes')
-                        : 'No results',
+                            ? 'Aucun devis en cours'
+                            : 'Aucun devis inactif')
+                        : 'Aucun résultat',
                     message: filtered.isEmpty &&
                             _searchQuery.isEmpty &&
                             _startDate == null &&
                             _endDate == null
                         ? (_quotesTab == 0
-                            ? 'Create a quote from POS or tap New quote.'
-                            : 'Expired and cancelled quotes appear here.')
-                        : 'Try adjusting your search or date filters.',
-                    actionLabel: 'New quote',
+                            ? 'Créez un devis depuis la caisse ou touchez Nouveau devis.'
+                            : 'Les devis expirés et annulés apparaissent ici.')
+                        : 'Modifiez la recherche ou les filtres de date.',
+                    actionLabel: 'Nouveau devis',
                     onAction: () => context.push(
                           AppRoutes.retailPos,
                           extra: const RetailPosRouteArgs(quoteMode: true),
@@ -412,7 +412,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           children: [
             _QuotesToggleTab(
               icon: Icons.edit_note_outlined,
-              label: 'Active Quotes',
+              label: 'Devis en cours',
               badge: _QuotesTabCountBadge(isDark: isDark, activeTab: true),
               isSelected: _quotesTab == 0,
               isDark: isDark,
@@ -423,7 +423,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             Container(width: 1, color: borderColor),
             _QuotesToggleTab(
               icon: Icons.inventory_2_outlined,
-              label: 'Inactive Quotes',
+              label: 'Devis inactifs',
               badge: _QuotesTabCountBadge(isDark: isDark, activeTab: false),
               isSelected: _quotesTab == 1,
               isDark: isDark,
@@ -452,7 +452,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     required bool desktopToolbarEnd,
   }) {
     final fromChip = _DateChip(
-      label: _startDate == null ? 'From' : _formatDate(_startDate!),
+      label: _startDate == null ? 'De' : _formatDate(_startDate!),
       icon: Icons.calendar_today_outlined,
       active: _startDate != null,
       isDark: isDark,
@@ -466,7 +466,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           : null,
     );
     final toChip = _DateChip(
-      label: _endDate == null ? 'To' : _formatDate(_endDate!),
+      label: _endDate == null ? 'À' : _formatDate(_endDate!),
       icon: Icons.event_outlined,
       active: _endDate != null,
       isDark: isDark,
@@ -482,7 +482,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
 
     final searchField = _PillSearchField(
       controller: _searchCtrl,
-      hintText: 'Quote # or client…',
+      hintText: 'Devis n° ou client…',
       width: dense ? 188 : 210,
       isDark: isDark,
       dense: dense,
@@ -541,7 +541,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Text(
-          '$start–$end of $total',
+          '$start–$end sur $total',
           style: AppTextStyles.caption(
             color: isDark ? AppColors.coolGray : AppColors.darkGray,
           ),
@@ -759,13 +759,13 @@ class _QuoteCard extends StatelessWidget {
   String get _statusLabel {
     switch (quote.status) {
       case MockRetailQuoteStatus.draft:
-        return 'Draft';
+        return 'Brouillon';
       case MockRetailQuoteStatus.converted:
         return 'Converted';
       case MockRetailQuoteStatus.expired:
-        return 'Expired';
+        return 'Expiré';
       case MockRetailQuoteStatus.cancelled:
-        return 'Cancelled';
+        return 'Annulé';
     }
   }
 
@@ -774,7 +774,7 @@ class _QuoteCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final clientLabel = quote.clientName?.isNotEmpty == true
         ? quote.clientName!
-        : 'Walk-in';
+        : 'Client de passage';
     final total = quote.totalBeforeTaxHtg();
 
     return Material(
@@ -858,7 +858,7 @@ class _QuoteCard extends StatelessWidget {
                                                 : AppColors.deepGreen),
                                         const SizedBox(width: 2),
                                         Text(
-                                          'Link',
+                                          'Lien',
                                           style: AppTextStyles.caption(
                                             color: isDark
                                                 ? AppColors.mediumGreen
@@ -905,7 +905,7 @@ class _QuoteCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               '${_formatDate(quote.createdAt)} · '
-                              '${quote.lines.length} line${quote.lines.length == 1 ? '' : 's'}',
+                              '${quote.lines.length} ligne${quote.lines.length == 1 ? '' : 's'}',
                               style: AppTextStyles.caption(
                                 color: isDark
                                     ? AppColors.coolGray
@@ -976,12 +976,12 @@ void _showActiveQuoteWhatsAppDialog(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setD) {
         return AlertDialog(
-          title: const Text('Send via WhatsApp'),
+          title: const Text('Envoyer par WhatsApp'),
           content: TextField(
             controller: ctrl,
             onChanged: (_) => setD(() => errHolder[0] = null),
             decoration: InputDecoration(
-              labelText: 'Phone Number',
+              labelText: 'Numéro de téléphone',
               hintText: '+509 XXXX-XXXX',
               prefixIcon: const Icon(Icons.phone_outlined),
               errorText: errHolder[0],
@@ -996,20 +996,20 @@ void _showActiveQuoteWhatsAppDialog(
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: const Text('Annuler'),
             ),
             FilledButton(
               onPressed: () {
                 if (ctrl.text.trim().isEmpty) {
-                  setD(() => errHolder[0] = 'Please enter a phone number.');
+                  setD(() => errHolder[0] = 'Veuillez saisir un numéro de téléphone.');
                   return;
                 }
                 Navigator.pop(ctx);
                 ref.read(appNotificationProvider.notifier).show(
-                      'Quote summary sent via WhatsApp',
+                      'Résumé du devis envoyé par WhatsApp',
                     );
               },
-              child: const Text('Send'),
+              child: const Text('Envoyer'),
             ),
           ],
         );
@@ -1027,12 +1027,12 @@ void _showActiveQuoteEmailDialog(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setD) {
         return AlertDialog(
-          title: const Text('Send quote to Email'),
+          title: const Text('Envoyer le devis par e-mail'),
           content: TextField(
             controller: ctrl,
             onChanged: (_) => setD(() => errHolder[0] = null),
             decoration: InputDecoration(
-              labelText: 'Email Address',
+              labelText: 'Adresse e-mail',
               hintText: 'email@example.com',
               prefixIcon: const Icon(Icons.email_outlined),
               errorText: errHolder[0],
@@ -1047,22 +1047,22 @@ void _showActiveQuoteEmailDialog(
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: const Text('Annuler'),
             ),
             FilledButton(
               onPressed: () {
                 final email = ctrl.text.trim();
                 if (email.isEmpty || !email.contains('@')) {
                   setD(() =>
-                      errHolder[0] = 'Please enter a valid email address.');
+                      errHolder[0] = 'Veuillez saisir une adresse e-mail valide.');
                   return;
                 }
                 Navigator.pop(ctx);
                 ref.read(appNotificationProvider.notifier).show(
-                      'Quote summary sent to email',
+                      'Résumé du devis envoyé par e-mail',
                     );
               },
-              child: const Text('Send'),
+              child: const Text('Envoyer'),
             ),
           ],
         );
@@ -1076,11 +1076,11 @@ void _showActiveQuotePrintDialog(BuildContext context, MockRetailQuote quote) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Print'),
+      title: const Text('Imprimer'),
       content: Text(
         name == null || name.isEmpty
-            ? 'Quote ${quote.quoteNumber} sent to the printer.'
-            : 'Quote ${quote.quoteNumber} for $name sent to the printer.',
+            ? 'Devis ${quote.quoteNumber} envoyé à l\'imprimante.'
+            : 'Devis ${quote.quoteNumber} pour $name envoyé à l\'imprimante.',
       ),
       actions: [
         TextButton(
@@ -1130,8 +1130,8 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       context: context,
       builder: (ctx) => PaymentLinkDialog(
         referenceLabel: quote.quoteNumber,
-        description: "Share a secure Stripe checkout page. Enter the payer's contact; "
-            'the quote converts to an active order once paid.',
+        description: "Partagez une page de paiement Stripe. Saisissez le contact du payeur ; "
+            'le devis devient une commande active une fois payé.',
         isDark: widget.isDark,
       ),
     );
@@ -1147,15 +1147,15 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       final channelName = result.channel == PaymentLinkChannel.whatsApp
           ? 'WhatsApp'
           : result.channel == PaymentLinkChannel.email
-              ? 'Email'
+              ? 'E-mail'
               : 'SMS';
       final path = buildQuotePaymentLinkPath(quote.quoteNumber);
       await showPaymentLinkSuccessDialog(
         context,
         isDark: widget.isDark,
-        title: 'Payment link for ${quote.quoteNumber} — sent via $channelName',
+        title: 'Lien de paiement pour ${quote.quoteNumber} — envoyé via $channelName',
         pathOrUrl: path,
-        subtitle: 'The link is now active. Copy or share it with your client.',
+        subtitle: 'Le lien est actif. Copiez-le ou partagez-le avec votre client.',
       );
     }
   }
@@ -1192,25 +1192,25 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         title: Text(
-          'Mark as expired?',
+          'Marquer comme expiré ?',
           style: AppTextStyles.h3(
               color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
         ),
         content: Text(
-          'This will mark ${quote.quoteNumber} as expired. '
-          'You can still view it but not send a payment link.',
+          'Cela marquera ${quote.quoteNumber} comme expiré. '
+          'Vous pourrez encore le consulter, mais plus envoyer de lien.',
           style: AppTextStyles.body(
               color: isDark ? AppColors.coolGray : AppColors.darkGray),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Dismiss'),
+            child: const Text('Fermer'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Mark expired',
+              'Marquer expiré',
               style: AppTextStyles.button(color: AppColors.boldRed),
             ),
           ),
@@ -1230,25 +1230,25 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         title: Text(
-          'Cancel this quote?',
+          'Annuler ce devis ?',
           style: AppTextStyles.h3(
               color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
         ),
         content: Text(
-          '${quote.quoteNumber} will move to Inactive quotes as cancelled. '
-          'This cannot be undone.',
+          '${quote.quoteNumber} passera dans les devis inactifs comme annulé. '
+          'Cette action est définitive.',
           style: AppTextStyles.body(
               color: isDark ? AppColors.coolGray : AppColors.darkGray),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep quote'),
+            child: const Text('Garder le devis'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Cancel quote',
+              'Annuler le devis',
               style: AppTextStyles.button(color: AppColors.boldRed),
             ),
           ),
@@ -1268,24 +1268,24 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         title: Text(
-          'Reactivate quote?',
+          'Réactiver le devis ?',
           style: AppTextStyles.h3(
               color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
         ),
         content: Text(
-          '${quote.quoteNumber} will return to Active quotes as a draft. '
-          'You can edit, send a payment link, or convert to an order again.',
+          '${quote.quoteNumber} redeviendra un brouillon dans les devis en cours. '
+          'Vous pourrez le modifier, envoyer un lien ou le convertir en commande.',
           style: AppTextStyles.body(
               color: isDark ? AppColors.coolGray : AppColors.darkGray),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Not now'),
+            child: const Text('Pas maintenant'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reactivate'),
+            child: const Text('Réactiver'),
           ),
         ],
       ),
@@ -1295,7 +1295,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       widget.onQuoteUpdated();
       if (!mounted) return;
       ref.read(appNotificationProvider.notifier).show(
-            '${quote.quoteNumber} is now an active draft.',
+            '${quote.quoteNumber} est de nouveau un brouillon.',
           );
     }
   }
@@ -1316,7 +1316,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                       ? AppColors.coolGray
                       : AppColors.darkGray),
               const SizedBox(height: 12),
-              Text('Quote not found',
+              Text('Devis introuvable',
                   style: AppTextStyles.body(
                       color: widget.isDark
                           ? AppColors.coolGray
@@ -1382,7 +1382,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                                     vertical: 6,
                                   ),
                                   child: Text(
-                                    'Edit quote',
+                                    'Modifier le devis',
                                     style: AppTextStyles.caption(
                                       color: isDark
                                           ? AppColors.amber
@@ -1409,7 +1409,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                       color:
                           isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
-                    tooltip: 'Share via WhatsApp',
+                    tooltip: 'Partager par WhatsApp',
                     style:
                         IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
@@ -1422,7 +1422,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                       color:
                           isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
-                    tooltip: 'Send to Email',
+                    tooltip: 'Envoyer par e-mail',
                     style:
                         IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
@@ -1435,7 +1435,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                       color:
                           isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
-                    tooltip: 'Print',
+                    tooltip: 'Imprimer',
                     style:
                         IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
@@ -1476,7 +1476,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                           icon: Icons.person_outline_rounded,
                           text: quote.clientName?.isNotEmpty == true
                               ? quote.clientName!
-                              : 'Walk-in',
+                              : 'Client de passage',
                           isDark: isDark,
                           bold: true,
                         ),
@@ -1499,7 +1499,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
 
                   // Fulfillment
                   _DetailSection(
-                    label: 'Fulfillment',
+                    label: 'Remise',
                     isDark: isDark,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1528,7 +1528,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
 
                   // Items
                   _DetailSection(
-                    label: 'Items',
+                    label: 'Articles',
                     isDark: isDark,
                     child: _LinesTable(
                       rows: quote.lines
@@ -1552,7 +1552,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                   ),
                   const SizedBox(height: AppConstants.spacing8),
                   _TotalRow(
-                    label: 'Subtotal',
+                    label: 'Sous-total',
                     amount: quote.subtotalHtg(),
                     isDark: isDark,
                     context: context,
@@ -1561,7 +1561,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                     const SizedBox(height: 4),
                     _TotalRow(
                       label:
-                          'Discount (${quote.discountPercent.toStringAsFixed(0)}%)',
+                          'Remise (${quote.discountPercent.toStringAsFixed(0)} %)',
                       amount: -quote.discountAmountHtg(),
                       isDark: isDark,
                       context: context,
@@ -1579,7 +1579,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                   const SizedBox(height: AppConstants.spacing8),
                   // Created date
                   Text(
-                    'Created ${_formatDateLong(quote.createdAt)}',
+                    'Créé le ${_formatDateLong(quote.createdAt)}',
                     style: AppTextStyles.caption(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
@@ -1608,7 +1608,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                           onPressed: () => _convertToOrder(quote),
                           icon: const Icon(Icons.payment_rounded, size: 14),
                           label: Text(
-                            'Pay & convert',
+                            'Payer et convertir',
                             style: AppTextStyles.button(
                               color: AppColors.nearBlack,
                             ).copyWith(fontSize: 12),
@@ -1655,8 +1655,8 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                                   ),
                             label: Text(
                               quote.paymentLinkSent
-                                  ? 'Resend payment link'
-                                  : 'Send payment link',
+                                  ? 'Renvoyer le lien'
+                                  : 'Envoyer le lien',
                               style: AppTextStyles.button(
                                 color: isDark
                                     ? AppColors.mediumGreen
@@ -1700,7 +1700,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                                   ? AppColors.coralRed
                                   : AppColors.boldRed),
                           label: Text(
-                            'Mark expired',
+                            'Marquer expiré',
                             style: AppTextStyles.button(
                               color: isDark
                                   ? AppColors.coralRed
@@ -1738,7 +1738,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                                   ? AppColors.coralRed
                                   : AppColors.boldRed),
                           label: Text(
-                            'Cancel quote',
+                            'Annuler le devis',
                             style: AppTextStyles.button(
                               color: isDark
                                   ? AppColors.coralRed
@@ -1784,7 +1784,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                 onPressed: () => _confirmReactivateQuote(quote),
                 icon: const Icon(Icons.restore_rounded, size: 16),
                 label: Text(
-                  'Reactivate quote',
+                  'Réactiver le devis',
                   style: AppTextStyles.button(color: AppColors.nearBlack)
                       .copyWith(fontSize: 13),
                 ),
@@ -1810,10 +1810,10 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
 
   Widget _statusRowFor(MockRetailQuote quote, bool isDark) {
     final (badgeStatus, badgeLabel) = switch (quote.status) {
-      MockRetailQuoteStatus.draft => (StatusType.pending, 'Draft'),
+      MockRetailQuoteStatus.draft => (StatusType.pending, 'Brouillon'),
       MockRetailQuoteStatus.converted => (StatusType.done, 'Converted'),
-      MockRetailQuoteStatus.expired => (StatusType.inactive, 'Expired'),
-      MockRetailQuoteStatus.cancelled => (StatusType.occupied, 'Cancelled'),
+      MockRetailQuoteStatus.expired => (StatusType.inactive, 'Expiré'),
+      MockRetailQuoteStatus.cancelled => (StatusType.occupied, 'Annulé'),
     };
     return Row(
       children: [
@@ -1854,7 +1854,7 @@ class _QuoteDetailPage extends ConsumerWidget {
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
         title: Text(
-          'Quote Details',
+          'Détails du devis',
           style: AppTextStyles.h3(
               color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
         ),
@@ -1866,18 +1866,18 @@ class _QuoteDetailPage extends ConsumerWidget {
           if (isDraft && quote != null) ...[
             IconButton(
               icon: const Icon(Icons.send_outlined, size: 22),
-              tooltip: 'Share via WhatsApp',
+              tooltip: 'Partager par WhatsApp',
               onPressed: () =>
                   _showActiveQuoteWhatsAppDialog(context, ref, quote),
             ),
             IconButton(
               icon: const Icon(Icons.email_outlined, size: 22),
-              tooltip: 'Send to Email',
+              tooltip: 'Envoyer par e-mail',
               onPressed: () => _showActiveQuoteEmailDialog(context, ref, quote),
             ),
             IconButton(
               icon: const Icon(Icons.print_outlined, size: 22),
-              tooltip: 'Print',
+              tooltip: 'Imprimer',
               onPressed: () => _showActiveQuotePrintDialog(context, quote),
             ),
           ],
@@ -2027,17 +2027,17 @@ class _FulfillmentChip extends StatelessWidget {
     final (icon, label, color) = switch (mode) {
       RetailFulfillmentMode.inStore => (
           Icons.storefront_outlined,
-          'In store',
+          'En magasin',
           AppColors.primaryBlue
         ),
       RetailFulfillmentMode.pickup => (
           Icons.shopping_bag_outlined,
-          'Pickup',
+          'Retrait',
           AppColors.amber
         ),
       RetailFulfillmentMode.delivery => (
           Icons.local_shipping_outlined,
-          'Delivery',
+          'Livraison',
           isDark ? AppColors.mediumGreen : AppColors.deepGreen
         ),
     };
@@ -2199,12 +2199,12 @@ class _LinesTable extends StatelessWidget {
           child: Row(children: [
             SizedBox(
                 width: 28,
-                child: Text('Qty', style: hdr(), textAlign: TextAlign.center)),
+                child: Text('Qté', style: hdr(), textAlign: TextAlign.center)),
             const SizedBox(width: 8),
-            Expanded(child: Text('Item', style: hdr())),
+            Expanded(child: Text('Article', style: hdr())),
             SizedBox(
                 width: 70,
-                child: Text('Unit', style: hdr(), textAlign: TextAlign.right)),
+                child: Text('Unité', style: hdr(), textAlign: TextAlign.right)),
             const SizedBox(width: 6),
             SizedBox(
                 width: 70,
@@ -2387,16 +2387,16 @@ class _PillSearchField extends StatelessWidget {
 
 String _formatDate(DateTime dt) {
   final months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
   ];
   return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';
 }
 
 String _formatDateLong(DateTime dt) {
   final months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
   ];
   final h = dt.hour.toString().padLeft(2, '0');
   final m = dt.minute.toString().padLeft(2, '0');

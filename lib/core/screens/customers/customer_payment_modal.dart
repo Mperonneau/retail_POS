@@ -18,11 +18,11 @@ extension _PayMethodX on CustomerPayMethod {
   String get label {
     switch (this) {
       case CustomerPayMethod.cash:
-        return 'Cash';
+        return 'Espèces';
       case CustomerPayMethod.moncash:
         return 'MonCash';
       case CustomerPayMethod.card:
-        return 'Card';
+        return 'Carte';
     }
   }
 
@@ -143,7 +143,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
     ref.read(customerProvider.notifier).postPayment(
           customerId: widget.customer.id,
           amountHtg: amount,
-          cashierName: 'Cashier',
+          cashierName: 'Caissier',
           paymentMethodLabel: _method.label,
           receiptNumber: receiptNumber,
         );
@@ -224,7 +224,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Account Payment',
+                  Text('Paiement de compte',
                       style: AppTextStyles.body(color: textColor)
                           .copyWith(
                               fontWeight: FontWeight.w700, fontSize: 14)),
@@ -273,7 +273,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
               // Amount field
               _field(
                 controller: _amtCtrl,
-                label: 'Amount paid',
+                label: 'Montant payé',
                 prefixText: 'HTG ',
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
@@ -291,7 +291,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                   const SizedBox(width: 5),
                   Expanded(
                     child: Text(
-                      'Cannot exceed outstanding balance '
+                      'Ne peut pas dépasser le solde dû '
                       '(${CurrencyFormatter.local(context, widget.balance)})',
                       style: AppTextStyles.caption(color: AppColors.boldRed),
                     ),
@@ -329,7 +329,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Balance after payment',
+                      'Solde après paiement',
                       style: AppTextStyles.caption(),
                     ),
                     const Spacer(),
@@ -350,7 +350,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
               const SizedBox(height: 16),
 
               // ── Method tabs ──────────────────────────────────────────────
-              Text('Payment Method',
+              Text('Moyen de paiement',
                   style: AppTextStyles.caption()
                       .copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
@@ -387,7 +387,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                   onPressed: isValid ? _confirm : null,
                   icon: const Icon(Icons.check_circle_outline, size: 16),
                   label: Text(
-                    'Confirm Payment',
+                    'Confirmer le paiement',
                     style: AppTextStyles.body().copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.nearBlack),
@@ -459,14 +459,14 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                     size: 28, color: Color(0xFF059669)),
               ),
               const SizedBox(height: 8),
-              Text('Payment Confirmed',
+              Text('Paiement confirmé',
                   style: AppTextStyles.h3(color: textColor)
                       .copyWith(fontWeight: FontWeight.w700, fontSize: 16)),
               const SizedBox(height: 2),
               Text(
                 settled
-                    ? 'Account fully settled ✓'
-                    : 'Partial payment recorded',
+                    ? 'Compte soldé ✓'
+                    : 'Paiement partiel enregistré',
                 style: AppTextStyles.caption(
                     color: settled
                         ? const Color(0xFF059669)
@@ -491,7 +491,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                 const SizedBox(height: 16),
 
                 // ── Share row ────────────────────────────────────────────
-                Text('Share Receipt',
+                Text('Partager le reçu',
                     style: AppTextStyles.caption()
                         .copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
@@ -509,7 +509,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                   Expanded(
                     child: _ShareButton(
                       icon: Icons.email_outlined,
-                      label: 'Email',
+                      label: 'E-mail',
                       color: AppColors.primaryBlue,
                       onTap: () => PaymentReceiptDialogs.showEmail(context),
                     ),
@@ -518,7 +518,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                   Expanded(
                     child: _ShareButton(
                       icon: Icons.print_outlined,
-                      label: 'Print',
+                      label: 'Imprimer',
                       color:
                           isDark ? AppColors.coolGray : AppColors.darkGray,
                       onTap: () => PaymentReceiptDialogs.showPrint(
@@ -543,7 +543,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                           borderRadius: BorderRadius.circular(
                               AppConstants.radiusButton)),
                     ),
-                    child: Text('Done',
+                    child: Text('Terminé',
                         style: AppTextStyles.body().copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.white)),
@@ -677,7 +677,7 @@ class _CashPanel extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            'Enter the cash amount received above.',
+            'Saisissez le montant en espèces reçu ci-dessus.',
             style: AppTextStyles.caption(color: const Color(0xFF059669)),
           ),
         ),
@@ -705,7 +705,7 @@ class _MonCashPanel extends StatelessWidget {
       children: [
         _PanelField(
           controller: phoneCtrl,
-          label: 'MonCash phone number',
+          label: 'Numéro MonCash',
           keyboardType: TextInputType.phone,
           formatters: InputFormatters.phone,
           isDark: isDark,
@@ -714,7 +714,7 @@ class _MonCashPanel extends StatelessWidget {
         const SizedBox(height: 10),
         _PanelField(
           controller: txCtrl,
-          label: 'Transaction ID (optional)',
+          label: 'N° de transaction (facultatif)',
           isDark: isDark,
           prefixIcon: Icons.tag_outlined,
         ),
@@ -726,7 +726,7 @@ class _MonCashPanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppConstants.radiusCard),
           ),
           child: Text(
-            'Verify MonCash confirmation before confirming payment.',
+            'Vérifiez la confirmation MonCash avant de confirmer le paiement.',
             style: AppTextStyles.caption(
                 color: const Color(0xFF7C3AED)),
           ),
@@ -770,14 +770,14 @@ class _CardPanelState extends State<_CardPanel> {
           Icon(Icons.credit_card_outlined,
               size: 15, color: isDark ? AppColors.skyBlue : blue),
           const SizedBox(width: 6),
-          Text('Card Details',
+          Text('Détails de la carte',
               style: AppTextStyles.caption()
                   .copyWith(fontWeight: FontWeight.w600)),
         ]),
         const SizedBox(height: 8),
         _PanelField(
           controller: _cardCtrl,
-          label: 'Card Number',
+          label: 'Numéro de carte',
           keyboardType: TextInputType.number,
           formatters: InputFormatters.cardNumber,
           isDark: isDark,
@@ -788,7 +788,7 @@ class _CardPanelState extends State<_CardPanel> {
           Expanded(
             child: _PanelField(
               controller: _expiryCtrl,
-              label: 'Expiry (MM/YY)',
+              label: 'Expiration (MM/AA)',
               keyboardType: TextInputType.number,
               formatters: InputFormatters.cardExpiry,
               isDark: isDark,
@@ -806,7 +806,7 @@ class _CardPanelState extends State<_CardPanel> {
           ),
         ]),
         const SizedBox(height: 6),
-        Text('Powered by Stripe',
+        Text('Propulsé par Stripe',
             style: AppTextStyles.caption(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray)
                 .copyWith(fontSize: 10)),
@@ -914,7 +914,7 @@ class _ReceiptCard extends StatelessWidget {
               borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
             ),
             child: Column(children: [
-              Text('PAYMENT RECEIPT',
+              Text('REÇU DE PAIEMENT',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
@@ -952,17 +952,17 @@ class _ReceiptCard extends StatelessWidget {
 
                 // Customer info
                 _ReceiptRow(
-                    label: 'Customer',
+                    label: 'Client',
                     value: customer.name,
                     bold: true),
-                _ReceiptRow(label: 'Phone', value: customer.phone),
+                _ReceiptRow(label: 'Téléphone', value: customer.phone),
                 const SizedBox(height: 8),
                 const Divider(height: 1, color: Color(0xFFE2E8F0)),
                 const SizedBox(height: 8),
 
                 // Method
                 Row(children: [
-                  Text('Method',
+                  Text('Moyen',
                       style: const TextStyle(
                           fontSize: 11, color: Color(0xFF64748B))),
                   const Spacer(),
@@ -989,7 +989,7 @@ class _ReceiptCard extends StatelessWidget {
                 ]),
                 if (result.methodDetail != null) ...[
                   const SizedBox(height: 4),
-                  _ReceiptRow(label: 'Reference', value: result.methodDetail!),
+                  _ReceiptRow(label: 'Référence', value: result.methodDetail!),
                 ],
                 const SizedBox(height: 12),
                 const Divider(height: 1, color: Color(0xFFE2E8F0)),
@@ -999,7 +999,7 @@ class _ReceiptCard extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      const Text('AMOUNT PAID',
+                      const Text('MONTANT PAYÉ',
                           style: TextStyle(
                               fontSize: 10,
                               letterSpacing: 1.4,
@@ -1023,20 +1023,20 @@ class _ReceiptCard extends StatelessWidget {
 
                 // Balance summary
                 _ReceiptRow(
-                  label: 'Previous balance',
+                  label: 'Solde précédent',
                   value: CurrencyFormatter.local(
                       context, result.previousBalance),
                   valueColor: const Color(0xFFDC2626),
                 ),
                 _ReceiptRow(
-                  label: 'Amount paid',
+                  label: 'Montant payé',
                   value:
                       '- ${CurrencyFormatter.local(context, result.amountPaid)}',
                   valueColor: const Color(0xFF059669),
                 ),
                 const Divider(height: 8, color: Color(0xFFE2E8F0)),
                 _ReceiptRow(
-                  label: 'Remaining balance',
+                  label: 'Solde restant',
                   value: settled
                       ? 'Settled ✓'
                       : CurrencyFormatter.local(
@@ -1061,7 +1061,7 @@ class _ReceiptCard extends StatelessWidget {
                   top: BorderSide(color: Color(0xFFE2E8F0))),
             ),
             child: const Text(
-              'Thank you for your payment',
+              'Merci pour votre paiement',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,

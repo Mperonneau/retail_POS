@@ -188,13 +188,13 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   String get _stepTitle {
     switch (_step) {
       case 0:
-        return _fulfillmentSectionVisible ? 'Client & Delivery' : 'Client';
+        return _fulfillmentSectionVisible ? 'Client et livraison' : 'Client';
       case 1:
-        return 'Order Summary';
+        return 'Récapitulatif';
       case 2:
-        return 'Payment';
+        return 'Paiement';
       case 3:
-        return 'Payment';
+        return 'Paiement';
       default:
         return 'Checkout';
     }
@@ -285,8 +285,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
       if (widget.isQuote && !_validateClientStepForQuote()) {
         final hasName = _clientNameCtrl.text.trim().isNotEmpty;
         final message = !hasName
-            ? 'Client name is required for a quote.'
-            : 'A phone number or email is required for a quote.';
+            ? 'Le nom du client est obligatoire pour un devis.'
+            : 'Un téléphone ou un e-mail est obligatoire pour un devis.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -302,7 +302,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Location and phone are required for delivery.',
+              'L\'adresse et le téléphone sont obligatoires pour la livraison.',
               style: AppTextStyles.body(color: AppColors.white),
             ),
             backgroundColor: AppColors.boldRed,
@@ -398,13 +398,13 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
     for (final e in lines) {
       final matches = products.where((p) => p.id == e.product.id).toList();
       if (matches.isEmpty) {
-        failures.add('${e.product.name} — no longer in catalog');
+        failures.add('${e.product.name} — plus au catalogue');
         continue;
       }
       final live = matches.first;
       if (e.quantity > live.stockQuantity) {
         failures.add(
-          '${e.product.name} — requested ${e.quantity}, available ${live.stockQuantity}',
+          '${e.product.name} — demandé ${e.quantity}, disponible ${live.stockQuantity}',
         );
       }
     }
@@ -423,7 +423,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             const SizedBox(width: AppConstants.spacing8),
             Expanded(
               child: Text(
-                'Out of stock',
+                'Rupture de stock',
                 style: AppTextStyles.h3(
                   color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                 ),
@@ -437,7 +437,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'The following items are not available in the requested quantity:',
+                'Ces articles ne sont pas disponibles dans la quantité demandée :',
                 style: AppTextStyles.body(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
                 ),
@@ -534,7 +534,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                     TextButton(
                       onPressed: _submitting ? null : _back,
                       child: Text(
-                        'Back',
+                        'Retour',
                         style: AppTextStyles.caption(
                             color: AppColors.primaryBlue),
                       ),
@@ -688,9 +688,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           amountHtg: total,
           showHeader: true,
           contextSubtitle: _successContextSubtitle(),
-          statusLine: 'Sale #$_completedSaleNumber paid',
+          statusLine: 'Vente n°$_completedSaleNumber payée',
           receiptDetailLine:
-              name.isNotEmpty ? 'Receipt for: $name' : null,
+              name.isNotEmpty ? 'Reçu pour : $name' : null,
           printReceiptName: name.isNotEmpty ? name : null,
           onDone: _finishPaymentSuccess,
           onHeaderBack: _finishPaymentSuccess,
@@ -783,8 +783,8 @@ class _ClientStep extends ConsumerWidget {
                   controller: clientNameCtrl,
                   decoration: InputDecoration(
                     labelText: isQuote
-                        ? 'Client name *'
-                        : 'Client name (optional)',
+                        ? 'Nom du client *'
+                        : 'Nom du client (facultatif)',
                     prefixIcon: const Icon(Icons.person_outline, size: 18),
                     border: OutlineInputBorder(
                       borderRadius:
@@ -799,7 +799,7 @@ class _ClientStep extends ConsumerWidget {
                   TextField(
                     controller: clientEmailCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Email (required if no phone)',
+                      labelText: 'E-mail (obligatoire sans téléphone)',
                       prefixIcon:
                           const Icon(Icons.email_outlined, size: 18),
                       border: OutlineInputBorder(
@@ -822,7 +822,7 @@ class _ClientStep extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'Name is required. Phone or email is required for sending a payment link.',
+                          'Le nom est obligatoire. Le téléphone ou l\'e-mail est obligatoire pour envoyer un lien de paiement.',
                           style: AppTextStyles.caption(
                             color: isDark
                                 ? AppColors.coolGray
@@ -838,7 +838,7 @@ class _ClientStep extends ConsumerWidget {
                   controller: searchCtrl,
                   onChanged: onSearchChanged,
                   decoration: InputDecoration(
-                    labelText: 'Search existing client',
+                    labelText: 'Rechercher un client',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     border: OutlineInputBorder(
                       borderRadius:
@@ -862,7 +862,7 @@ class _ClientStep extends ConsumerWidget {
                 if (showFulfillmentSection) ...[
                   const SizedBox(height: AppConstants.spacing16),
                   Text(
-                    'Fulfillment',
+                    'Remise',
                     style: AppTextStyles.h3(
                       color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                     ),
@@ -872,19 +872,19 @@ class _ClientStep extends ConsumerWidget {
                     segments: [
                       const ButtonSegment<RetailFulfillmentMode>(
                         value: RetailFulfillmentMode.inStore,
-                        label: Text('In store'),
+                        label: Text('En magasin'),
                         icon: Icon(Icons.storefront_outlined, size: 16),
                       ),
                       if (pickupEnabled)
                         const ButtonSegment<RetailFulfillmentMode>(
                           value: RetailFulfillmentMode.pickup,
-                          label: Text('Pickup'),
+                          label: Text('Retrait'),
                           icon: Icon(Icons.shopping_bag_outlined, size: 16),
                         ),
                       if (deliveryOptionEnabled)
                         const ButtonSegment<RetailFulfillmentMode>(
                           value: RetailFulfillmentMode.delivery,
-                          label: Text('Delivery'),
+                          label: Text('Livraison'),
                           icon: Icon(Icons.local_shipping_outlined, size: 16),
                         ),
                     ],
@@ -921,14 +921,14 @@ class _ClientStep extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 AppInput(
-                                  label: 'Location *',
+                                  label: 'Lieu *',
                                   controller: deliveryLocationCtrl,
                                   prefixIcon: Icons.place_outlined,
                                 ),
                                 const SizedBox(
                                     height: AppConstants.spacing8),
                                 AppInput(
-                                  label: 'Phone number *',
+                                  label: 'Téléphone *',
                                   controller: deliveryPhoneCtrl,
                                   keyboardType: TextInputType.phone,
                                   inputFormatters: InputFormatters.phone,
@@ -937,7 +937,7 @@ class _ClientStep extends ConsumerWidget {
                                 const SizedBox(
                                     height: AppConstants.spacing8),
                                 AppInput(
-                                  label: 'Delivery fee (HTG)',
+                                  label: 'Frais de livraison (HTG)',
                                   controller: deliveryFeeCtrl,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
@@ -961,7 +961,7 @@ class _ClientStep extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: AppButton(
-            label: 'Next',
+            label: 'Suivant',
             onPressed: onNext,
             icon: Icons.arrow_forward_rounded,
             compact: true,
@@ -993,7 +993,7 @@ class _ReviewStep extends ConsumerWidget {
   final bool showDeliveryFeeRow;
   final bool isDark;
   final bool isQuote;
-  /// True when editing an existing draft quote (label becomes "Update quote").
+  /// True when editing an existing draft quote (label becomes "Mettre à jour le devis").
   final bool isUpdatingQuote;
   final VoidCallback onPay;
   final VoidCallback onSaveQuote;
@@ -1161,18 +1161,18 @@ class _ReviewStep extends ConsumerWidget {
                     ),
                   ),
                   const Divider(height: AppConstants.spacing16),
-                  _moneyRow(context, 'Subtotal', subtotal, isDark),
+                  _moneyRow(context, 'Sous-total', subtotal, isDark),
                   if (discountPercent > 0)
                     _moneyRow(
                       context,
-                      'Discount (${discountPercent.toStringAsFixed(0)}%)',
+                      'Remise (${discountPercent.toStringAsFixed(0)} %)',
                       -discountAmt,
                       isDark,
                     ),
                   if (ref.watch(taxEnabledProvider))
                     _moneyRow(context, 'Tax', tax, isDark),
                   if (ref.watch(gratuityEnabledProvider))
-                    _moneyRow(context, 'Service charge', gratuity, isDark),
+                    _moneyRow(context, 'Frais de service', gratuity, isDark),
                   if (showDeliveryFeeRow)
                     Padding(
                       padding:
@@ -1181,7 +1181,7 @@ class _ReviewStep extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Delivery fee',
+                            'Frais de livraison',
                             style: AppTextStyles.body(
                               color: isDark
                                   ? AppColors.coolGray
@@ -1236,7 +1236,7 @@ class _ReviewStep extends ConsumerWidget {
             children: [
               if (isQuote) ...[
                 AppButton(
-                  label: isUpdatingQuote ? 'Update quote' : 'Save as quote',
+                  label: isUpdatingQuote ? 'Mettre à jour le devis' : 'Enregistrer comme devis',
                   onPressed: onSaveQuote,
                   icon: Icons.request_quote_outlined,
                   variant: AppButtonVariant.secondary,
@@ -1245,7 +1245,7 @@ class _ReviewStep extends ConsumerWidget {
                 const SizedBox(height: 4),
               ],
               AppButton(
-                label: 'Pay',
+                label: 'Payer',
                 onPressed: onPay,
                 icon: Icons.payment_rounded,
                 compact: true,
@@ -1264,20 +1264,20 @@ class _ReviewStep extends ConsumerWidget {
         SizedBox(
           width: 36,
           child: Text(
-            'Qty',
+            'Qté',
             style: AppTextStyles.caption(color: headerColor),
           ),
         ),
         Expanded(
           child: Text(
-            'Item',
+            'Article',
             style: AppTextStyles.caption(color: headerColor),
           ),
         ),
         SizedBox(
           width: 88,
           child: Text(
-            'Unit',
+            'Unité',
             textAlign: TextAlign.right,
             style: AppTextStyles.caption(color: headerColor),
           ),
@@ -1420,8 +1420,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
               customerId: _selectedCustomer!.id,
               amountHtg: widget.total,
               paidAmountHtg: _creditPartialPaid,
-              cashierName: 'Cashier',
-              description: 'Retail sale',
+              cashierName: 'Caissier',
+              description: 'Vente au détail',
             );
       }
     }
@@ -1444,7 +1444,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             children: [
               Row(
                 children: [
-                  Text('Total:', style: AppTextStyles.body()),
+                  Text('Total :', style: AppTextStyles.body()),
                   const SizedBox(width: 6),
                   Text(
                     CurrencyFormatter.local(context, widget.total),
@@ -1476,19 +1476,19 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
                 onTap: () => setState(() => _method = _RPayMethod.moncash),
               ),
               _RetailMethodTab(
-                label: 'Card',
+                label: 'Carte',
                 icon: Icons.credit_card_outlined,
                 selected: _method == _RPayMethod.card,
                 onTap: () => setState(() => _method = _RPayMethod.card),
               ),
               _RetailMethodTab(
-                label: 'Cash',
+                label: 'Espèces',
                 icon: Icons.payments_outlined,
                 selected: _method == _RPayMethod.cash,
                 onTap: () => setState(() => _method = _RPayMethod.cash),
               ),
               _RetailMethodTab(
-                label: 'Credit',
+                label: 'Crédit',
                 icon: Icons.account_balance_wallet_outlined,
                 selected: _method == _RPayMethod.credit,
                 onTap: () => setState(() => _method = _RPayMethod.credit),
@@ -1515,7 +1515,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: AppButton(
-            label: widget.submitting ? 'Processing…' : 'Confirm Payment',
+            label: widget.submitting ? 'Traitement…' : 'Confirmer le paiement',
             onPressed: _canConfirm ? _confirm : null,
             isLoading: widget.submitting,
             icon: Icons.check_circle_outline,
@@ -1670,10 +1670,10 @@ class _RMonCashContent extends StatelessWidget {
               color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
             ),
             const SizedBox(height: AppConstants.spacing12),
-            Text('MonCash Payment', style: AppTextStyles.h3()),
+            Text('Paiement MonCash', style: AppTextStyles.h3()),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'Enter customer phone number or show QR code',
+              'Saisissez le téléphone du client ou montrez le code QR',
               style: AppTextStyles.body(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
               textAlign: TextAlign.center,
@@ -1681,7 +1681,7 @@ class _RMonCashContent extends StatelessWidget {
             const SizedBox(height: AppConstants.spacing12),
             TextField(
               decoration: InputDecoration(
-                labelText: 'Customer Phone',
+                labelText: 'Téléphone du client',
                 hintText: '+509 3XXX-XXXX',
                 prefixIcon: const Icon(Icons.phone_outlined, size: 20),
                 border: OutlineInputBorder(
@@ -1707,7 +1707,7 @@ class _RMonCashContent extends StatelessWidget {
                       size: 52,
                       color:
                           isDark ? AppColors.skyBlue : AppColors.primaryBlue),
-                  Text('QR Code', style: AppTextStyles.caption()),
+                  Text('Code QR', style: AppTextStyles.caption()),
                 ],
               ),
             ),
@@ -1740,13 +1740,13 @@ class _RCardContent extends StatelessWidget {
                 Icon(Icons.credit_card_outlined,
                     color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
                 const SizedBox(width: 8),
-                Text('Card Payment', style: AppTextStyles.h3()),
+                Text('Paiement par carte', style: AppTextStyles.h3()),
               ],
             ),
             const SizedBox(height: AppConstants.spacing12),
             TextField(
               decoration: InputDecoration(
-                labelText: 'Card Number',
+                labelText: 'Numéro de carte',
                 hintText: '1234 5678 9012 3456',
                 prefixIcon: const Icon(Icons.credit_card, size: 20),
                 border: OutlineInputBorder(
@@ -1790,7 +1790,7 @@ class _RCardContent extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppConstants.spacing4),
-            Text('Powered by Stripe',
+            Text('Propulsé par Stripe',
                 style: AppTextStyles.caption(
                     color:
                         isDark ? AppColors.coolGray : AppColors.darkGray)),
@@ -1834,14 +1834,14 @@ class _RCashContent extends StatelessWidget {
                 Icon(Icons.payments_outlined,
                     color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
                 const SizedBox(width: 8),
-                Text('Cash Payment', style: AppTextStyles.h3()),
+                Text('Paiement en espèces', style: AppTextStyles.h3()),
               ],
             ),
             const SizedBox(height: AppConstants.spacing12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Amount Due', style: AppTextStyles.body()),
+                Text('Montant dû', style: AppTextStyles.body()),
                 Text(CurrencyFormatter.local(context, totalHtg),
                     style: AppTextStyles.price()),
               ],
@@ -1851,7 +1851,7 @@ class _RCashContent extends StatelessWidget {
               controller: cashCtrl,
               onChanged: onCashChanged,
               decoration: InputDecoration(
-                labelText: 'Cash received (HTG)',
+                labelText: 'Espèces reçues (HTG)',
                 prefixText: 'HTG ',
                 border: OutlineInputBorder(
                     borderRadius:
@@ -1879,7 +1879,7 @@ class _RCashContent extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Change', style: AppTextStyles.body()),
+                  Text('Monnaie', style: AppTextStyles.body()),
                   Text(
                     CurrencyFormatter.local(context, change),
                     style: AppTextStyles.price(color: AppColors.deepGreen),
@@ -1957,7 +1957,7 @@ class _RCreditContent extends StatelessWidget {
                 Icon(Icons.account_balance_wallet_outlined,
                     color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
                 const SizedBox(width: 8),
-                Text('Credit Account', style: AppTextStyles.h3()),
+                Text('Compte crédit', style: AppTextStyles.h3()),
               ],
             ),
             const SizedBox(height: AppConstants.spacing12),
@@ -1965,7 +1965,7 @@ class _RCreditContent extends StatelessWidget {
               TextField(
                 onChanged: onSearchChanged,
                 decoration: InputDecoration(
-                  labelText: 'Search customer by name or phone',
+                  labelText: 'Rechercher un client par nom ou téléphone',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   border: OutlineInputBorder(
                       borderRadius:
@@ -2009,7 +2009,7 @@ class _RCreditContent extends StatelessWidget {
                           decoration: BoxDecoration(
                               color: AppColors.boldRed.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4)),
-                          child: Text('BLOCKED',
+                          child: Text('BLOQUÉ',
                               style: AppTextStyles.caption(
                                   color: AppColors.boldRed)),
                         ),
@@ -2031,7 +2031,7 @@ class _RCreditContent extends StatelessWidget {
                   showNewCustomer ? Icons.close : Icons.person_add_outlined,
                   size: 16,
                 ),
-                label: Text(showNewCustomer ? 'Cancel' : 'New Customer'),
+                label: Text(showNewCustomer ? 'Annuler' : 'Nouveau client'),
                 style:
                     TextButton.styleFrom(foregroundColor: AppColors.amber),
               ),
@@ -2040,7 +2040,7 @@ class _RCreditContent extends StatelessWidget {
                 TextField(
                   controller: newNameCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Full Name *',
+                    labelText: 'Nom complet *',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(
                             AppConstants.radiusInput)),
@@ -2052,7 +2052,7 @@ class _RCreditContent extends StatelessWidget {
                   keyboardType: TextInputType.phone,
                   inputFormatters: InputFormatters.phone,
                   decoration: InputDecoration(
-                    labelText: 'Phone *',
+                    labelText: 'Téléphone *',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(
                             AppConstants.radiusInput)),
@@ -2076,7 +2076,7 @@ class _RCreditContent extends StatelessWidget {
                       createdAt: DateTime.now(),
                     ));
                   },
-                  child: const Text('Create & Select'),
+                  child: const Text('Créer et choisir'),
                 ),
               ],
             ] else ...[
@@ -2095,7 +2095,7 @@ class _RCreditContent extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${selectedCustomer!.name} is BLOCKED',
+                        '${selectedCustomer!.name} est BLOQUÉ',
                         style: AppTextStyles.body(color: AppColors.boldRed)
                             .copyWith(fontWeight: FontWeight.w700),
                       ),
@@ -2149,7 +2149,7 @@ class _RCreditContent extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: onCustomerCleared,
-                      child: const Text('Change'),
+                      child: const Text('Monnaie'),
                     ),
                   ]),
                 ),
@@ -2176,7 +2176,7 @@ class _RCreditContent extends StatelessWidget {
                               color: AppColors.boldRed, size: 16),
                           const SizedBox(width: 6),
                           Expanded(
-                            child: Text('Credit limit will be exceeded.',
+                            child: Text('La limite de crédit sera dépassée.',
                                 style: AppTextStyles.caption(
                                     color: AppColors.boldRed)),
                           ),
@@ -2194,7 +2194,7 @@ class _RCreditContent extends StatelessWidget {
                   inputFormatters: InputFormatters.decimalAmount,
                   onChanged: onPartialChanged,
                   decoration: InputDecoration(
-                    labelText: 'Amount paid now (HTG) — optional',
+                    labelText: 'Montant payé maintenant (HTG) — facultatif',
                     prefixText: 'HTG ',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(
@@ -2205,7 +2205,7 @@ class _RCreditContent extends StatelessWidget {
                 Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Paid now', style: AppTextStyles.body()),
+                      Text('Payé maintenant', style: AppTextStyles.body()),
                       Text(CurrencyFormatter.local(context, creditPartialPaid),
                           style: AppTextStyles.body(color: AppColors.deepGreen)
                               .copyWith(fontWeight: FontWeight.w700)),
@@ -2214,7 +2214,7 @@ class _RCreditContent extends StatelessWidget {
                 Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('On credit account', style: AppTextStyles.body()),
+                      Text('Sur compte crédit', style: AppTextStyles.body()),
                       Text(
                           CurrencyFormatter.local(
                               context, totalHtg - creditPartialPaid),

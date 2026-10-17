@@ -19,14 +19,14 @@ enum PermissionId {
 String permissionLabel(PermissionId id) {
   switch (id) {
     case PermissionId.settingsAccess:
-      return 'Access Settings';
+      return 'Accéder aux paramètres';
     case PermissionId.reportsView:
-      return 'View reports';
+      return 'Voir les rapports';
     case PermissionId.catalogManage:
-      return 'Manage catalog & stock';
+      return 'Gérer le catalogue et le stock';
     case PermissionId.transactionsOperate:
-      return 'Operate transactions (orders, floor, rooms)';
+      return 'Encaisser (commandes, salle, chambres)';
     case PermissionId.financialCash:
-      return 'Cash & payments';
+      return 'Caisse et paiements';
   }
 }

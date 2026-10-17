@@ -29,15 +29,15 @@ String staffRoleDisplayLabel(StaffRole role) {
     case StaffRole.admin:
       return 'Admin';
     case StaffRole.manager:
-      return 'Manager';
+      return 'Gérant';
     case StaffRole.waiter:
-      return 'Waiter';
+      return 'Serveur';
     case StaffRole.cashier:
-      return 'Cashier';
+      return 'Caissier';
     case StaffRole.reception:
-      return 'Reception';
+      return 'Réception';
     case StaffRole.kitchen:
-      return 'Kitchen';
+      return 'Cuisine';
   }
 }
 

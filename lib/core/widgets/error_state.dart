@@ -10,7 +10,7 @@ class ErrorState extends StatelessWidget {
 
   const ErrorState({
     super.key,
-    this.message = 'Something went wrong. Please try again.',
+    this.message = 'Une erreur s\'est produite. Veuillez réessayer.',
     this.onRetry,
   });
 
@@ -36,7 +36,7 @@ class ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: AppConstants.spacing16),
             Text(
-              'Oops!',
+              'Oups !',
               style: AppTextStyles.h2(
                 color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
               ),
@@ -52,7 +52,7 @@ class ErrorState extends StatelessWidget {
             if (onRetry != null) ...[
               const SizedBox(height: AppConstants.spacing24),
               AppButton(
-                label: 'Try Again',
+                label: 'Réessayer',
                 onPressed: onRetry,
                 variant: AppButtonVariant.danger,
                 icon: Icons.refresh_rounded,

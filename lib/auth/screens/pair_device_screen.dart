@@ -72,14 +72,14 @@ class _PairDeviceScreenState extends ConsumerState<PairDeviceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Connect this device',
+                      'Connecter cet appareil',
                       style: AppTextStyles.h1(
                         color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Enter the code from Connected devices. After this, the register opens with a PIN.',
+                      'Saisissez le code depuis Appareils connectés. Ensuite, la caisse s\'ouvre avec un code PIN.',
                       style: AppTextStyles.body(
                         color: isDark ? AppColors.coolGray : AppColors.darkGray,
                       ),
@@ -87,13 +87,13 @@ class _PairDeviceScreenState extends ConsumerState<PairDeviceScreen> {
                     if (offline) ...[
                       const SizedBox(height: 16),
                       Text(
-                        'No internet. A device code needs a connection.',
+                        'Pas d\'internet. Un code appareil exige une connexion.',
                         style: AppTextStyles.body(color: AppColors.boldRed),
                       ),
                     ],
                     const SizedBox(height: 24),
                     AppInput(
-                      label: 'Device code',
+                      label: 'Code appareil',
                       hint: '7KQ2-M9XD',
                       controller: _code,
                       errorText: _error,
@@ -113,13 +113,13 @@ class _PairDeviceScreenState extends ConsumerState<PairDeviceScreen> {
                     ),
                     const SizedBox(height: 16),
                     AppButton(
-                      label: _busy ? 'Connecting…' : 'Connect',
+                      label: _busy ? 'Connexion…' : 'Connecter',
                       isLoading: _busy,
                       onPressed: _busy || offline ? null : _submit,
                     ),
                     const SizedBox(height: 8),
                     AppButton(
-                      label: 'Sign in with email',
+                      label: 'Se connecter par e-mail',
                       variant: AppButtonVariant.ghost,
                       onPressed: _busy ? null : () => context.go(AppRoutes.login),
                     ),

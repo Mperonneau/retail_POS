@@ -125,7 +125,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final business = ref.watch(authProvider).businessName ?? 'Business';
+    final business = ref.watch(authProvider).businessName ?? 'Commerce';
 
     return PopScope(
       canPop: false,
@@ -279,7 +279,7 @@ class _BrandingPanel extends StatelessWidget {
               border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),
             child: Text(
-              'BizManager Haiti',
+              'BizManager Haïti',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -301,7 +301,7 @@ class _BrandingPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Demo PINs',
+                  'Codes PIN de démo',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -310,12 +310,12 @@ class _BrandingPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                _demoPin('1234', 'Cashier'),
-                _demoPin('1111', 'Waiter'),
-                _demoPin('2222', 'Manager'),
+                _demoPin('1234', 'Caissier'),
+                _demoPin('1111', 'Serveur'),
+                _demoPin('2222', 'Gérant'),
                 _demoPin('3333', 'Admin'),
-                _demoPin('4444', 'Kitchen'),
-                _demoPin('8888', 'Reception'),
+                _demoPin('4444', 'Cuisine'),
+                _demoPin('8888', 'Réception'),
               ],
             ),
           ),
@@ -478,7 +478,7 @@ class _PinContent extends StatelessWidget {
           children: [
             // Title — centered across the full row (keypad + buttons)
             Text(
-              'Enter your passcode',
+              'Entrez votre code',
               style: GoogleFonts.poppins(
                 fontSize: 19,
                 fontWeight: FontWeight.w600,
@@ -547,7 +547,7 @@ class _PinContent extends StatelessWidget {
                         width: actionW,
                         height: btnH,
                         icon: Icons.access_time_rounded,
-                        label: 'Timeclock',
+                        label: 'Pointage',
                         onTap: onTimeclock,
                       ),
                       const SizedBox(height: keyGap),
@@ -555,7 +555,7 @@ class _PinContent extends StatelessWidget {
                         width: actionW,
                         height: btnH,
                         icon: Icons.logout_rounded,
-                        label: 'Exit',
+                        label: 'Quitter',
                         onTap: onSignOut,
                         isDestructive: true,
                       ),
@@ -628,7 +628,7 @@ class _CompactBranding extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'BizManager Haiti',
+          'BizManager Haïti',
           style: GoogleFonts.inter(fontSize: 12, color: _kLabel),
         ),
       ],

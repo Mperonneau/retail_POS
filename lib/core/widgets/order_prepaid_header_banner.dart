@@ -53,7 +53,7 @@ void showPrepaidDetailSheet(
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Prepaid amount',
+                  'Montant prépayé',
                   style: AppTextStyles.h3(color: onSurface),
                 ),
               ),
@@ -77,7 +77,7 @@ void showPrepaidDetailSheet(
             ),
             child: Row(
               children: [
-                Text('Prepaid amount',
+                Text('Montant prépayé',
                     style: AppTextStyles.caption(color: muted)),
                 const Spacer(),
                 Text(
@@ -90,14 +90,14 @@ void showPrepaidDetailSheet(
           ),
           const SizedBox(height: 10),
           _DetailRow(
-            label: 'Est. bill (subtotal + 10% service + 10% tax)',
+            label: 'Note estimée (sous-total + 10 % service + 10 % taxe)',
             value: CurrencyFormatter.local(ctx, est),
             labelColor: muted,
             valueColor: onSurface,
           ),
           const SizedBox(height: 8),
           _DetailRow(
-            label: isOver ? 'Remaining under prepaid' : 'Available to spend',
+            label: isOver ? 'Remaining under prepaid' : 'Disponible à dépenser',
             value: CurrencyFormatter.local(ctx, headroom),
             labelColor: muted,
             valueColor: isOver ? AppColors.boldRed : AppColors.deepGreen,
@@ -121,7 +121,7 @@ void showPrepaidDetailSheet(
                   const SizedBox(width: 7),
                   Expanded(
                     child: Text(
-                      'Marked as paid — the guest can still add items until the visit is closed.',
+                      'Marqué payé — le client peut encore ajouter des articles jusqu\'à la fermeture de la visite.',
                       style: AppTextStyles.caption(color: AppColors.amber)
                           .copyWith(fontWeight: FontWeight.w600),
                     ),
@@ -204,7 +204,7 @@ class OrderPrepaidHeaderBanner extends StatelessWidget {
             ] else ...[
               const SizedBox(width: 4),
               Text(
-                '· At limit',
+                '· À la limite',
                 style: AppTextStyles.caption(color: chipColor)
                     .copyWith(fontWeight: FontWeight.w700),
               ),

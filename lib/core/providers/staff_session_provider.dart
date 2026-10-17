@@ -75,9 +75,9 @@ class StaffSessionNotifier extends StateNotifier<StaffSessionState?> {
       StaffRole.waiter => 'Marie (Waiter)',
       StaffRole.cashier => 'Jean (Cashier)',
       StaffRole.reception => 'Sophie (Reception)',
-      StaffRole.manager => 'Manager',
+      StaffRole.manager => 'Gérant',
       StaffRole.admin => 'Admin',
-      StaffRole.kitchen => 'Kitchen',
+      StaffRole.kitchen => 'Cuisine',
     };
   }
 
@@ -86,7 +86,7 @@ class StaffSessionNotifier extends StateNotifier<StaffSessionState?> {
   /// A PIN already saved on this register unlocks locally. The staff
   /// directory is only consulted when this device has not seen the PIN.
   String? signInWithPin(String pin) {
-    if (pin.length != 4) return 'Enter a 4-digit PIN.';
+    if (pin.length != 4) return 'Saisissez un code PIN à 4 chiffres.';
 
     final devices = _ref.read(deviceSessionProvider);
     final deviceApi = _ref.read(deviceSessionProvider.notifier);
@@ -121,7 +121,7 @@ class StaffSessionNotifier extends StateNotifier<StaffSessionState?> {
 
     final role = _roleForDemoPin(pin);
     if (role == null) {
-      return 'Invalid PIN. Use a staff PIN from Settings or a demo code (e.g. 1234, 1111, 8888 reception).';
+      return 'Code PIN invalide. Utilisez un PIN du personnel dans Paramètres ou un code de démo (p. ex. 1234, 1111, 8888 réception).';
     }
     _openSession(
       employeeId: 'emp_${pin}_demo',

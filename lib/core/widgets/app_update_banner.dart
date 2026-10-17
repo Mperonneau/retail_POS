@@ -130,7 +130,7 @@ class _SoftBanner extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'A new version is available.',
+                'Une nouvelle version est disponible.',
                 style: AppTextStyles.body(
                   color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                 ).copyWith(fontWeight: FontWeight.w600),
@@ -138,7 +138,7 @@ class _SoftBanner extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             AppButton(
-              label: 'Reload',
+              label: 'Recharger',
               compact: true,
               fullWidth: false,
               onPressed: onReload,
@@ -180,7 +180,7 @@ class _ForcedUpdate extends StatelessWidget {
                   const Icon(Icons.system_update_alt, color: AppColors.primaryBlue, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'Update required',
+                    'Mise à jour requise',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.h1(
                       color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
@@ -188,7 +188,7 @@ class _ForcedUpdate extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'This version is no longer supported. Reload to continue.',
+                    'Cette version n\'est plus prise en charge. Rechargez pour continuer.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.body(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -196,7 +196,7 @@ class _ForcedUpdate extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   AppButton(
-                    label: 'Reload',
+                    label: 'Recharger',
                     onPressed: reloadApp,
                   ),
                 ],

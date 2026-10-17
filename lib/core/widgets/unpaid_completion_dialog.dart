@@ -4,7 +4,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 
-/// Shown when a user tries to mark a takeout/delivery order as "Completed"
+/// Shown when a user tries to mark a takeout/delivery order as "Terminé"
 /// while payment has not been made (neither at counter nor via payment link).
 ///
 /// Returns `true` if the user wants to open the payment / bill screen,
@@ -47,7 +47,7 @@ class UnpaidCompletionDialog extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Payment incomplete',
+              'Paiement incomplet',
               style: AppTextStyles.h3(color: textPrimary),
             ),
           ),
@@ -58,8 +58,8 @@ class UnpaidCompletionDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'The payment for $orderLabel has not been completed yet. '
-            'Please process the payment before marking the order as completed.',
+            'Le paiement de $orderLabel n\'est pas encore terminé. '
+            'Encaissez avant de marquer la commande comme terminée.',
             style: AppTextStyles.body(color: textSecondary)
                 .copyWith(height: 1.5),
           ),
@@ -69,14 +69,14 @@ class UnpaidCompletionDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            'Cancel',
+            'Annuler',
             style: AppTextStyles.button(color: textSecondary),
           ),
         ),
         ElevatedButton.icon(
           onPressed: () => Navigator.pop(context, true),
           icon: const Icon(Icons.request_quote_outlined, size: 16),
-          label: const Text('Open payment'),
+          label: const Text('Ouvrir le paiement'),
           style: ElevatedButton.styleFrom(
             backgroundColor: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
             foregroundColor: AppColors.white,

@@ -78,7 +78,7 @@ class StaffOrderFilterDropdown extends StatelessWidget {
               items: [
                 DropdownMenuItem<String?>(
                   value: null,
-                  child: Text('All staff', style: AppTextStyles.caption()),
+                  child: Text('Tout le personnel', style: AppTextStyles.caption()),
                 ),
                 ...activeStaff.map(
                   (s) => DropdownMenuItem<String?>(
@@ -97,7 +97,7 @@ class StaffOrderFilterDropdown extends StatelessWidget {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: Text(
-                      'All staff',
+                      'Tout le personnel',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(

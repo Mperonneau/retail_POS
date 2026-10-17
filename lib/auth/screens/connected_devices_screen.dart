@@ -25,7 +25,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
-        title: const Text('Connected devices'),
+        title: const Text('Appareils connectés'),
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         foregroundColor: ink,
         elevation: 0,
@@ -34,7 +34,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(AppConstants.spacing24),
         children: [
           Text(
-            'A new register enters a code once. After that it opens with a staff PIN, even offline.',
+            'Une nouvelle caisse saisit un code une seule fois. Ensuite elle s\'ouvre avec un code PIN, même hors ligne.',
             style: AppTextStyles.body(color: muted),
           ),
           const SizedBox(height: 16),
@@ -42,18 +42,18 @@ class ConnectedDevicesScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('This device', style: AppTextStyles.h3(color: AppColors.primaryBlue)),
+                Text('Cet appareil', style: AppTextStyles.h3(color: AppColors.primaryBlue)),
                 const SizedBox(height: 8),
                 Text(
                   session.isPaired
-                      ? 'Connected to ${session.pairing!.locationName}.'
-                      : 'This register is not connected yet.',
+                      ? 'Connecté à ${session.pairing!.locationName}.'
+                      : 'Cette caisse n\'est pas encore connectée.',
                   style: AppTextStyles.body(color: ink),
                 ),
                 if (session.offlineExpiringSoon) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Connect to the internet soon. Offline PIN stops in ${session.pairing!.daysLeft(DateTime.now())} days.',
+                    'Reconnectez-vous bientôt. Le code PIN hors ligne s\'arrête dans ${session.pairing!.daysLeft(DateTime.now())} jours.',
                     style: AppTextStyles.body(color: AppColors.boldRed),
                   ),
                 ],
@@ -62,7 +62,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           AppButton(
-            label: 'Create a device code',
+            label: 'Créer un code appareil',
             icon: Icons.add,
             onPressed: () async {
               final invite = await ref.read(deviceSessionProvider.notifier).createInvite();
@@ -70,7 +70,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
               await showDialog<void>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Device code'),
+                  title: const Text('Code appareil'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +81,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Valid for 24 hours. Enter it on the new register.',
+                        'Valable 24 heures. Saisissez-le sur la nouvelle caisse.',
                         style: AppTextStyles.body(color: muted),
                       ),
                     ],
@@ -92,11 +92,11 @@ class ConnectedDevicesScreen extends ConsumerWidget {
                         Clipboard.setData(ClipboardData(text: invite.code));
                         Navigator.pop(context);
                       },
-                      child: const Text('Copy'),
+                      child: const Text('Copier'),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Done'),
+                      child: const Text('Terminé'),
                     ),
                   ],
                 ),
@@ -104,10 +104,10 @@ class ConnectedDevicesScreen extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 24),
-          Text('Active codes', style: AppTextStyles.h2(color: ink)),
+          Text('Codes actifs', style: AppTextStyles.h2(color: ink)),
           const SizedBox(height: 8),
           if (live.isEmpty)
-            Text('No active codes.', style: AppTextStyles.body(color: muted))
+            Text('Aucun code actif.', style: AppTextStyles.body(color: muted))
           else
             for (final invite in live)
               Padding(
@@ -122,7 +122,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        'Expires today',
+                        'Expire aujourd\'hui',
                         style: AppTextStyles.caption(color: muted),
                       ),
                     ],
@@ -132,7 +132,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
           if (session.isPaired) ...[
             const SizedBox(height: 24),
             AppButton(
-              label: 'Forget this device',
+              label: 'Oublier cet appareil',
               variant: AppButtonVariant.secondary,
               onPressed: () async {
                 await ref.read(deviceSessionProvider.notifier).unpairThisDevice();

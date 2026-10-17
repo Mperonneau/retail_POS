@@ -94,34 +94,34 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
     final existing = widget.existing;
 
     if (name.isEmpty) {
-      setState(() => _nameError = 'Name is required.');
+      setState(() => _nameError = 'Le nom est obligatoire.');
       return;
     }
     if (!_isValidEmail(email)) {
-      setState(() => _emailError = 'Enter a valid email.');
+      setState(() => _emailError = 'Saisissez un e-mail valide.');
       return;
     }
     if (phone.isEmpty) {
-      setState(() => _phoneError = 'Phone number is required.');
+      setState(() => _phoneError = 'Le numéro de téléphone est obligatoire.');
       return;
     }
     if (dir.isPhoneTaken(phone, excludeId: existing?.id)) {
-      setState(() => _phoneError = 'This phone is already used by another staff member.');
+      setState(() => _phoneError = 'Ce téléphone est déjà utilisé par un autre employé.');
       return;
     }
 
     String pinToStore;
     if (existing == null) {
       if (pin.length != 4) {
-        setState(() => _pinError = 'Set a 4-digit PIN.');
+        setState(() => _pinError = 'Définissez un code PIN à 4 chiffres.');
         return;
       }
       if (pin != pinConfirm) {
-        setState(() => _confirmError = 'PINs do not match.');
+        setState(() => _confirmError = 'Les codes PIN ne correspondent pas.');
         return;
       }
       if (dir.isPinTaken(pin)) {
-        setState(() => _pinError = 'This PIN is already assigned.');
+        setState(() => _pinError = 'Ce code PIN est déjà attribué.');
         return;
       }
       pinToStore = pin;
@@ -130,15 +130,15 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
         pinToStore = existing.pinDigits;
       } else {
         if (pin.length != 4) {
-          setState(() => _pinError = 'PIN must be 4 digits or leave both fields blank.');
+          setState(() => _pinError = 'Le PIN doit avoir 4 chiffres, ou laissez les deux champs vides.');
           return;
         }
         if (pin != pinConfirm) {
-          setState(() => _confirmError = 'PINs do not match.');
+          setState(() => _confirmError = 'Les codes PIN ne correspondent pas.');
           return;
         }
         if (dir.isPinTaken(pin, excludeId: existing.id)) {
-          setState(() => _pinError = 'This PIN is already assigned.');
+          setState(() => _pinError = 'Ce code PIN est déjà attribué.');
           return;
         }
         pinToStore = pin;
@@ -191,14 +191,14 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isEdit ? 'Edit Staff Member' : 'Add Staff Member',
+              isEdit ? 'Modifier l\'employé' : 'Ajouter un employé',
               style: AppTextStyles.h2(
                 color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
               ),
             ),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'Phone is required. PIN is used on the shared device login screen.',
+              'Le téléphone est obligatoire. Le code PIN sert à ouvrir la caisse partagée.',
               style: AppTextStyles.caption(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray,
               ),
@@ -207,7 +207,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
             TextField(
               controller: _nameCtrl,
               decoration: InputDecoration(
-                labelText: 'Full name',
+                labelText: 'Nom complet',
                 errorText: _nameError,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
@@ -220,7 +220,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
             TextField(
               controller: _emailCtrl,
               decoration: InputDecoration(
-                labelText: 'Email',
+                labelText: 'E-mail',
                 errorText: _emailError,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
@@ -234,7 +234,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
             TextField(
               controller: _phoneCtrl,
               decoration: InputDecoration(
-                labelText: 'Phone number *',
+                labelText: 'Téléphone *',
                 errorText: _phoneError,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
@@ -269,7 +269,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
             TextField(
               controller: _pinCtrl,
               decoration: InputDecoration(
-                labelText: isEdit ? 'New PIN (optional)' : 'PIN (4 digits) *',
+                labelText: isEdit ? 'Nouveau PIN (facultatif)' : 'PIN (4 chiffres) *',
                 hintText: '0000',
                 errorText: _pinError,
                 border: OutlineInputBorder(
@@ -285,7 +285,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
             TextField(
               controller: _pinConfirmCtrl,
               decoration: InputDecoration(
-                labelText: isEdit ? 'Confirm new PIN' : 'Confirm PIN *',
+                labelText: isEdit ? 'Confirmer le nouveau PIN' : 'Confirmer le PIN *',
                 errorText: _confirmError,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
@@ -300,7 +300,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
             if (isEdit) ...[
               const SizedBox(height: AppConstants.spacing8),
               Text(
-                'Leave PIN fields blank to keep the current PIN.',
+                'Laissez les champs PIN vides pour garder le code actuel.',
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
                 ),
@@ -308,7 +308,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
             ],
             const SizedBox(height: AppConstants.spacing12),
             SwitchListTile(
-              title: Text('Active', style: AppTextStyles.body()),
+              title: Text('Actif', style: AppTextStyles.body()),
               value: _isActive,
               onChanged: (v) => setState(() => _isActive = v),
               activeThumbColor: AppColors.primaryBlue,
@@ -320,7 +320,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing12),
@@ -331,7 +331,7 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
                       backgroundColor: AppColors.amber,
                       foregroundColor: AppColors.nearBlack,
                     ),
-                    child: Text(isEdit ? 'Save' : 'Add'),
+                    child: Text(isEdit ? 'Enregistrer' : 'Ajouter'),
                   ),
                 ),
               ],

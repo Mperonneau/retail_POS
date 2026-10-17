@@ -53,11 +53,11 @@ class _ConnectivityDotState extends State<ConnectivityDot>
   String get _label {
     switch (widget.status) {
       case ConnectivityStatus.online:
-        return 'Online';
+        return 'En ligne';
       case ConnectivityStatus.offline:
-        return 'Offline';
+        return 'Hors ligne';
       case ConnectivityStatus.syncing:
-        return 'Syncing...';
+        return 'Synchronisation...';
     }
   }
 

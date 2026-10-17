@@ -34,12 +34,12 @@ class CollectionsDashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Collections',
+            Text('Recouvrements',
                 style: AppTextStyles.h1(
                     color:
                         isDark ? AppColors.warmWhite : AppColors.primaryBlue)),
             const SizedBox(height: AppConstants.spacing8),
-            Text('Outstanding credit balances across all customers.',
+            Text('Soldes de crédit impayés de tous les clients.',
                 style: AppTextStyles.body(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray)),
             const SizedBox(height: AppConstants.spacing24),
@@ -48,21 +48,21 @@ class CollectionsDashboardScreen extends ConsumerWidget {
             Row(
               children: [
                 _SummaryBox(
-                  label: 'Total Owed',
+                  label: 'Total dû',
                   value: CurrencyFormatter.local(context, totalOwed),
                   color: AppColors.boldRed,
                   isDark: isDark,
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 _SummaryBox(
-                  label: 'Customers Owing',
+                  label: 'Clients débiteurs',
                   value: '$countWithBalance',
                   color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                   isDark: isDark,
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 _SummaryBox(
-                  label: 'Blocked Accounts',
+                  label: 'Comptes bloqués',
                   value: '${blocked.length}',
                   color:
                       blocked.isEmpty ? AppColors.deepGreen : AppColors.amber,
@@ -76,12 +76,12 @@ class CollectionsDashboardScreen extends ConsumerWidget {
               child: withBalance.isEmpty
                   ? const EmptyState(
                       icon: Icons.account_balance_wallet_outlined,
-                      title: 'All accounts settled',
-                      message: 'No outstanding balances at the moment.',
+                      title: 'Tous les comptes sont réglés',
+                      message: 'Aucun solde impayé pour le moment.',
                     )
                   : ListView(
                       children: [
-                        Text('Outstanding Balances',
+                        Text('Soldes impayés',
                             style: AppTextStyles.h2(
                                 color: isDark
                                     ? AppColors.warmWhite
@@ -130,7 +130,7 @@ class CollectionsDashboardScreen extends ConsumerWidget {
                                                   borderRadius:
                                                       BorderRadius.circular(4),
                                                 ),
-                                                child: Text('BLOCKED',
+                                                child: Text('BLOQUÉ',
                                                     style:
                                                         AppTextStyles.caption(
                                                                 color: AppColors
@@ -157,7 +157,7 @@ class CollectionsDashboardScreen extends ConsumerWidget {
                                             .copyWith(
                                                 fontWeight: FontWeight.w700),
                                       ),
-                                      Text('owes',
+                                      Text('doit',
                                           style: AppTextStyles.caption()),
                                     ],
                                   ),
@@ -174,7 +174,7 @@ class CollectionsDashboardScreen extends ConsumerWidget {
                         }),
                         if (blocked.isNotEmpty) ...[
                           const SizedBox(height: AppConstants.spacing24),
-                          Text('Blocked Accounts',
+                          Text('Comptes bloqués',
                               style:
                                   AppTextStyles.h2(color: AppColors.boldRed)),
                           const SizedBox(height: AppConstants.spacing12),

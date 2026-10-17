@@ -209,8 +209,8 @@ class _ProductCategoryFieldState extends ConsumerState<ProductCategoryField> {
           focusNode: _focusNode,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
-            labelText: 'Category *',
-            hintText: 'Type or pick a suggestion',
+            labelText: 'Catégorie *',
+            hintText: 'Saisissez ou choisissez une suggestion',
             filled: true,
             fillColor: fill,
             border: borderDecoration,
@@ -218,7 +218,7 @@ class _ProductCategoryFieldState extends ConsumerState<ProductCategoryField> {
             errorMaxLines: 2,
             suffixIcon: _ctrl.text.trim().isNotEmpty
                 ? IconButton(
-                    tooltip: 'Apply category',
+                    tooltip: 'Appliquer la catégorie',
                     onPressed: _tryCommitTyped,
                     padding: EdgeInsets.zero,
                     constraints: BoxConstraints.tightFor(
@@ -310,7 +310,7 @@ class _ProductCategoryFieldState extends ConsumerState<ProductCategoryField> {
               ),
               const SizedBox(width: 4),
               Text(
-                'Browse product categories',
+                'Parcourir les catégories',
                 style: AppTextStyles.caption(color: linkColor).copyWith(
                   decoration: TextDecoration.underline,
                   decorationColor: linkColor.withValues(alpha: 0.4),
@@ -382,7 +382,7 @@ class _ProductCategoryBrowseDialogBodyState
                 children: [
                   if (_domain != null)
                     IconButton(
-                      tooltip: 'Back',
+                      tooltip: 'Retour',
                       onPressed: () {
                         setState(() {
                           _domain = null;
@@ -394,7 +394,7 @@ class _ProductCategoryBrowseDialogBodyState
                   Expanded(
                     child: Text(
                       _domain == null
-                          ? 'Choose a product area'
+                          ? 'Choisissez une famille de produits'
                           : _domain!.label,
                       style: AppTextStyles.h2(
                         color:
@@ -418,7 +418,7 @@ class _ProductCategoryBrowseDialogBodyState
                   controller: _searchCtrl,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'Search in this area…',
+                    hintText: 'Rechercher dans cette zone…',
                     prefixIcon: const Icon(Icons.search_rounded, size: 22),
                     filled: true,
                     fillColor: isDark
@@ -456,8 +456,8 @@ class _ProductCategoryBrowseDialogBodyState
               padding: const EdgeInsets.all(AppConstants.spacing16),
               child: Text(
                 _domain == null
-                    ? 'Pick an area, then choose one category for this product.'
-                    : 'Tap a category to select it.',
+                    ? 'Choisissez une famille, puis une catégorie pour ce produit.'
+                    : 'Touchez une catégorie pour la sélectionner.',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -528,7 +528,7 @@ class _BrowseDomainList extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${d.categories.length} product types',
+                          '${d.categories.length} types de produits',
                           style: AppTextStyles.caption(
                             color: isDark
                                 ? AppColors.coolGray
@@ -580,7 +580,7 @@ class _BrowseCategoryListSingle extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.spacing24),
           child: Text(
-            'No categories match your search.',
+            'Aucune catégorie ne correspond à votre recherche.',
             style: AppTextStyles.body(
               color: isDark ? AppColors.coolGray : AppColors.darkGray,
             ),

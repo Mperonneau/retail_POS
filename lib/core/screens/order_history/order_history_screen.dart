@@ -206,7 +206,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Order History',
+                              'Historique',
                               style: AppTextStyles.h1(
                                 color: isDark
                                     ? AppColors.warmWhite
@@ -231,7 +231,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Order History',
+                            'Historique',
                             style: AppTextStyles.h1(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -387,7 +387,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
           children: [
             _ToggleTab(
               icon: Icons.pending_actions_outlined,
-              label: 'Active Orders',
+              label: 'Commandes en cours',
               badge: _ActiveCountBadge(isDark: isDark),
               isSelected: _retailTab == 0,
               isDark: isDark,
@@ -404,7 +404,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
             Container(width: 1, color: borderColor),
             _ToggleTab(
               icon: Icons.check_circle_outline_rounded,
-              label: 'Completed',
+              label: 'Terminé',
               isSelected: _retailTab == 1,
               isDark: isDark,
               isLeft: false,
@@ -431,7 +431,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
     bool dense = false,
   }) {
     final fromChip = _DateChip(
-      label: _startDate == null ? 'From' : _formatDate(_startDate!),
+      label: _startDate == null ? 'De' : _formatDate(_startDate!),
       icon: Icons.calendar_today_outlined,
       active: _startDate != null,
       isDark: isDark,
@@ -445,7 +445,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
           : null,
     );
     final toChip = _DateChip(
-      label: _endDate == null ? 'To' : _formatDate(_endDate!),
+      label: _endDate == null ? 'À' : _formatDate(_endDate!),
       icon: Icons.event_outlined,
       active: _endDate != null,
       isDark: isDark,
@@ -460,7 +460,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
     );
     final pillSearch = _PillSearch(
       controller: _searchCtrl,
-      hintText: 'Order # or client…',
+      hintText: 'Commande n° ou client…',
       isDark: isDark,
       dense: dense,
       width: dense ? 188 : 210,
@@ -520,7 +520,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Order History',
+                            'Historique',
                             style: AppTextStyles.h1(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -545,7 +545,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Order History',
+                          'Historique',
                           style: AppTextStyles.h1(
                             color: isDark
                                 ? AppColors.warmWhite
@@ -590,7 +590,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
 
   Widget _buildFilters(BuildContext context, bool isDark, bool isMobile) {
     final fromChip = _DateChip(
-      label: _startDate == null ? 'From' : _formatDate(_startDate!),
+      label: _startDate == null ? 'De' : _formatDate(_startDate!),
       icon: Icons.calendar_today_outlined,
       active: _startDate != null,
       isDark: isDark,
@@ -600,7 +600,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
           : null,
     );
     final toChip = _DateChip(
-      label: _endDate == null ? 'To' : _formatDate(_endDate!),
+      label: _endDate == null ? 'À' : _formatDate(_endDate!),
       icon: Icons.event_outlined,
       active: _endDate != null,
       isDark: isDark,
@@ -616,7 +616,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
     );
     final pillSearch = _PillSearch(
       controller: _searchCtrl,
-      hintText: 'Receipt # or name…',
+      hintText: 'Reçu n° ou nom…',
       isDark: isDark,
       hasValue: _searchQuery.isNotEmpty,
       onChanged: (v) => setState(() { _searchQuery = v.trim(); _resetPage(); }),
@@ -639,7 +639,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                 ),
                 ButtonSegment<OrderHistoryModule>(
                   value: OrderHistoryModule.hotel,
-                  label: Text('Hotel'),
+                  label: Text('Hôtel'),
                   icon: Icon(Icons.hotel_outlined, size: 18),
                 ),
               ],
@@ -682,7 +682,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
               ),
               ButtonSegment<OrderHistoryModule>(
                 value: OrderHistoryModule.hotel,
-                label: Text('Hotel'),
+                label: Text('Hôtel'),
                 icon: Icon(Icons.hotel_outlined, size: 18),
               ),
             ],
@@ -709,7 +709,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
             Icon(Icons.receipt_long_outlined,
                 size: 48, color: isDark ? AppColors.coolGray : AppColors.darkGray),
             const SizedBox(height: AppConstants.spacing16),
-            Text('No transactions found',
+            Text('Aucune transaction trouvée',
                 style: AppTextStyles.body(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray)),
           ],
@@ -736,7 +736,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
             ),
             child: isMobile
                 ? Row(children: [
-                    Expanded(child: Text('Receipt / Name',
+                    Expanded(child: Text('Reçu / nom',
                         style: AppTextStyles.caption(
                             color: isDark ? AppColors.coolGray : AppColors.darkGray))),
                     Text('Total',
@@ -744,16 +744,16 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                             color: isDark ? AppColors.coolGray : AppColors.darkGray)),
                   ])
                 : Row(children: [
-                    SizedBox(width: 140, child: Text('Receipt #',
+                    SizedBox(width: 140, child: Text('Reçu n°',
                         style: AppTextStyles.caption(
                             color: isDark ? AppColors.coolGray : AppColors.darkGray))),
-                    SizedBox(width: 140, child: Text('Date & Time',
+                    SizedBox(width: 140, child: Text('Date et heure',
                         style: AppTextStyles.caption(
                             color: isDark ? AppColors.coolGray : AppColors.darkGray))),
-                    Expanded(child: Text('Name / Source',
+                    Expanded(child: Text('Nom / source',
                         style: AppTextStyles.caption(
                             color: isDark ? AppColors.coolGray : AppColors.darkGray))),
-                    SizedBox(width: 110, child: Text('Payment',
+                    SizedBox(width: 110, child: Text('Paiement',
                         style: AppTextStyles.caption(
                             color: isDark ? AppColors.coolGray : AppColors.darkGray))),
                     SizedBox(width: 120, child: Text('Total',
@@ -822,7 +822,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
               ? () => setState(() => _currentPage--)
               : null,
           icon: const Icon(Icons.chevron_left),
-          tooltip: 'Previous',
+          tooltip: 'Précédent',
         ),
         ...List.generate(_totalPages, (i) {
           final isActive = i == _currentPage;
@@ -858,7 +858,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
               ? () => setState(() => _currentPage++)
               : null,
           icon: const Icon(Icons.chevron_right),
-          tooltip: 'Next',
+          tooltip: 'Suivant',
         ),
       ],
     );
@@ -1024,10 +1024,10 @@ class _PaymentBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (method) {
       PaymentMethodType.moncash => ('MonCash', AppColors.amber),
-      PaymentMethodType.card => ('Card', AppColors.primaryBlue),
-      PaymentMethodType.cash => ('Cash', AppColors.deepGreen),
-      PaymentMethodType.credit => ('Credit', AppColors.boldRed),
-      PaymentMethodType.paymentLink => ('Link', const Color(0xFF7C3AED)),
+      PaymentMethodType.card => ('Carte', AppColors.primaryBlue),
+      PaymentMethodType.cash => ('Espèces', AppColors.deepGreen),
+      PaymentMethodType.credit => ('Crédit', AppColors.boldRed),
+      PaymentMethodType.paymentLink => ('Lien', const Color(0xFF7C3AED)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1360,13 +1360,13 @@ class _RetailActiveOrdersTab extends StatelessWidget {
                 color: isDark ? AppColors.coolGray : AppColors.darkGray),
             const SizedBox(height: AppConstants.spacing16),
             Text(
-              'No active orders',
+              'Aucune commande en cours',
               style: AppTextStyles.body(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
             ),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'Active orders appear here when a quote is paid\nor a POS sale needs fulfillment.',
+              'Les commandes actives apparaissent ici quand un devis est payé\nou qu\'une vente caisse doit être préparée.',
               textAlign: TextAlign.center,
               style: AppTextStyles.caption(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
@@ -1452,7 +1452,7 @@ class _ActiveOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clientLabel =
-        order.clientName?.isNotEmpty == true ? order.clientName! : 'Walk-in';
+        order.clientName?.isNotEmpty == true ? order.clientName! : 'Client de passage';
     final color = _statusColor;
 
     return Material(
@@ -1557,7 +1557,7 @@ class _ActiveOrderCard extends StatelessWidget {
                                                                 .deepGreen),
                                                     const SizedBox(width: 3),
                                                     Text(
-                                                      'Link',
+                                                      'Lien',
                                                       style: AppTextStyles
                                                               .caption(
                                                                   color: isDark
@@ -1636,7 +1636,7 @@ class _ActiveOrderCard extends StatelessWidget {
                                                       : AppColors.deepGreen),
                                               const SizedBox(width: 3),
                                               Text(
-                                                'Link',
+                                                'Lien',
                                                 style: AppTextStyles.caption(
                                                   color: isDark
                                                       ? AppColors.mediumGreen
@@ -1750,12 +1750,12 @@ void _showActiveOrderWhatsAppDialog(BuildContext context, RetailOrder order) {
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setD) {
         return AlertDialog(
-          title: const Text('Send via WhatsApp'),
+          title: const Text('Envoyer par WhatsApp'),
           content: TextField(
             controller: ctrl,
             onChanged: (_) => setD(() => errHolder[0] = null),
             decoration: InputDecoration(
-              labelText: 'Phone Number',
+              labelText: 'Numéro de téléphone',
               hintText: '+509 XXXX-XXXX',
               prefixIcon: const Icon(Icons.phone_outlined),
               errorText: errHolder[0],
@@ -1768,22 +1768,22 @@ void _showActiveOrderWhatsAppDialog(BuildContext context, RetailOrder order) {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
             FilledButton(
               onPressed: () {
                 if (ctrl.text.trim().isEmpty) {
-                  setD(() => errHolder[0] = 'Please enter a phone number.');
+                  setD(() => errHolder[0] = 'Veuillez saisir un numéro de téléphone.');
                   return;
                 }
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Order summary sent via WhatsApp'),
+                    content: Text('Résumé envoyé par WhatsApp'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
-              child: const Text('Send'),
+              child: const Text('Envoyer'),
             ),
           ],
         );
@@ -1800,12 +1800,12 @@ void _showActiveOrderEmailDialog(BuildContext context, RetailOrder order) {
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setD) {
         return AlertDialog(
-          title: const Text('Send order to Email'),
+          title: const Text('Envoyer la commande par e-mail'),
           content: TextField(
             controller: ctrl,
             onChanged: (_) => setD(() => errHolder[0] = null),
             decoration: InputDecoration(
-              labelText: 'Email Address',
+              labelText: 'Adresse e-mail',
               hintText: 'email@example.com',
               prefixIcon: const Icon(Icons.email_outlined),
               errorText: errHolder[0],
@@ -1818,23 +1818,23 @@ void _showActiveOrderEmailDialog(BuildContext context, RetailOrder order) {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
             FilledButton(
               onPressed: () {
                 final email = ctrl.text.trim();
                 if (email.isEmpty || !email.contains('@')) {
-                  setD(() => errHolder[0] = 'Please enter a valid email address.');
+                  setD(() => errHolder[0] = 'Veuillez saisir une adresse e-mail valide.');
                   return;
                 }
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Order summary sent to email'),
+                    content: Text('Résumé envoyé par e-mail'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
-              child: const Text('Send'),
+              child: const Text('Envoyer'),
             ),
           ],
         );
@@ -1848,11 +1848,11 @@ void _showActiveOrderPrintDialog(BuildContext context, RetailOrder order) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Print'),
+      title: const Text('Imprimer'),
       content: Text(
         name == null || name.isEmpty
-            ? 'Order ${order.orderNumber} sent to the printer.'
-            : 'Order ${order.orderNumber} for $name sent to the printer.',
+            ? 'Commande ${order.orderNumber} envoyée à l\'imprimante.'
+            : 'Commande ${order.orderNumber} pour $name envoyée à l\'imprimante.',
       ),
       actions: [
         TextButton(
@@ -1888,7 +1888,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
     if (current == null) {
       return Container(
         color: isDark ? AppColors.darkSurface : AppColors.white,
-        child: const Center(child: Text('Order not found')),
+        child: const Center(child: Text('Commande introuvable')),
       );
     }
 
@@ -1931,7 +1931,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                                   .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text('Via Link',
+                            child: Text('Via le lien',
                                 style: AppTextStyles.caption(
                                   color: isDark
                                       ? AppColors.mediumGreen
@@ -1951,7 +1951,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                         size: 18,
                         color:
                             isDark ? AppColors.coolGray : AppColors.darkGray),
-                    tooltip: 'Share via WhatsApp',
+                    tooltip: 'Partager par WhatsApp',
                     style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
                   IconButton(
@@ -1961,7 +1961,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                         size: 18,
                         color:
                             isDark ? AppColors.coolGray : AppColors.darkGray),
-                    tooltip: 'Send to Email',
+                    tooltip: 'Envoyer par e-mail',
                     style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
                   IconButton(
@@ -1971,7 +1971,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                         size: 18,
                         color:
                             isDark ? AppColors.coolGray : AppColors.darkGray),
-                    tooltip: 'Print',
+                    tooltip: 'Imprimer',
                     style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
                 ],
@@ -1979,7 +1979,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 20),
                     onPressed: onClose,
-                    tooltip: 'Close',
+                    tooltip: 'Fermer',
                     style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
               ],
@@ -2019,7 +2019,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   const SizedBox(height: 12),
 
                   // Fulfillment
-                  _SectionLabel(label: 'Fulfillment', isDark: isDark),
+                  _SectionLabel(label: 'Remise', isDark: isDark),
                   const SizedBox(height: 8),
                   _FulfillmentChipSmall(
                       mode: current.fulfillmentMode, isDark: isDark),
@@ -2036,7 +2036,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   const SizedBox(height: 12),
 
                   // Items
-                  _SectionLabel(label: 'Items', isDark: isDark),
+                  _SectionLabel(label: 'Articles', isDark: isDark),
                   const SizedBox(height: 8),
                   _LinesTable(
                     rows: current.lines
@@ -2056,7 +2056,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                           : const Color(0xFFEEEEEE)),
                   const SizedBox(height: 4),
                   _TotalRowSimple(
-                    label: 'Subtotal',
+                    label: 'Sous-total',
                     amount: current.subtotalHtg,
                     isDark: isDark,
                     context: context,
@@ -2065,7 +2065,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   if (current.discountPercent > 0) ...[
                     _TotalRowSimple(
                       label:
-                          'Discount (${current.discountPercent.toStringAsFixed(0)}%)',
+                          'Remise (${current.discountPercent.toStringAsFixed(0)} %)',
                       amount: -current.discountAmountHtg,
                       isDark: isDark,
                       context: context,
@@ -2075,7 +2075,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   ],
                   if (current.deliveryFee > 0) ...[
                     _TotalRowSimple(
-                      label: 'Delivery fee',
+                      label: 'Frais de livraison',
                       amount: current.deliveryFee,
                       isDark: isDark,
                       context: context,
@@ -2085,7 +2085,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   if (current.serviceChargeAmountHtg > 0) ...[
                     _TotalRowSimple(
                       label:
-                          'Service charge (${current.serviceChargePercent.toStringAsFixed(0)}%)',
+                          'Frais de service (${current.serviceChargePercent.toStringAsFixed(0)} %)',
                       amount: current.serviceChargeAmountHtg,
                       isDark: isDark,
                       context: context,
@@ -2095,7 +2095,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   if (current.taxAmountHtg > 0) ...[
                     _TotalRowSimple(
                       label:
-                          'Tax (${current.taxPercent.toStringAsFixed(0)}%)',
+                          'Taxe (${current.taxPercent.toStringAsFixed(0)} %)',
                       amount: current.taxAmountHtg,
                       isDark: isDark,
                       context: context,
@@ -2115,7 +2115,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                           ? AppColors.darkBorder
                           : const Color(0xFFEEEEEE)),
                   const SizedBox(height: 8),
-                  _SectionLabel(label: 'Payment', isDark: isDark),
+                  _SectionLabel(label: 'Paiement', isDark: isDark),
                   const SizedBox(height: 8),
                   PaymentMethodBlock(
                     isDark: isDark,
@@ -2124,7 +2124,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Paid ${_formatDate(current.paidAt, withTime: true)}',
+                    'Payé le ${_formatDate(current.paidAt, withTime: true)}',
                     style: AppTextStyles.caption(
                         color:
                             isDark ? AppColors.coolGray : AppColors.darkGray),
@@ -2171,7 +2171,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   },
                   icon: const Icon(Icons.check_circle_outline_rounded,
                       size: 16),
-                  label: const Text('Mark as Completed'),
+                  label: const Text('Marquer terminé'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: isDark
                         ? AppColors.mediumGreen
@@ -2197,7 +2197,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
   RetailOrderStatus? _nextStatus(RetailOrder o) {
     switch (o.fulfillmentMode) {
       case RetailFulfillmentMode.inStore:
-        return null; // Use "Mark as Completed" only
+        return null; // Use "Marquer terminé" only
       case RetailFulfillmentMode.pickup:
         if (o.status == RetailOrderStatus.paid) {
           return RetailOrderStatus.ready;
@@ -2219,9 +2219,9 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
 
   String? _nextStatusLabel(RetailOrder o) {
     return switch (_nextStatus(o)) {
-      RetailOrderStatus.ready => 'Mark as Ready',
-      RetailOrderStatus.pickedUp => 'Mark as Picked Up',
-      RetailOrderStatus.delivered => 'Mark as Delivered',
+      RetailOrderStatus.ready => 'Marquer prêt',
+      RetailOrderStatus.pickedUp => 'Marquer retiré',
+      RetailOrderStatus.delivered => 'Marquer livré',
       _ => null,
     };
   }
@@ -2255,18 +2255,18 @@ class _RetailOrderDetailPage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.send_outlined, size: 22),
-            tooltip: 'Share via WhatsApp',
+            tooltip: 'Partager par WhatsApp',
             onPressed: () =>
                 _showActiveOrderWhatsAppDialog(context, current),
           ),
           IconButton(
             icon: const Icon(Icons.email_outlined, size: 22),
-            tooltip: 'Send to Email',
+            tooltip: 'Envoyer par e-mail',
             onPressed: () => _showActiveOrderEmailDialog(context, current),
           ),
           IconButton(
             icon: const Icon(Icons.print_outlined, size: 22),
-            tooltip: 'Print',
+            tooltip: 'Imprimer',
             onPressed: () => _showActiveOrderPrintDialog(context, current),
           ),
         ],
@@ -2322,13 +2322,13 @@ class _LinesTable extends StatelessWidget {
               SizedBox(
                   width: 28,
                   child:
-                      Text('Qty', style: hdr(), textAlign: TextAlign.center)),
+                      Text('Qté', style: hdr(), textAlign: TextAlign.center)),
               const SizedBox(width: 8),
-              Expanded(child: Text('Item', style: hdr())),
+              Expanded(child: Text('Article', style: hdr())),
               SizedBox(
                   width: 70,
                   child:
-                      Text('Unit', style: hdr(), textAlign: TextAlign.right)),
+                      Text('Unité', style: hdr(), textAlign: TextAlign.right)),
               const SizedBox(width: 6),
               SizedBox(
                   width: 70,
@@ -2460,17 +2460,17 @@ class _FulfillmentChipSmall extends StatelessWidget {
     final (icon, label, color) = switch (mode) {
       RetailFulfillmentMode.inStore => (
           Icons.storefront_outlined,
-          'In store',
+          'En magasin',
           AppColors.primaryBlue
         ),
       RetailFulfillmentMode.pickup => (
           Icons.shopping_bag_outlined,
-          'Pickup',
+          'Retrait',
           AppColors.amber
         ),
       RetailFulfillmentMode.delivery => (
           Icons.local_shipping_outlined,
-          'Delivery',
+          'Livraison',
           isDark ? AppColors.mediumGreen : AppColors.deepGreen
         ),
     };
@@ -2597,8 +2597,8 @@ class _TotalRowSimple extends StatelessWidget {
 
 String _formatDate(DateTime dt, {bool withTime = false}) {
   final months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
   ];
   final base =
       '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';

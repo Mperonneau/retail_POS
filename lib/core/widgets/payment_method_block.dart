@@ -39,22 +39,22 @@ class PaymentMethodChip extends StatelessWidget {
           Icons.phone_android_outlined,
         ),
       PaymentMethodType.card => (
-          'Card',
+          'Carte',
           AppColors.primaryBlue,
           Icons.credit_card_outlined,
         ),
       PaymentMethodType.cash => (
-          'Cash',
+          'Espèces',
           AppColors.deepGreen,
           Icons.payments_outlined,
         ),
       PaymentMethodType.credit => (
-          'Credit',
+          'Crédit',
           AppColors.boldRed,
           Icons.account_balance_wallet_outlined,
         ),
       PaymentMethodType.paymentLink => (
-          'Payment Link',
+          'Lien de paiement',
           const Color(0xFF7C3AED),
           Icons.link_rounded,
         ),

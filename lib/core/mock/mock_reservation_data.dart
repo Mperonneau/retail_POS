@@ -55,7 +55,7 @@ class MockDiningReservationCustomItem {
         priceHtg: priceHtg,
         priceUsd: 0,
         note: note,
-        category: isFood ? 'Specials' : 'Drinks',
+        category: isFood ? 'Suggestions' : 'Boissons',
         isCustom: true,
         sendToKitchen: false,
         customStatus: status,
@@ -67,7 +67,7 @@ class MockDiningReservationCustomItem {
         priceHtg: priceHtg,
         priceUsd: 0,
         note: note,
-        category: isFood ? 'Specials' : 'Drinks',
+        category: isFood ? 'Suggestions' : 'Boissons',
         isCustom: true,
         sendToKitchen: false,
         customStatus: status,
@@ -337,7 +337,7 @@ final _restaurantReservationsSeed = <MockDiningReservation>[
           quantity: 3,
           priceHtg: 1200,
           priceUsd: 12,
-          category: 'Mains',
+          category: 'Plats',
         ),
       ),
     ],
@@ -357,7 +357,7 @@ final _restaurantReservationsSeed = <MockDiningReservation>[
 final _hotelRestaurantReservationsSeed = <MockDiningReservation>[
   MockDiningReservation(
     id: 1,
-    guestName: 'Hotel Guest — Dupont',
+    guestName: 'Client hôtel — Dupont',
     phone: '+509 22 33 44 55',
     adults: 2,
     children: 1,
@@ -475,7 +475,7 @@ class DiningReservationsNotifier extends StateNotifier<List<MockDiningReservatio
           .addBatch(orderId, hotelItems);
       if (!ok) {
         ref.read(appNotificationProvider.notifier).show(
-              'Cannot send these items: the estimated bill would exceed the prepaid cap.',
+              'Impossible d\'envoyer ces articles : la note estimée dépasserait le plafond prépayé.',
               kind: AppNotificationKind.warning,
             );
         return false;
@@ -486,7 +486,7 @@ class DiningReservationsNotifier extends StateNotifier<List<MockDiningReservatio
           .addBatch(orderId, batchRestaurant);
       if (!ok) {
         ref.read(appNotificationProvider.notifier).show(
-              'Cannot send these items: the estimated bill would exceed the prepaid cap.',
+              'Impossible d\'envoyer ces articles : la note estimée dépasserait le plafond prépayé.',
               kind: AppNotificationKind.warning,
             );
         return false;
@@ -506,7 +506,7 @@ class DiningReservationsNotifier extends StateNotifier<List<MockDiningReservatio
     required int tableId,
     required String tableName,
     required WidgetRef ref,
-    String waiter = 'Staff',
+    String waiter = 'Personnel',
   }) {
     final r = state.firstWhere((x) => x.id == reservationId);
     final placed = buildRestaurantOrderFromReservation(
@@ -550,7 +550,7 @@ class DiningReservationsNotifier extends StateNotifier<List<MockDiningReservatio
     required int tableId,
     required String tableName,
     required WidgetRef ref,
-    String waiter = 'Staff',
+    String waiter = 'Personnel',
   }) {
     final r = state.firstWhere((x) => x.id == reservationId);
     final placed = buildHotelRestaurantOrderFromReservation(

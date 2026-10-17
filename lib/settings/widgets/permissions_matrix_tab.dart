@@ -51,7 +51,7 @@ class _PermissionsMatrixTabState extends ConsumerState<PermissionsMatrixTab> {
     final settings = ref.watch(permissionSettingsProvider);
 
     final intro = Text(
-      'Defaults by role for this module. Per-employee overrides are under Staff → Manage permission.',
+      'Valeurs par rôle pour ce module. Les exceptions par employé sont dans Personnel → Gérer les droits.',
       style: AppTextStyles.caption(
         color: isDark ? AppColors.coolGray : AppColors.darkGray,
       ),
@@ -88,7 +88,7 @@ class _PermissionsMatrixTabState extends ConsumerState<PermissionsMatrixTab> {
               if (_detailRole != null) ...[
                 IconButton(
                   icon: const Icon(Icons.arrow_back, size: 22),
-                  tooltip: 'Back to role cards',
+                  tooltip: 'Retour aux fiches de rôle',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                   onPressed: _closeRoleDetail,
@@ -103,8 +103,8 @@ class _PermissionsMatrixTabState extends ConsumerState<PermissionsMatrixTab> {
                       _detailRole != null
                           ? staffRoleDisplayLabel(_detailRole!)
                           : _showAllMatrix
-                              ? 'All permissions'
-                              : 'Permissions',
+                              ? 'Tous les droits'
+                              : 'Droits',
                       style: AppTextStyles.h3(),
                     ),
                     if (_detailRole == null) ...[
@@ -113,7 +113,7 @@ class _PermissionsMatrixTabState extends ConsumerState<PermissionsMatrixTab> {
                     ] else ...[
                       const SizedBox(height: AppConstants.spacing4),
                       Text(
-                        'Toggle defaults for this role.',
+                        'Activez les droits par défaut de ce rôle.',
                         style: AppTextStyles.caption(
                           color: isDark
                               ? AppColors.coolGray
@@ -127,12 +127,12 @@ class _PermissionsMatrixTabState extends ConsumerState<PermissionsMatrixTab> {
               if (_detailRole == null && !_showAllMatrix)
                 TextButton(
                   onPressed: _openAllMatrix,
-                  child: const Text('View all permissions'),
+                  child: const Text('Voir tous les droits'),
                 ),
               if (_showAllMatrix)
                 TextButton(
                   onPressed: _closeAllMatrix,
-                  child: const Text('Back to role cards'),
+                  child: const Text('Retour aux fiches de rôle'),
                 ),
             ],
           ),
@@ -262,7 +262,7 @@ class _RoleCardsBody extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${_enabledForRole(role)}/$total enabled',
+                              '${_enabledForRole(role)}/$total activés',
                               style: AppTextStyles.caption(
                                 color: isDark
                                     ? AppColors.coolGray

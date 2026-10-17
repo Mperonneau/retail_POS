@@ -39,7 +39,7 @@ class StoredProfile {
         .firstOrNull ??
         ActiveModule.retail;
     return StoredProfile(
-      userName: json['user_name']?.toString() ?? 'Manager',
+      userName: json['user_name']?.toString() ?? 'Gérant',
       businessName: business,
       module: module,
     );
@@ -76,9 +76,9 @@ class DeviceSessionState {
       isPaired && !online && (pairing?.offlineExpiringSoon(DateTime.now()) ?? false);
 
   String get offlineUnlockBlockedMessage =>
-      'This device has not reached the server in '
-      '${pairing?.offlineWindowDays ?? DevicePairingInfo.defaultOfflineWindowDays} days. '
-      'Connect to the internet to use PINs.';
+      'Cet appareil n\'a pas joint le serveur depuis '
+      '${pairing?.offlineWindowDays ?? DevicePairingInfo.defaultOfflineWindowDays} jours. '
+      'Connectez-vous à internet pour utiliser les codes PIN.';
 
   DeviceSessionState copyWith({
     bool? ready,
@@ -245,15 +245,15 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
   Future<String?> pairWithCode(String raw) async {
     await restore();
     if (!state.online) {
-      return 'No internet. Connecting a device needs a network.';
+      return 'Pas d\'internet. Connecter un appareil exige le réseau.';
     }
     final code = normalizeDeviceCode(raw);
     if (!isCompleteDeviceCode(code)) {
-      return 'The code has 8 characters (example 7KQ2-M9XD).';
+      return 'Le code a 8 caractères (exemple 7KQ2-M9XD).';
     }
     final index = state.invites.indexWhere((invite) => invite.code == code);
     if (index < 0 || !state.invites[index].isLive(DateTime.now())) {
-      return 'This code is unknown or expired.';
+      return 'Ce code est inconnu ou expiré.';
     }
     final invites = [...state.invites];
     invites[index] = invites[index].copyWith(used: true);
@@ -266,7 +266,7 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
     );
     final profile = state.profile ??
         const StoredProfile(
-          userName: 'Manager',
+          userName: 'Gérant',
           businessName: 'Boutique Soleil',
           module: ActiveModule.retail,
         );

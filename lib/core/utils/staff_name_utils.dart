@@ -1,6 +1,6 @@
 /// First word of a display name, for "who is signed in" (e.g. `Jean-Marc Dupont` → `Jean-Marc`).
 String firstNameFromDisplayName(String? fullName) {
-  if (fullName == null || fullName.trim().isEmpty) return 'Staff';
+  if (fullName == null || fullName.trim().isEmpty) return 'Personnel';
   final s = fullName.trim();
   final space = s.indexOf(' ');
   if (space == -1) return s;

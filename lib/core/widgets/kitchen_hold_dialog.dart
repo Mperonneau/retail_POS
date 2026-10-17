@@ -52,7 +52,7 @@ class _KitchenHoldDialogState extends State<KitchenHoldDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Kitchen Preparation',
+                Text('Préparation cuisine',
                     style: AppTextStyles.h3(
                         color: isDark
                             ? AppColors.warmWhite
@@ -75,18 +75,18 @@ class _KitchenHoldDialogState extends State<KitchenHoldDialog> {
           children: [
             const SizedBox(height: 4),
             Text(
-              'A payment link will be sent to the customer. '
-              'Should the kitchen start preparing this order now or '
-              'wait until payment is confirmed?',
+              'Un lien de paiement sera envoyé au client. '
+              'La cuisine doit-elle préparer cette commande maintenant ou '
+              'attendre la confirmation du paiement ?',
               style: AppTextStyles.body(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
             ),
             const SizedBox(height: 16),
             _OptionTile(
               icon: Icons.pause_circle_outline_rounded,
-              title: 'Hold until paid',
+              title: 'Attendre le paiement',
               subtitle:
-                  'Kitchen will not receive the order until payment is confirmed.',
+                  'La cuisine ne reçoit la commande qu\'après confirmation du paiement.',
               selected: _decision == KitchenHoldDecision.holdUntilPaid,
               isDark: isDark,
               accent: accent,
@@ -96,9 +96,9 @@ class _KitchenHoldDialogState extends State<KitchenHoldDialog> {
             const SizedBox(height: 8),
             _OptionTile(
               icon: Icons.play_circle_outline_rounded,
-              title: 'Start preparing now',
+              title: 'Préparer maintenant',
               subtitle:
-                  'Kitchen will begin immediately — payment can arrive later.',
+                  'La cuisine commence tout de suite — le paiement peut arriver plus tard.',
               selected: _decision == KitchenHoldDecision.startNow,
               isDark: isDark,
               accent: accent,
@@ -112,14 +112,14 @@ class _KitchenHoldDialogState extends State<KitchenHoldDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Cancel',
+          child: Text('Annuler',
               style: AppTextStyles.button(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         ),
         ElevatedButton.icon(
           onPressed: () => Navigator.pop(context, _decision),
           icon: const Icon(Icons.check_rounded, size: 16),
-          label: const Text('Confirm & Send'),
+          label: const Text('Confirmer et envoyer'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.deepGreen,
             foregroundColor: AppColors.white,

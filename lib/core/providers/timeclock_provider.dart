@@ -117,13 +117,13 @@ class TimeclockNotifier extends StateNotifier<List<TimeclockEntry>> {
     String? enteredById,
   }) {
     final e = state.where((x) => x.id == id).firstOrNull;
-    if (e == null) return 'Entry not found.';
+    if (e == null) return 'Entrée introuvable.';
 
     final proposedIn = newClockIn ?? e.clockIn;
     final proposedOut = newClockOut ?? e.clockOut;
 
     if (proposedOut != null && !proposedIn.isBefore(proposedOut)) {
-      return 'Clock-out must be after clock-in.';
+      return 'Le départ doit être après l\'arrivée.';
     }
 
     if (overlapsExistingShift(
@@ -132,7 +132,7 @@ class TimeclockNotifier extends StateNotifier<List<TimeclockEntry>> {
       newEnd: proposedOut ?? DateTime.now(),
       excludeEntryId: id,
     )) {
-      return 'This time range overlaps another shift for this employee.';
+      return 'Cette plage chevauche un autre quart de cet employé.';
     }
 
     final changed = newClockIn != null || newClockOut != null;
@@ -171,14 +171,14 @@ class TimeclockNotifier extends StateNotifier<List<TimeclockEntry>> {
     String? enteredById,
   }) {
     if (!clockIn.isBefore(clockOut)) {
-      return 'Clock-out must be after clock-in.';
+      return 'Le départ doit être après l\'arrivée.';
     }
     if (overlapsExistingShift(
       employeeId: employeeId,
       newStart: clockIn,
       newEnd: clockOut,
     )) {
-      return 'This time range overlaps an existing shift for this day.';
+      return 'Cette plage chevauche un quart déjà enregistré ce jour-là.';
     }
 
     final entry = TimeclockEntry(
@@ -268,9 +268,9 @@ final timeclockProvider =
 enum TimeclockPeriod { week, biweek, month }
 
 String timeclockPeriodLabel(TimeclockPeriod p) => switch (p) {
-      TimeclockPeriod.week => 'This Week',
+      TimeclockPeriod.week => 'Cette semaine',
       TimeclockPeriod.biweek => 'Last 2 Weeks',
-      TimeclockPeriod.month => 'This Month',
+      TimeclockPeriod.month => 'Ce mois',
     };
 
 /// Returns [start, end] for the given period relative to now.

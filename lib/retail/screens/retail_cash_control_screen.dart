@@ -67,7 +67,7 @@ class _OpenDrawerViewState extends ConsumerState<_OpenDrawerView> {
     final htg = double.tryParse(_htgCtrl.text) ?? 0;
     final usd = double.tryParse(_usdCtrl.text) ?? 0;
     ref.read(retailCashSessionProvider.notifier).openSession(
-          openedBy: 'Manager',
+          openedBy: 'Gérant',
           openingBalanceHtg: htg,
           openingBalanceUsd: usd,
         );
@@ -92,14 +92,14 @@ class _OpenDrawerViewState extends ConsumerState<_OpenDrawerView> {
                   color: AppColors.amber, size: 44),
             ),
             const SizedBox(height: AppConstants.spacing24),
-            Text('Cash Control',
+            Text('Contrôle de caisse',
                 style: AppTextStyles.h1(
                     color: widget.isDark
                         ? AppColors.warmWhite
                         : AppColors.primaryBlue)),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'Open the cash drawer to begin tracking this register shift\'s cash movements.',
+              'Ouvrez le tiroir pour suivre les mouvements d\'espèces de cette session.',
               style: AppTextStyles.body(
                   color:
                       widget.isDark ? AppColors.coolGray : AppColors.darkGray),
@@ -110,7 +110,7 @@ class _OpenDrawerViewState extends ConsumerState<_OpenDrawerView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Opening Balance', style: AppTextStyles.h3()),
+                  Text('Solde d\'ouverture', style: AppTextStyles.h3()),
                   const SizedBox(height: AppConstants.spacing16),
                   TextField(
                     controller: _htgCtrl,
@@ -118,7 +118,7 @@ class _OpenDrawerViewState extends ConsumerState<_OpenDrawerView> {
                         const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: InputFormatters.decimalAmount,
                     decoration: InputDecoration(
-                      labelText: 'Cash in drawer (HTG)',
+                      labelText: 'Espèces dans le tiroir (HTG)',
                       prefixText: 'HTG ',
                       border: OutlineInputBorder(
                           borderRadius:
@@ -132,7 +132,7 @@ class _OpenDrawerViewState extends ConsumerState<_OpenDrawerView> {
                         const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: InputFormatters.decimalAmount,
                     decoration: InputDecoration(
-                      labelText: 'Cash in drawer (USD) — optional',
+                      labelText: 'Espèces dans le tiroir (USD) — facultatif',
                       prefixText: '\$ ',
                       border: OutlineInputBorder(
                           borderRadius:
@@ -141,7 +141,7 @@ class _OpenDrawerViewState extends ConsumerState<_OpenDrawerView> {
                   ),
                   const SizedBox(height: AppConstants.spacing24),
                   AppButton(
-                    label: 'Open Drawer',
+                    label: 'Ouvrir le tiroir',
                     onPressed: _open,
                     icon: Icons.lock_open_outlined,
                   ),
@@ -254,7 +254,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                         final titleBlock = Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Cash Control',
+                            Text('Contrôle de caisse',
                                 style: AppTextStyles.h1(
                                     color: isDark
                                         ? AppColors.warmWhite
@@ -267,7 +267,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
-                                    'Opened ${_timeStr(session.openedAt)} · ${session.openedBy}',
+                                    'Ouvert à ${_timeStr(session.openedAt)} · ${session.openedBy}',
                                     style: AppTextStyles.caption(
                                         color: textSecondary),
                                     maxLines: 2,
@@ -284,7 +284,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                           children: [
                             _HeaderBtn(
                               icon: Icons.history_rounded,
-                              label: 'History',
+                              label: 'Historique',
                               isDark: isDark,
                               onTap: () => showCashHistoryPanel(
                                     context,
@@ -294,7 +294,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                             ),
                             _HeaderBtn(
                               icon: Icons.payments_outlined,
-                              label: 'Tips',
+                              label: 'Pourboires',
                               isDark: isDark,
                               onTap: () => showTipsPanel(context, isDark),
                             ),
@@ -328,7 +328,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
-                      'Payment methods — session net',
+                      'Moyens de paiement — net de la session',
                       style: AppTextStyles.h3(
                         color:
                             isDark ? AppColors.warmWhite : AppColors.nearBlack,
@@ -383,7 +383,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
-                      'Physical cash drawer',
+                      'Tiroir-caisse physique',
                       style: AppTextStyles.h3(
                         color:
                             isDark ? AppColors.warmWhite : AppColors.nearBlack,
@@ -399,7 +399,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                         final w = constraints.maxWidth;
                         final chips = <Widget>[
                           _SummaryChip(
-                            label: 'Opening',
+                            label: 'Ouverture',
                             htg: session.openingBalanceHtg,
                             usd: session.openingBalanceUsd,
                             color: isDark
@@ -408,21 +408,21 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                             isDark: isDark,
                           ),
                           _SummaryChip(
-                            label: 'Cash In',
+                            label: 'Entrée de caisse',
                             htg: state.totalIn,
                             usd: state.totalInUsd,
                             color: AppColors.deepGreen,
                             isDark: isDark,
                           ),
                           _SummaryChip(
-                            label: 'Cash Out',
+                            label: 'Sortie de caisse',
                             htg: state.totalOut,
                             usd: state.totalOutUsd,
                             color: AppColors.boldRed,
                             isDark: isDark,
                           ),
                           _SummaryChip(
-                            label: 'Expected',
+                            label: 'Attendu',
                             htg: state.expectedBalance,
                             usd: state.expectedBalanceUsd,
                             color: AppColors.amber,
@@ -477,7 +477,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                           final searchField = TextField(
                             controller: _searchCtrl,
                             decoration: InputDecoration(
-                              hintText: 'Search by reason, receipt, cashier…',
+                              hintText: 'Rechercher par motif, reçu, caissier…',
                               hintStyle: AppTextStyles.caption(),
                               prefixIcon:
                                   const Icon(Icons.search_rounded, size: 18),
@@ -521,7 +521,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                                 onPressed: () =>
                                     _showAddMovementSheet(context, isDark),
                                 icon: const Icon(Icons.add, size: 16),
-                                label: const Text('Add'),
+                                label: const Text('Ajouter'),
                                 style: TextButton.styleFrom(
                                     foregroundColor: AppColors.amber),
                               ),
@@ -579,8 +579,12 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                               const SizedBox(height: 12),
                               Text(
                                 _query.isNotEmpty
-                                    ? 'No movements match "$_query"'
-                                    : 'No ${_filter == _MovFilter.cashIn ? 'cash in' : _filter == _MovFilter.cashOut ? 'cash out' : ''} movements yet.',
+                                    ? 'Aucun mouvement pour « $_query »'
+                                    : _filter == _MovFilter.cashIn
+                                        ? 'Aucune entrée pour le moment.'
+                                        : _filter == _MovFilter.cashOut
+                                            ? 'Aucune sortie pour le moment.'
+                                            : 'Aucun mouvement pour le moment.',
                                 style: AppTextStyles.body(color: textSecondary),
                                 textAlign: TextAlign.center,
                               ),
@@ -619,7 +623,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing12),
           child: AppButton(
-            label: 'Close Drawer & Reconcile',
+            label: 'Fermer le tiroir et rapprocher',
             onPressed: () => context.go(AppRoutes.retailCashReconciliation),
             icon: Icons.lock_outlined,
             variant: AppButtonVariant.secondary,
@@ -648,7 +652,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                 description: description,
                 linkedTableNumber: tableNum,
                 linkedWaiterName: waiterName,
-                recordedBy: 'Manager',
+                recordedBy: 'Gérant',
                 tender: t,
               );
         },
@@ -706,20 +710,20 @@ class _ClosedSessionView extends ConsumerWidget {
                 color: AppColors.deepGreen, size: 44),
           ),
           const SizedBox(height: AppConstants.spacing24),
-          Text('Session Closed',
+          Text('Session fermée',
               style: AppTextStyles.h1(
                   color: isDark ? AppColors.warmWhite : AppColors.primaryBlue)),
           const SizedBox(height: AppConstants.spacing8),
-          Text('The cash drawer has been closed and reconciled.',
+          Text('Le tiroir-caisse a été fermé et rapproché.',
               style: AppTextStyles.body(
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
               textAlign: TextAlign.center),
           const SizedBox(height: AppConstants.spacing32),
           AppButton(
-            label: 'Start New Session',
+            label: 'Nouvelle session',
             onPressed: () {
               ref.read(retailCashSessionProvider.notifier).openSession(
-                    openedBy: 'Manager',
+                    openedBy: 'Gérant',
                     openingBalanceHtg: 0,
                   );
             },
@@ -879,9 +883,9 @@ class _FilterTabRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tabs = [
-      (_MovFilter.all, 'All', null),
-      (_MovFilter.cashIn, 'Cash In', AppColors.deepGreen),
-      (_MovFilter.cashOut, 'Cash Out', AppColors.boldRed),
+      (_MovFilter.all, 'Tous', null),
+      (_MovFilter.cashIn, 'Entrée de caisse', AppColors.deepGreen),
+      (_MovFilter.cashOut, 'Sortie de caisse', AppColors.boldRed),
     ];
 
     return Row(
@@ -1017,7 +1021,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = open ? AppColors.deepGreen : AppColors.coolGray;
-    final label = open ? 'OPEN' : 'CLOSED';
+    final label = open ? 'OUVERT' : 'FERMÉ';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -1084,7 +1088,7 @@ class _MovementTile extends StatelessWidget {
         : '$sign${CurrencyFormatter.local(context, isIn ? m.totalHtg : m.totalHtg)}';
 
     final subtitle = [
-      if (isAdj) m.adjustmentAddsToDrawer ? 'Add' : 'Remove',
+      if (isAdj) m.adjustmentAddsToDrawer ? 'Ajouter' : 'Retirer',
       if (m.linkedTableNumber != null) m.linkedTableNumber!,
       if (m.linkedWaiterName != null) m.linkedWaiterName!,
       _timeStr(m.timestamp),
@@ -1154,10 +1158,10 @@ class _MovementDetailSheet extends StatelessWidget {
             ? AppColors.deepGreen
             : AppColors.boldRed;
     final typeLabel = isAdj
-        ? 'Adjustment'
+        ? 'Ajustement'
         : isIn
-            ? 'Cash In'
-            : 'Cash Out';
+            ? 'Entrée de caisse'
+            : 'Sortie de caisse';
     final sign = isIn
         ? '+'
         : isAdj
@@ -1224,7 +1228,7 @@ class _MovementDetailSheet extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Amount',
+                    Text('Montant',
                         style: AppTextStyles.caption(
                             color: isDark
                                 ? AppColors.coolGray
@@ -1253,7 +1257,7 @@ class _MovementDetailSheet extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Tips',
+                      Text('Pourboires',
                           style: AppTextStyles.caption(
                               color: isDark
                                   ? AppColors.coolGray
@@ -1317,34 +1321,34 @@ class _MovementDetailSheet extends StatelessWidget {
           // ── Context rows ───────────────────────────────────────────────────
           _DetailRow(
             icon: Icons.schedule_outlined,
-            label: 'Time',
+            label: 'Heure',
             value: _formatTime(m.timestamp),
             isDark: isDark,
           ),
           _DetailRow(
             icon: Icons.person_outline_rounded,
-            label: 'Recorded by',
+            label: 'Enregistré par',
             value: m.recordedBy,
             isDark: isDark,
           ),
           if (m.linkedTableNumber != null)
             _DetailRow(
               icon: Icons.tag_outlined,
-              label: 'Receipt',
+              label: 'Reçu',
               value: m.linkedTableNumber!,
               isDark: isDark,
             ),
           if (m.linkedWaiterName != null)
             _DetailRow(
               icon: Icons.badge_outlined,
-              label: 'Cashier',
+              label: 'Caissier',
               value: m.linkedWaiterName!,
               isDark: isDark,
             ),
           if (m.linkedOrderId != null)
             _DetailRow(
               icon: Icons.receipt_long_outlined,
-              label: 'Sale ref.',
+              label: 'Réf. vente',
               value: '#${m.linkedOrderId!}',
               isDark: isDark,
             ),
@@ -1358,7 +1362,7 @@ class _MovementDetailSheet extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _openSalePanel(context),
                 icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-                label: const Text('View Sale Details'),
+                label: const Text('Voir la vente'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor:
                       isDark ? AppColors.skyBlue : AppColors.primaryBlue,
@@ -1387,7 +1391,7 @@ class _MovementDetailSheet extends StatelessWidget {
         opaque: false,
         barrierColor: Colors.black.withValues(alpha: 0.45),
         barrierDismissible: true,
-        barrierLabel: 'Dismiss',
+        barrierLabel: 'Fermer',
         pageBuilder: (_, __, ___) =>
             _SaleSidePanel(sale: sale!, isDark: isDark),
         transitionsBuilder: (_, animation, __, child) {
@@ -1463,7 +1467,7 @@ class _SaleSidePanel extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Sale #${sale.id}',
+                                  'Vente n°${sale.id}',
                                   style: AppTextStyles.h2(
                                       color: isDark
                                           ? AppColors.warmWhite
@@ -1528,7 +1532,7 @@ class _SaleSidePanel extends StatelessWidget {
                           ),
                           _InfoChip(
                             icon: Icons.inventory_2_outlined,
-                            label: '$itemCount items',
+                            label: '$itemCount articles',
                             isDark: isDark,
                           ),
                         ],
@@ -1537,7 +1541,7 @@ class _SaleSidePanel extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
                       child: Text(
-                        'Line items',
+                        'Lignes',
                         style: AppTextStyles.caption(
                                 color: isDark
                                     ? AppColors.coolGray
@@ -1635,7 +1639,7 @@ class _SaleSidePanel extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Sale total',
+                            'Total de la vente',
                             style: AppTextStyles.body(
                                     color: isDark
                                         ? AppColors.warmWhite
@@ -1845,8 +1849,8 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
         children: [
           Text(
               widget.preselectedTender != null
-                  ? 'Add — ${widget.preselectedTender!.label}'
-                  : 'Add Cash Movement',
+                  ? 'Ajouter — ${widget.preselectedTender!.label}'
+                  : 'Ajouter un mouvement de caisse',
               style: AppTextStyles.h2(
                   color: widget.isDark
                       ? AppColors.warmWhite
@@ -1900,7 +1904,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
                 // ignore: deprecated_member_use
                 value: _tender,
                 decoration: InputDecoration(
-                  labelText: 'Payment method',
+                  labelText: 'Moyen de paiement',
                   border: OutlineInputBorder(
                     borderRadius:
                         BorderRadius.circular(AppConstants.radiusInput),
@@ -1919,7 +1923,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
             children: [
               Expanded(
                 child: _TypeBtn(
-                  label: 'Cash In',
+                  label: 'Entrée de caisse',
                   icon: Icons.arrow_downward_rounded,
                   selected: _type == CashMovementType.cashIn,
                   color: AppColors.deepGreen,
@@ -1929,7 +1933,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: _TypeBtn(
-                  label: 'Cash Out',
+                  label: 'Sortie de caisse',
                   icon: Icons.arrow_upward_rounded,
                   selected: _type == CashMovementType.cashOut,
                   color: AppColors.boldRed,
@@ -1939,7 +1943,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: _TypeBtn(
-                  label: 'Adjustment',
+                  label: 'Ajustement',
                   icon: Icons.tune_outlined,
                   selected: _type == CashMovementType.adjustment,
                   color: AppColors.amber,
@@ -1962,12 +1966,12 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
               segments: const [
                 ButtonSegment<bool>(
                   value: true,
-                  label: Text('Add to drawer'),
+                  label: Text('Ajouter au tiroir'),
                   icon: Icon(Icons.add_circle_outline, size: 16),
                 ),
                 ButtonSegment<bool>(
                   value: false,
-                  label: Text('Remove from drawer'),
+                  label: Text('Retirer du tiroir'),
                   icon: Icon(Icons.remove_circle_outline, size: 16),
                 ),
               ],
@@ -1988,7 +1992,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: InputFormatters.decimalAmount,
                   decoration: InputDecoration(
-                    labelText: 'Amount (HTG) *',
+                    labelText: 'Montant (HTG) *',
                     prefixText: 'HTG ',
                     border: OutlineInputBorder(
                         borderRadius:
@@ -2004,7 +2008,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: InputFormatters.decimalAmount,
                   decoration: InputDecoration(
-                    labelText: 'Amount (USD)',
+                    labelText: 'Montant (USD)',
                     prefixText: '\$ ',
                     border: OutlineInputBorder(
                         borderRadius:
@@ -2075,7 +2079,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
                   child: TextField(
                     controller: _tableCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Receipt / ref. (optional)',
+                      labelText: 'Reçu / réf. (facultatif)',
                       hintText: 'e.g. RCP-2042',
                       border: OutlineInputBorder(
                           borderRadius:
@@ -2088,7 +2092,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
                   child: TextField(
                     controller: _waiterCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Cashier',
+                      labelText: 'Caissier',
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppConstants.radiusInput)),
@@ -2100,7 +2104,7 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
           ],
 
           const SizedBox(height: AppConstants.spacing24),
-          AppButton(label: 'Save Movement', onPressed: _save),
+          AppButton(label: 'Enregistrer le mouvement', onPressed: _save),
         ],
       ),
     );
@@ -2201,7 +2205,7 @@ class _MovLogToggle extends StatelessWidget {
             Icon(Icons.receipt_long_outlined, size: 16, color: textSecondary),
             const SizedBox(width: 8),
             Text(
-              'Movement log',
+              'Journal des mouvements',
               style: AppTextStyles.body(color: textSecondary)
                   .copyWith(fontWeight: FontWeight.w600, fontSize: 13),
             ),

@@ -16,9 +16,9 @@ Future<bool?> showAdminApprovalDialog(
   WidgetRef ref, {
   required String message,
   required bool isDark,
-  String title = 'Admin approval',
-  String codeFieldLabel = 'Password / code',
-  String confirmButtonLabel = 'Approve',
+  String title = 'Autorisation admin',
+  String codeFieldLabel = 'Mot de passe ou code',
+  String confirmButtonLabel = 'Approuver',
 }) async {
   final code = ref.read(discountApprovalCodeProvider);
   if (code.isEmpty) return true;
@@ -71,7 +71,7 @@ Future<bool?> showAdminApprovalDialog(
                       if (v.trim() == code) {
                         Navigator.pop(ctx, true);
                       } else {
-                        setDialogState(() => error = 'Incorrect code');
+                        setDialogState(() => error = 'Code incorrect');
                       }
                     },
                   ),
@@ -81,14 +81,14 @@ Future<bool?> showAdminApprovalDialog(
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+                child: const Text('Annuler'),
               ),
               FilledButton(
                 onPressed: () {
                   if (ctrl.text.trim() == code) {
                     Navigator.pop(ctx, true);
                   } else {
-                    setDialogState(() => error = 'Incorrect code');
+                    setDialogState(() => error = 'Code incorrect');
                   }
                 },
                 child: Text(confirmButtonLabel),
@@ -128,7 +128,7 @@ Future<bool?> showDiscountApprovalDialog(
               horizontal: 24,
               vertical: 24,
             ),
-            title: const Text('Approve discount'),
+            title: const Text('Approuver la remise'),
             content: SizedBox(
               width: contentW,
               child: Column(
@@ -136,7 +136,7 @@ Future<bool?> showDiscountApprovalDialog(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Enter admin password or code to apply ${percent.toInt()}% discount.',
+                    'Saisissez le mot de passe ou le code admin pour appliquer ${percent.toInt()} % de remise.',
                     style: AppTextStyles.body(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
@@ -146,7 +146,7 @@ Future<bool?> showDiscountApprovalDialog(
                     controller: ctrl,
                     obscureText: true,
                     decoration: InputDecoration(
-                      labelText: 'Password / code',
+                      labelText: 'Mot de passe ou code',
                       errorText: error,
                       border: OutlineInputBorder(
                         borderRadius:
@@ -160,7 +160,7 @@ Future<bool?> showDiscountApprovalDialog(
                       if (v.trim() == code) {
                         Navigator.pop(ctx, true);
                       } else {
-                        setDialogState(() => error = 'Incorrect code');
+                        setDialogState(() => error = 'Code incorrect');
                       }
                     },
                   ),
@@ -170,17 +170,17 @@ Future<bool?> showDiscountApprovalDialog(
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+                child: const Text('Annuler'),
               ),
               FilledButton(
                 onPressed: () {
                   if (ctrl.text.trim() == code) {
                     Navigator.pop(ctx, true);
                   } else {
-                    setDialogState(() => error = 'Incorrect code');
+                    setDialogState(() => error = 'Code incorrect');
                   }
                 },
-                child: const Text('Approve'),
+                child: const Text('Approuver'),
               ),
             ],
           );

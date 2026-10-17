@@ -21,7 +21,7 @@ class PurchaseOrdersScreen extends ConsumerStatefulWidget {
 }
 
 class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
-  String _statusFilter = 'All';
+  String _statusFilter = 'Tous';
 
   void _showNewOrderSheet(
       BuildContext context, bool isDark, List<MockSupplier> suppliers) {
@@ -47,7 +47,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('New Purchase Order',
+                Text('Nouveau bon de commande',
                     style: AppTextStyles.h2(
                         color: isDark
                             ? AppColors.warmWhite
@@ -90,7 +90,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
                     child: TextField(
                       controller: qtyCtrl,
                       decoration: InputDecoration(
-                        labelText: 'Qty',
+                        labelText: 'Qté',
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
                                 AppConstants.radiusInput)),
@@ -106,7 +106,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
                     child: TextField(
                       controller: priceCtrl,
                       decoration: InputDecoration(
-                        labelText: 'Price HTG',
+                        labelText: 'Prix HTG',
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
                                 AppConstants.radiusInput)),
@@ -161,7 +161,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancel'),
+                      child: const Text('Annuler'),
                     ),
                   ),
                   const SizedBox(width: AppConstants.spacing12),
@@ -173,7 +173,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
                         backgroundColor: AppColors.amber,
                         foregroundColor: AppColors.nearBlack,
                       ),
-                      child: const Text('Create Draft'),
+                      child: const Text('Créer un brouillon'),
                     ),
                   ),
                 ]),
@@ -190,27 +190,27 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final suppliers = ref.watch(mockSuppliersProvider);
     final allOrders = [
-      ('PO-2026-045', 'DINASA', 'Feb 20, 2026', 'Partially Received', 48000.0),
-      ('PO-2026-044', 'Brasserie Nationale', 'Feb 23, 2026', 'Sent', 28800.0),
+      ('PO-2026-045', 'DINASA', '20 févr. 2026', 'Partiellement reçu', 48000.0),
+      ('PO-2026-044', 'Brasserie Nationale', '23 févr. 2026', 'Envoyé', 28800.0),
       (
         'PO-2026-043',
-        'Importex Haiti',
-        'Feb 18, 2026',
-        'Fully Received',
+        'Importex Haïti',
+        '18 févr. 2026',
+        'Entièrement reçu',
         35600.0
       ),
-      ('PO-2026-042', 'DINASA', 'Feb 15, 2026', 'Fully Received', 62000.0),
-      ('PO-2026-041', 'Importex Haiti', 'Feb 10, 2026', 'Draft', 18000.0),
+      ('PO-2026-042', 'DINASA', '15 févr. 2026', 'Entièrement reçu', 62000.0),
+      ('PO-2026-041', 'Importex Haïti', '10 févr. 2026', 'Brouillon', 18000.0),
     ];
 
-    final orders = _statusFilter == 'All'
+    final orders = _statusFilter == 'Tous'
         ? allOrders
         : allOrders.where((o) {
             final s = o.$4;
-            if (_statusFilter == 'Draft') return s == 'Draft';
-            if (_statusFilter == 'Sent') return s == 'Sent';
-            if (_statusFilter == 'Partial') return s == 'Partially Received';
-            if (_statusFilter == 'Received') return s == 'Fully Received';
+            if (_statusFilter == 'Brouillon') return s == 'Brouillon';
+            if (_statusFilter == 'Envoyé') return s == 'Envoyé';
+            if (_statusFilter == 'Partiel') return s == 'Partiellement reçu';
+            if (_statusFilter == 'Reçu') return s == 'Entièrement reçu';
             return true;
           }).toList();
 
@@ -224,14 +224,14 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
             Row(
               children: [
                 Expanded(
-                    child: Text('Purchase Orders',
+                    child: Text('Bons de commande',
                         style: AppTextStyles.h1(
                           color: isDark
                               ? AppColors.warmWhite
                               : AppColors.primaryBlue,
                         ))),
                 AppButton(
-                  label: 'New Order',
+                  label: 'Nouvelle commande',
                   onPressed: () =>
                       _showNewOrderSheet(context, isDark, suppliers),
                   icon: Icons.add,
@@ -244,7 +244,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: ['All', 'Draft', 'Sent', 'Partial', 'Received']
+                children: ['Tous', 'Brouillon', 'Envoyé', 'Partiel', 'Reçu']
                     .map((s) => Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: ChoiceChip(
@@ -272,9 +272,9 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
                     const SizedBox(height: AppConstants.spacing8),
                 itemBuilder: (_, i) {
                   final o = orders[i];
-                  final statusType = o.$4 == 'Fully Received'
+                  final statusType = o.$4 == 'Entièrement reçu'
                       ? StatusType.done
-                      : o.$4 == 'Partially Received' || o.$4 == 'Sent'
+                      : o.$4 == 'Partiellement reçu' || o.$4 == 'Envoyé'
                           ? StatusType.inProgress
                           : StatusType.pending;
                   return AppCard(

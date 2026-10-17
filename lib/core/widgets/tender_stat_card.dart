@@ -145,7 +145,7 @@ class TenderStatCard extends StatelessWidget {
                                   size: 13, color: AppColors.amber),
                               const SizedBox(width: 3),
                               Text(
-                                'Add',
+                                'Ajouter',
                                 style: AppTextStyles.caption(
                                         color: AppColors.amber)
                                     .copyWith(fontWeight: FontWeight.w600),
@@ -170,7 +170,7 @@ class TenderStatCard extends StatelessWidget {
                                   size: 13, color: color),
                               const SizedBox(width: 3),
                               Text(
-                                'Details',
+                                'Détails',
                                 style: AppTextStyles.caption(color: color)
                                     .copyWith(fontWeight: FontWeight.w600),
                               ),

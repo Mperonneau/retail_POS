@@ -53,7 +53,7 @@ class MockMenuItem {
   /// even if inventory still shows stock (used for all categories).
   final bool available;
   final String? description;
-  /// For [category] == `'Drinks'`, links to [MockInventoryItem.id] for stock checks.
+  /// For [category] == `'Boissons'`, links to [MockInventoryItem.id] for stock checks.
   final int? inventoryItemId;
 
   const MockMenuItem({
@@ -316,7 +316,7 @@ class MockOrderItem {
   final double priceHtg;
   final double priceUsd;
   final String? note;
-  /// Menu category (e.g. 'Drinks', 'Mains'). Used to decide whether the item
+  /// Menu category (e.g. 'Boissons', 'Plats'). Used to decide whether the item
   /// goes to a kitchen batch (food) or is merged directly (drinks).
   final String category;
   /// Custom catering / off-menu line (not from catalog).
@@ -332,13 +332,13 @@ class MockOrderItem {
     required this.priceHtg,
     required this.priceUsd,
     this.note,
-    this.category = 'Mains',
+    this.category = 'Plats',
     this.isCustom = false,
     this.sendToKitchen = false,
     this.customStatus = 'pending',
   });
 
-  bool get isDrink => category == 'Drinks';
+  bool get isDrink => category == 'Boissons';
 
   MockOrderItem copyWith({
     String? name,
@@ -450,13 +450,13 @@ const inventoryUnitOptions = [
   'KG',
   'LB',
   'L',
-  'Bottle',
+  'Bouteille',
   'Sachet',
-  'pcs',
-  'unit',
-  'pack',
-  'box',
-  'can',
+  'pce',
+  'unité',
+  'paquet',
+  'boîte',
+  'conserve',
 ];
 
 // ──────────────── MOCK DATA ────────────────
@@ -467,9 +467,9 @@ final _mockTablesSeed = [
   MockTable(id: 3, name: 'Table 3', capacity: 4, status: 'occupied', occupiedSince: '11:45', guestCount: '4', activeOrderId: 102),
   MockTable(id: 4, name: 'Table 4', capacity: 6, status: 'bill_requested', occupiedSince: '11:00', guestCount: '6', activeOrderId: 103),
   MockTable(id: 5, name: 'Table 5', capacity: 2, status: 'available'),
-  MockTable(id: 6, name: 'Terrace A', capacity: 4, status: 'reserved'),
-  MockTable(id: 7, name: 'Terrace B', capacity: 4, status: 'occupied', occupiedSince: '13:15', guestCount: '2', activeOrderId: 104),
-  MockTable(id: 8, name: 'VIP Room', capacity: 8, status: 'available'),
+  MockTable(id: 6, name: 'Terrasse A', capacity: 4, status: 'reserved'),
+  MockTable(id: 7, name: 'Terrasse B', capacity: 4, status: 'occupied', occupiedSince: '13:15', guestCount: '2', activeOrderId: 104),
+  MockTable(id: 8, name: 'Salon VIP', capacity: 8, status: 'available'),
   MockTable(id: 9, name: 'Table 6', capacity: 4, status: 'occupied', occupiedSince: '12:00', guestCount: '4', activeOrderId: 105),
   MockTable(id: 10, name: 'Table 7', capacity: 6, status: 'available'),
   MockTable(id: 11, name: 'Bar 1', capacity: 2, status: 'occupied', occupiedSince: '13:45', guestCount: '1', activeOrderId: 106),
@@ -478,32 +478,32 @@ final _mockTablesSeed = [
 
 final _mockMenuSeed = [
   // Starters
-  MockMenuItem(id: 1, name: 'Accra (Malanga Fritters)', category: 'Starters', priceHtg: 350, priceUsd: 3.50, description: 'Crispy taro fritters with pikliz dipping sauce'),
-  MockMenuItem(id: 2, name: 'Bouillon de Crabe', category: 'Starters', priceHtg: 650, priceUsd: 6.50, description: 'Crab soup with root vegetables'),
-  MockMenuItem(id: 3, name: 'Salade de Chou', category: 'Starters', priceHtg: 250, priceUsd: 2.50),
+  MockMenuItem(id: 1, name: 'Accra (beignets de malanga)', category: 'Entrées', priceHtg: 350, priceUsd: 3.50, description: 'Beignets de malanga croustillants, sauce pikliz'),
+  MockMenuItem(id: 2, name: 'Bouillon de Crabe', category: 'Entrées', priceHtg: 650, priceUsd: 6.50, description: 'Soupe de crabe aux légumes racines'),
+  MockMenuItem(id: 3, name: 'Salade de Chou', category: 'Entrées', priceHtg: 250, priceUsd: 2.50),
   // Mains
-  MockMenuItem(id: 4, name: 'Griot avec Riz Collé', category: 'Mains', priceHtg: 1200, priceUsd: 12.00, description: 'Fried pork with peas & rice and pikliz'),
-  MockMenuItem(id: 5, name: 'Poulet en Sauce', category: 'Mains', priceHtg: 950, priceUsd: 9.50, description: 'Chicken in Haitian creole sauce'),
-  MockMenuItem(id: 6, name: 'Lanbi (Conch)', category: 'Mains', priceHtg: 1800, priceUsd: 18.00, description: 'Stewed conch with vegetables'),
-  MockMenuItem(id: 7, name: 'Poisson Gros Sel', category: 'Mains', priceHtg: 1400, priceUsd: 14.00, description: 'Whole fried fish with coarse salt'),
-  MockMenuItem(id: 8, name: 'Tassot de Cabrit', category: 'Mains', priceHtg: 1600, priceUsd: 16.00, description: 'Fried goat with banane pesée'),
+  MockMenuItem(id: 4, name: 'Griot avec Riz Collé', category: 'Plats', priceHtg: 1200, priceUsd: 12.00, description: 'Griot, riz aux pois et pikliz'),
+  MockMenuItem(id: 5, name: 'Poulet en Sauce', category: 'Plats', priceHtg: 950, priceUsd: 9.50, description: 'Poulet en sauce créole'),
+  MockMenuItem(id: 6, name: 'Lanbi (lambi)', category: 'Plats', priceHtg: 1800, priceUsd: 18.00, description: 'Lambi mijoté aux légumes'),
+  MockMenuItem(id: 7, name: 'Poisson Gros Sel', category: 'Plats', priceHtg: 1400, priceUsd: 14.00, description: 'Poisson frit entier au gros sel'),
+  MockMenuItem(id: 8, name: 'Tassot de Cabrit', category: 'Plats', priceHtg: 1600, priceUsd: 16.00, description: 'Cabrit frit et banane pesée'),
   // Sides
-  MockMenuItem(id: 9, name: 'Bannann Peze (Fried Plantain)', category: 'Sides', priceHtg: 200, priceUsd: 2.00),
-  MockMenuItem(id: 10, name: 'Riz Collé ak Pwa', category: 'Sides', priceHtg: 250, priceUsd: 2.50),
-  MockMenuItem(id: 11, name: 'Mayi Moulen', category: 'Sides', priceHtg: 200, priceUsd: 2.00, available: false),
-  MockMenuItem(id: 12, name: 'Pikliz', category: 'Sides', priceHtg: 100, priceUsd: 1.00),
+  MockMenuItem(id: 9, name: 'Bannann peze', category: 'Accompagnements', priceHtg: 200, priceUsd: 2.00),
+  MockMenuItem(id: 10, name: 'Riz Collé ak Pwa', category: 'Accompagnements', priceHtg: 250, priceUsd: 2.50),
+  MockMenuItem(id: 11, name: 'Mayi Moulen', category: 'Accompagnements', priceHtg: 200, priceUsd: 2.00, available: false),
+  MockMenuItem(id: 12, name: 'Pikliz', category: 'Accompagnements', priceHtg: 100, priceUsd: 1.00),
   // Drinks (inventoryItemId required for POS stock rules)
-  MockMenuItem(id: 13, name: 'Prestige Beer', category: 'Drinks', priceHtg: 300, priceUsd: 3.00, inventoryItemId: 7),
-  MockMenuItem(id: 14, name: 'Rhum Barbancourt', category: 'Drinks', priceHtg: 450, priceUsd: 4.50, inventoryItemId: 8),
-  MockMenuItem(id: 15, name: 'Akasan (Corn Drink)', category: 'Drinks', priceHtg: 150, priceUsd: 1.50, inventoryItemId: 11),
-  MockMenuItem(id: 16, name: 'Jus de Corossol', category: 'Drinks', priceHtg: 200, priceUsd: 2.00, inventoryItemId: 12),
-  MockMenuItem(id: 17, name: 'Café Haïtien', category: 'Drinks', priceHtg: 180, priceUsd: 1.80, inventoryItemId: 13),
-  MockMenuItem(id: 18, name: 'Eau Minérale', category: 'Drinks', priceHtg: 100, priceUsd: 1.00, inventoryItemId: 14),
+  MockMenuItem(id: 13, name: 'Prestige Beer', category: 'Boissons', priceHtg: 300, priceUsd: 3.00, inventoryItemId: 7),
+  MockMenuItem(id: 14, name: 'Rhum Barbancourt', category: 'Boissons', priceHtg: 450, priceUsd: 4.50, inventoryItemId: 8),
+  MockMenuItem(id: 15, name: 'Akasan', category: 'Boissons', priceHtg: 150, priceUsd: 1.50, inventoryItemId: 11),
+  MockMenuItem(id: 16, name: 'Jus de Corossol', category: 'Boissons', priceHtg: 200, priceUsd: 2.00, inventoryItemId: 12),
+  MockMenuItem(id: 17, name: 'Café Haïtien', category: 'Boissons', priceHtg: 180, priceUsd: 1.80, inventoryItemId: 13),
+  MockMenuItem(id: 18, name: 'Eau Minérale', category: 'Boissons', priceHtg: 100, priceUsd: 1.00, inventoryItemId: 14),
   // Desserts
-  MockMenuItem(id: 19, name: 'Dous Makos', category: 'Desserts', priceHtg: 250, priceUsd: 2.50, description: 'Haitian fudge with coconut'),
-  MockMenuItem(id: 20, name: 'Pain Patate', category: 'Desserts', priceHtg: 200, priceUsd: 2.00, description: 'Sweet potato pudding'),
+  MockMenuItem(id: 19, name: 'Dous Makos', category: 'Desserts', priceHtg: 250, priceUsd: 2.50, description: 'Dous makos à la noix de coco'),
+  MockMenuItem(id: 20, name: 'Pain Patate', category: 'Desserts', priceHtg: 200, priceUsd: 2.00, description: 'Gâteau de patate'),
   // Specials
-  MockMenuItem(id: 21, name: "Special du Jour: Lambi en Sauce", category: 'Specials', priceHtg: 2200, priceUsd: 22.00, description: "Chef's daily special — fresh conch"),
+  MockMenuItem(id: 21, name: "Special du Jour: Lambi en Sauce", category: 'Suggestions', priceHtg: 2200, priceUsd: 22.00, description: "Suggestion du chef — lambi frais"),
 ];
 
 final _now = DateTime.now();
@@ -514,8 +514,8 @@ final _mockActiveOrdersSeed = [
     tableId: 2,
     tableName: 'Table 2',
     items: const [
-      MockOrderItem(name: 'Griot avec Riz Collé', quantity: 2, priceHtg: 1200, priceUsd: 12.00, category: 'Mains'),
-      MockOrderItem(name: 'Prestige Beer', quantity: 3, priceHtg: 300, priceUsd: 3.00, category: 'Drinks'),
+      MockOrderItem(name: 'Griot avec Riz Collé', quantity: 2, priceHtg: 1200, priceUsd: 12.00, category: 'Plats'),
+      MockOrderItem(name: 'Prestige Beer', quantity: 3, priceHtg: 300, priceUsd: 3.00, category: 'Boissons'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 8),
     status: 'in_progress',
@@ -527,9 +527,9 @@ final _mockActiveOrdersSeed = [
     tableId: 3,
     tableName: 'Table 3',
     items: const [
-      MockOrderItem(name: 'Lanbi (Conch)', quantity: 1, priceHtg: 1800, priceUsd: 18.00, note: 'Extra spicy please', category: 'Mains'),
-      MockOrderItem(name: 'Bannann Peze', quantity: 2, priceHtg: 200, priceUsd: 2.00, category: 'Sides'),
-      MockOrderItem(name: 'Jus de Corossol', quantity: 2, priceHtg: 200, priceUsd: 2.00, category: 'Drinks'),
+      MockOrderItem(name: 'Lanbi (lambi)', quantity: 1, priceHtg: 1800, priceUsd: 18.00, note: 'Très épicé, s\'il vous plaît', category: 'Plats'),
+      MockOrderItem(name: 'Bannann Peze', quantity: 2, priceHtg: 200, priceUsd: 2.00, category: 'Accompagnements'),
+      MockOrderItem(name: 'Jus de Corossol', quantity: 2, priceHtg: 200, priceUsd: 2.00, category: 'Boissons'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 22),
     status: 'in_progress',
@@ -541,10 +541,10 @@ final _mockActiveOrdersSeed = [
     tableId: 4,
     tableName: 'Table 4',
     items: const [
-      MockOrderItem(name: 'Tassot de Cabrit', quantity: 3, priceHtg: 1600, priceUsd: 16.00, category: 'Mains'),
-      MockOrderItem(name: 'Poisson Gros Sel', quantity: 2, priceHtg: 1400, priceUsd: 14.00, category: 'Mains'),
-      MockOrderItem(name: 'Rhum Barbancourt', quantity: 4, priceHtg: 450, priceUsd: 4.50, category: 'Drinks'),
-      MockOrderItem(name: 'Prestige Beer', quantity: 6, priceHtg: 300, priceUsd: 3.00, category: 'Drinks'),
+      MockOrderItem(name: 'Tassot de Cabrit', quantity: 3, priceHtg: 1600, priceUsd: 16.00, category: 'Plats'),
+      MockOrderItem(name: 'Poisson Gros Sel', quantity: 2, priceHtg: 1400, priceUsd: 14.00, category: 'Plats'),
+      MockOrderItem(name: 'Rhum Barbancourt', quantity: 4, priceHtg: 450, priceUsd: 4.50, category: 'Boissons'),
+      MockOrderItem(name: 'Prestige Beer', quantity: 6, priceHtg: 300, priceUsd: 3.00, category: 'Boissons'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 35),
     status: 'ready',
@@ -554,11 +554,11 @@ final _mockActiveOrdersSeed = [
   MockOrder(
     id: 104,
     tableId: 7,
-    tableName: 'Terrace B',
+    tableName: 'Terrasse B',
     items: const [
-      MockOrderItem(name: 'Accra', quantity: 1, priceHtg: 350, priceUsd: 3.50, category: 'Starters'),
-      MockOrderItem(name: 'Poulet en Sauce', quantity: 2, priceHtg: 950, priceUsd: 9.50, category: 'Mains'),
-      MockOrderItem(name: 'Café Haïtien', quantity: 2, priceHtg: 180, priceUsd: 1.80, category: 'Drinks'),
+      MockOrderItem(name: 'Accra', quantity: 1, priceHtg: 350, priceUsd: 3.50, category: 'Entrées'),
+      MockOrderItem(name: 'Poulet en Sauce', quantity: 2, priceHtg: 950, priceUsd: 9.50, category: 'Plats'),
+      MockOrderItem(name: 'Café Haïtien', quantity: 2, priceHtg: 180, priceUsd: 1.80, category: 'Boissons'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 5),
     status: 'pending',
@@ -572,8 +572,8 @@ final _mockActiveOrdersSeed = [
     tableId: 0,
     tableName: '',
     items: const [
-      MockOrderItem(name: 'Griot avec Riz Collé', quantity: 1, priceHtg: 1200, priceUsd: 12.00, category: 'Mains'),
-      MockOrderItem(name: 'Jus de Corossol', quantity: 1, priceHtg: 200, priceUsd: 2.00, category: 'Drinks'),
+      MockOrderItem(name: 'Griot avec Riz Collé', quantity: 1, priceHtg: 1200, priceUsd: 12.00, category: 'Plats'),
+      MockOrderItem(name: 'Jus de Corossol', quantity: 1, priceHtg: 200, priceUsd: 2.00, category: 'Boissons'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 12),
     status: 'in_progress',
@@ -589,8 +589,8 @@ final _mockActiveOrdersSeed = [
     tableId: 1,
     tableName: 'Table 1',
     items: const [
-      MockOrderItem(name: 'Poulet en Sauce', quantity: 1, priceHtg: 950, priceUsd: 9.50, category: 'Mains'),
-      MockOrderItem(name: 'Café Haïtien', quantity: 1, priceHtg: 180, priceUsd: 1.80, category: 'Drinks'),
+      MockOrderItem(name: 'Poulet en Sauce', quantity: 1, priceHtg: 950, priceUsd: 9.50, category: 'Plats'),
+      MockOrderItem(name: 'Café Haïtien', quantity: 1, priceHtg: 180, priceUsd: 1.80, category: 'Boissons'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, 8, 15),
     status: 'complete',
@@ -601,7 +601,7 @@ final _mockActiveOrdersSeed = [
       MockKitchenBatch(
         batchNumber: 1,
         items: const [
-          MockOrderItem(name: 'Poulet en Sauce', quantity: 1, priceHtg: 950, priceUsd: 9.50, category: 'Mains'),
+          MockOrderItem(name: 'Poulet en Sauce', quantity: 1, priceHtg: 950, priceUsd: 9.50, category: 'Plats'),
         ],
         status: 'complete',
         placedAt: DateTime(_now.year, _now.month, _now.day, 8, 15),
@@ -614,8 +614,8 @@ final _mockActiveOrdersSeed = [
     tableId: 5,
     tableName: 'Table 5',
     items: const [
-      MockOrderItem(name: 'Tassot de Cabrit', quantity: 1, priceHtg: 1600, priceUsd: 16.00, category: 'Mains'),
-      MockOrderItem(name: 'Prestige Beer', quantity: 1, priceHtg: 300, priceUsd: 3.00, category: 'Drinks'),
+      MockOrderItem(name: 'Tassot de Cabrit', quantity: 1, priceHtg: 1600, priceUsd: 16.00, category: 'Plats'),
+      MockOrderItem(name: 'Prestige Beer', quantity: 1, priceHtg: 300, priceUsd: 3.00, category: 'Boissons'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, 7, 0),
     status: 'complete',
@@ -626,7 +626,7 @@ final _mockActiveOrdersSeed = [
       MockKitchenBatch(
         batchNumber: 1,
         items: const [
-          MockOrderItem(name: 'Tassot de Cabrit', quantity: 1, priceHtg: 1600, priceUsd: 16.00, category: 'Mains'),
+          MockOrderItem(name: 'Tassot de Cabrit', quantity: 1, priceHtg: 1600, priceUsd: 16.00, category: 'Plats'),
         ],
         status: 'complete',
         placedAt: DateTime(_now.year, _now.month, _now.day, 7, 0),
@@ -639,18 +639,18 @@ final _mockActiveOrdersSeed = [
     tableId: 6,
     tableName: 'Table 6',
     items: const [
-      MockOrderItem(name: 'Accra', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Starters'),
+      MockOrderItem(name: 'Accra', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Entrées'),
     ],
     placedAt: () { final y = DateTime.now().subtract(const Duration(days: 1)); return DateTime(y.year, y.month, y.day, 19, 30); }(),
     status: 'delivered',
     waiter: 'Claudine',
     orderType: 'takeout',
-    customerName: 'Yesterday Guest',
+    customerName: 'Client d\'hier',
     kitchenBatches: [
       MockKitchenBatch(
         batchNumber: 1,
         items: const [
-          MockOrderItem(name: 'Accra', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Starters'),
+          MockOrderItem(name: 'Accra', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Entrées'),
         ],
         status: 'delivered',
         placedAt: () { final y = DateTime.now().subtract(const Duration(days: 1)); return DateTime(y.year, y.month, y.day, 19, 30); }(),
@@ -660,21 +660,21 @@ final _mockActiveOrdersSeed = [
   ),
   MockOrder(
     id: 109, tableId: 8, tableName: 'Table 8',
-    items: const [MockOrderItem(name: 'Lanbi (Conch)', quantity: 2, priceHtg: 1800, priceUsd: 18.00, category: 'Mains')],
+    items: const [MockOrderItem(name: 'Lanbi (lambi)', quantity: 2, priceHtg: 1800, priceUsd: 18.00, category: 'Plats')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 55),
     status: 'complete', waiter: 'Pierre', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Lanbi (Conch)', quantity: 2, priceHtg: 1800, priceUsd: 18.00, category: 'Mains')],
+      items: const [MockOrderItem(name: 'Lanbi (lambi)', quantity: 2, priceHtg: 1800, priceUsd: 18.00, category: 'Plats')],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 55),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(minutes: 45)))],
   ),
   MockOrder(
-    id: 110, tableId: 9, tableName: 'Terrace A',
+    id: 110, tableId: 9, tableName: 'Terrasse A',
     items: const [
-      MockOrderItem(name: 'Diri Djondjon', quantity: 1, priceHtg: 300, priceUsd: 3.00, category: 'Sides'),
-      MockOrderItem(name: 'Griot avec Riz Collé', quantity: 1, priceHtg: 1200, priceUsd: 12.00, category: 'Mains'),
+      MockOrderItem(name: 'Diri Djondjon', quantity: 1, priceHtg: 300, priceUsd: 3.00, category: 'Accompagnements'),
+      MockOrderItem(name: 'Griot avec Riz Collé', quantity: 1, priceHtg: 1200, priceUsd: 12.00, category: 'Plats'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 70),
     status: 'complete', waiter: 'Joseph', orderType: 'delivery',
@@ -682,8 +682,8 @@ final _mockActiveOrdersSeed = [
     customerPhone: '+509 3488-1122',
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
       items: const [
-        MockOrderItem(name: 'Diri Djondjon', quantity: 1, priceHtg: 300, priceUsd: 3.00, category: 'Sides'),
-        MockOrderItem(name: 'Griot avec Riz Collé', quantity: 1, priceHtg: 1200, priceUsd: 12.00, category: 'Mains'),
+        MockOrderItem(name: 'Diri Djondjon', quantity: 1, priceHtg: 300, priceUsd: 3.00, category: 'Accompagnements'),
+        MockOrderItem(name: 'Griot avec Riz Collé', quantity: 1, priceHtg: 1200, priceUsd: 12.00, category: 'Plats'),
       ],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 70),
@@ -691,12 +691,12 @@ final _mockActiveOrdersSeed = [
   ),
   MockOrder(
     id: 111, tableId: 2, tableName: 'Table 2',
-    items: const [MockOrderItem(name: 'Bannann Peze', quantity: 3, priceHtg: 200, priceUsd: 2.00, category: 'Sides')],
+    items: const [MockOrderItem(name: 'Bannann Peze', quantity: 3, priceHtg: 200, priceUsd: 2.00, category: 'Accompagnements')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 90),
     status: 'complete', waiter: 'Marie-Carmel', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Bannann Peze', quantity: 3, priceHtg: 200, priceUsd: 2.00, category: 'Sides')],
+      items: const [MockOrderItem(name: 'Bannann Peze', quantity: 3, priceHtg: 200, priceUsd: 2.00, category: 'Accompagnements')],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 90),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 20)))],
@@ -704,16 +704,16 @@ final _mockActiveOrdersSeed = [
   MockOrder(
     id: 112, tableId: 3, tableName: 'Table 3',
     items: const [
-      MockOrderItem(name: 'Tassot de Cabrit', quantity: 2, priceHtg: 1600, priceUsd: 16.00, category: 'Mains'),
-      MockOrderItem(name: 'Salade de Chou', quantity: 2, priceHtg: 250, priceUsd: 2.50, category: 'Starters'),
+      MockOrderItem(name: 'Tassot de Cabrit', quantity: 2, priceHtg: 1600, priceUsd: 16.00, category: 'Plats'),
+      MockOrderItem(name: 'Salade de Chou', quantity: 2, priceHtg: 250, priceUsd: 2.50, category: 'Entrées'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 110),
     status: 'delivered', waiter: 'Claudine', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
       items: const [
-        MockOrderItem(name: 'Tassot de Cabrit', quantity: 2, priceHtg: 1600, priceUsd: 16.00, category: 'Mains'),
-        MockOrderItem(name: 'Salade de Chou', quantity: 2, priceHtg: 250, priceUsd: 2.50, category: 'Starters'),
+        MockOrderItem(name: 'Tassot de Cabrit', quantity: 2, priceHtg: 1600, priceUsd: 16.00, category: 'Plats'),
+        MockOrderItem(name: 'Salade de Chou', quantity: 2, priceHtg: 250, priceUsd: 2.50, category: 'Entrées'),
       ],
       status: 'delivered',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 110),
@@ -721,18 +721,18 @@ final _mockActiveOrdersSeed = [
   ),
   MockOrder(
     id: 113, tableId: 4, tableName: 'Table 4',
-    items: const [MockOrderItem(name: 'Poisson Gros Sel', quantity: 1, priceHtg: 1400, priceUsd: 14.00, category: 'Mains')],
+    items: const [MockOrderItem(name: 'Poisson Gros Sel', quantity: 1, priceHtg: 1400, priceUsd: 14.00, category: 'Plats')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 130),
     status: 'complete', waiter: 'Pierre', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Poisson Gros Sel', quantity: 1, priceHtg: 1400, priceUsd: 14.00, category: 'Mains')],
+      items: const [MockOrderItem(name: 'Poisson Gros Sel', quantity: 1, priceHtg: 1400, priceUsd: 14.00, category: 'Plats')],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 130),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 2, minutes: 5)))],
   ),
   MockOrder(
-    id: 114, tableId: 7, tableName: 'Terrace B',
+    id: 114, tableId: 7, tableName: 'Terrasse B',
     items: const [MockOrderItem(name: 'Dous Makos', quantity: 2, priceHtg: 250, priceUsd: 2.50, category: 'Desserts')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 160),
     status: 'complete', waiter: 'Joseph', orderType: 'takeout',
@@ -747,7 +747,7 @@ final _mockActiveOrdersSeed = [
     id: 115, tableId: 1, tableName: 'Table 1',
     items: const [
       MockOrderItem(name: 'Pain Patate', quantity: 3, priceHtg: 200, priceUsd: 2.00, category: 'Desserts'),
-      MockOrderItem(name: 'Accra', quantity: 1, priceHtg: 350, priceUsd: 3.50, category: 'Starters'),
+      MockOrderItem(name: 'Accra', quantity: 1, priceHtg: 350, priceUsd: 3.50, category: 'Entrées'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 185),
     status: 'complete', waiter: 'Marie-Carmel', orderType: 'reservation',
@@ -757,7 +757,7 @@ final _mockActiveOrdersSeed = [
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
       items: const [
         MockOrderItem(name: 'Pain Patate', quantity: 3, priceHtg: 200, priceUsd: 2.00, category: 'Desserts'),
-        MockOrderItem(name: 'Accra', quantity: 1, priceHtg: 350, priceUsd: 3.50, category: 'Starters'),
+        MockOrderItem(name: 'Accra', quantity: 1, priceHtg: 350, priceUsd: 3.50, category: 'Entrées'),
       ],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 185),
@@ -765,91 +765,91 @@ final _mockActiveOrdersSeed = [
   ),
   MockOrder(
     id: 116, tableId: 5, tableName: 'Table 5',
-    items: const [MockOrderItem(name: "Special du Jour: Lambi en Sauce", quantity: 1, priceHtg: 2200, priceUsd: 22.00, category: 'Specials')],
+    items: const [MockOrderItem(name: "Special du Jour: Lambi en Sauce", quantity: 1, priceHtg: 2200, priceUsd: 22.00, category: 'Suggestions')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 210),
     status: 'complete', waiter: 'Claudine', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: "Special du Jour: Lambi en Sauce", quantity: 1, priceHtg: 2200, priceUsd: 22.00, category: 'Specials')],
+      items: const [MockOrderItem(name: "Special du Jour: Lambi en Sauce", quantity: 1, priceHtg: 2200, priceUsd: 22.00, category: 'Suggestions')],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 210),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 3, minutes: 30)))],
   ),
   MockOrder(
     id: 117, tableId: 9, tableName: 'Table 9',
-    items: const [MockOrderItem(name: 'Grillades de Porc', quantity: 2, priceHtg: 1300, priceUsd: 13.00, category: 'Mains')],
+    items: const [MockOrderItem(name: 'Grillades de Porc', quantity: 2, priceHtg: 1300, priceUsd: 13.00, category: 'Plats')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 230),
     status: 'complete', waiter: 'Joseph', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Grillades de Porc', quantity: 2, priceHtg: 1300, priceUsd: 13.00, category: 'Mains')],
+      items: const [MockOrderItem(name: 'Grillades de Porc', quantity: 2, priceHtg: 1300, priceUsd: 13.00, category: 'Plats')],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 230),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 3, minutes: 55)))],
   ),
   MockOrder(
     id: 118, tableId: 10, tableName: 'Table 10',
-    items: const [MockOrderItem(name: 'Riz Collé aux Pois', quantity: 3, priceHtg: 400, priceUsd: 4.00, category: 'Mains')],
+    items: const [MockOrderItem(name: 'Riz Collé aux Pois', quantity: 3, priceHtg: 400, priceUsd: 4.00, category: 'Plats')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 250),
     status: 'delivered', waiter: 'Pierre', orderType: 'takeout',
     customerName: 'Chantal Beaubrun',
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Riz Collé aux Pois', quantity: 3, priceHtg: 400, priceUsd: 4.00, category: 'Mains')],
+      items: const [MockOrderItem(name: 'Riz Collé aux Pois', quantity: 3, priceHtg: 400, priceUsd: 4.00, category: 'Plats')],
       status: 'delivered',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 250),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 4, minutes: 10)))],
   ),
   MockOrder(
     id: 119, tableId: 3, tableName: 'Table 3',
-    items: const [MockOrderItem(name: 'Bouillon de Boeuf', quantity: 1, priceHtg: 900, priceUsd: 9.00, category: 'Mains')],
+    items: const [MockOrderItem(name: 'Bouillon de Boeuf', quantity: 1, priceHtg: 900, priceUsd: 9.00, category: 'Plats')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 270),
     status: 'complete', waiter: 'Marie-Carmel', orderType: 'reservation',
     reservationGuestName: 'Marc-André Dolce',
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Bouillon de Boeuf', quantity: 1, priceHtg: 900, priceUsd: 9.00, category: 'Mains')],
+      items: const [MockOrderItem(name: 'Bouillon de Boeuf', quantity: 1, priceHtg: 900, priceUsd: 9.00, category: 'Plats')],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 270),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 4, minutes: 30)))],
   ),
   MockOrder(
-    id: 120, tableId: 6, tableName: 'Terrace A',
+    id: 120, tableId: 6, tableName: 'Terrasse A',
     items: const [
-      MockOrderItem(name: 'Poulet Rôti', quantity: 1, priceHtg: 1100, priceUsd: 11.00, category: 'Mains'),
-      MockOrderItem(name: 'Salade de Chou', quantity: 1, priceHtg: 250, priceUsd: 2.50, category: 'Starters'),
+      MockOrderItem(name: 'Poulet Rôti', quantity: 1, priceHtg: 1100, priceUsd: 11.00, category: 'Plats'),
+      MockOrderItem(name: 'Salade de Chou', quantity: 1, priceHtg: 250, priceUsd: 2.50, category: 'Entrées'),
     ],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 295),
     status: 'complete', waiter: 'Claudine', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
       items: const [
-        MockOrderItem(name: 'Poulet Rôti', quantity: 1, priceHtg: 1100, priceUsd: 11.00, category: 'Mains'),
-        MockOrderItem(name: 'Salade de Chou', quantity: 1, priceHtg: 250, priceUsd: 2.50, category: 'Starters'),
+        MockOrderItem(name: 'Poulet Rôti', quantity: 1, priceHtg: 1100, priceUsd: 11.00, category: 'Plats'),
+        MockOrderItem(name: 'Salade de Chou', quantity: 1, priceHtg: 250, priceUsd: 2.50, category: 'Entrées'),
       ],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 295),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 4, minutes: 55)))],
   ),
   MockOrder(
-    id: 121, tableId: 8, tableName: 'Terrace B',
-    items: const [MockOrderItem(name: 'Maïs Moulin', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Mains')],
+    id: 121, tableId: 8, tableName: 'Terrasse B',
+    items: const [MockOrderItem(name: 'Maïs Moulin', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Plats')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 310),
     status: 'delivered', waiter: 'Joseph', orderType: 'delivery',
     customerName: 'Roseline Estimé',
     customerPhone: '+509 4455-6677',
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Maïs Moulin', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Mains')],
+      items: const [MockOrderItem(name: 'Maïs Moulin', quantity: 2, priceHtg: 350, priceUsd: 3.50, category: 'Plats')],
       status: 'delivered',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 310),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 5, minutes: 10)))],
   ),
   MockOrder(
     id: 122, tableId: 2, tableName: 'Table 2',
-    items: const [MockOrderItem(name: 'Tassot de Dinde', quantity: 1, priceHtg: 1500, priceUsd: 15.00, category: 'Mains')],
+    items: const [MockOrderItem(name: 'Tassot de Dinde', quantity: 1, priceHtg: 1500, priceUsd: 15.00, category: 'Plats')],
     placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 330),
     status: 'complete', waiter: 'Pierre', orderType: 'dine_in',
     isPaid: true,
     kitchenBatches: [MockKitchenBatch(batchNumber: 1,
-      items: const [MockOrderItem(name: 'Tassot de Dinde', quantity: 1, priceHtg: 1500, priceUsd: 15.00, category: 'Mains')],
+      items: const [MockOrderItem(name: 'Tassot de Dinde', quantity: 1, priceHtg: 1500, priceUsd: 15.00, category: 'Plats')],
       status: 'complete',
       placedAt: DateTime(_now.year, _now.month, _now.day, _now.hour, _now.minute - 330),
       kitchenCompletedAt: DateTime.now().subtract(const Duration(hours: 5, minutes: 30)))],
@@ -860,20 +860,20 @@ final _mockActiveOrdersSeed = [
 final mockActiveOrders = _mockActiveOrdersSeed;
 
 final _mockInventorySeed = [
-  MockInventoryItem(id: 1, name: 'Riz (Rice)', unit: 'KG', quantity: 45, minThreshold: 10, category: 'Dry Goods', type: InventoryItemType.food),
-  MockInventoryItem(id: 2, name: 'Pois Noirs (Black Beans)', unit: 'KG', quantity: 8, minThreshold: 10, category: 'Dry Goods', type: InventoryItemType.food),
-  MockInventoryItem(id: 3, name: 'Poulet (Chicken)', unit: 'KG', quantity: 12, minThreshold: 8, category: 'Meat', type: InventoryItemType.food),
-  MockInventoryItem(id: 4, name: 'Cabrit (Goat)', unit: 'KG', quantity: 3, minThreshold: 5, category: 'Meat', type: InventoryItemType.food),
-  MockInventoryItem(id: 5, name: 'Lanbi (Conch)', unit: 'pcs', quantity: 20, minThreshold: 10, category: 'Seafood', type: InventoryItemType.food),
-  MockInventoryItem(id: 6, name: 'Banane Plantain', unit: 'pcs', quantity: 40, minThreshold: 20, category: 'Produce', type: InventoryItemType.food),
-  MockInventoryItem(id: 7, name: 'Prestige Beer', unit: 'Bottle', quantity: 48, minThreshold: 24, category: 'Beverages', type: InventoryItemType.drink),
-  MockInventoryItem(id: 8, name: 'Rhum Barbancourt', unit: 'Bottle', quantity: 4, minThreshold: 6, category: 'Beverages', type: InventoryItemType.drink),
-  MockInventoryItem(id: 9, name: 'Huile (Cooking Oil)', unit: 'L', quantity: 15, minThreshold: 5, category: 'Pantry', type: InventoryItemType.food),
-  MockInventoryItem(id: 10, name: 'Sel (Salt)', unit: 'KG', quantity: 2, minThreshold: 3, category: 'Pantry', type: InventoryItemType.food),
-  MockInventoryItem(id: 11, name: 'Akasan (Corn Drink)', unit: 'L', quantity: 8, minThreshold: 4, category: 'Beverages', type: InventoryItemType.drink),
-  MockInventoryItem(id: 12, name: 'Jus de Corossol', unit: 'L', quantity: 6, minThreshold: 3, category: 'Beverages', type: InventoryItemType.drink),
-  MockInventoryItem(id: 13, name: 'Café Haïtien', unit: 'Serving', quantity: 80, minThreshold: 20, category: 'Beverages', type: InventoryItemType.drink),
-  MockInventoryItem(id: 14, name: 'Eau Minérale', unit: 'Bottle', quantity: 72, minThreshold: 24, category: 'Beverages', type: InventoryItemType.drink),
+  MockInventoryItem(id: 1, name: 'Riz', unit: 'KG', quantity: 45, minThreshold: 10, category: 'Épicerie sèche', type: InventoryItemType.food),
+  MockInventoryItem(id: 2, name: 'Pois noirs', unit: 'KG', quantity: 8, minThreshold: 10, category: 'Épicerie sèche', type: InventoryItemType.food),
+  MockInventoryItem(id: 3, name: 'Poulet', unit: 'KG', quantity: 12, minThreshold: 8, category: 'Viande', type: InventoryItemType.food),
+  MockInventoryItem(id: 4, name: 'Cabrit', unit: 'KG', quantity: 3, minThreshold: 5, category: 'Viande', type: InventoryItemType.food),
+  MockInventoryItem(id: 5, name: 'Lanbi (lambi)', unit: 'pce', quantity: 20, minThreshold: 10, category: 'Fruits de mer', type: InventoryItemType.food),
+  MockInventoryItem(id: 6, name: 'Banane Plantain', unit: 'pce', quantity: 40, minThreshold: 20, category: 'Fruits et légumes', type: InventoryItemType.food),
+  MockInventoryItem(id: 7, name: 'Prestige Beer', unit: 'Bouteille', quantity: 48, minThreshold: 24, category: 'Boissons', type: InventoryItemType.drink),
+  MockInventoryItem(id: 8, name: 'Rhum Barbancourt', unit: 'Bouteille', quantity: 4, minThreshold: 6, category: 'Boissons', type: InventoryItemType.drink),
+  MockInventoryItem(id: 9, name: 'Huile', unit: 'L', quantity: 15, minThreshold: 5, category: 'Garde-manger', type: InventoryItemType.food),
+  MockInventoryItem(id: 10, name: 'Sel', unit: 'KG', quantity: 2, minThreshold: 3, category: 'Garde-manger', type: InventoryItemType.food),
+  MockInventoryItem(id: 11, name: 'Akasan', unit: 'L', quantity: 8, minThreshold: 4, category: 'Boissons', type: InventoryItemType.drink),
+  MockInventoryItem(id: 12, name: 'Jus de Corossol', unit: 'L', quantity: 6, minThreshold: 3, category: 'Boissons', type: InventoryItemType.drink),
+  MockInventoryItem(id: 13, name: 'Café Haïtien', unit: 'portion', quantity: 80, minThreshold: 20, category: 'Boissons', type: InventoryItemType.drink),
+  MockInventoryItem(id: 14, name: 'Eau Minérale', unit: 'Bouteille', quantity: 72, minThreshold: 24, category: 'Boissons', type: InventoryItemType.drink),
 ];
 
 // ──────────────── STATE NOTIFIERS ────────────────
@@ -1055,7 +1055,7 @@ class RestaurantOrdersNotifier extends StateNotifier<List<MockOrder>> {
 
   /// Append items to an existing order.
   ///
-  /// Drinks (category == 'Drinks') are merged directly into the order's flat
+  /// Drinks (category == 'Boissons') are merged directly into the order's flat
   /// item list — no kitchen ticket needed. All other items (food) go into a
   /// new add-on kitchen batch so the kitchen can track preparation.
   ///
@@ -1226,9 +1226,9 @@ class RestaurantOrdersNotifier extends StateNotifier<List<MockOrder>> {
   /// - has a prepaid cap set.
   bool mergeOrders(int survivorId, int absorbedId) {
     final survivor = state.firstWhere((o) => o.id == survivorId,
-        orElse: () => throw ArgumentError('Survivor not found'));
+        orElse: () => throw ArgumentError('Table conservée introuvable'));
     final absorbed = state.firstWhere((o) => o.id == absorbedId,
-        orElse: () => throw ArgumentError('Absorbed not found'));
+        orElse: () => throw ArgumentError('Table absorbée introuvable'));
 
     // One-time merge only — survivor cannot absorb a second table.
     if (survivor.mergedSnapshot != null) return false;
@@ -1430,10 +1430,10 @@ class MockTransaction {
 }
 
 const _mockTransactions = [
-  MockTransaction(label: 'Table 4 — Dine In',   waiter: 'Claudine',    totalHtg: 12800, paymentMethod: 'MonCash', time: '13:42'),
-  MockTransaction(label: 'Table 1 — Takeout',    waiter: 'Joseph',      totalHtg: 3200,  paymentMethod: 'Cash',    time: '13:05'),
-  MockTransaction(label: 'Terrace A — Dine In',  waiter: 'Marie-Carmel',totalHtg: 5600,  paymentMethod: 'MonCash', time: '12:50'),
-  MockTransaction(label: 'Bar 1 — Dine In',      waiter: 'Pierre',      totalHtg: 900,   paymentMethod: 'Cash',    time: '12:30'),
+  MockTransaction(label: 'Table 4 — Sur place',   waiter: 'Claudine',    totalHtg: 12800, paymentMethod: 'MonCash', time: '13:42'),
+  MockTransaction(label: 'Table 1 — À emporter',    waiter: 'Joseph',      totalHtg: 3200,  paymentMethod: 'Espèces',    time: '13:05'),
+  MockTransaction(label: 'Terrasse A — Sur place',  waiter: 'Marie-Carmel',totalHtg: 5600,  paymentMethod: 'MonCash', time: '12:50'),
+  MockTransaction(label: 'Bar 1 — Sur place',      waiter: 'Pierre',      totalHtg: 900,   paymentMethod: 'Espèces',    time: '12:30'),
 ];
 
 final mockRecentTransactionsProvider =

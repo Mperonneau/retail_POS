@@ -105,15 +105,15 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
     final ln = _lastNameCtrl.text.trim();
     final phone = _phoneCtrl.text.trim();
     if (fn.isEmpty) {
-      setState(() => _errorFirstName = 'First name is required');
+      setState(() => _errorFirstName = 'Le prénom est obligatoire');
       return;
     }
     if (ln.isEmpty) {
-      setState(() => _errorLastName = 'Last name is required');
+      setState(() => _errorLastName = 'Le nom est obligatoire');
       return;
     }
     if (phone.isEmpty) {
-      setState(() => _errorPhone = 'Phone is required');
+      setState(() => _errorPhone = 'Le téléphone est obligatoire');
       return;
     }
 
@@ -176,7 +176,7 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
     final isDark = widget.isDark;
     final isEdit = widget.existing != null;
     final dobLabel = _dateOfBirth == null
-        ? 'Date of birth (optional)'
+        ? 'Date de naissance (facultatif)'
         : '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}';
 
     return Padding(
@@ -193,23 +193,23 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isEdit ? 'Edit Customer' : 'New Customer',
+              isEdit ? 'Modifier le client' : 'Nouveau client',
               style: AppTextStyles.h2(
                   color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
             ),
             const SizedBox(height: AppConstants.spacing16),
-            _field(_firstNameCtrl, 'First name *', Icons.badge_outlined),
+            _field(_firstNameCtrl, 'Prénom *', Icons.badge_outlined),
             FormFieldError(text: _errorFirstName),
             const SizedBox(height: AppConstants.spacing12),
-            _field(_lastNameCtrl, 'Last name *', Icons.badge_outlined),
+            _field(_lastNameCtrl, 'Nom *', Icons.badge_outlined),
             FormFieldError(text: _errorLastName),
             const SizedBox(height: AppConstants.spacing12),
-            _field(_phoneCtrl, 'Phone Number *', Icons.phone_outlined,
+            _field(_phoneCtrl, 'Numéro de téléphone *', Icons.phone_outlined,
                 type: TextInputType.phone,
                 inputFormatters: InputFormatters.phone),
             FormFieldError(text: _errorPhone),
             const SizedBox(height: AppConstants.spacing12),
-            _field(_govIdCtrl, 'Government ID (optional)',
+            _field(_govIdCtrl, 'Pièce d\'identité (facultatif)',
                 Icons.credit_card_outlined),
             const SizedBox(height: AppConstants.spacing12),
             OutlinedButton.icon(
@@ -224,33 +224,33 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
             ),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'For store credit: provide government ID, or date of birth if no ID.',
+              'Pour le crédit magasin : une pièce d\'identité, ou la date de naissance s\'il n\'y en a pas.',
               style: AppTextStyles.caption(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray,
               ),
             ),
             const SizedBox(height: AppConstants.spacing12),
-            _field(_phone2Ctrl, 'Secondary Phone (optional)',
+            _field(_phone2Ctrl, 'Téléphone secondaire (facultatif)',
                 Icons.phone_outlined,
                 type: TextInputType.phone,
                 inputFormatters: InputFormatters.phone),
             const SizedBox(height: AppConstants.spacing12),
-            _field(_addressCtrl, 'Address (optional)',
+            _field(_addressCtrl, 'Adresse (facultatif)',
                 Icons.location_on_outlined),
             const SizedBox(height: AppConstants.spacing12),
-            _field(_notesCtrl, 'Notes (optional)', Icons.notes_outlined,
+            _field(_notesCtrl, 'Notes (facultatif)', Icons.notes_outlined,
                 maxLines: 2),
             const SizedBox(height: AppConstants.spacing12),
             _field(
                 _limitHtgCtrl,
-                'Credit Limit (HTG) — leave blank for no limit',
+                'Plafond de crédit (HTG) — vide = sans limite',
                 Icons.account_balance_wallet_outlined,
                 type: const TextInputType.numberWithOptions(decimal: true),
                 prefix: 'HTG ',
                 inputFormatters: InputFormatters.decimalAmount),
             const SizedBox(height: AppConstants.spacing24),
             AppButton(
-              label: isEdit ? 'Save Changes' : 'Create Customer',
+              label: isEdit ? 'Enregistrer' : 'Créer le client',
               onPressed: _save,
               icon: isEdit ? Icons.save_outlined : Icons.person_add_outlined,
             ),

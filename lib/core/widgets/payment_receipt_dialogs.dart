@@ -13,11 +13,11 @@ class PaymentReceiptDialogs {
     return showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Print Receipt'),
+        title: const Text('Imprimer le reçu'),
         content: Text(
           receiptName == null || receiptName.trim().isEmpty
-              ? 'Receipt sent to the printer successfully.'
-              : 'Receipt for ${receiptName.trim()} sent to the printer successfully.',
+              ? 'Reçu envoyé à l\'imprimante.'
+              : 'Reçu pour ${receiptName.trim()} envoyé à l\'imprimante.',
         ),
         actions: [
           TextButton(
@@ -37,13 +37,13 @@ class PaymentReceiptDialogs {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send via WhatsApp'),
+            title: const Text('Envoyer par WhatsApp'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: 'Numéro de téléphone',
                   hintText: '+509 XXXX-XXXX',
                   prefixIcon: const Icon(Icons.phone_outlined),
                   errorText: err,
@@ -58,23 +58,23 @@ class PaymentReceiptDialogs {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: const Text('Annuler'),
               ),
               TextButton(
                 onPressed: () {
                   if (ctrl.text.trim().isEmpty) {
-                    setD(() => err = 'Please enter a phone number.');
+                    setD(() => err = 'Veuillez saisir un numéro de téléphone.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Receipt sent via WhatsApp'),
+                      content: Text('Reçu envoyé par WhatsApp'),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );
@@ -91,13 +91,13 @@ class PaymentReceiptDialogs {
         builder: (ctx, setD) {
           String? err;
           return AlertDialog(
-            title: const Text('Send Receipt to Email'),
+            title: const Text('Envoyer le reçu par e-mail'),
             content: StatefulBuilder(
               builder: (ctx2, setD2) => TextField(
                 controller: ctrl,
                 onChanged: (_) => setD2(() => err = null),
                 decoration: InputDecoration(
-                  labelText: 'Email Address',
+                  labelText: 'Adresse e-mail',
                   hintText: 'email@example.com',
                   prefixIcon: const Icon(Icons.email_outlined),
                   errorText: err,
@@ -112,24 +112,24 @@ class PaymentReceiptDialogs {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: const Text('Annuler'),
               ),
               TextButton(
                 onPressed: () {
                   final email = ctrl.text.trim();
                   if (email.isEmpty || !email.contains('@')) {
-                    setD(() => err = 'Please enter a valid email address.');
+                    setD(() => err = 'Veuillez saisir une adresse e-mail valide.');
                     return;
                   }
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Receipt sent to email'),
+                      content: Text('Reçu envoyé par e-mail'),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },
-                child: const Text('Send'),
+                child: const Text('Envoyer'),
               ),
             ],
           );

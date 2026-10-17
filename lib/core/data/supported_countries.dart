@@ -17,45 +17,45 @@ class SupportedCountry {
 const List<SupportedCountry> kSupportedCountries = [
   SupportedCountry(
     code: 'HT',
-    name: 'Haiti',
+    name: 'Haïti',
     currencyCode: 'HTG',
-    currencyName: 'Haitian Gourde',
+    currencyName: 'Gourde haïtienne',
   ),
   SupportedCountry(
     code: 'US',
-    name: 'United States',
+    name: 'États-Unis',
     currencyCode: 'USD',
-    currencyName: 'US Dollar',
+    currencyName: 'Dollar américain',
   ),
   SupportedCountry(
     code: 'DO',
-    name: 'Dominican Republic',
+    name: 'République dominicaine',
     currencyCode: 'DOP',
-    currencyName: 'Dominican Peso',
+    currencyName: 'Peso dominicain',
   ),
   SupportedCountry(
     code: 'JM',
-    name: 'Jamaica',
+    name: 'Jamaïque',
     currencyCode: 'JMD',
-    currencyName: 'Jamaican Dollar',
+    currencyName: 'Dollar jamaïcain',
   ),
   SupportedCountry(
     code: 'BS',
     name: 'Bahamas',
     currencyCode: 'BSD',
-    currencyName: 'Bahamian Dollar',
+    currencyName: 'Dollar bahaméen',
   ),
   SupportedCountry(
     code: 'BB',
     name: 'Barbados',
     currencyCode: 'BBD',
-    currencyName: 'Barbados Dollar',
+    currencyName: 'Dollar barbadien',
   ),
   SupportedCountry(
     code: 'TT',
-    name: 'Trinidad and Tobago',
+    name: 'Trinité-et-Tobago',
     currencyCode: 'TTD',
-    currencyName: 'Trinidad and Tobago Dollar',
+    currencyName: 'Dollar de Trinité-et-Tobago',
   ),
 ];
 

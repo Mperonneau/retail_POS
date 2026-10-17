@@ -121,12 +121,12 @@ class _BarcodeScanDialogState extends State<_BarcodeScanDialog> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
-                      tooltip: 'Close',
+                      tooltip: 'Fermer',
                       onPressed: () => Navigator.of(context).pop<String?>(),
                     ),
                     Expanded(
                       child: Text(
-                        'Scan barcode',
+                        'Scanner le code-barres',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -150,7 +150,7 @@ class _BarcodeScanDialogState extends State<_BarcodeScanDialog> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Could not use the camera. You can type the code instead.',
+                            'La caméra est indisponible. Vous pouvez saisir le code.',
                             style: theme.textTheme.bodyMedium,
                           ),
                         ),
@@ -187,7 +187,7 @@ class _BarcodeScanDialogState extends State<_BarcodeScanDialog> {
                           vertical: 8,
                         ),
                         child: Text(
-                          'Align the barcode with the white line.',
+                          'Alignez le code-barres sur la ligne blanche.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.white,

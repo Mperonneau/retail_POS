@@ -116,7 +116,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   ? AppColors.skyBlue
                                   : AppColors.primaryBlue),
                           const SizedBox(width: 4),
-                          Text('Back',
+                          Text('Retour',
                               style: AppTextStyles.body(
                                   color: isDark
                                       ? AppColors.skyBlue
@@ -134,8 +134,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     const SizedBox(height: AppConstants.spacing24),
                     AppButton(
                       label: _step == _ForgotStep.newPassword
-                          ? 'Reset Password'
-                          : 'Continue',
+                          ? 'Réinitialiser'
+                          : 'Continuer',
                       onPressed: _onContinue,
                       isLoading: _isLoading,
                     ),
@@ -181,15 +181,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           key: const ValueKey('email'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Forgot Password?', style: AppTextStyles.h1()),
+            Text('Mot de passe oublié ?', style: AppTextStyles.h1()),
             const SizedBox(height: AppConstants.spacing8),
-            Text("Enter your email or phone and we'll send you a reset code.",
+            Text("Saisissez votre e-mail ou téléphone et nous vous enverrons un code.",
                 style: AppTextStyles.body(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray)),
             const SizedBox(height: AppConstants.spacing24),
             AppInput(
-              label: 'Email or Phone Number',
-              hint: 'e.g. manager@hotel.ht',
+              label: 'E-mail ou téléphone',
+              hint: 'ex. gerant@commerce.ht',
               controller: _emailCtrl,
               prefixIcon: Icons.alternate_email,
               keyboardType: TextInputType.emailAddress,
@@ -202,9 +202,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           key: const ValueKey('otp'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Enter OTP Code', style: AppTextStyles.h1()),
+            Text('Saisir le code', style: AppTextStyles.h1()),
             const SizedBox(height: AppConstants.spacing8),
-            Text('We sent a 6-digit code to ${_emailCtrl.text}',
+            Text('Nous avons envoyé un code à 6 chiffres à ${_emailCtrl.text}',
                 style: AppTextStyles.body(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray)),
             const SizedBox(height: AppConstants.spacing24),
@@ -221,7 +221,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Center(
               child: _resendCountdown > 0
                   ? Text(
-                      "Resend code in ${_resendCountdown}s",
+                      "Renvoyer le code dans ${_resendCountdown} s",
                       style: AppTextStyles.caption(
                           color: isDark ? AppColors.coolGray : AppColors.darkGray),
                     )
@@ -229,10 +229,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       onPressed: () {
                         _startResendTimer();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('OTP code resent!')),
+                          const SnackBar(content: Text('Code renvoyé !')),
                         );
                       },
-                      child: Text("Didn't receive code? Resend",
+                      child: Text("Vous n'avez pas reçu le code ? Renvoyer",
                           style: AppTextStyles.body(
                               color: isDark
                                   ? AppColors.skyBlue
@@ -246,15 +246,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           key: const ValueKey('newPass'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('New Password', style: AppTextStyles.h1()),
+            Text('Nouveau mot de passe', style: AppTextStyles.h1()),
             const SizedBox(height: AppConstants.spacing8),
-            Text('Choose a strong password for your account.',
+            Text('Choisissez un mot de passe solide pour votre compte.',
                 style: AppTextStyles.body(
                     color: isDark ? AppColors.coolGray : AppColors.darkGray)),
             const SizedBox(height: AppConstants.spacing24),
             AppInput(
-              label: 'New Password',
-              hint: 'At least 8 characters',
+              label: 'Nouveau mot de passe',
+              hint: 'Au moins 8 caractères',
               controller: _newPassCtrl,
               obscureText: true,
               showToggleObscure: true,
@@ -262,8 +262,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
             const SizedBox(height: AppConstants.spacing16),
             AppInput(
-              label: 'Confirm Password',
-              hint: 'Repeat your password',
+              label: 'Confirmer le mot de passe',
+              hint: 'Répétez le mot de passe',
               controller: _confirmPassCtrl,
               obscureText: true,
               showToggleObscure: true,

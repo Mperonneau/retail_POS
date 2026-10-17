@@ -120,7 +120,7 @@ class _TimeclockDialogState extends ConsumerState<TimeclockDialog> {
       }
       setState(() {
         _busy = false;
-        _pinError = 'PIN not recognised.';
+        _pinError = 'Code PIN non reconnu.';
         _digits = '';
       });
     }
@@ -139,9 +139,9 @@ class _TimeclockDialogState extends ConsumerState<TimeclockDialog> {
   String _demoName(StaffRole r) => switch (r) {
         StaffRole.cashier => 'Jean (Cashier)',
         StaffRole.waiter => 'Marie (Waiter)',
-        StaffRole.manager => 'Manager',
+        StaffRole.manager => 'Gérant',
         StaffRole.admin => 'Admin',
-        StaffRole.kitchen => 'Kitchen',
+        StaffRole.kitchen => 'Cuisine',
         StaffRole.reception => 'Sophie (Reception)',
       };
 
@@ -302,12 +302,12 @@ class _PinStep extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Timeclock',
+                    Text('Pointage',
                         style: AppTextStyles.h3(
                             color: isDark
                                 ? AppColors.warmWhite
                                 : AppColors.nearBlack)),
-                    Text('Enter your PIN to continue',
+                    Text('Saisissez votre code PIN pour continuer',
                         style: AppTextStyles.caption(color: labelColor)),
                   ],
                 ),
@@ -408,7 +408,7 @@ class _ActionStepState extends ConsumerState<_ActionStep> {
               const Icon(Icons.access_time_rounded,
                   color: AppColors.primaryBlue, size: 20),
               const SizedBox(width: 8),
-              Text('Timeclock',
+              Text('Pointage',
                   style: AppTextStyles.h3(
                       color:
                           isDark ? AppColors.warmWhite : AppColors.nearBlack)),
@@ -471,7 +471,7 @@ class _ActionStepState extends ConsumerState<_ActionStep> {
               child: ElevatedButton.icon(
                 onPressed: widget.onClockOut,
                 icon: const Icon(Icons.logout_rounded, size: 18),
-                label: Text('Clock Out',
+                label: Text('Pointer le départ',
                     style: AppTextStyles.button(
                         color: AppColors.nearBlack)),
                 style: ElevatedButton.styleFrom(
@@ -503,14 +503,14 @@ class _ActionStepState extends ConsumerState<_ActionStep> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Not clocked in',
+                          'Pas en service',
                           style: AppTextStyles.body(
                               color: isDark
                                   ? AppColors.warmWhite
                                   : AppColors.nearBlack),
                         ),
                         Text(
-                          'Press Clock In to start your shift',
+                          'Touchez Pointer l\'arrivée pour commencer',
                           style: AppTextStyles.caption(color: labelColor),
                         ),
                       ],
@@ -526,7 +526,7 @@ class _ActionStepState extends ConsumerState<_ActionStep> {
               child: ElevatedButton.icon(
                 onPressed: widget.onClockIn,
                 icon: const Icon(Icons.login_rounded, size: 18),
-                label: Text('Clock In',
+                label: Text('Pointer l\'arrivée',
                     style: AppTextStyles.button()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
@@ -605,7 +605,7 @@ class _SuccessStep extends StatelessWidget {
           // Info cards
           if (isClockedIn)
             _InfoRow(
-              label: 'Clocked in at',
+              label: 'Arrivé à',
               value: timeFmt.format(entry.clockIn),
               icon: Icons.login_rounded,
               color: accent,
@@ -613,7 +613,7 @@ class _SuccessStep extends StatelessWidget {
             )
           else ...[
             _InfoRow(
-              label: 'Clocked in at',
+              label: 'Arrivé à',
               value: timeFmt.format(entry.clockIn),
               icon: Icons.login_rounded,
               color: AppColors.primaryBlue,
@@ -621,7 +621,7 @@ class _SuccessStep extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _InfoRow(
-              label: 'Clocked out at',
+              label: 'Parti à',
               value: timeFmt.format(entry.clockOut!),
               icon: Icons.logout_rounded,
               color: accent,
@@ -629,7 +629,7 @@ class _SuccessStep extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _InfoRow(
-              label: 'Total hours',
+              label: 'Heures totales',
               value: entry.durationLabel,
               icon: Icons.timer_outlined,
               color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
@@ -638,7 +638,7 @@ class _SuccessStep extends StatelessWidget {
           ],
           const SizedBox(height: 20),
           Text(
-            'Closing automatically…',
+            'Fermeture automatique…',
             style:
                 AppTextStyles.caption(color: isDark ? AppColors.coolGray : AppColors.darkGray),
           ),
@@ -689,7 +689,7 @@ class _StatusCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text('Currently clocked in',
+                  Text('Actuellement en service',
                       style: AppTextStyles.caption(
                           color: isDark
                               ? AppColors.warmWhite
@@ -700,13 +700,13 @@ class _StatusCard extends StatelessWidget {
               Row(
                 children: [
                   _MiniInfo(
-                    label: 'Since',
+                    label: 'Depuis',
                     value: timeFmt.format(entry.clockIn),
                     isDark: isDark,
                   ),
                   const SizedBox(width: 16),
                   _MiniInfo(
-                    label: 'Duration',
+                    label: 'Durée',
                     value: entry.durationLabel,
                     isDark: isDark,
                   ),

@@ -74,7 +74,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _rateCtrl = TextEditingController(text: '135');
 
   // Step 6 — Language
-  String _language = 'kr';
+  String _language = 'fr';
 
   // Step 7 — Password + T&C
   final _passwordCtrl = TextEditingController();
@@ -110,14 +110,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         if (_emailSubStep == 0) {
           final email = _emailCtrl.text.trim();
           if (email.isEmpty || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
-            setState(() => _emailError = 'Please enter a valid email address.');
+            setState(() => _emailError = 'Veuillez saisir une adresse e-mail valide.');
             return false;
           }
           setState(() => _emailError = '');
           return true;
         } else {
           if (_codeCtrl.text.trim() != '123456') {
-            setState(() => _codeError = 'Incorrect code. Please try again.');
+            setState(() => _codeError = 'Code incorrect. Veuillez réessayer.');
             return false;
           }
           setState(() => _codeError = '');
@@ -125,14 +125,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         }
       case 1:
         if (_nameCtrl.text.trim().isEmpty) {
-          setState(() => _nameError = 'Please enter your full name.');
+          setState(() => _nameError = 'Veuillez saisir votre nom complet.');
           return false;
         }
         setState(() => _nameError = '');
         return true;
       case 2:
         if (_bizNameCtrl.text.trim().isEmpty) {
-          setState(() => _bizNameError = 'Please enter your business name.');
+          setState(() => _bizNameError = 'Veuillez saisir le nom de votre commerce.');
           return false;
         }
         setState(() => _bizNameError = '');
@@ -140,19 +140,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       case 3:
         bool ok = true;
         if (_addressCtrl.text.trim().isEmpty) {
-          setState(() => _addressError = 'Street address is required.');
+          setState(() => _addressError = 'L\'adresse est obligatoire.');
           ok = false;
         } else {
           setState(() => _addressError = '');
         }
         if (_cityCtrl.text.trim().isEmpty) {
-          setState(() => _cityError = 'City is required.');
+          setState(() => _cityError = 'La ville est obligatoire.');
           ok = false;
         } else {
           setState(() => _cityError = '');
         }
         if (_selectedDepartment == null) {
-          setState(() => _departmentError = 'Please select a department.');
+          setState(() => _departmentError = 'Veuillez choisir un département.');
           ok = false;
         } else {
           setState(() => _departmentError = '');
@@ -160,7 +160,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         return ok;
       case 4:
         if (_selectedModule == null) {
-          setState(() => _moduleError = 'Please select a business module.');
+          setState(() => _moduleError = 'Veuillez choisir un module.');
           return false;
         }
         setState(() => _moduleError = '');
@@ -168,19 +168,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       case 7:
         bool ok = true;
         if (_passwordCtrl.text.length < 8) {
-          setState(() => _passwordError = 'Password must be at least 8 characters.');
+          setState(() => _passwordError = 'Le mot de passe doit contenir au moins 8 caractères.');
           ok = false;
         } else {
           setState(() => _passwordError = '');
         }
         if (_passwordCtrl.text != _confirmCtrl.text) {
-          setState(() => _confirmError = 'Passwords do not match.');
+          setState(() => _confirmError = 'Les mots de passe ne correspondent pas.');
           ok = false;
         } else if (_passwordCtrl.text.isNotEmpty) {
           setState(() => _confirmError = '');
         }
         if (!_termsAccepted) {
-          setState(() => _termsError = 'You must accept the Terms & Conditions to continue.');
+          setState(() => _termsError = 'Vous devez accepter les conditions générales pour continuer.');
           ok = false;
         } else {
           setState(() => _termsError = '');
@@ -211,7 +211,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _emailSubStep = 1;
           _codeSent = true;
         });
-        _snack('Code sent to ${_emailCtrl.text.trim()}. (Demo: use 123456)');
+        _snack('Code envoyé à ${_emailCtrl.text.trim()}. (Démo : 123456)');
         return;
       } else {
         if (!_validateCurrentStep()) return;
@@ -246,8 +246,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           usdToLocalRate: double.tryParse(_rateCtrl.text.trim()),
         );
     ref.read(authProvider.notifier).login(
-      userName: _nameCtrl.text.isEmpty ? 'Manager' : _nameCtrl.text,
-      businessName: _bizNameCtrl.text.isEmpty ? 'My Business' : _bizNameCtrl.text,
+      userName: _nameCtrl.text.isEmpty ? 'Gérant' : _nameCtrl.text,
+      businessName: _bizNameCtrl.text.isEmpty ? 'Mon commerce' : _bizNameCtrl.text,
       module: ActiveModule.retail,
     );
     setState(() => _isLoading = false);
@@ -280,10 +280,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       !(_currentStep == 0 && _emailSubStep == 0);
 
   String get _nextLabel {
-    if (_currentStep == _totalSteps - 1) return 'Create Account';
-    if (_currentStep == 0 && _emailSubStep == 0) return 'Send Verification Code';
-    if (_currentStep == 0 && _emailSubStep == 1) return 'Verify & Continue';
-    return 'Continue';
+    if (_currentStep == _totalSteps - 1) return 'Créer un compte';
+    if (_currentStep == 0 && _emailSubStep == 0) return 'Envoyer le code';
+    if (_currentStep == 0 && _emailSubStep == 1) return 'Vérifier et continuer';
+    return 'Continuer';
   }
 
   // ── Build ────────────────────────────────────────────────────────────────────
@@ -335,7 +335,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Already have an account? ',
+                          Text('Vous avez déjà un compte ? ',
                               style: AppTextStyles.body(
                                   color: isDark
                                       ? AppColors.coolGray
@@ -347,7 +347,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: Text('Sign In',
+                            child: Text('Se connecter',
                                 style: AppTextStyles.body(
                                         color: isDark
                                             ? AppColors.skyBlue
@@ -393,7 +393,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   await Future.delayed(const Duration(milliseconds: 600));
                   if (!mounted) return;
                   setState(() => _isLoading = false);
-                  _snack('Code resent to ${_emailCtrl.text.trim()}. (Demo: use 123456)');
+                  _snack('Code renvoyé à ${_emailCtrl.text.trim()}. (Démo : 123456)');
                 },
               );
       case 1:
@@ -509,7 +509,7 @@ class _Header extends StatelessWidget {
               ),
             Expanded(
               child: Text(
-                'Create Account',
+                'Créer un compte',
                 style: AppTextStyles.h2(
                     color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
               ),
@@ -555,7 +555,7 @@ class _StepEmailEntry extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Verify Your Email', style: AppTextStyles.h2()),
+        Text('Vérifiez votre e-mail', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
         Text(
           'Enter your email address and we\'ll send you a verification code to get started.',
@@ -564,7 +564,7 @@ class _StepEmailEntry extends StatelessWidget {
         ),
         const SizedBox(height: AppConstants.spacing24),
         AppInput(
-          label: 'Email Address',
+          label: 'Adresse e-mail',
           hint: 'manager@business.ht',
           controller: emailCtrl,
           prefixIcon: Icons.email_outlined,
@@ -604,7 +604,7 @@ class _StepEmailCode extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Enter Verification Code', style: AppTextStyles.h2()),
+        Text('Saisir le code de vérification', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
         RichText(
           text: TextSpan(
@@ -621,8 +621,8 @@ class _StepEmailCode extends StatelessWidget {
         ),
         const SizedBox(height: AppConstants.spacing24),
         AppInput(
-          label: 'Verification Code',
-          hint: '6-digit code',
+          label: 'Code de vérification',
+          hint: 'Code à 6 chiffres',
           controller: codeCtrl,
           prefixIcon: Icons.pin_outlined,
           keyboardType: TextInputType.number,
@@ -639,7 +639,7 @@ class _StepEmailCode extends StatelessWidget {
             TextButton.icon(
               onPressed: onResend,
               icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Resend code'),
+              label: const Text('Renvoyer le code'),
               style: TextButton.styleFrom(
                 foregroundColor:
                     isDark ? AppColors.skyBlue : AppColors.primaryBlue,
@@ -652,7 +652,7 @@ class _StepEmailCode extends StatelessWidget {
             TextButton.icon(
               onPressed: onChangeEmail,
               icon: const Icon(Icons.edit_outlined, size: 16),
-              label: const Text('Change email'),
+              label: const Text('Changer l\'e-mail'),
               style: TextButton.styleFrom(
                 foregroundColor:
                     isDark ? AppColors.coolGray : AppColors.darkGray,
@@ -690,14 +690,14 @@ class _Step1ContactInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Your Information', style: AppTextStyles.h2()),
+        Text('Vos informations', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
-        Text('Tell us about the business owner.',
+        Text('Parlez-nous du propriétaire.',
             style: AppTextStyles.body(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         const SizedBox(height: AppConstants.spacing24),
         AppInput(
-            label: 'Full Name',
+            label: 'Nom complet',
             hint: 'e.g. Jean-Marc Dupont',
             controller: nameCtrl,
             prefixIcon: Icons.person_outline,
@@ -705,7 +705,7 @@ class _Step1ContactInfo extends StatelessWidget {
             onChanged: onNameChanged),
         const SizedBox(height: AppConstants.spacing16),
         AppInput(
-            label: 'Phone Number',
+            label: 'Numéro de téléphone',
             hint: '+509 3XXX-XXXX',
             controller: phoneCtrl,
             prefixIcon: Icons.phone_outlined,
@@ -736,14 +736,14 @@ class _Step2BusinessDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Business Details', style: AppTextStyles.h2()),
+        Text('Détails du commerce', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
-        Text('Tell us about your business.',
+        Text('Parlez-nous de votre commerce.',
             style: AppTextStyles.body(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         const SizedBox(height: AppConstants.spacing24),
         AppInput(
-            label: 'Business Name',
+            label: 'Nom du commerce',
             hint: 'e.g. Hôtel Karibe',
             controller: bizNameCtrl,
             prefixIcon: Icons.business_outlined,
@@ -798,9 +798,9 @@ class _Step3BusinessAddress extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Business Address', style: AppTextStyles.h2()),
+        Text('Adresse du commerce', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
-        Text('Where is your business located?',
+        Text('Où se trouve votre commerce ?',
             style: AppTextStyles.body(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         const SizedBox(height: AppConstants.spacing24),
@@ -829,14 +829,14 @@ class _Step3BusinessAddress extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Country',
+                    Text('Pays',
                         style: AppTextStyles.caption(
                             color: isDark
                                 ? AppColors.coolGray
                                 : AppColors.darkGray)),
                     const SizedBox(height: 2),
                     Text(
-                      'Haiti',
+                      'Haïti',
                       style: AppTextStyles.body(
                               color: isDark
                                   ? AppColors.warmWhite
@@ -853,13 +853,13 @@ class _Step3BusinessAddress extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppConstants.spacing8),
-        Text('More countries coming soon.',
+        Text('D\'autres pays arrivent bientôt.',
             style: AppTextStyles.caption(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         const SizedBox(height: AppConstants.spacing16),
 
         AppInput(
-          label: 'Street Address',
+          label: 'Adresse',
           hint: 'e.g. 12 Rue Lamarre',
           controller: addressCtrl,
           prefixIcon: Icons.home_outlined,
@@ -869,7 +869,7 @@ class _Step3BusinessAddress extends StatelessWidget {
         ),
         const SizedBox(height: AppConstants.spacing16),
         AppInput(
-          label: 'City',
+          label: 'Ville',
           hint: 'e.g. Port-au-Prince',
           controller: cityCtrl,
           prefixIcon: Icons.location_city_outlined,
@@ -880,7 +880,7 @@ class _Step3BusinessAddress extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: selectedDepartment,
           decoration: InputDecoration(
-            labelText: 'Department / Region',
+            labelText: 'Département / région',
             prefixIcon: const Icon(Icons.map_outlined),
             border: baseBorder,
             enabledBorder: baseBorder,
@@ -897,7 +897,7 @@ class _Step3BusinessAddress extends StatelessWidget {
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           ),
-          hint: Text('Select department',
+          hint: Text('Choisir le service',
               style: AppTextStyles.body(
                   color:
                       isDark ? AppColors.coolGray : AppColors.darkGray)),
@@ -908,14 +908,14 @@ class _Step3BusinessAddress extends StatelessWidget {
         ),
         const SizedBox(height: AppConstants.spacing16),
         AppInput(
-          label: 'Zip / Postal Code (optional)',
+          label: 'Code postal (facultatif)',
           hint: 'e.g. HT6120',
           controller: zipCtrl,
           prefixIcon: Icons.local_post_office_outlined,
         ),
         const SizedBox(height: AppConstants.spacing8),
         Text(
-          'Zip code is optional — most Haitian addresses don\'t have one.',
+          'Le code postal est facultatif — la plupart des adresses en Haïti n\'en ont pas.',
           style: AppTextStyles.caption(
               color: isDark ? AppColors.coolGray : AppColors.darkGray),
         ),
@@ -944,9 +944,9 @@ class _Step4ModuleSelection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Choose Your Module', style: AppTextStyles.h2()),
+        Text('Choisissez votre module', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
-        Text('Select the type of business you manage.',
+        Text('Choisissez le type de commerce que vous gérez.',
             style: AppTextStyles.body(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         if (moduleError != null) ...[
@@ -964,9 +964,9 @@ class _Step4ModuleSelection extends StatelessWidget {
         _ModuleCard(
           module: ActiveModule.hotel,
           icon: Icons.hotel_rounded,
-          title: 'Hotel + Restaurant',
+          title: 'Hôtel + restaurant',
           description:
-              'Full hotel management (rooms, reservations, check-in/out, housekeeping) with a fully integrated restaurant — tables, menu, kitchen, room service, and consolidated billing at checkout.',
+              'Gestion hôtelière complète (chambres, réservations, arrivées et départs, ménage) avec un restaurant intégré — tables, menu, cuisine, service en chambre et facture unique au départ.',
           isSelected: selected == ActiveModule.hotel,
           onTap: () => onSelected(ActiveModule.hotel),
           badge: 'MOST POPULAR',
@@ -977,7 +977,7 @@ class _Step4ModuleSelection extends StatelessWidget {
           icon: Icons.restaurant_rounded,
           title: 'Restaurant',
           description:
-              'Standalone restaurant with tables, menu, orders, kitchen display, and billing. No hotel features.',
+              'Restaurant indépendant avec tables, menu, commandes, écran cuisine et facturation. Sans fonctions hôtel.',
           isSelected: selected == ActiveModule.restaurant,
           onTap: () => onSelected(ActiveModule.restaurant),
         ),
@@ -985,9 +985,9 @@ class _Step4ModuleSelection extends StatelessWidget {
         _ModuleCard(
           module: ActiveModule.retail,
           icon: Icons.shopping_cart_rounded,
-          title: 'Retail / Shop',
+          title: 'Détail / boutique',
           description:
-              'Point of sale, inventory, suppliers, customer credit accounts, and reports.',
+              'Caisse, inventaire, fournisseurs, crédit client et rapports.',
           isSelected: selected == ActiveModule.retail,
           onTap: () => onSelected(ActiveModule.retail),
         ),
@@ -1140,10 +1140,10 @@ class _Step5Currency extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Currency Settings', style: AppTextStyles.h2()),
+        Text('Paramètres de devise', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
         Text(
-          'We set the local currency based on your country. USD is used as a reference and for card payments.',
+          'La devise locale suit votre pays. Le USD sert de référence et pour les paiements par carte.',
           style: AppTextStyles.body(
               color: isDark ? AppColors.coolGray : AppColors.darkGray),
         ),
@@ -1169,7 +1169,7 @@ class _Step5Currency extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Country: Haiti · Local currency: HTG (Haitian Gourde)',
+                  'Pays : Haïti · Devise locale : HTG (gourde haïtienne)',
                   style:
                       AppTextStyles.caption(color: AppColors.primaryBlue),
                 ),
@@ -1182,7 +1182,7 @@ class _Step5Currency extends StatelessWidget {
         const SizedBox(height: AppConstants.spacing16),
 
         AppInput(
-          label: 'Exchange rate (1 USD = ? HTG)',
+          label: 'Taux de change (1 USD = ? HTG)',
           hint: 'e.g. 135',
           controller: rateCtrl,
           keyboardType:
@@ -1199,14 +1199,14 @@ class _Step5Currency extends StatelessWidget {
             tilePadding: EdgeInsets.zero,
             childrenPadding: const EdgeInsets.only(top: 8),
             title: Text(
-              'Advanced pricing (optional)',
+              'Tarification avancée (facultatif)',
               style: AppTextStyles.body().copyWith(
                 fontWeight: FontWeight.w600,
                 color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
               ),
             ),
             subtitle: Text(
-              'Change only if your business does not use the default.',
+              'Changez seulement si votre commerce n\'utilise pas la valeur par défaut.',
               style: AppTextStyles.caption(
                   color:
                       isDark ? AppColors.coolGray : AppColors.darkGray),
@@ -1214,25 +1214,25 @@ class _Step5Currency extends StatelessWidget {
             children: [
               _SelectOption(
                 value: 'both',
-                label: 'Local + USD reference (recommended)',
+                label: 'Local + référence USD (recommandé)',
                 subtitle:
-                    'Default: prices in HTG. Totals also show a USD equivalent. At checkout, staff can enter cash in HTG or USD using the rate below.',
+                    'Par défaut : prix en HTG. Les totaux affichent aussi l\'équivalent en USD. À l\'encaissement, le personnel peut saisir des espèces en HTG ou en USD avec le taux ci-dessous.',
                 selected: selected,
                 onChanged: onChanged,
               ),
               const SizedBox(height: AppConstants.spacing12),
               _SelectOption(
                 value: 'htg',
-                label: 'Local currency only',
-                subtitle: 'Prices and cash in HTG',
+                label: 'Devise locale seulement',
+                subtitle: 'Prix et espèces en HTG',
                 selected: selected,
                 onChanged: onChanged,
               ),
               const SizedBox(height: AppConstants.spacing12),
               _SelectOption(
                 value: 'usd',
-                label: 'USD only',
-                subtitle: 'Dollar pricing and cash',
+                label: 'USD seulement',
+                subtitle: 'Prix et espèces en dollars',
                 selected: selected,
                 onChanged: onChanged,
               ),
@@ -1259,30 +1259,30 @@ class _Step6Language extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Language Preference', style: AppTextStyles.h2()),
+        Text('Langue préférée', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
-        Text('Choose the default app language for your team.',
+        Text('Choisissez la langue de l\'application pour votre équipe.',
             style: AppTextStyles.body(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         const SizedBox(height: AppConstants.spacing24),
         _SelectOption(
             value: 'kr',
             label: 'Kreyòl Ayisyen',
-            subtitle: 'Haitian Creole — primary language',
+            subtitle: 'Créole haïtien — langue principale',
             selected: selected,
             onChanged: onChanged),
         const SizedBox(height: AppConstants.spacing12),
         _SelectOption(
             value: 'fr',
             label: 'Français',
-            subtitle: 'French — for formal documents',
+            subtitle: 'Français — pour les documents officiels',
             selected: selected,
             onChanged: onChanged),
         const SizedBox(height: AppConstants.spacing12),
         _SelectOption(
             value: 'en',
-            label: 'English',
-            subtitle: 'English — for international guests',
+            label: 'Anglais',
+            subtitle: 'Anglais — pour les clients internationaux',
             selected: selected,
             onChanged: onChanged),
       ],
@@ -1322,15 +1322,15 @@ class _Step7Password extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Create Password', style: AppTextStyles.h2()),
+        Text('Créer un mot de passe', style: AppTextStyles.h2()),
         const SizedBox(height: AppConstants.spacing4),
-        Text('This will be your admin password. Share with care.',
+        Text('Ce sera votre mot de passe administrateur. Partagez-le avec prudence.',
             style: AppTextStyles.body(
                 color: isDark ? AppColors.coolGray : AppColors.darkGray)),
         const SizedBox(height: AppConstants.spacing24),
         AppInput(
-            label: 'Password',
-            hint: 'At least 8 characters',
+            label: 'Mot de passe',
+            hint: 'Au moins 8 caractères',
             controller: passwordCtrl,
             obscureText: true,
             showToggleObscure: true,
@@ -1339,8 +1339,8 @@ class _Step7Password extends StatelessWidget {
             onChanged: onPasswordChanged),
         const SizedBox(height: AppConstants.spacing16),
         AppInput(
-            label: 'Confirm Password',
-            hint: 'Repeat your password',
+            label: 'Confirmer le mot de passe',
+            hint: 'Répétez le mot de passe',
             controller: confirmCtrl,
             obscureText: true,
             showToggleObscure: true,
@@ -1388,14 +1388,14 @@ class _Step7Password extends StatelessWidget {
                             ? AppColors.coolGray
                             : AppColors.darkGray),
                     children: [
-                      const TextSpan(text: 'I agree to the '),
+                      const TextSpan(text: 'J\'accepte les '),
                       WidgetSpan(
                         child: GestureDetector(
                           onTap: () {
                             // TODO: open terms URL
                           },
                           child: Text(
-                            'Terms & Conditions',
+                            'Conditions générales',
                             style: AppTextStyles.body(
                                     color: isDark
                                         ? AppColors.skyBlue
@@ -1408,7 +1408,7 @@ class _Step7Password extends StatelessWidget {
                       ),
                       const TextSpan(
                           text:
-                              ' and Privacy Policy of BizManager Haiti.'),
+                              ' et la politique de confidentialité de BizManager Haïti.'),
                     ],
                   ),
                 ),
@@ -1446,7 +1446,7 @@ class _Step7Password extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Your business will be ready immediately after this step. Staff members can be added from Settings.',
+                  'Votre commerce sera prêt juste après cette étape. Le personnel s\'ajoute dans Paramètres.',
                   style:
                       AppTextStyles.caption(color: AppColors.primaryBlue),
                 ),

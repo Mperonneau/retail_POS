@@ -111,7 +111,7 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierLabel: reservation == null ? 'New Reservation' : 'Reservation',
+      barrierLabel: reservation == null ? 'Nouvelle réservation' : 'Reservation',
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 220),
       transitionBuilder: (ctx, anim, _, child) => SlideTransition(
@@ -220,7 +220,7 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
                           const SizedBox(width: AppConstants.spacing12),
                           Expanded(
                             child: Text(
-                              'Cancel reservation?',
+                              'Annuler la réservation ?',
                               style: AppTextStyles.h2(
                                 color: isDark
                                     ? AppColors.warmWhite
@@ -233,8 +233,8 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
                       const SizedBox(height: 12),
                       Text(
                         guest.isNotEmpty
-                            ? 'Cancel reservation for $guest? This will remove it from the active list. This cannot be undone.'
-                            : 'This reservation will be marked as cancelled and removed from the active list. This action cannot be undone.',
+                            ? 'Annuler la réservation de $guest ? Elle sera retirée de la liste active. Cette action est définitive.'
+                            : 'Cette réservation sera marquée annulée et retirée de la liste active. Cette action est définitive.',
                         style: AppTextStyles.body(color: muted),
                       ),
                       const SizedBox(height: 20),
@@ -245,11 +245,11 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
                             onPressed: _closeCancelConfirm,
                             style: TextButton.styleFrom(foregroundColor: muted),
                             child:
-                                Text('Keep it', style: AppTextStyles.button(color: muted)),
+                                Text('Le garder', style: AppTextStyles.button(color: muted)),
                           ),
                           const SizedBox(width: 8),
                           AppButton(
-                            label: 'Yes, cancel',
+                            label: 'Oui, annuler',
                             icon: Icons.cancel_outlined,
                             variant: AppButtonVariant.danger,
                             fullWidth: false,
@@ -295,7 +295,7 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
       textAlignVertical: TextAlignVertical.center,
       onChanged: (v) => setState(() => _search = v),
       decoration: InputDecoration(
-        hintText: 'Search name, phone, ID…',
+        hintText: 'Rechercher nom, téléphone, pièce…',
         hintStyle:
             AppTextStyles.caption(color: isDark ? AppColors.coolGray : AppColors.darkGray),
         prefixIcon: Icon(Icons.search, size: 16,
@@ -336,11 +336,11 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
 
   String _filterLabel(_ResFilter f) {
     switch (f) {
-      case _ResFilter.all:       return 'All';
-      case _ResFilter.today:     return 'Today';
+      case _ResFilter.all:       return 'Tous';
+      case _ResFilter.today:     return 'Aujourd\'hui';
       case _ResFilter.upcoming:  return 'Upcoming';
       case _ResFilter.confirmed: return 'Confirmed';
-      case _ResFilter.pending:   return 'Pending';
+      case _ResFilter.pending:   return 'En attente';
     }
   }
 
@@ -389,14 +389,14 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Reservations',
+                        'Réservations',
                         style: AppTextStyles.h1(
                           color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$totalActive active · ${filtered.length} shown',
+                        '$totalActive actives · ${filtered.length} affichées',
                         style: AppTextStyles.caption(
                             color: isDark ? AppColors.coolGray : AppColors.darkGray),
                       ),
@@ -404,7 +404,7 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
                   ),
                 ),
                 AppButton(
-                  label: 'New reservation',
+                  label: 'Nouvelle réservation',
                   icon: Icons.add,
                   onPressed: () => _showDrawer(context),
                   fullWidth: false,
@@ -462,12 +462,12 @@ class _ReservationHubState extends ConsumerState<ReservationHub> {
                 ? EmptyState(
                     icon: Icons.event_seat_outlined,
                     title: _search.isNotEmpty
-                        ? 'No reservations match "$_search"'
-                        : 'No reservations',
+                        ? 'Aucune réservation pour « $_search »'
+                        : 'Aucune réservation',
                     message: _search.isNotEmpty
-                        ? 'Try a different name, phone, or ID.'
-                        : 'Tap "New reservation" to add the first one.',
-                    actionLabel: _search.isEmpty ? 'New reservation' : null,
+                        ? 'Essayez un autre nom, téléphone ou pièce d\'identité.'
+                        : 'Tap "Nouvelle réservation" to add the first one.',
+                    actionLabel: _search.isEmpty ? 'Nouvelle réservation' : null,
                     onAction: _search.isEmpty ? () => _showDrawer(context) : null,
                   )
                 : ListView.builder(
@@ -785,7 +785,7 @@ class _ReservationDrawerContentState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok ? 'Food items sent to the kitchen.' : 'No new food items to send (drinks and items already sent are skipped).',
+          ok ? 'Plats envoyés en cuisine.' : 'Aucun nouveau plat à envoyer (boissons et articles déjà envoyés sont ignorés).',
         ),
       ),
     );
@@ -814,7 +814,7 @@ class _ReservationDrawerContentState
       context,
       reservation: MockDiningReservation(
         id: 0,
-        guestName: _nameCtrl.text.trim().isEmpty ? 'Guest' : _nameCtrl.text.trim(),
+        guestName: _nameCtrl.text.trim().isEmpty ? 'Client' : _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? '—' : _phoneCtrl.text.trim(),
         adults: _adults,
         children: _children,
@@ -965,7 +965,7 @@ class _ReservationDrawerContentState
                           const SizedBox(width: AppConstants.spacing12),
                           Expanded(
                             child: Text(
-                              'Cancel reservation?',
+                              'Annuler la réservation ?',
                               style: AppTextStyles.h2(
                                 color: isDark
                                     ? AppColors.warmWhite
@@ -978,8 +978,8 @@ class _ReservationDrawerContentState
                       const SizedBox(height: 12),
                       Text(
                         guest.isNotEmpty
-                            ? 'Cancel reservation for $guest? This will remove it from the active list. This cannot be undone.'
-                            : 'This reservation will be marked as cancelled and removed from the active list. This action cannot be undone.',
+                            ? 'Annuler la réservation de $guest ? Elle sera retirée de la liste active. Cette action est définitive.'
+                            : 'Cette réservation sera marquée annulée et retirée de la liste active. Cette action est définitive.',
                         style: AppTextStyles.body(color: muted),
                       ),
                       const SizedBox(height: 20),
@@ -990,11 +990,11 @@ class _ReservationDrawerContentState
                             onPressed: _closeDrawerCancelOverlay,
                             style: TextButton.styleFrom(foregroundColor: muted),
                             child:
-                                Text('Keep it', style: AppTextStyles.button(color: muted)),
+                                Text('Le garder', style: AppTextStyles.button(color: muted)),
                           ),
                           const SizedBox(width: 8),
                           AppButton(
-                            label: 'Yes, cancel',
+                            label: 'Oui, annuler',
                             icon: Icons.cancel_outlined,
                             variant: AppButtonVariant.danger,
                             fullWidth: false,
@@ -1056,21 +1056,21 @@ class _ReservationDrawerContentState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Add items to the order',
+              'Ajouter des articles à la commande',
               style: AppTextStyles.h2(color: textPrimary),
             ),
             const SizedBox(height: 6),
             Text(
-              'From menu adds the item immediately. Custom opens the item form.',
+              'Depuis la carte, l\'article est ajouté tout de suite. Personnalisé ouvre le formulaire.',
               style: AppTextStyles.caption(color: muted),
             ),
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.restaurant_menu, color: primary),
-              title: Text('From menu', style: AppTextStyles.body(color: textPrimary)),
+              title: Text('Depuis la carte', style: AppTextStyles.body(color: textPrimary)),
               subtitle: Text(
-                'Choose a menu item',
+                'Choisissez un article',
                 style: AppTextStyles.caption(color: muted),
               ),
               onTap: () {
@@ -1083,9 +1083,9 @@ class _ReservationDrawerContentState
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.edit_note, color: AppColors.amber),
               title:
-                  Text('Custom item', style: AppTextStyles.body(color: textPrimary)),
+                  Text('Article personnalisé', style: AppTextStyles.body(color: textPrimary)),
               subtitle: Text(
-                'Name, qty, price, food or drink',
+                'Nom, qté, prix, plat ou boisson',
                 style: AppTextStyles.caption(color: muted),
               ),
               onTap: () {
@@ -1165,8 +1165,8 @@ class _ReservationDrawerContentState
                             const SizedBox(width: 12),
                             Text(
                               _customEditIndex != null
-                                  ? 'Edit custom item'
-                                  : 'Custom item',
+                                  ? 'Modifier l\'article libre'
+                                  : 'Article personnalisé',
                               style: AppTextStyles.h2(),
                             ),
                           ],
@@ -1179,7 +1179,7 @@ class _ReservationDrawerContentState
                           autofocus: true,
                           style: AppTextStyles.body(),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Birthday cake (3 tiers)',
+                            hintText: 'p. ex. gâteau d\'anniversaire (3 étages)',
                             border: inputBorder,
                             enabledBorder: inputBorder,
                             focusedBorder: focusedBorder,
@@ -1194,7 +1194,7 @@ class _ReservationDrawerContentState
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Qty', style: AppTextStyles.inputLabel()),
+                                  Text('Qté', style: AppTextStyles.inputLabel()),
                                   const SizedBox(height: 6),
                                   TextField(
                                     controller: _customQtyCtrl,
@@ -1217,7 +1217,7 @@ class _ReservationDrawerContentState
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Price (HTG)',
+                                  Text('Prix (HTG)',
                                       style: AppTextStyles.inputLabel()),
                                   const SizedBox(height: 6),
                                   TextField(
@@ -1245,14 +1245,14 @@ class _ReservationDrawerContentState
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Text('Line note (optional)', style: AppTextStyles.inputLabel()),
+                        Text('Note de ligne (facultatif)', style: AppTextStyles.inputLabel()),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _customNoteCtrl,
                           maxLines: 2,
                           style: AppTextStyles.body(),
                           decoration: InputDecoration(
-                            hintText: 'Allergies, plating, timing…',
+                            hintText: 'Allergies, dressage, timing…',
                             border: inputBorder,
                             enabledBorder: inputBorder,
                             focusedBorder: focusedBorder,
@@ -1261,10 +1261,10 @@ class _ReservationDrawerContentState
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text('Kitchen routing', style: AppTextStyles.inputLabel()),
+                        Text('Envoi en cuisine', style: AppTextStyles.inputLabel()),
                         const SizedBox(height: 6),
                         Text(
-                          'Food items can be sent to the kitchen from the pre-order list. Drinks stay at the bar.',
+                          'Les plats peuvent être envoyés en cuisine depuis la précommande. Les boissons restent au bar.',
                           style: AppTextStyles.caption(color: muted),
                         ),
                         const SizedBox(height: 10),
@@ -1272,12 +1272,12 @@ class _ReservationDrawerContentState
                           segments: const [
                             ButtonSegment<bool>(
                               value: true,
-                              label: Text('Food'),
+                              label: Text('Cuisine'),
                               icon: Icon(Icons.restaurant, size: 18),
                             ),
                             ButtonSegment<bool>(
                               value: false,
-                              label: Text('Drink'),
+                              label: Text('Boisson'),
                               icon: Icon(Icons.local_drink_outlined, size: 18),
                             ),
                           ],
@@ -1294,7 +1294,7 @@ class _ReservationDrawerContentState
                             TextButton(
                               onPressed: _closeCustomItemEditor,
                               child: Text(
-                                'Cancel',
+                                'Annuler',
                                 style: AppTextStyles.button(
                                     color: isDark
                                         ? AppColors.coolGray
@@ -1303,7 +1303,7 @@ class _ReservationDrawerContentState
                             ),
                             const SizedBox(width: 8),
                             AppButton(
-                              label: _customEditIndex != null ? 'Save' : 'Add item',
+                              label: _customEditIndex != null ? 'Enregistrer' : 'Ajouter un article',
                               icon: _customEditIndex != null ? Icons.save_outlined : Icons.add,
                               fullWidth: false,
                               width: 120,
@@ -1376,7 +1376,7 @@ class _ReservationDrawerContentState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _isCreate ? 'New reservation' : 'Reservation #${widget.reservation?.id}',
+                          _isCreate ? 'Nouvelle réservation' : 'Réservation n°${widget.reservation?.id}',
                           style: AppTextStyles.h2(color: textPrimary),
                         ),
                         if (r != null)
@@ -1402,14 +1402,14 @@ class _ReservationDrawerContentState
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _SectionLabel(
-                        label: 'Guest details',
+                        label: 'Détails du client',
                         icon: Icons.person_outline,
                         primary: primary),
                     const SizedBox(height: 12),
                     _StyledField(
                       controller: _nameCtrl,
                       readOnly: readOnly,
-                      label: 'Guest name',
+                      label: 'Nom du client',
                       required: true,
                       icon: Icons.badge_outlined,
                       isDark: isDark,
@@ -1418,7 +1418,7 @@ class _ReservationDrawerContentState
                     _StyledField(
                       controller: _phoneCtrl,
                       readOnly: readOnly,
-                      label: 'Telephone',
+                      label: 'Téléphone',
                       required: true,
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
@@ -1444,7 +1444,7 @@ class _ReservationDrawerContentState
                       children: [
                         Expanded(
                           child: _CounterField(
-                            label: 'Adults',
+                            label: 'Adultes',
                             value: _adults,
                             readOnly: readOnly,
                             onDecrement: _adults > 1 ? () => setState(() => _adults--) : null,
@@ -1456,7 +1456,7 @@ class _ReservationDrawerContentState
                         const SizedBox(width: 12),
                         Expanded(
                           child: _CounterField(
-                            label: 'Children',
+                            label: 'Enfants',
                             value: _children,
                             readOnly: readOnly,
                             onDecrement:
@@ -1497,8 +1497,8 @@ class _ReservationDrawerContentState
                     _StyledField(
                       controller: _purposeCtrl,
                       readOnly: readOnly,
-                      label: 'Purpose',
-                      hint: 'e.g. Birthday, Anniversary…',
+                      label: 'Motif',
+                      hint: 'p. ex. anniversaire…',
                       icon: Icons.celebration_outlined,
                       isDark: isDark,
                     ),
@@ -1506,8 +1506,8 @@ class _ReservationDrawerContentState
                     _StyledField(
                       controller: _notesCtrl,
                       readOnly: readOnly,
-                      label: 'Special notes',
-                      hint: 'Dietary needs, seating preferences…',
+                      label: 'Notes spéciales',
+                      hint: 'Régime, préférences de place…',
                       icon: Icons.sticky_note_2_outlined,
                       maxLines: 3,
                       isDark: isDark,
@@ -1518,7 +1518,7 @@ class _ReservationDrawerContentState
 
                     // ── Pre-order / catering ──
                     _SectionLabel(
-                        label: 'Pre-order / catering',
+                        label: 'Précommande / traiteur',
                         icon: Icons.room_service_outlined,
                         primary: primary),
                     const SizedBox(height: 12),
@@ -1563,7 +1563,7 @@ class _ReservationDrawerContentState
                                                       size: 18, color: primary),
                                                   const SizedBox(width: 6),
                                                   Text(
-                                                    'Add items to the order',
+                                                    'Ajouter des articles à la commande',
                                                     style: AppTextStyles.body(
                                                             color: primary)
                                                         .copyWith(
@@ -1599,7 +1599,7 @@ class _ReservationDrawerContentState
                                               size: 18, color: primary),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'Print pre-order',
+                                            'Imprimer la précommande',
                                             style: AppTextStyles.body(
                                                     color: primary)
                                                 .copyWith(
@@ -1622,7 +1622,7 @@ class _ReservationDrawerContentState
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: AppButton(
-                                  label: 'Send food to kitchen',
+                                  label: 'Envoyer en cuisine',
                                   icon: Icons.soup_kitchen_outlined,
                                   variant: AppButtonVariant.secondary,
                                   fullWidth: false,
@@ -1636,7 +1636,7 @@ class _ReservationDrawerContentState
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 child: Center(
                                   child: Text(
-                                    'No items pre-ordered yet',
+                                    'Aucun article précommandé',
                                     style: AppTextStyles.caption(color: muted),
                                   ),
                                 ),
@@ -1746,7 +1746,7 @@ class _ReservationDrawerContentState
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        'Subtotal',
+                                        'Sous-total',
                                         style: AppTextStyles.caption(color: primary)
                                             .copyWith(fontWeight: FontWeight.w700),
                                       ),
@@ -1781,7 +1781,7 @@ class _ReservationDrawerContentState
                       Divider(color: dividerColor),
                       const SizedBox(height: 12),
                       _SectionLabel(
-                          label: 'Table assignment',
+                          label: 'Assignation de table',
                           icon: Icons.table_restaurant,
                           primary: primary),
                       const SizedBox(height: 12),
@@ -1824,7 +1824,7 @@ class _ReservationDrawerContentState
                                 children: [
                                   Icon(Icons.table_restaurant, size: 18, color: muted),
                                   const SizedBox(width: 10),
-                                  Text('No table assigned yet',
+                                  Text('Aucune table assignée',
                                       style: AppTextStyles.body(color: muted)),
                                 ],
                               ),
@@ -1901,14 +1901,14 @@ class _ReservationDrawerContentState
         builder: (context, c) {
           final cols = _drawerFooterColumns(c.maxWidth);
           final cancelBtn = AppButton(
-            label: 'Cancel',
+            label: 'Annuler',
             variant: AppButtonVariant.ghost,
             onPressed: () => Navigator.of(context).pop(),
             fullWidth: true,
             compact: true,
           );
           final saveBtn = AppButton(
-            label: 'Save reservation',
+            label: 'Enregistrer la réservation',
             icon: Icons.check,
             onPressed: _saveCreate,
             fullWidth: true,
@@ -1947,7 +1947,7 @@ class _ReservationDrawerContentState
           final cols = _drawerFooterColumns(c.maxWidth);
 
           final editBtn = AppButton(
-            label: 'Edit',
+            label: 'Modifier',
             icon: Icons.edit_outlined,
             variant: AppButtonVariant.secondary,
             onPressed: () {
@@ -1971,7 +1971,7 @@ class _ReservationDrawerContentState
           );
 
           final confirmBtn = AppButton(
-            label: 'Confirm',
+            label: 'Confirmer',
             icon: Icons.check_circle_outline,
             variant: AppButtonVariant.secondary,
             onPressed: () {
@@ -1985,7 +1985,7 @@ class _ReservationDrawerContentState
           );
 
           final cancelResBtn = AppButton(
-            label: 'Cancel reservation',
+            label: 'Annuler la réservation',
             icon: Icons.cancel_outlined,
             variant: AppButtonVariant.danger,
             onPressed: _openDrawerCancelOverlay,
@@ -1994,7 +1994,7 @@ class _ReservationDrawerContentState
           );
 
           final activateBtn = AppButton(
-            label: 'Activate & assign table',
+            label: 'Activer et assigner une table',
             icon: Icons.table_restaurant,
             onPressed: _activate,
             fullWidth: true,
@@ -2032,14 +2032,14 @@ class _ReservationDrawerContentState
       builder: (context, c) {
         final cols = _drawerFooterColumns(c.maxWidth);
         final discardBtn = AppButton(
-          label: 'Discard',
+          label: 'Abandonner',
           variant: AppButtonVariant.ghost,
           onPressed: () => setState(() => _panelEdit = false),
           fullWidth: true,
           compact: true,
         );
         final updateBtn = AppButton(
-          label: 'Update',
+          label: 'Mettre à jour',
           icon: Icons.save_outlined,
           onPressed: _saveUpdate,
           fullWidth: true,
@@ -2148,7 +2148,7 @@ class _ReservationCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Icon(Icons.people_outlined, size: 13, color: muted),
                     const SizedBox(width: 5),
-                    Text('${reservation.partySize} guests',
+                    Text('${reservation.partySize} personnes',
                         style: AppTextStyles.caption(color: muted)),
                   ],
                 ),
@@ -2172,7 +2172,7 @@ class _ReservationCard extends StatelessWidget {
                                 size: 11, color: primary),
                             const SizedBox(width: 4),
                             Text(
-                              '${reservation.preOrderItems.length} pre-ordered item${reservation.preOrderItems.length > 1 ? 's' : ''}',
+                              '${reservation.preOrderItems.length} article précommandé${reservation.preOrderItems.length > 1 ? 's' : ''}',
                               style: AppTextStyles.caption(color: primary)
                                   .copyWith(fontWeight: FontWeight.w600),
                             ),
@@ -2250,27 +2250,27 @@ class _ReservationCard extends StatelessWidget {
       child: Row(
         children: [
           _CardAction(
-              label: 'View',
+              label: 'Voir',
               icon: Icons.visibility_outlined,
               color: primary,
               onTap: onTap),
           if (onConfirm != null) ...[
             _VerticalDivider(isDark: isDark),
             _CardAction(
-                label: 'Confirm',
+                label: 'Confirmer',
                 icon: Icons.check_circle_outline,
                 color: AppColors.deepGreen,
                 onTap: onConfirm!),
           ],
           _VerticalDivider(isDark: isDark),
           _CardAction(
-              label: 'Activate',
+              label: 'Activer',
               icon: Icons.table_restaurant,
               color: AppColors.amber,
               onTap: onActivate),
           _VerticalDivider(isDark: isDark),
           _CardAction(
-              label: 'Cancel',
+              label: 'Annuler',
               icon: Icons.cancel_outlined,
               color: AppColors.error,
               onTap: onCancel),
@@ -2381,9 +2381,9 @@ class _StatusPill extends StatelessWidget {
   String get _label {
     switch (status) {
       case 'confirmed': return 'Confirmed';
-      case 'pending':   return 'Pending';
-      case 'active':    return 'Active';
-      case 'cancelled': return 'Cancelled';
+      case 'pending':   return 'En attente';
+      case 'active':    return 'Actif';
+      case 'cancelled': return 'Annulé';
       default:          return status;
     }
   }
@@ -2726,7 +2726,7 @@ class _HotelRoomPicker extends ConsumerWidget {
       initialValue: value,
       style: AppTextStyles.body(),
       decoration: InputDecoration(
-        labelText: 'Link to room (optional)',
+        labelText: 'Lier à une chambre (facultatif)',
         prefixIcon: Icon(Icons.hotel_outlined, size: 18,
             color: isDark ? AppColors.coolGray : AppColors.darkGray),
         border: inputBorder,
@@ -2738,11 +2738,11 @@ class _HotelRoomPicker extends ConsumerWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
       items: [
-        const DropdownMenuItem<String?>(value: null, child: Text('None')),
+        const DropdownMenuItem<String?>(value: null, child: Text('Aucun')),
         for (final r in rooms)
           DropdownMenuItem<String?>(
             value: r.number,
-            child: Text('Room ${r.number} — ${r.guestName ?? "Guest"}'),
+            child: Text('Chambre ${r.number} — ${r.guestName ?? "Client"}'),
           ),
       ],
       onChanged: readOnly

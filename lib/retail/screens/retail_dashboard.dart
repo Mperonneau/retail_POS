@@ -36,7 +36,7 @@ class RetailDashboard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Retail Dashboard', style: AppTextStyles.h1(
+            Text('Tableau de bord', style: AppTextStyles.h1(
               color: isDark ? AppColors.warmWhite : AppColors.primaryBlue,
             )),
             const SizedBox(height: AppConstants.spacing24),
@@ -60,14 +60,14 @@ class RetailDashboard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Outstanding Credit',
+                          Text('Crédit impayé',
                               style: AppTextStyles.body(
                                       color: isDark
                                           ? AppColors.warmWhite
                                           : AppColors.nearBlack)
                                   .copyWith(fontWeight: FontWeight.w600)),
                           Text(
-                            '$withBalance customer${withBalance == 1 ? '' : 's'} · ${CurrencyFormatter.local(context, totalOwed)} owed',
+                            '$withBalance client${withBalance == 1 ? '' : 's'} · ${CurrencyFormatter.local(context, totalOwed)} dû',
                             style: AppTextStyles.caption(color: AppColors.boldRed),
                           ),
                         ],
@@ -92,26 +92,26 @@ class RetailDashboard extends ConsumerWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  StatCard(title: "Today's Sales", value: CurrencyFormatter.local(context, totalRevenue), percentChange: 14.2, icon: Icons.point_of_sale_outlined, iconColor: AppColors.deepGreen, iconBackground: AppColors.deepGreen.withValues(alpha: 0.1)),
-                  StatCard(title: 'Items Sold', value: '$itemsSold', subtitle: 'units today', icon: Icons.shopping_bag_outlined, iconColor: AppColors.primaryBlue),
-                  StatCard(title: 'Low Stock Alerts', value: '$lowStockCount', subtitle: 'items to reorder', icon: Icons.warning_amber_rounded, iconColor: AppColors.boldRed, iconBackground: AppColors.boldRed.withValues(alpha: 0.1)),
-                  StatCard(title: 'Cash in Drawer', value: CurrencyFormatter.local(context, 15800), subtitle: 'Roseline\'s session', icon: Icons.account_balance_wallet_outlined, iconColor: AppColors.amber, iconBackground: AppColors.amber.withValues(alpha: 0.1)),
+                  StatCard(title: "Ventes du jour", value: CurrencyFormatter.local(context, totalRevenue), percentChange: 14.2, icon: Icons.point_of_sale_outlined, iconColor: AppColors.deepGreen, iconBackground: AppColors.deepGreen.withValues(alpha: 0.1)),
+                  StatCard(title: 'Articles vendus', value: '$itemsSold', subtitle: 'unités aujourd\'hui', icon: Icons.shopping_bag_outlined, iconColor: AppColors.primaryBlue),
+                  StatCard(title: 'Alertes de stock bas', value: '$lowStockCount', subtitle: 'articles à recommander', icon: Icons.warning_amber_rounded, iconColor: AppColors.boldRed, iconBackground: AppColors.boldRed.withValues(alpha: 0.1)),
+                  StatCard(title: 'Espèces dans le tiroir', value: CurrencyFormatter.local(context, 15800), subtitle: 'Roseline\'s session', icon: Icons.account_balance_wallet_outlined, iconColor: AppColors.amber, iconBackground: AppColors.amber.withValues(alpha: 0.1)),
                 ],
               );
             }),
             const SizedBox(height: AppConstants.spacing32),
             // Quick actions
-            SectionHeader(title: 'Quick Actions'),
+            SectionHeader(title: 'Actions rapides'),
             const SizedBox(height: AppConstants.spacing16),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  (Icons.point_of_sale_outlined, 'New Sale', AppRoutes.retailPos, AppColors.amber),
-                  (Icons.inventory_outlined, 'Products', AppRoutes.retailProducts, AppColors.primaryBlue),
-                  (Icons.warehouse_outlined, 'Inventory', AppRoutes.retailInventory, AppColors.deepGreen),
-                  (Icons.people_outline, 'Customers', AppRoutes.retailCustomers, AppColors.darkGray),
-                  (Icons.bar_chart_outlined, 'Reports', AppRoutes.retailReports, AppColors.boldRed),
+                  (Icons.point_of_sale_outlined, 'Nouvelle vente', AppRoutes.retailPos, AppColors.amber),
+                  (Icons.inventory_outlined, 'Produits', AppRoutes.retailProducts, AppColors.primaryBlue),
+                  (Icons.warehouse_outlined, 'Inventaire', AppRoutes.retailInventory, AppColors.deepGreen),
+                  (Icons.people_outline, 'Clients', AppRoutes.retailCustomers, AppColors.darkGray),
+                  (Icons.bar_chart_outlined, 'Rapports', AppRoutes.retailReports, AppColors.boldRed),
                 ].map((a) => Padding(
                   padding: const EdgeInsets.only(right: AppConstants.spacing12),
                   child: GestureDetector(
@@ -138,7 +138,7 @@ class RetailDashboard extends ConsumerWidget {
             ),
             const SizedBox(height: AppConstants.spacing32),
             // Top products
-            SectionHeader(title: 'Top Products Today'),
+            SectionHeader(title: 'Produits du jour'),
             const SizedBox(height: AppConstants.spacing16),
             AppCard(
               padding: EdgeInsets.zero,
@@ -172,7 +172,7 @@ class RetailDashboard extends ConsumerWidget {
                             Expanded(child: Text(item.$1, style: AppTextStyles.body(
                               color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                             ))),
-                            Text('${item.$2} units', style: AppTextStyles.caption()),
+                            Text('${item.$2} unités', style: AppTextStyles.caption()),
                             const SizedBox(width: 16),
                             Text(CurrencyFormatter.local(context, item.$3), style: AppTextStyles.body(
                               color: isDark ? AppColors.warmWhite : AppColors.nearBlack,

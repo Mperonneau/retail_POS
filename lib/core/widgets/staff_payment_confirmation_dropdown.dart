@@ -8,7 +8,7 @@ import 'discount_approval_dialog.dart';
 /// Staff register confirmation for payment-link table orders (NOT PAID / PAID).
 ///
 /// When [adminAuthOrderLabel] is non-null, switching to **PAID** runs the same
-/// admin code flow as "Mark as Paid" on the payment-link status sheet.
+/// admin code flow as "Marquer payé" on the payment-link status sheet.
 class StaffPaymentConfirmationDropdown extends ConsumerWidget {
   final bool isDark;
   final bool staffPaid;
@@ -36,13 +36,13 @@ class StaffPaymentConfirmationDropdown extends ConsumerWidget {
         context,
         ref,
         message:
-            'This action requires admin authorization. Manually marking '
-            '$adminAuthOrderLabel as paid should only be done if you can confirm '
-            'the payment was received outside the app.',
+            'Cette action exige une autorisation admin. Ne marquez '
+            '$adminAuthOrderLabel comme payé que si vous pouvez confirmer que '
+            'le paiement a bien été reçu hors de l\'application.',
         isDark: isDark,
-        title: 'Admin authorization',
-        codeFieldLabel: 'Admin password / code',
-        confirmButtonLabel: 'Authorize',
+        title: 'Autorisation admin',
+        codeFieldLabel: 'Mot de passe ou code admin',
+        confirmButtonLabel: 'Autoriser',
       );
       if (approved == true && context.mounted) onChanged(newPaid);
     } else {
@@ -59,7 +59,7 @@ class StaffPaymentConfirmationDropdown extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Register',
+          'Caisse',
           style: AppTextStyles.caption(
             color: isDark ? AppColors.coolGray : AppColors.darkGray,
           ).copyWith(
@@ -86,8 +86,8 @@ class StaffPaymentConfirmationDropdown extends ConsumerWidget {
                 fontSize: compact ? 9 : 10,
               ),
               items: const [
-                DropdownMenuItem(value: false, child: Text('NOT PAID')),
-                DropdownMenuItem(value: true, child: Text('PAID')),
+                DropdownMenuItem(value: false, child: Text('NON PAYÉ')),
+                DropdownMenuItem(value: true, child: Text('PAYÉ')),
               ],
               onChanged: (v) {
                 if (v == null || v == staffPaid) return;

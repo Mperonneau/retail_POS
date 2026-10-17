@@ -6,13 +6,13 @@ extension PaymentMethodTypeExt on PaymentMethodType {
       case PaymentMethodType.moncash:
         return 'MonCash';
       case PaymentMethodType.card:
-        return 'Card';
+        return 'Carte';
       case PaymentMethodType.cash:
-        return 'Cash';
+        return 'Espèces';
       case PaymentMethodType.credit:
-        return 'Credit';
+        return 'Crédit';
       case PaymentMethodType.paymentLink:
-        return 'Payment Link';
+        return 'Lien de paiement';
     }
   }
 }
@@ -86,7 +86,7 @@ class OrderHistoryRecord {
   final String receiptNumber;
   final DateTime paidAt;
   final String? receiptName;
-  final String source; // e.g. "Table 4", "Room 102", "POS"
+  final String source; // e.g. "Table 4", "Chambre 102", "Caisse"
   final List<OrderHistoryItem> items;
   final double serviceChargePercent;
   final double taxPercent;
