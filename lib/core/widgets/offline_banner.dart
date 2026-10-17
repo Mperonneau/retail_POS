@@ -14,16 +14,16 @@ class OfflineBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(deviceSessionProvider);
-    final waiting = session.outboxIds.length;
+    final waiting = session.pending.length;
     if (!session.ready || (session.online && waiting == 0)) {
       return const SizedBox.shrink();
     }
     final message = !session.online
         ? (waiting == 0
-            ? 'Vous êtes hors ligne. Les ventes restent sur cet appareil et se synchronisent au retour de la connexion.'
+            ? 'Vous êtes hors ligne. Vos changements restent sur cet appareil et se synchronisent au retour de la connexion.'
             : waiting == 1
-                ? 'Vous êtes hors ligne. 1 vente est enregistrée sur cet appareil.'
-                : 'Vous êtes hors ligne. $waiting ventes sont enregistrées sur cet appareil.')
+                ? 'Vous êtes hors ligne. 1 opération attend sur cet appareil.'
+                : 'Vous êtes hors ligne. $waiting opérations attendent sur cet appareil.')
         : (waiting == 1
             ? 'Connexion rétablie. 1 opération attend d\'être envoyée.'
             : 'Connexion rétablie. $waiting opérations attendent d\'être envoyées.');

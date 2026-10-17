@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:retail_pos/core/mock/mock_retail_data.dart';
+import 'package:retail_pos/core/models/pending_operation.dart';
 import 'package:retail_pos/core/models/staff_role.dart';
 import 'package:retail_pos/core/providers/device_session_provider.dart';
 import 'package:retail_pos/core/services/app_update.dart';
@@ -44,11 +46,11 @@ void main() {
     expect(restored.match('dev-1', '2222')?.role, StaffRole.manager);
   });
 
-  test('waiting sales stay queued until Synchroniser', () async {
+  test('changes made offline stay queued until Synchroniser', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
       LocalStore.deviceId: 'dev-test',
-      LocalStore.outbox: '["sale-1","sale-2"]',
+      LocalStore.outbox: '["sale-1"]',
     });
     LocalStore.instance.debugReset();
     final container = ProviderContainer();
@@ -56,16 +58,40 @@ void main() {
     final notifier = container.read(deviceSessionProvider.notifier);
     await notifier.restore();
 
-    expect(container.read(deviceSessionProvider).outboxIds, ['sale-1', 'sale-2']);
+    List<PendingOperation> pending() => container.read(deviceSessionProvider).pending;
+    expect(pending().single.kind, PendingOperationKind.sale);
+    expect(pending().single.orderId, 'sale-1');
+
+    final product = container.read(mockProductsProvider).first;
+    container.read(mockProductsProvider.notifier).update(product);
+    await Future<void>.delayed(Duration.zero);
+    expect(pending(), hasLength(1), reason: 'online edits are not queued');
+
     await notifier.debugSetOnline(false);
+    container.read(mockProductsProvider.notifier).update(product);
+    container.read(mockSuppliersProvider.notifier).add(
+          container.read(mockSuppliersProvider).first,
+        );
+    container.read(retailInventoryLedgerProvider.notifier).adjust(
+          productId: product.id,
+          signedDelta: -2,
+        );
+    await Future<void>.delayed(Duration.zero);
+    expect(pending().map((op) => op.kind), [
+      PendingOperationKind.stock,
+      PendingOperationKind.supplier,
+      PendingOperationKind.product,
+      PendingOperationKind.sale,
+    ]);
+    expect(pending().first.title, 'Ajustement de stock · ${product.name}');
     expect(await notifier.syncNow(), isFalse);
-    expect(container.read(deviceSessionProvider).outboxIds, ['sale-1', 'sale-2']);
 
     await notifier.debugSetOnline(true);
-    expect(container.read(deviceSessionProvider).outboxIds, ['sale-1', 'sale-2']);
+    expect(pending(), hasLength(4));
     expect(await notifier.syncNow(), isTrue);
-    expect(container.read(deviceSessionProvider).outboxIds, isEmpty);
+    expect(pending(), isEmpty);
     expect(container.read(deviceSessionProvider).lastSyncAt, isNotNull);
+    expect(await LocalStore.instance.loadPendingOperations(), isEmpty);
     expect(await LocalStore.instance.loadOutbox(), isEmpty);
   });
 

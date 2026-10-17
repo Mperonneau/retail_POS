@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/pending_operation.dart';
 import '../models/retail_order.dart';
 import '../models/staff_role.dart';
 import '../services/device_pairing.dart';
@@ -56,7 +57,7 @@ class DeviceSessionState {
     this.deviceId = '',
     this.online = true,
     this.syncing = false,
-    this.outboxIds = const [],
+    this.pending = const [],
     this.lastSyncAt,
   });
 
@@ -68,7 +69,8 @@ class DeviceSessionState {
   final String deviceId;
   final bool online;
   final bool syncing;
-  final List<String> outboxIds;
+  /// Changes made offline, newest first, until Synchroniser sends them.
+  final List<PendingOperation> pending;
   final DateTime? lastSyncAt;
 
   bool get isPaired => pairing != null;
@@ -94,7 +96,7 @@ class DeviceSessionState {
     String? deviceId,
     bool? online,
     bool? syncing,
-    List<String>? outboxIds,
+    List<PendingOperation>? pending,
     DateTime? lastSyncAt,
   }) {
     return DeviceSessionState(
@@ -106,7 +108,7 @@ class DeviceSessionState {
       deviceId: deviceId ?? this.deviceId,
       online: online ?? this.online,
       syncing: syncing ?? this.syncing,
-      outboxIds: outboxIds ?? this.outboxIds,
+      pending: pending ?? this.pending,
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,
     );
   }
@@ -155,7 +157,7 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
     final profileRaw = await _store.getString(LocalStore.profile);
     final invitesRaw = await _store.getString(LocalStore.invites);
     final cacheRaw = await _store.getString(LocalStore.pinCache);
-    final outbox = await _store.loadOutbox();
+    final pending = await _loadPending();
     final lastSyncRaw = await _store.getString(LocalStore.lastSync);
     final lastSyncAt = DateTime.tryParse(lastSyncRaw ?? '');
     DevicePairingInfo? pairing;
@@ -202,7 +204,7 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
       pinCache: cache,
       deviceId: id,
       online: online,
-      outboxIds: outbox,
+      pending: pending,
       lastSyncAt: lastSyncAt,
     );
   }
@@ -318,7 +320,7 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
   /// Sends every waiting sale. Does nothing while the register is offline.
   Future<bool> syncNow() async {
     if (!state.ready) await restore();
-    if (!state.online || state.outboxIds.isEmpty || state.syncing) return false;
+    if (!state.online || state.pending.isEmpty || state.syncing) return false;
     state = state.copyWith(syncing: true);
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!state.online) {
@@ -326,11 +328,11 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
       return false;
     }
     final now = DateTime.now();
-    await _store.saveOutbox(const []);
+    await _store.savePendingOperations(const []);
     await _store.setString(LocalStore.lastSync, now.toIso8601String());
     state = state.copyWith(
       syncing: false,
-      outboxIds: const [],
+      pending: const [],
       lastSyncAt: now,
     );
     return true;
@@ -369,7 +371,7 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
     state = state.copyWith(pairing: updated);
   }
 
-  Future<void> captureOrder(RetailOrder order) async {
+  Future<void> captureOrder(RetailOrder order, {bool statusChange = false}) async {
     final existing = await _store.loadExtraOrders();
     final next = [
       order,
@@ -377,11 +379,70 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
         if (saved.id != order.id) saved,
     ];
     await _store.saveExtraOrders(next);
+    if (statusChange) {
+      await record(
+        PendingOperationKind.orderStatus,
+        '${order.orderNumber} · ${order.status.label}',
+        orderId: order.id,
+      );
+    } else {
+      await record(
+        PendingOperationKind.sale,
+        order.orderNumber,
+        orderId: order.id,
+        amountHtg: order.totalHtg,
+      );
+    }
+  }
+
+  /// Queues a change made while offline. Online changes go straight through.
+  Future<void> record(
+    PendingOperationKind kind,
+    String title, {
+    String detail = '',
+    String? orderId,
+    double? amountHtg,
+  }) async {
+    if (!state.ready) await restore();
     if (state.online) return;
-    if (state.outboxIds.contains(order.id)) return;
-    final outbox = [order.id, ...state.outboxIds];
-    await _store.saveOutbox(outbox);
-    state = state.copyWith(outboxIds: outbox);
+    final now = DateTime.now();
+    final op = PendingOperation(
+      id: 'op-${now.microsecondsSinceEpoch}-${state.pending.length}',
+      kind: kind,
+      title: title,
+      detail: detail,
+      orderId: orderId,
+      amountHtg: amountHtg,
+      createdAt: now,
+    );
+    final pending = [op, ...state.pending];
+    state = state.copyWith(pending: pending);
+    await _store.savePendingOperations(pending);
+  }
+
+  /// Sales queued by older builds were stored as bare order ids.
+  Future<List<PendingOperation>> _loadPending() async {
+    final pending = await _store.loadPendingOperations();
+    final legacy = await _store.loadOutbox();
+    if (legacy.isEmpty) return pending;
+    final orders = {
+      for (final order in await _store.loadExtraOrders()) order.id: order,
+    };
+    final migrated = [
+      ...pending,
+      for (final id in legacy)
+        PendingOperation(
+          id: 'op-legacy-$id',
+          kind: PendingOperationKind.sale,
+          title: orders[id]?.orderNumber ?? 'Vente',
+          orderId: id,
+          amountHtg: orders[id]?.totalHtg,
+          createdAt: orders[id]?.createdAt ?? DateTime.now(),
+        ),
+    ];
+    await _store.savePendingOperations(migrated);
+    await _store.remove(LocalStore.outbox);
+    return migrated;
   }
 
   Future<void> _persistInvites(List<DeviceInvite> invites) async {
@@ -396,3 +457,22 @@ final deviceSessionProvider =
     StateNotifierProvider<DeviceSessionNotifier, DeviceSessionState>(
   (ref) => DeviceSessionNotifier(),
 );
+
+/// Journal for notifiers outside this file; keeps nothing while online.
+PendingJournal pendingJournal(Ref ref) => (
+      PendingOperationKind kind,
+      String title, {
+      String detail = '',
+      String? orderId,
+      double? amountHtg,
+    }) {
+      unawaited(
+        ref.read(deviceSessionProvider.notifier).record(
+              kind,
+              title,
+              detail: detail,
+              orderId: orderId,
+              amountHtg: amountHtg,
+            ),
+      );
+    };

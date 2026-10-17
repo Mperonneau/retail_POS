@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/device_session_provider.dart';
+import 'pending_operation.dart';
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum CustomerTransactionType { charge, payment, adjustment }
@@ -337,7 +340,20 @@ class CustomerState {
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class CustomerNotifier extends StateNotifier<CustomerState> {
-  CustomerNotifier(super.initial);
+  CustomerNotifier(super.initial, {this.journal});
+
+  final PendingJournal? journal;
+
+  String _nameOf(String customerId) =>
+      state.customers.where((c) => c.id == customerId).firstOrNull?.name ?? 'Client';
+
+  void _logAccount(String customerId, String action, double? amountHtg) {
+    journal?.call(
+      PendingOperationKind.customerAccount,
+      '$action · ${_nameOf(customerId)}',
+      amountHtg: amountHtg,
+    );
+  }
 
   int _txCounter = 0;
   int _storeCreditCounter = 0;
@@ -358,6 +374,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    journal?.call(PendingOperationKind.customer, 'Client ajouté · ${c.name}');
   }
 
   void updateCustomer(Customer c) {
@@ -370,6 +387,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    journal?.call(PendingOperationKind.customer, 'Client modifié · ${c.name}');
   }
 
   /// Adds spendable store credit (e.g. unused prepaid balance returned to guest).
@@ -399,6 +417,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    _logAccount(customerId, 'Avoir émis', amountHtg);
   }
 
   /// Deducts from the customer's store-credit balance (e.g. applied to a bill).
@@ -431,6 +450,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    _logAccount(customerId, 'Avoir utilisé', use);
   }
 
   void blockCustomer(String id,
@@ -492,6 +512,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    _logAccount(customerId, 'Vente à crédit', creditedHtg);
   }
 
   void postPayment({
@@ -524,6 +545,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    _logAccount(customerId, 'Paiement reçu', amountHtg);
   }
 
   void postAdjustment({
@@ -552,6 +574,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    _logAccount(customerId, 'Ajustement de solde', amountHtg);
   }
 
   void addNote({
@@ -577,6 +600,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: updated,
       schedulesByCustomer: state.schedulesByCustomer,
     );
+    _logAccount(customerId, 'Note ajoutée', null);
   }
 
   void addSchedule({
@@ -601,6 +625,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       notesByCustomer: state.notesByCustomer,
       schedulesByCustomer: updated,
     );
+    _logAccount(customerId, 'Échéance ajoutée', amountHtg);
   }
 }
 
@@ -608,7 +633,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
 
 final customerProvider =
     StateNotifierProvider<CustomerNotifier, CustomerState>((ref) {
-  return CustomerNotifier(_buildSeedState());
+  return CustomerNotifier(_buildSeedState(), journal: pendingJournal(ref));
 });
 
 /// Hotel module: loaded by default when opening Customers page.

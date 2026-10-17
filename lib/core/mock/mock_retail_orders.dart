@@ -454,7 +454,9 @@ class RetailOrdersNotifier extends StateNotifier<List<RetailOrder>> {
     ];
     final updated = state.where((order) => order.id == id).firstOrNull;
     if (updated != null) {
-      _ref.read(deviceSessionProvider.notifier).captureOrder(updated);
+      _ref
+          .read(deviceSessionProvider.notifier)
+          .captureOrder(updated, statusChange: true);
     }
   }
 

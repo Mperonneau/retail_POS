@@ -2227,6 +2227,16 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
   }
 }
 
+/// Full-screen order detail for screens outside Commandes (e.g. Synchronisation).
+class RetailOrderDetailPage extends StatelessWidget {
+  final RetailOrder order;
+
+  const RetailOrderDetailPage({super.key, required this.order});
+
+  @override
+  Widget build(BuildContext context) => _RetailOrderDetailPage(order: order);
+}
+
 // ── Mobile full-screen order detail page ─────────────────────────────────────
 
 class _RetailOrderDetailPage extends ConsumerWidget {

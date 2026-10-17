@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/pending_operation.dart';
 import '../models/retail_fulfillment_mode.dart';
+import '../providers/device_session_provider.dart';
 
 class MockProduct {
   final int id;
@@ -371,11 +373,30 @@ final _mockSuppliersSeed = [
 // ──────────────── STATE NOTIFIERS ────────────────
 
 class ProductsNotifier extends StateNotifier<List<MockProduct>> {
-  ProductsNotifier() : super(_mockProductsSeed);
+  ProductsNotifier({this.journal}) : super(_mockProductsSeed);
+  final PendingJournal? journal;
   int get _nextId => state.isEmpty ? 1 : state.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-  void add(MockProduct p) => state = [...state, p.copyWith(id: _nextId)];
-  void update(MockProduct p) => state = [for (final r in state) r.id == p.id ? p : r];
-  void remove(int id) => state = state.where((p) => p.id != id).toList();
+  void add(MockProduct p) {
+    state = [...state, p.copyWith(id: _nextId)];
+    journal?.call(PendingOperationKind.product, 'Produit ajouté · ${p.name}');
+  }
+
+  void update(MockProduct p) {
+    replaceQuietly(p);
+    journal?.call(PendingOperationKind.product, 'Produit modifié · ${p.name}');
+  }
+
+  /// Replaces the product without queuing it; stock movements queue themselves.
+  void replaceQuietly(MockProduct p) =>
+      state = [for (final r in state) r.id == p.id ? p : r];
+
+  void remove(int id) {
+    final name = state.where((p) => p.id == id).firstOrNull?.name;
+    state = state.where((p) => p.id != id).toList();
+    if (name != null) {
+      journal?.call(PendingOperationKind.product, 'Produit supprimé · $name');
+    }
+  }
 
   /// Decrease stock after a successful sale (mock).
   void applySale(Map<int, int> productIdToQty) {
@@ -392,11 +413,26 @@ class ProductsNotifier extends StateNotifier<List<MockProduct>> {
 }
 
 class SuppliersNotifier extends StateNotifier<List<MockSupplier>> {
-  SuppliersNotifier() : super(_mockSuppliersSeed);
+  SuppliersNotifier({this.journal}) : super(_mockSuppliersSeed);
+  final PendingJournal? journal;
   int get _nextId => state.isEmpty ? 1 : state.map((s) => s.id).reduce((a, b) => a > b ? a : b) + 1;
-  void add(MockSupplier s) => state = [...state, s.copyWith(id: _nextId)];
-  void update(MockSupplier s) => state = [for (final r in state) r.id == s.id ? s : r];
-  void remove(int id) => state = state.where((s) => s.id != id).toList();
+  void add(MockSupplier s) {
+    state = [...state, s.copyWith(id: _nextId)];
+    journal?.call(PendingOperationKind.supplier, 'Fournisseur ajouté · ${s.name}');
+  }
+
+  void update(MockSupplier s) {
+    state = [for (final r in state) r.id == s.id ? s : r];
+    journal?.call(PendingOperationKind.supplier, 'Fournisseur modifié · ${s.name}');
+  }
+
+  void remove(int id) {
+    final name = state.where((s) => s.id == id).firstOrNull?.name;
+    state = state.where((s) => s.id != id).toList();
+    if (name != null) {
+      journal?.call(PendingOperationKind.supplier, 'Fournisseur supprimé · $name');
+    }
+  }
 }
 
 // ──────────────── Retail settings (delivery, etc.) ────────────────
@@ -568,7 +604,13 @@ class MockRetailQuote {
 }
 
 class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
-  QuotesNotifier() : super(_mockQuotesSeed);
+  QuotesNotifier({this.journal}) : super(_mockQuotesSeed);
+  final PendingJournal? journal;
+
+  void _log(String id, String action) {
+    final number = state.where((q) => q.id == id).firstOrNull?.quoteNumber ?? 'Devis';
+    journal?.call(PendingOperationKind.quote, '$number · $action');
+  }
 
   static String newCheckoutId() =>
       'chk_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(999999)}';
@@ -579,13 +621,17 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
     return 'QTE-${now.year}-${seq.toString().padLeft(4, '0')}';
   }
 
-  void add(MockRetailQuote q) => state = [q, ...state];
+  void add(MockRetailQuote q) {
+    state = [q, ...state];
+    _log(q.id, 'créé');
+  }
 
   void updateQuote(MockRetailQuote updated) {
     state = [
       for (final q in state)
         if (q.id == updated.id) updated else q,
     ];
+    _log(updated.id, 'modifié');
   }
 
   void convertToOrder(String id) {
@@ -596,6 +642,7 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
         else
           q,
     ];
+    _log(id, 'converti en commande');
   }
 
   void expire(String id) {
@@ -606,6 +653,7 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
         else
           q,
     ];
+    _log(id, 'expiré');
   }
 
   void cancel(String id) {
@@ -616,6 +664,7 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
         else
           q,
     ];
+    _log(id, 'annulé');
   }
 
   /// Restore an expired or cancelled quote to draft (Active quotes tab).
@@ -627,6 +676,7 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
         else
           q,
     ];
+    _log(id, 'remis en brouillon');
   }
 
   void markPaymentLinkSent(String id) {
@@ -637,6 +687,7 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
         else
           q,
     ];
+    _log(id, 'lien de paiement envoyé');
   }
 
   /// Call when the client has paid (e.g. payment-link webhook); hides send/resend in UI.
@@ -645,6 +696,7 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
       for (final q in state)
         if (q.id == id) q.copyWith(isPaid: true) else q,
     ];
+    _log(id, 'payé');
   }
 }
 
@@ -1468,9 +1520,14 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
     final idx = products.indexWhere((e) => e.id == productId);
     if (idx < 0) return;
     final p = products[idx];
-    _ref.read(mockProductsProvider.notifier).update(
+    _ref.read(mockProductsProvider.notifier).replaceQuietly(
           p.copyWith(stockQuantity: p.stockQuantity + quantity),
         );
+    pendingJournal(_ref)(
+      PendingOperationKind.stock,
+      'Entrée de stock · ${p.name}',
+      detail: '+$quantity · $supplierName',
+    );
     state = [
       ...state,
       RetailStockMovement(
@@ -1519,7 +1576,12 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
     if (idx < 0) return;
     final p = products[idx];
     final newQ = (p.stockQuantity + signedDelta).clamp(0, 1 << 30);
-    _ref.read(mockProductsProvider.notifier).update(p.copyWith(stockQuantity: newQ));
+    _ref.read(mockProductsProvider.notifier).replaceQuietly(p.copyWith(stockQuantity: newQ));
+    pendingJournal(_ref)(
+      PendingOperationKind.stock,
+      'Ajustement de stock · ${p.name}',
+      detail: signedDelta > 0 ? '+$signedDelta' : '$signedDelta',
+    );
     final now = DateTime.now();
     state = [
       ...state,
@@ -1540,7 +1602,7 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
 // ──────────────── PROVIDERS ────────────────
 
 final mockProductsProvider = StateNotifierProvider<ProductsNotifier, List<MockProduct>>(
-  (ref) => ProductsNotifier(),
+  (ref) => ProductsNotifier(journal: pendingJournal(ref)),
 );
 
 final retailInventoryLedgerProvider =
@@ -1552,7 +1614,7 @@ final mockCustomersProvider = Provider<List<MockCustomer>>((ref) => mockCustomer
 final mockSalesProvider = Provider<List<MockSale>>((ref) => mockSales);
 
 final mockSuppliersProvider = StateNotifierProvider<SuppliersNotifier, List<MockSupplier>>(
-  (ref) => SuppliersNotifier(),
+  (ref) => SuppliersNotifier(journal: pendingJournal(ref)),
 );
 
 final retailSettingsProvider =
@@ -1562,7 +1624,7 @@ final retailSettingsProvider =
 
 final quotesProvider =
     StateNotifierProvider<QuotesNotifier, List<MockRetailQuote>>(
-  (ref) => QuotesNotifier(),
+  (ref) => QuotesNotifier(journal: pendingJournal(ref)),
 );
 
 const Object _sentinel = Object();

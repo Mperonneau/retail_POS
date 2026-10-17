@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:retail_pos/core/mock/mock_retail_data.dart';
 import 'package:retail_pos/core/mock/mock_retail_orders.dart';
 import 'package:retail_pos/core/models/order_history.dart';
+import 'package:retail_pos/core/models/pending_operation.dart';
+import 'package:retail_pos/core/screens/order_history/order_history_screen.dart';
 import 'package:retail_pos/core/navigation/app_router.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
 import 'package:retail_pos/core/providers/device_session_provider.dart';
@@ -121,11 +123,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
     }
 
-    final outbox = container.read(deviceSessionProvider).outboxIds;
-    expect(outbox, hasLength(1));
+    final pending = container.read(deviceSessionProvider).pending;
+    expect(pending.map((op) => op.kind), [PendingOperationKind.sale]);
     final sale = container
         .read(retailOrdersProvider)
-        .firstWhere((order) => order.id == outbox.single);
+        .firstWhere((order) => order.id == pending.single.orderId);
     expect(sale.lines.single.productName, firstProduct.name);
 
     container.read(appRouterProvider).push('/sync');
@@ -134,6 +136,12 @@ void main() {
     expect(find.text('1 opération en attente'), findsOneWidget);
     expect(find.text(sale.orderNumber), findsOneWidget);
     expect(find.text('Indisponible hors ligne'), findsOneWidget);
+
+    await tester.tap(find.text(sale.orderNumber));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(RetailOrderDetailPage), findsOneWidget);
+    expect(find.text(firstProduct.name), findsWidgets);
   });
 
   testWidgets('Banner opens the waiting sales and Synchroniser sends them', (tester) async {
@@ -198,6 +206,14 @@ void main() {
     await container.read(deviceSessionProvider.notifier).debugSetOnline(false);
     await tester.pump();
     expect(find.text('Indisponible hors ligne'), findsOneWidget);
+
+    final supplier = container.read(mockSuppliersProvider).first;
+    container.read(mockSuppliersProvider.notifier).update(supplier);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('2 opérations en attente'), findsOneWidget);
+    expect(find.text('Fournisseur modifié · ${supplier.name}'), findsOneWidget);
+    expect(find.text('Fournisseur'), findsOneWidget);
 
     await container.read(deviceSessionProvider.notifier).debugSetOnline(true);
     await tester.pump();

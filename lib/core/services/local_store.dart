@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/pending_operation.dart';
 import '../models/retail_order.dart';
 
 /// Browser / device storage for pairing, PIN cache, and sales made offline.
@@ -16,7 +17,9 @@ class LocalStore {
   static const pinCache = 'retail.pin_shift_cache';
   static const deviceId = 'retail.device_id';
   static const extraOrders = 'retail.extra_orders';
+  /// Sale ids queued before the queue held every kind of change.
   static const outbox = 'retail.outbox_ids';
+  static const pendingOperations = 'retail.pending_operations';
   static const lastSync = 'retail.last_sync_at';
   static const updateDismissed = 'retail.app_update.dismissed';
 
@@ -71,5 +74,27 @@ class LocalStore {
 
   Future<void> saveOutbox(List<String> ids) async {
     await setString(outbox, jsonEncode(ids));
+  }
+
+  Future<List<PendingOperation>> loadPendingOperations() async {
+    final raw = await getString(pendingOperations);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final list = jsonDecode(raw);
+      if (list is! List) return const [];
+      return [
+        for (final item in list)
+          if (item is Map) PendingOperation.fromJson(item.cast<String, dynamic>()),
+      ].whereType<PendingOperation>().toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> savePendingOperations(List<PendingOperation> operations) async {
+    await setString(
+      pendingOperations,
+      jsonEncode([for (final op in operations) op.toJson()]),
+    );
   }
 }
