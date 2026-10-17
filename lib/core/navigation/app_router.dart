@@ -19,6 +19,7 @@ import '../../auth/screens/register_screen.dart';
 import '../../auth/screens/pin_screen.dart';
 import '../../auth/screens/pair_device_screen.dart';
 import '../../auth/screens/connected_devices_screen.dart';
+import '../screens/sync/sync_screen.dart';
 
 import '../../core/screens/customers/customer_list_screen.dart';
 import '../../core/screens/customers/collections_dashboard_screen.dart';
@@ -197,6 +198,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.devices,
         builder: (_, __) => const ConnectedDevicesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.sync,
+        builder: (_, __) => const SyncScreen(),
       ),
 
       // --- Retail Shell ---

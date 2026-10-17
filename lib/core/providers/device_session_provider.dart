@@ -55,7 +55,9 @@ class DeviceSessionState {
     this.pinCache = const [],
     this.deviceId = '',
     this.online = true,
+    this.syncing = false,
     this.outboxIds = const [],
+    this.lastSyncAt,
   });
 
   final bool ready;
@@ -65,7 +67,9 @@ class DeviceSessionState {
   final List<PinShiftEntry> pinCache;
   final String deviceId;
   final bool online;
+  final bool syncing;
   final List<String> outboxIds;
+  final DateTime? lastSyncAt;
 
   bool get isPaired => pairing != null;
 
@@ -89,7 +93,9 @@ class DeviceSessionState {
     List<PinShiftEntry>? pinCache,
     String? deviceId,
     bool? online,
+    bool? syncing,
     List<String>? outboxIds,
+    DateTime? lastSyncAt,
   }) {
     return DeviceSessionState(
       ready: ready ?? this.ready,
@@ -99,7 +105,9 @@ class DeviceSessionState {
       pinCache: pinCache ?? this.pinCache,
       deviceId: deviceId ?? this.deviceId,
       online: online ?? this.online,
+      syncing: syncing ?? this.syncing,
       outboxIds: outboxIds ?? this.outboxIds,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
     );
   }
 }
@@ -148,6 +156,8 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
     final invitesRaw = await _store.getString(LocalStore.invites);
     final cacheRaw = await _store.getString(LocalStore.pinCache);
     final outbox = await _store.loadOutbox();
+    final lastSyncRaw = await _store.getString(LocalStore.lastSync);
+    final lastSyncAt = DateTime.tryParse(lastSyncRaw ?? '');
     DevicePairingInfo? pairing;
     StoredProfile? profile;
     var invites = <DeviceInvite>[];
@@ -184,9 +194,6 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
         cache = PinShiftCache.fromJsonList(list is List ? list : const []).entries;
       }
     } catch (_) {}
-    if (online && outbox.isNotEmpty) {
-      await _store.saveOutbox(const []);
-    }
     state = DeviceSessionState(
       ready: true,
       pairing: pairing,
@@ -195,7 +202,8 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
       pinCache: cache,
       deviceId: id,
       online: online,
-      outboxIds: online ? const [] : outbox,
+      outboxIds: outbox,
+      lastSyncAt: lastSyncAt,
     );
   }
 
@@ -304,12 +312,28 @@ class DeviceSessionNotifier extends StateNotifier<DeviceSessionState> {
   Future<void> setOnline(bool online) async {
     if (!state.ready) await restore();
     if (state.online == online) return;
-    var outbox = state.outboxIds;
-    if (online && outbox.isNotEmpty) {
-      await _store.saveOutbox(const []);
-      outbox = const [];
+    state = state.copyWith(online: online);
+  }
+
+  /// Sends every waiting sale. Does nothing while the register is offline.
+  Future<bool> syncNow() async {
+    if (!state.ready) await restore();
+    if (!state.online || state.outboxIds.isEmpty || state.syncing) return false;
+    state = state.copyWith(syncing: true);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!state.online) {
+      state = state.copyWith(syncing: false);
+      return false;
     }
-    state = state.copyWith(online: online, outboxIds: outbox);
+    final now = DateTime.now();
+    await _store.saveOutbox(const []);
+    await _store.setString(LocalStore.lastSync, now.toIso8601String());
+    state = state.copyWith(
+      syncing: false,
+      outboxIds: const [],
+      lastSyncAt: now,
+    );
+    return true;
   }
 
   /// Test hook. Production listens to the browser instead.

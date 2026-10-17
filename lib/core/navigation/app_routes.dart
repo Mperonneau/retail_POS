@@ -12,6 +12,8 @@ class AppRoutes {
   static const String pairDevice = '/pair-device';
   /// Codes another register can use to connect.
   static const String devices = '/devices';
+  /// Sales saved on this device, waiting for a connection.
+  static const String sync = '/sync';
 
   // Restaurant
   static const String restaurantDashboard = '/restaurant/dashboard';

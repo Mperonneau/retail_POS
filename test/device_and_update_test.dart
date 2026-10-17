@@ -1,8 +1,12 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:retail_pos/core/models/staff_role.dart';
+import 'package:retail_pos/core/providers/device_session_provider.dart';
 import 'package:retail_pos/core/services/app_update.dart';
 import 'package:retail_pos/core/services/device_pairing.dart';
+import 'package:retail_pos/core/services/local_store.dart';
 import 'package:retail_pos/core/services/pin_shift_cache.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('device code ignores spaces and ambiguous letters', () {
@@ -38,6 +42,31 @@ void main() {
     expect(cache.match('other', '2222'), isNull);
     final restored = PinShiftCache.fromJsonList(cache.toJson());
     expect(restored.match('dev-1', '2222')?.role, StaffRole.manager);
+  });
+
+  test('waiting sales stay queued until Synchroniser', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({
+      LocalStore.deviceId: 'dev-test',
+      LocalStore.outbox: '["sale-1","sale-2"]',
+    });
+    LocalStore.instance.debugReset();
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(deviceSessionProvider.notifier);
+    await notifier.restore();
+
+    expect(container.read(deviceSessionProvider).outboxIds, ['sale-1', 'sale-2']);
+    await notifier.debugSetOnline(false);
+    expect(await notifier.syncNow(), isFalse);
+    expect(container.read(deviceSessionProvider).outboxIds, ['sale-1', 'sale-2']);
+
+    await notifier.debugSetOnline(true);
+    expect(container.read(deviceSessionProvider).outboxIds, ['sale-1', 'sale-2']);
+    expect(await notifier.syncNow(), isTrue);
+    expect(container.read(deviceSessionProvider).outboxIds, isEmpty);
+    expect(container.read(deviceSessionProvider).lastSyncAt, isNotNull);
+    expect(await LocalStore.instance.loadOutbox(), isEmpty);
   });
 
   test('a new web build asks to reload and an old build can be forced', () {

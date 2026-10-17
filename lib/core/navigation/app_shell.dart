@@ -1326,7 +1326,16 @@ class _MobileSideMenu extends ConsumerWidget {
           onTap: () => onSelected(destination.route),
         ),
       _SideMenuRowData(
-        icon: Icons.laptop_mac_outlined,
+        icon: Icons.sync,
+        label: 'Synchronisation',
+        selected: selectedRoute == AppRoutes.sync,
+        onTap: () {
+          Navigator.of(context).pop();
+          context.push(AppRoutes.sync);
+        },
+      ),
+      _SideMenuRowData(
+        icon: Icons.devices,
         label: 'Appareils connectés',
         selected: selectedRoute == AppRoutes.devices,
         onTap: () {

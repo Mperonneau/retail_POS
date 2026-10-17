@@ -1,9 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:retail_pos/core/models/order_history.dart';
+import 'package:retail_pos/core/models/retail_order.dart';
+import 'package:retail_pos/core/providers/device_session_provider.dart';
+import 'package:retail_pos/core/screens/sync/sync_screen.dart';
 import 'package:retail_pos/core/services/local_store.dart';
 import 'package:retail_pos/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,9 +75,86 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Clients'), findsWidgets);
+    expect(find.text('Synchronisation'), findsOneWidget);
     expect(find.text('Appareils connectés'), findsOneWidget);
+    expect(find.byIcon(Icons.devices), findsOneWidget);
     expect(find.text('Inventaire'), findsWidgets);
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
+  });
+
+  testWidgets('Banner opens the waiting sales and Synchroniser sends them', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final previousOnError = FlutterError.onError;
+    addTearDown(() => FlutterError.onError = previousOnError);
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('A RenderFlex overflowed')) return;
+      previousOnError?.call(details);
+    };
+
+    final order = RetailOrder(
+      id: 'sale-1',
+      orderNumber: 'ORD-2026-0042',
+      clientName: 'Marie Joseph',
+      status: RetailOrderStatus.paid,
+      paymentSource: RetailPaymentSource.pos,
+      paymentMethod: PaymentMethodType.cash,
+      lines: const [
+        RetailOrderLine(
+          productName: 'Brosse à dents',
+          productId: 1,
+          quantity: 1,
+          unitPriceHtg: 85,
+        ),
+      ],
+      createdAt: DateTime(2026, 10, 17, 10, 30),
+      paidAt: DateTime(2026, 10, 17, 10, 30),
+    );
+    SharedPreferences.setMockInitialValues({
+      LocalStore.outbox: jsonEncode(['sale-1']),
+      LocalStore.extraOrders: jsonEncode([order.toJson()]),
+    });
+    LocalStore.instance.debugReset();
+
+    await _signInToRetailShell(tester);
+
+    expect(
+      find.text('Connexion rétablie. 1 opération attend d\'être envoyée.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'Synchronisation'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('1 opération en attente'), findsOneWidget);
+    expect(find.text('ORD-2026-0042'), findsOneWidget);
+    expect(find.textContaining('Marie Joseph'), findsOneWidget);
+    expect(find.text('Pas encore envoyé'), findsOneWidget);
+    expect(find.text('Indisponible hors ligne'), findsNothing);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SyncScreen)),
+    );
+    await container.read(deviceSessionProvider.notifier).debugSetOnline(false);
+    await tester.pump();
+    expect(find.text('Indisponible hors ligne'), findsOneWidget);
+
+    await container.read(deviceSessionProvider.notifier).debugSetOnline(true);
+    await tester.pump();
+    expect(find.text('Indisponible hors ligne'), findsNothing);
+
+    await tester.tap(find.text('Synchroniser'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump();
+
+    expect(find.text('Tout est envoyé.'), findsOneWidget);
+    expect(find.text('Rien à envoyer pour l\'instant.'), findsOneWidget);
+    expect(find.text('ORD-2026-0042'), findsNothing);
   });
 }
 

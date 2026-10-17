@@ -17,6 +17,7 @@ class LocalStore {
   static const deviceId = 'retail.device_id';
   static const extraOrders = 'retail.extra_orders';
   static const outbox = 'retail.outbox_ids';
+  static const lastSync = 'retail.last_sync_at';
   static const updateDismissed = 'retail.app_update.dismissed';
 
   SharedPreferences? _prefs;
