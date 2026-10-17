@@ -1309,74 +1309,144 @@ class _MobileSideMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = ref.watch(authProvider);
+    final canvas = isDark ? AppColors.darkBackground : const Color(0xFFF2F2F7);
+    final card = isDark ? AppColors.darkSurface : AppColors.white;
     final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
-    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
-    final accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    final muted = isDark ? AppColors.coolGray : const Color(0xFF8E8E93);
+    final hairline = isDark ? AppColors.darkBorder : const Color(0xFFE5E5EA);
+    final business = (auth.businessName ?? '').isEmpty
+        ? 'Caisse détail'
+        : auth.businessName!;
+    final rows = <_SideMenuRowData>[
+      for (final destination in destinations)
+        _SideMenuRowData(
+          icon: destination.icon,
+          label: destination.label,
+          selected: selectedRoute == destination.route,
+          onTap: () => onSelected(destination.route),
+        ),
+      _SideMenuRowData(
+        icon: Icons.laptop_mac_outlined,
+        label: 'Appareils connectés',
+        selected: selectedRoute == AppRoutes.devices,
+        onTap: () {
+          Navigator.of(context).pop();
+          context.push(AppRoutes.devices);
+        },
+      ),
+    ];
+
     return Drawer(
-      backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
+      backgroundColor: canvas,
+      surfaceTintColor: Colors.transparent,
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    (auth.businessName ?? '').isEmpty
-                        ? 'Caisse détail'
-                        : auth.businessName!,
-                    style: AppTextStyles.h2(color: accent),
+                    business,
+                    style: AppTextStyles.h3(color: ink),
                   ),
                   if ((auth.userName ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(auth.userName!, style: AppTextStyles.caption(color: muted)),
+                    const SizedBox(height: 2),
+                    Text(
+                      auth.userName!,
+                      style: AppTextStyles.caption(color: muted),
+                    ),
                   ],
                 ],
               ),
             ),
-            Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.lightBlue),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  for (final destination in destinations)
-                    ListTile(
-                      leading: Icon(
-                        selectedRoute == destination.route
-                            ? destination.selectedIcon
-                            : destination.icon,
-                        color: selectedRoute == destination.route ? accent : muted,
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: card,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < rows.length; i++) ...[
+                      _SideMenuRow(
+                        data: rows[i],
+                        ink: ink,
+                        chevron: muted,
                       ),
-                      title: Text(
-                        destination.label,
-                        style: AppTextStyles.body(
-                          color: selectedRoute == destination.route ? accent : ink,
-                        ).copyWith(
-                          fontWeight: selectedRoute == destination.route
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                      if (i != rows.length - 1)
+                        Divider(
+                          height: 1,
+                          thickness: 0.6,
+                          indent: 54,
+                          color: hairline,
                         ),
-                      ),
-                      onTap: () => onSelected(destination.route),
-                    ),
-                  Divider(color: isDark ? AppColors.darkBorder : AppColors.lightBlue),
-                  ListTile(
-                    leading: Icon(Icons.devices_other_outlined, color: muted),
-                    title: Text(
-                      'Appareils connectés',
-                      style: AppTextStyles.body(color: ink),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      context.push(AppRoutes.devices);
-                    },
-                  ),
-                ],
+                    ],
+                  ],
+                ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SideMenuRowData {
+  const _SideMenuRowData({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+}
+
+class _SideMenuRow extends StatelessWidget {
+  const _SideMenuRow({
+    required this.data,
+    required this.ink,
+    required this.chevron,
+  });
+
+  final _SideMenuRowData data;
+  final Color ink;
+  final Color chevron;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: data.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(data.icon, size: 22, color: ink),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  data.label,
+                  style: AppTextStyles.body(color: ink).copyWith(
+                    fontSize: 16,
+                    height: 1.2,
+                    fontWeight:
+                        data.selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, size: 22, color: chevron),
+            ],
+          ),
         ),
       ),
     );

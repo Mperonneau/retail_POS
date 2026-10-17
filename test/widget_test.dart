@@ -71,6 +71,7 @@ void main() {
     expect(find.text('Clients'), findsWidgets);
     expect(find.text('Appareils connectés'), findsOneWidget);
     expect(find.text('Inventaire'), findsWidgets);
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });
 }
 
