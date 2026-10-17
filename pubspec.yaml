@@ -68,10 +68,13 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
 
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
-  uses-material-design: true
+  # The hosting serves /assets/* as immutable, so a build-specific
+  # tree-shaken icon font stays cached on phones and new icons render blank.
+  # The complete font is loaded in main() instead; its bytes never change.
+  uses-material-design: false
+
+  assets:
+    - assets/fonts/material_icons_full.otf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -16,6 +17,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = 'fr';
   await initializeDateFormatting('fr');
+  try {
+    await (FontLoader('MaterialIcons')
+          ..addFont(rootBundle.load('assets/fonts/material_icons_full.otf')))
+        .load();
+  } catch (_) {
+    // Icons may be blank, but the register must still open.
+  }
   runApp(const ProviderScope(child: BizManagerApp()));
 }
 
