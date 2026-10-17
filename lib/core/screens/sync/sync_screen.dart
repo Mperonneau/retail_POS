@@ -66,6 +66,7 @@ class SyncScreen extends ConsumerWidget {
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
         title: const Text('Synchronisation'),
+        titleTextStyle: AppTextStyles.h3(color: ink),
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         foregroundColor: ink,
         elevation: 0,

@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:retail_pos/core/mock/mock_retail_data.dart';
+import 'package:retail_pos/core/mock/mock_retail_orders.dart';
 import 'package:retail_pos/core/models/order_history.dart';
+import 'package:retail_pos/core/navigation/app_router.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
 import 'package:retail_pos/core/providers/device_session_provider.dart';
 import 'package:retail_pos/core/screens/sync/sync_screen.dart';
@@ -82,6 +85,57 @@ void main() {
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });
 
+  testWidgets('A sale paid offline waits on the synchronisation page', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final previousOnError = FlutterError.onError;
+    addTearDown(() => FlutterError.onError = previousOnError);
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('A RenderFlex overflowed')) return;
+      if (message.contains('attached to more than one ScrollPosition')) return;
+      previousOnError?.call(details);
+    };
+
+    await _signInToRetailShell(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    );
+    await container.read(deviceSessionProvider.notifier).debugSetOnline(false);
+    await tester.pump();
+
+    container.read(appRouterProvider).go('/retail/pos');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    final firstProduct = container.read(mockProductsProvider).first;
+    await tester.tap(find.text(firstProduct.name).first);
+    await tester.pump();
+    for (final label in ['Encaisser', 'Suivant', 'Payer', 'Confirmer le paiement']) {
+      expect(find.text(label), findsWidgets, reason: label);
+      await tester.tap(find.text(label).last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    final outbox = container.read(deviceSessionProvider).outboxIds;
+    expect(outbox, hasLength(1));
+    final sale = container
+        .read(retailOrdersProvider)
+        .firstWhere((order) => order.id == outbox.single);
+    expect(sale.lines.single.productName, firstProduct.name);
+
+    container.read(appRouterProvider).push('/sync');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('1 opération en attente'), findsOneWidget);
+    expect(find.text(sale.orderNumber), findsOneWidget);
+    expect(find.text('Indisponible hors ligne'), findsOneWidget);
+  });
+
   testWidgets('Banner opens the waiting sales and Synchroniser sends them', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -131,6 +185,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('1 opération en attente'), findsOneWidget);
+    final title = tester.widget<AppBar>(find.byType(AppBar));
+    expect(title.titleTextStyle?.color, isNot(Colors.white));
     expect(find.text('ORD-2026-0042'), findsOneWidget);
     expect(find.textContaining('Marie Joseph'), findsOneWidget);
     expect(find.text('Pas encore envoyé'), findsOneWidget);

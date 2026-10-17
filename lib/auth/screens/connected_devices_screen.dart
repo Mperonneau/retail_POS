@@ -26,6 +26,7 @@ class ConnectedDevicesScreen extends ConsumerWidget {
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
         title: const Text('Appareils connectés'),
+        titleTextStyle: AppTextStyles.h3(color: ink),
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         foregroundColor: ink,
         elevation: 0,
