@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 import 'app_button.dart';
+import '../theme/app_icons.dart';
 
 /// Shows a reload banner when the server has a newer web build.
 class AppUpdateHost extends StatefulWidget {
@@ -64,10 +65,7 @@ class _AppUpdateHostState extends State<AppUpdateHost>
   bool _holdForCheckout(BuildContext context) {
     try {
       final path = GoRouterState.of(context).uri.path;
-      return path.contains('cash') ||
-          path.contains('payment') ||
-          path.contains('checkout') ||
-          path.contains('/pos');
+      return path.contains('payment') || path.contains('checkout');
     } catch (_) {
       return false;
     }
@@ -126,7 +124,7 @@ class _SoftBanner extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
         child: Row(
           children: [
-            const Icon(Icons.system_update_alt, color: AppColors.primaryBlue, size: 22),
+            const Icon(AppIcons.systemUpdateAlt, color: AppColors.primaryBlue, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -177,7 +175,7 @@ class _ForcedUpdate extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.system_update_alt, color: AppColors.primaryBlue, size: 48),
+                  const Icon(AppIcons.systemUpdateAlt, color: AppColors.primaryBlue, size: 48),
                   const SizedBox(height: 16),
                   Text(
                     'Mise à jour requise',

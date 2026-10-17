@@ -12,15 +12,18 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_scroll_behavior.dart';
 import 'core/widgets/app_notification_banner.dart';
 import 'core/widgets/app_update_banner.dart';
+import 'core/theme/app_icons.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = 'fr';
   await initializeDateFormatting('fr');
   try {
-    await (FontLoader('MaterialIcons')
-          ..addFont(rootBundle.load('assets/fonts/material_icons_full.otf')))
-        .load();
+    final font = rootBundle.load('assets/fonts/material_icons_full.otf');
+    await Future.wait([
+      (FontLoader('MaterialIcons')..addFont(font)).load(),
+      (FontLoader(kFullIconFamily)..addFont(font)).load(),
+    ]);
   } catch (_) {
     // Icons may be blank, but the register must still open.
   }

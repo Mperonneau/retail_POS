@@ -22,6 +22,7 @@ import '../widgets/offline_banner.dart';
 import '../widgets/keyboard_scroll_shortcuts.dart';
 import '../widgets/loading_overlay.dart';
 import 'app_routes.dart';
+import '../theme/app_icons.dart';
 
 class _NavDestination {
   final String label;
@@ -1326,7 +1327,7 @@ class _MobileSideMenu extends ConsumerWidget {
           onTap: () => onSelected(destination.route),
         ),
       _SideMenuRowData(
-        icon: Icons.sync,
+        icon: AppIcons.sync,
         label: 'Synchronisation',
         selected: selectedRoute == AppRoutes.sync,
         onTap: () {
@@ -1335,7 +1336,7 @@ class _MobileSideMenu extends ConsumerWidget {
         },
       ),
       _SideMenuRowData(
-        icon: Icons.devices,
+        icon: AppIcons.devices,
         label: 'Appareils connectés',
         selected: selectedRoute == AppRoutes.devices,
         onTap: () {

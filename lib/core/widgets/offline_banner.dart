@@ -6,6 +6,7 @@ import '../navigation/app_routes.dart';
 import '../providers/device_session_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/app_icons.dart';
 
 /// Shown while the register has no network, or sales are still waiting to send.
 class OfflineBanner extends ConsumerWidget {
@@ -35,7 +36,7 @@ class OfflineBanner extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
-              session.online ? Icons.cloud_upload_outlined : Icons.wifi_off,
+              session.online ? AppIcons.cloudUploadOutlined : AppIcons.wifiOff,
               size: 18,
               color: AppColors.nearBlack,
             ),

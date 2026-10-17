@@ -41,6 +41,18 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      var hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        // First takeover: reload once so fonts come through the worker.
+        if (hadController || sessionStorage.getItem('assetSwReloaded')) return;
+        sessionStorage.setItem('assetSwReloaded', '1');
+        window.location.reload();
+      });
+      navigator.serviceWorker.register('asset_refresh_sw.js').catch(function () {});
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:retail_pos/core/theme/app_icons.dart';
 import 'package:retail_pos/core/mock/mock_retail_data.dart';
 import 'package:retail_pos/core/mock/mock_retail_orders.dart';
 import 'package:retail_pos/core/models/order_history.dart';
@@ -82,7 +83,7 @@ void main() {
     expect(find.text('Clients'), findsWidgets);
     expect(find.text('Synchronisation'), findsOneWidget);
     expect(find.text('Appareils connectés'), findsOneWidget);
-    expect(find.byIcon(Icons.devices), findsOneWidget);
+    expect(find.byIcon(AppIcons.devices), findsOneWidget);
     expect(find.text('Inventaire'), findsWidgets);
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });

@@ -125,4 +125,31 @@ void main() {
       AppUpdateMode.none,
     );
   });
+
+  test('without a build id, a new main.dart.js ETag asks to reload', () async {
+    SharedPreferences.setMockInitialValues({});
+    String? etag = 'W/"a"';
+    final checker = AppUpdateChecker(
+      buildId: '',
+      web: true,
+      fetch: (_) async => {'version': '1.0.0', 'build_number': '1'},
+      fingerprint: (uri) async {
+        expect(uri.path, '/main.dart.js');
+        return etag;
+      },
+    );
+    await checker.check();
+    expect(checker.visible.mode, AppUpdateMode.none);
+
+    etag = null;
+    await checker.check();
+    expect(checker.visible.mode, AppUpdateMode.none);
+
+    etag = 'W/"b"';
+    await checker.check();
+    expect(checker.visible.mode, AppUpdateMode.soft);
+
+    await checker.dismiss();
+    expect(checker.visible.mode, AppUpdateMode.none);
+  });
 }

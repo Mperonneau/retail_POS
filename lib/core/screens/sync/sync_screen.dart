@@ -14,6 +14,7 @@ import '../../utils/currency_formatter.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../order_history/order_history_screen.dart';
+import '../../theme/app_icons.dart';
 
 /// Changes waiting on this device, and the button that sends them once online.
 class SyncScreen extends ConsumerWidget {
@@ -98,7 +99,7 @@ class SyncScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   AppButton(
                     label: 'Synchroniser',
-                    icon: Icons.sync,
+                    icon: AppIcons.sync,
                     isLoading: session.syncing,
                     onPressed: offline || session.syncing
                         ? null

@@ -9,6 +9,8 @@ Future<void> reloadApp() async {
         .getRegistrations()
         .toDart;
     for (final registration in registrations.toDart) {
+      final script = registration.active?.scriptURL ?? '';
+      if (script.contains('asset_refresh_sw')) continue;
       await registration.unregister().toDart;
     }
   } catch (_) {}

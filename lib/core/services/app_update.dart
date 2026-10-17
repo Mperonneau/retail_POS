@@ -74,31 +74,43 @@ AppUpdateStatus evaluateAppUpdate({
 
 typedef JsonFetcher = Future<Map<String, dynamic>?> Function(Uri uri);
 
+/// Returns a value that changes with every deploy, or null when offline.
+typedef FingerprintFetcher = Future<String?> Function(Uri uri);
+
 class AppUpdateChecker extends ChangeNotifier {
   AppUpdateChecker({
     int? buildNumber,
     String? buildId,
     JsonFetcher? fetch,
+    FingerprintFetcher? fingerprint,
     Uri? manifestUri,
     bool enabled = true,
+    bool? web,
   })  : buildNumber = buildNumber ?? kBuildNumber,
         buildId = buildId ?? kBuildId,
         _fetch = fetch ?? _httpJson,
+        _fingerprint = fingerprint ?? _httpEtag,
         _manifestUri = manifestUri,
-        _enabled = enabled;
+        _enabled = enabled,
+        _web = web ?? kIsWeb;
 
   final int buildNumber;
   final String buildId;
   final JsonFetcher _fetch;
+  final FingerprintFetcher _fingerprint;
   final Uri? _manifestUri;
   final bool _enabled;
+  final bool _web;
+
+  /// Fingerprint of the deploy this page loaded, when no build id was
+  /// compiled in.
+  String? _loadedFingerprint;
 
   AppUpdateStatus _status = AppUpdateStatus.none;
   String? _dismissedKey;
   bool _checking = false;
 
-  bool get enabled =>
-      _enabled && (buildId.isNotEmpty || buildNumber > 0) && kIsWeb;
+  bool get enabled => _enabled && _web;
 
   AppUpdateStatus get visible {
     final status = _status;
@@ -118,13 +130,19 @@ class AppUpdateChecker extends ChangeNotifier {
     _checking = true;
     try {
       if (_dismissedKey == null) await loadDismissed();
-      final manifest = await _fetch(_manifestUri ?? _manifestLocation());
-      _status = evaluateAppUpdate(
+      final manifest = await _fetch(_manifestUri ?? _resolve('version.json'));
+      var status = evaluateAppUpdate(
         buildNumber: buildNumber,
         buildId: buildId,
         webManifest: manifest,
       );
-      notifyListeners();
+      if (status.mode == AppUpdateMode.none && buildId.isEmpty) {
+        status = await _checkFingerprint();
+      }
+      if (status != _status) {
+        _status = status;
+        notifyListeners();
+      }
     } finally {
       _checking = false;
     }
@@ -141,12 +159,39 @@ class AppUpdateChecker extends ChangeNotifier {
 
   Future<void> apply() => reloadApp();
 
-  Uri _manifestLocation() {
+  /// The deploy has no build id: compare the ETag of `main.dart.js` with
+  /// the one seen when this page started.
+  Future<AppUpdateStatus> _checkFingerprint() async {
+    final current = await _fingerprint(_resolve('main.dart.js'));
+    if (current == null || current.isEmpty) return _status;
+    final loaded = _loadedFingerprint ??= current;
+    if (current == loaded) return AppUpdateStatus.none;
+    return AppUpdateStatus(mode: AppUpdateMode.soft, versionKey: 'web:$current');
+  }
+
+  Uri _resolve(String file) {
     final base = Uri.base;
-    return base.replace(
-      path: base.path.endsWith('/') ? '${base.path}version.json' : '${base.path}/version.json',
+    return Uri(
+      scheme: base.scheme,
+      host: base.host,
+      port: base.hasPort ? base.port : null,
+      path: '/$file',
       queryParameters: {'t': DateTime.now().millisecondsSinceEpoch.toString()},
     );
+  }
+}
+
+Future<String?> _httpEtag(Uri uri) async {
+  try {
+    final response = await http
+        .head(uri, headers: const {'Cache-Control': 'no-cache'})
+        .timeout(const Duration(seconds: 8));
+    if (response.statusCode != 200) return null;
+    final etag = response.headers['etag'] ?? response.headers['last-modified'];
+    if (etag != null && etag.isNotEmpty) return etag;
+    return response.headers['content-length'];
+  } catch (_) {
+    return null;
   }
 }
 
