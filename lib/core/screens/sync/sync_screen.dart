@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../models/order_history.dart';
 import '../../models/retail_order.dart';
 import '../../providers/device_session_provider.dart';
 import '../../services/local_store.dart';
