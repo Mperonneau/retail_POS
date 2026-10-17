@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/mock/mock_retail_data.dart';
+import '../../core/mock/mock_retail_orders.dart';
 import '../../core/models/customer.dart';
+import '../../core/models/order_history.dart';
 import '../../core/models/retail_fulfillment_mode.dart';
+import '../../core/models/retail_order.dart';
 import '../../core/providers/tax_settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -654,10 +657,56 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             }
             return true;
           },
-          onConfirm: () async {
+          onConfirm: (method) async {
             final map = {
               for (final e in lines) e.product.id: e.quantity,
             };
+            final now = DateTime.now();
+            final saleNo = 100 + (now.millisecondsSinceEpoch % 8999);
+            final clientName = _clientNameCtrl.text.trim();
+            ref.read(retailOrdersProvider.notifier).add(
+                  RetailOrder(
+                    id: 'pos-$_checkoutId',
+                    orderNumber: 'ORD-${now.year}-$saleNo',
+                    fromQuoteId: widget.existingQuote?.id,
+                    clientName: clientName.isEmpty ? null : clientName,
+                    clientPhone: _linkedClientPhone.trim().isEmpty
+                        ? null
+                        : _linkedClientPhone.trim(),
+                    fulfillmentMode: _fulfillmentSectionVisible
+                        ? _fulfillment
+                        : RetailFulfillmentMode.inStore,
+                    status: RetailOrderStatus.paid,
+                    paymentSource: RetailPaymentSource.pos,
+                    paymentMethod: method,
+                    lines: [
+                      for (final e in lines)
+                        RetailOrderLine(
+                          productName: e.product.name,
+                          productId: e.product.id,
+                          quantity: e.quantity,
+                          unitPriceHtg: e.product.priceHtg,
+                          unitPriceUsd: e.product.priceUsd,
+                        ),
+                    ],
+                    discountPercent: widget.discountPercent,
+                    taxPercent: ref.read(taxEnabledProvider)
+                        ? ref.read(taxPercentProvider)
+                        : 0,
+                    serviceChargePercent: ref.read(gratuityEnabledProvider)
+                        ? ref.read(gratuityPercentProvider)
+                        : 0,
+                    deliveryFee: deliveryFee,
+                    deliveryLocation: _isDeliveryMode
+                        ? _deliveryLocationCtrl.text.trim()
+                        : null,
+                    deliveryPhone: _isDeliveryMode
+                        ? _deliveryPhoneCtrl.text.trim()
+                        : null,
+                    createdAt: now,
+                    paidAt: now,
+                  ),
+                );
             ref.read(mockProductsProvider.notifier).applySale(map);
             ref.read(retailInventoryLedgerProvider.notifier).recordSalesFromCheckout(
                   map,
@@ -669,8 +718,6 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                   .convertToOrder(widget.existingQuote!.id);
             }
             if (!context.mounted) return;
-            final saleNo = 100 +
-                (DateTime.now().millisecondsSinceEpoch % 8999);
             setState(() {
               _submitting = false;
               _completedSaleNumber = saleNo;
@@ -1358,7 +1405,7 @@ class _RetailPaymentPanel extends ConsumerStatefulWidget {
   final String checkoutId;
   final bool submitting;
   final Future<bool> Function() onValidateStock;
-  final Future<void> Function() onConfirm;
+  final Future<void> Function(PaymentMethodType method) onConfirm;
 
   const _RetailPaymentPanel({
     required this.total,
@@ -1425,7 +1472,12 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             );
       }
     }
-    await widget.onConfirm();
+    await widget.onConfirm(switch (_method) {
+      _RPayMethod.moncash => PaymentMethodType.moncash,
+      _RPayMethod.card => PaymentMethodType.card,
+      _RPayMethod.cash => PaymentMethodType.cash,
+      _RPayMethod.credit => PaymentMethodType.credit,
+    });
   }
 
   @override
