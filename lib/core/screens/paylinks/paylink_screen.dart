@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/list_page_nav.dart';
 import '../../widgets/payment_link_dialog.dart';
 import 'new_paylink_modal.dart';
 import 'paylink_detail_sheet.dart';
@@ -289,14 +290,41 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.only(bottom: 4),
-                    itemCount: pageItems.length,
-                    separatorBuilder: (_, __) => Divider(
-                      height: 1,
-                      indent: 24,
-                      endIndent: 24,
-                      color: isDark ? AppColors.darkBorder : const Color(0xFFEEEEEE),
-                    ),
+                    itemCount: pageItems.length +
+                        (narrow && pageCount > 1 ? 1 : 0),
+                    separatorBuilder: (_, i) {
+                      if (narrow && pageCount > 1 && i >= pageItems.length - 1) {
+                        return const SizedBox(height: 8);
+                      }
+                      return Divider(
+                        height: 1,
+                        indent: 24,
+                        endIndent: 24,
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : const Color(0xFFEEEEEE),
+                      );
+                    },
                     itemBuilder: (context, i) {
+                      if (i >= pageItems.length) {
+                        return Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ListPageNav(
+                              isDark: isDark,
+                              currentPage: safePage + 1,
+                              totalPages: pageCount,
+                              onPrevious: safePage > 0
+                                  ? () => setState(() => _page = safePage - 1)
+                                  : null,
+                              onNext: safePage < pageCount - 1
+                                  ? () => setState(() => _page = safePage + 1)
+                                  : null,
+                            ),
+                          ),
+                        );
+                      }
                       final link = pageItems[i];
                       return _PayLinkRow(
                         link: link,
@@ -314,8 +342,8 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                   ),
           ),
 
-          // ── Pagination ─────────────────────────────────────────────────────
-          if (pageCount > 1)
+          // Desktop keeps the numbered pager. Mobile uses the list footer.
+          if (!narrow && pageCount > 1)
             _Pagination(
               currentPage: safePage,
               pageCount: pageCount,

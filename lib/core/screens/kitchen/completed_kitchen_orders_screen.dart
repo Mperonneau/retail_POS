@@ -10,6 +10,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/date_formatter.dart';
 import '../../widgets/discount_approval_dialog.dart';
+import '../../widgets/list_page_nav.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/app_close_button.dart';
 
@@ -274,6 +275,7 @@ class _CompletedKitchenOrdersScreenState
     final pageItems = filtered.isEmpty
         ? <CompletedKitchenOrderEntry>[]
         : filtered.sublist(start, (start + _pageSize).clamp(0, filtered.length));
+    final wide = MediaQuery.sizeOf(context).width >= AppConstants.mobileBreakpoint;
 
     return Scaffold(
       backgroundColor: bg,
@@ -302,15 +304,31 @@ class _CompletedKitchenOrdersScreenState
                         ? 'Modifiez la recherche ou le filtre de date.'
                         : 'Les tickets cuisine terminés apparaîtront ici.',
                   )
-                : LayoutBuilder(builder: (ctx, c) {
-                    final wide = c.maxWidth >= AppConstants.mobileBreakpoint;
-                    return ListView.builder(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: wide ? AppConstants.spacing24 : AppConstants.spacing12,
-                        vertical: AppConstants.spacing12,
-                      ),
-                      itemCount: pageItems.length,
-                      itemBuilder: (context, i) => Padding(
+                : ListView.builder(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: wide ? AppConstants.spacing24 : AppConstants.spacing12,
+                      vertical: AppConstants.spacing12,
+                    ),
+                    itemCount: pageItems.length +
+                        (!wide && pageCount > 1 ? 1 : 0),
+                    itemBuilder: (context, i) {
+                      if (i >= pageItems.length) {
+                        return Align(
+                          alignment: Alignment.centerRight,
+                          child: ListPageNav(
+                            isDark: isDark,
+                            currentPage: page + 1,
+                            totalPages: pageCount,
+                            onPrevious: page > 0
+                                ? () => setState(() => _pageIndex = page - 1)
+                                : null,
+                            onNext: page < pageCount - 1
+                                ? () => setState(() => _pageIndex = page + 1)
+                                : null,
+                          ),
+                        );
+                      }
+                      return Padding(
                         padding: const EdgeInsets.only(bottom: AppConstants.spacing8),
                         child: _CompactOrderRow(
                           entry: pageItems[i],
@@ -319,11 +337,11 @@ class _CompletedKitchenOrdersScreenState
                           onTap: () => _openDetail(pageItems[i], isDark),
                           onReverse: () => _reverse(pageItems[i]),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    },
+                  ),
           ),
-          if (filtered.isNotEmpty)
+          if (wide && filtered.isNotEmpty)
             _PaginationBar(
               page: page,
               pageCount: pageCount,

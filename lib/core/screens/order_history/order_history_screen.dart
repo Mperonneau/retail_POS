@@ -12,6 +12,7 @@ import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/list_page_nav.dart';
 import '../../widgets/payment_method_block.dart';
 import 'order_history_detail.dart';
 import '../../widgets/app_close_button.dart';
@@ -575,13 +576,6 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                   const SizedBox(height: AppConstants.spacing16),
                 ],
                 Expanded(child: _buildTable(context, isDark, isMobile)),
-                if (isMobile && _totalPages > 1) ...[
-                  const SizedBox(height: AppConstants.spacing8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: _buildPagination(isDark),
-                  ),
-                ],
               ],
             ),
           ),
@@ -752,6 +746,90 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
       );
     }
 
+    if (isMobile) {
+      return ListView(
+        padding: const EdgeInsets.only(bottom: AppConstants.spacing8),
+        children: [
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.spacing16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkBackground.withValues(alpha: 0.5)
+                        : AppColors.lightBlue.withValues(alpha: 0.4),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(AppConstants.radiusCard),
+                      topRight: Radius.circular(AppConstants.radiusCard),
+                    ),
+                  ),
+                  child: Row(children: [
+                    Expanded(
+                      child: Text(
+                        'Reçu / nom',
+                        style: AppTextStyles.caption(
+                          color: isDark
+                              ? AppColors.coolGray
+                              : AppColors.darkGray,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Total',
+                      style: AppTextStyles.caption(
+                        color:
+                            isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
+                    ),
+                  ]),
+                ),
+                const Divider(height: 1),
+                for (var i = 0; i < records.length; i++) ...[
+                  if (i > 0)
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                  _HistoryRowTile(
+                    record: records[i],
+                    isDark: isDark,
+                    isMobile: true,
+                    isSelected: _selectedRecord?.receiptNumber ==
+                        records[i].receiptNumber,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              OrderHistoryDetailPage(record: records[i]),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_totalPages > 1) ...[
+            const SizedBox(height: AppConstants.spacing16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ListPageNav(
+                isDark: isDark,
+                currentPage: _currentPage + 1,
+                totalPages: _totalPages,
+                onPrevious: _currentPage > 0
+                    ? () => setState(() => _currentPage--)
+                    : null,
+                onNext: _currentPage < _totalPages - 1
+                    ? () => setState(() => _currentPage++)
+                    : null,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -901,6 +979,45 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
 }
 
 // ── Row widgets ──────────────────────────────────────────────────────────────
+
+class _HistoryRowTile extends StatelessWidget {
+  const _HistoryRowTile({
+    required this.record,
+    required this.isDark,
+    required this.isMobile,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final OrderHistoryRecord record;
+  final bool isDark;
+  final bool isMobile;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isSelected
+          ? (isDark
+              ? AppColors.sidebarSelected.withValues(alpha: 0.4)
+              : AppColors.lightBlue)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.spacing16,
+            vertical: 12,
+          ),
+          child: isMobile
+              ? _MobileRow(record: record, isDark: isDark)
+              : _DesktopRow(record: record, isDark: isDark),
+        ),
+      ),
+    );
+  }
+}
 
 class _DesktopRow extends StatelessWidget {
   final OrderHistoryRecord record;

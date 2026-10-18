@@ -13,6 +13,7 @@ import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/list_page_nav.dart';
 import '../../core/widgets/payment_link_dialog.dart';
 import '../../core/widgets/status_badge.dart';
 import '../models/retail_cart_entry.dart';
@@ -369,10 +370,33 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       AppConstants.spacing24,
                       AppConstants.spacing16,
                     ),
-                    itemCount: quotes.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppConstants.spacing8),
+                    itemCount: quotes.length +
+                        (isMobile && _totalPages > 1 ? 1 : 0),
+                    separatorBuilder: (_, i) {
+                      if (isMobile &&
+                          _totalPages > 1 &&
+                          i >= quotes.length - 1) {
+                        return const SizedBox(height: AppConstants.spacing16);
+                      }
+                      return const SizedBox(height: AppConstants.spacing8);
+                    },
                     itemBuilder: (_, i) {
+                      if (i >= quotes.length) {
+                        return Align(
+                          alignment: Alignment.centerRight,
+                          child: ListPageNav(
+                            isDark: isDark,
+                            currentPage: _currentPage + 1,
+                            totalPages: _totalPages,
+                            onPrevious: _currentPage > 0
+                                ? () => setState(() => _currentPage--)
+                                : null,
+                            onNext: _currentPage < _totalPages - 1
+                                ? () => setState(() => _currentPage++)
+                                : null,
+                          ),
+                        );
+                      }
                       final q = quotes[i];
                       return _QuoteCard(
                         quote: q,
@@ -382,22 +406,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     },
                   ),
           ),
-          if (isMobile && _totalPages > 1)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.spacing24,
-                AppConstants.spacing8,
-                AppConstants.spacing24,
-                AppConstants.spacing12,
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: _buildPagination(isDark, filtered.length),
-                ),
-              ),
-            ),
         ],
       ),
     );

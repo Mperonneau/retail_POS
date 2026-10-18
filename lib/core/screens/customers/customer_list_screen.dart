@@ -8,6 +8,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/list_page_nav.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/empty_state.dart';
 import 'customer_detail_screen.dart';
@@ -121,7 +122,16 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           ? constraints.maxWidth
           : _drawerWidth.clamp(0.0, constraints.maxWidth);
       final listBody = _buildListBody(
-          context, state, isDark, filtered, paginated, totalPages, page, totalOwed);
+        context,
+        state,
+        isDark,
+        filtered,
+        paginated,
+        totalPages,
+        page,
+        totalOwed,
+        isMobile: isMobile,
+      );
 
       return Scaffold(
         backgroundColor: Colors.transparent,
@@ -179,8 +189,9 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     List<Customer> paginated,
     int totalPages,
     int page,
-    double totalOwed,
-  ) {
+    double totalOwed, {
+    required bool isMobile,
+  }) {
     return Padding(
         padding: const EdgeInsets.only(
           left: AppConstants.spacing24,
@@ -349,10 +360,33 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                       message: 'Ajoutez un client ou changez le filtre.',
                     )
                   : ListView.separated(
-                      itemCount: paginated.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: AppConstants.spacing8),
+                      itemCount: paginated.length +
+                          (isMobile && totalPages > 1 ? 1 : 0),
+                      separatorBuilder: (_, i) {
+                        if (isMobile &&
+                            totalPages > 1 &&
+                            i >= paginated.length - 1) {
+                          return const SizedBox(height: AppConstants.spacing16);
+                        }
+                        return const SizedBox(height: AppConstants.spacing8);
+                      },
                       itemBuilder: (context, i) {
+                        if (i >= paginated.length) {
+                          return Align(
+                            alignment: Alignment.centerRight,
+                            child: ListPageNav(
+                              isDark: isDark,
+                              currentPage: page,
+                              totalPages: totalPages,
+                              onPrevious: page > 1
+                                  ? () => setState(() => _currentPage = page - 1)
+                                  : null,
+                              onNext: page < totalPages
+                                  ? () => setState(() => _currentPage = page + 1)
+                                  : null,
+                            ),
+                          );
+                        }
                         final c = paginated[i];
                         final balance = state.balanceFor(c.id);
                         return _CustomerCard(
@@ -366,8 +400,8 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                     ),
             ),
 
-            // Pagination
-            if (filtered.isNotEmpty && totalPages > 1) ...[
+            // Desktop keeps the numbered pager. Mobile uses the list footer.
+            if (!isMobile && filtered.isNotEmpty && totalPages > 1) ...[
               const SizedBox(height: AppConstants.spacing4),
               _PaginationBar(
                 currentPage: page,
