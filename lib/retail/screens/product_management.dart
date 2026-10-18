@@ -275,6 +275,8 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                                     _ProductListTile(
                                       product: p,
                                       isDark: isDark,
+                                      onTap: () =>
+                                          _showProductSheet(context, p),
                                       onMoreTap: () =>
                                           _showOptions(context, p),
                                     ),
@@ -311,6 +313,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                                 return _ProductGridTile(
                                   product: p,
                                   isDark: isDark,
+                                  onTap: () => _showProductSheet(context, p),
                                   onMoreTap: () => _showOptions(context, p),
                                 );
                               },
@@ -833,11 +836,13 @@ class _ProductGridTile extends StatelessWidget {
   const _ProductGridTile({
     required this.product,
     required this.isDark,
+    required this.onTap,
     required this.onMoreTap,
   });
 
   final MockProduct product;
   final bool isDark;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
   @override
@@ -856,7 +861,7 @@ class _ProductGridTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppConstants.radiusCard),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onMoreTap,
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
@@ -987,11 +992,13 @@ class _ProductListTile extends StatelessWidget {
   const _ProductListTile({
     required this.product,
     required this.isDark,
+    required this.onTap,
     required this.onMoreTap,
   });
 
   final MockProduct product;
   final bool isDark;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
   @override
@@ -1005,7 +1012,7 @@ class _ProductListTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onMoreTap,
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Row(
