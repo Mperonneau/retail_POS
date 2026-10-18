@@ -32,6 +32,7 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
   int _page = 0;
   final _searchCtrl = TextEditingController();
   String _query = '';
+  bool _searchOpen = false;
 
   static const _kPageSize = 15;
 
@@ -195,6 +196,8 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
     final start = safePage * _kPageSize;
     final end = (start + _kPageSize).clamp(0, filtered.length);
     final pageItems = filtered.sublist(start, end);
+    final narrow =
+        MediaQuery.sizeOf(context).width <= AppConstants.mobileBreakpoint;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -204,6 +207,13 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
           // ── Page header ────────────────────────────────────────────────────
           _PageHeader(
             isDark: isDark,
+            compact: narrow,
+            searchOpen: _searchOpen,
+            searchController: _searchCtrl,
+            onToggleSearch: () => setState(() {
+              _searchOpen = !_searchOpen;
+              if (!_searchOpen) _searchCtrl.clear();
+            }),
             onNewPaylink: _openNewPaylink,
           ),
 
@@ -232,13 +242,15 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                     _page = 0;
                   }),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SearchField(
-                    controller: _searchCtrl,
-                    isDark: isDark,
+                if (!narrow) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SearchField(
+                      controller: _searchCtrl,
+                      isDark: isDark,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -322,40 +334,113 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
 
 class _PageHeader extends StatelessWidget {
   final bool isDark;
+  final bool compact;
+  final bool searchOpen;
+  final TextEditingController searchController;
+  final VoidCallback onToggleSearch;
   final VoidCallback onNewPaylink;
 
-  const _PageHeader({required this.isDark, required this.onNewPaylink});
+  const _PageHeader({
+    required this.isDark,
+    required this.compact,
+    required this.searchOpen,
+    required this.searchController,
+    required this.onToggleSearch,
+    required this.onNewPaylink,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Liens',
-                    style: AppTextStyles.h1(
-                        color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
-                const SizedBox(height: 2),
-                Text('Envoyer des liens de paiement aux clients',
-                    style: AppTextStyles.caption(color: AppColors.coolGray)),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Liens', style: AppTextStyles.h1(color: ink)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Envoyer des liens de paiement aux clients',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption(color: AppColors.coolGray),
+                    ),
+                  ],
+                ),
+              ),
+              if (compact) ...[
+                _SearchToggle(
+                  isDark: isDark,
+                  open: searchOpen,
+                  onTap: onToggleSearch,
+                ),
+                const SizedBox(width: 8),
               ],
-            ),
+              ElevatedButton.icon(
+                onPressed: onNewPaylink,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(compact ? 'Lien paiement' : 'Nouveau lien de paiement'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, 40),
+                  padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
           ),
-          ElevatedButton.icon(
-            onPressed: onNewPaylink,
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Nouveau lien de paiement'),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(0, 44),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          if (compact && searchOpen) ...[
+            const SizedBox(height: 10),
+            _SearchField(
+              controller: searchController,
+              isDark: isDark,
+              autofocus: true,
             ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _SearchToggle extends StatelessWidget {
+  const _SearchToggle({
+    required this.isDark,
+    required this.open,
+    required this.onTap,
+  });
+
+  final bool isDark;
+  final bool open;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = open
+        ? AppColors.primaryBlue
+        : (isDark ? AppColors.warmWhite : AppColors.nearBlack);
+    return Tooltip(
+      message: 'Rechercher',
+      child: Material(
+        color: isDark ? AppColors.darkSurface : AppColors.white,
+        shape: const CircleBorder(),
+        elevation: 1,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(Icons.search_rounded, size: 20, color: ink),
+          ),
+        ),
       ),
     );
   }
@@ -512,8 +597,13 @@ class _TabToggle extends StatelessWidget {
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final bool isDark;
+  final bool autofocus;
 
-  const _SearchField({required this.controller, required this.isDark});
+  const _SearchField({
+    required this.controller,
+    required this.isDark,
+    this.autofocus = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -521,6 +611,7 @@ class _SearchField extends StatelessWidget {
       height: 40,
       child: TextField(
         controller: controller,
+        autofocus: autofocus,
         style: AppTextStyles.body(color: isDark ? AppColors.warmWhite : AppColors.nearBlack)
             .copyWith(fontSize: 13),
         decoration: InputDecoration(
