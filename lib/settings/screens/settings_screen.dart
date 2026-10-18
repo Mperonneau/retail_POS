@@ -41,7 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     'Langue',
     'Apparence',
     'Taxes et frais',
-    'Droits',
+    'Permissions',
     'Personnel',
     'Abonnement'
   ];

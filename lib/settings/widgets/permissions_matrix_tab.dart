@@ -104,7 +104,7 @@ class _PermissionsMatrixTabState extends ConsumerState<PermissionsMatrixTab> {
                           ? staffRoleDisplayLabel(_detailRole!)
                           : _showAllMatrix
                               ? 'Tous les droits'
-                              : 'Droits',
+                              : 'Permissions',
                       style: AppTextStyles.h3(),
                     ),
                     if (_detailRole == null) ...[
