@@ -19,6 +19,7 @@ import '../../core/widgets/discount_approval_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../models/product_option.dart';
 import '../models/retail_cart_entry.dart';
+import '../widgets/pos_product_detail.dart';
 import '../widgets/product_option_picker.dart';
 import 'checkout_wizard.dart';
 import '../../core/widgets/app_close_button.dart';
@@ -112,6 +113,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   /// Mobile-only: right slide-over for cart + checkout.
   bool _mobileCartPanelOpen = false;
 
+  /// Product open from a card tap. The plus button does not set this.
+  int? _detailProductId;
+
   final _categories = [
     'Tous',
     'Alimentation',
@@ -167,6 +171,18 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       quantity: qty,
       options: options,
     ));
+  }
+
+  void _openProductDetail(MockProduct product) {
+    setState(() {
+      _detailProductId = product.id;
+      _mobileCartPanelOpen = false;
+    });
+  }
+
+  void _closeProductDetail() {
+    if (_detailProductId == null) return;
+    setState(() => _detailProductId = null);
   }
 
   Future<void> _addToCart(MockProduct p) async {
@@ -413,13 +429,80 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     );
 
     final grid = _buildProductGrid(context);
+    MockProduct? detailProduct;
+    final detailId = _detailProductId;
+    if (detailId != null) {
+      for (final p in ref.watch(mockProductsProvider)) {
+        if (p.id == detailId) {
+          detailProduct = p;
+          break;
+        }
+      }
+      if (detailProduct == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _detailProductId == detailId) {
+            setState(() => _detailProductId = null);
+          }
+        });
+      }
+    }
+
+    Widget productPane = grid;
+    if (detailProduct != null) {
+      final product = detailProduct;
+      productPane = LayoutBuilder(
+        builder: (context, constraints) {
+          final maxW = constraints.maxWidth;
+          final detailW = maxW <= AppConstants.mobileBreakpoint
+              ? maxW
+              : min(460.0, maxW);
+          final full = detailW >= maxW;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              grid,
+              if (!full)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeProductDetail,
+                    behavior: HitTestBehavior.opaque,
+                    child: ColoredBox(
+                      color: Colors.black.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: detailW,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: full
+                        ? null
+                        : Border(
+                            left: BorderSide(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.darkGray.withValues(alpha: 0.25),
+                            ),
+                          ),
+                  ),
+                  child: _detailPanel(product),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
 
     if (isWide) {
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: Row(
           children: [
-            Expanded(flex: 3, child: grid),
+            Expanded(flex: 3, child: productPane),
             const VerticalDivider(width: 1),
             rightPane,
           ],
@@ -513,8 +596,28 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               ),
             ),
           ],
+          if (detailProduct != null)
+            Positioned.fill(child: _detailPanel(detailProduct)),
         ],
       ),
+    );
+  }
+
+  Widget _detailPanel(MockProduct product) {
+    return PosProductDetail(
+      product: product,
+      cartLines: [
+        for (final line in _cart)
+          if (line.product.id == product.id) line,
+      ],
+      stockWarning: _qtyWarnings[product.id],
+      onAdd: () => _addToCart(product),
+      onDecrementLine: (line) {
+        setState(() {
+          _setCartQty(line.product, line.quantity - 1, options: line.options);
+        });
+      },
+      onClose: _closeProductDetail,
     );
   }
 
@@ -756,6 +859,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           product: p,
                           cartQty: qty,
                           compact: compact,
+                          onOpen: () => _openProductDetail(p),
                           onAdd: () => _addToCart(p),
                           onRemove: () => _updateQty(p, -1),
                         );
@@ -1092,6 +1196,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 class _ProductTile extends StatelessWidget {
   final MockProduct product;
   final int cartQty;
+  final VoidCallback onOpen;
   final VoidCallback onAdd;
   final VoidCallback onRemove;
   /// Phone layout: two tiles per row, price and controls on one line.
@@ -1100,6 +1205,7 @@ class _ProductTile extends StatelessWidget {
   const _ProductTile({
     required this.product,
     required this.cartQty,
+    required this.onOpen,
     required this.onAdd,
     required this.onRemove,
     this.compact = false,
@@ -1113,6 +1219,7 @@ class _ProductTile extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         width: 28,
         height: 28,
@@ -1225,7 +1332,7 @@ class _ProductTile extends StatelessWidget {
     final inCart = cartQty > 0;
 
     return GestureDetector(
-      onTap: onAdd,
+      onTap: onOpen,
       child: AnimatedContainer(
         duration: AppConstants.animFast,
         decoration: BoxDecoration(
@@ -1331,6 +1438,7 @@ class _ProductTile extends StatelessWidget {
                   if (cartQty > 0) ...[
                     GestureDetector(
                       onTap: onRemove,
+                      behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 26,
                         height: 26,
@@ -1353,17 +1461,21 @@ class _ProductTile extends StatelessWidget {
                     ),
                   ] else
                     const SizedBox(width: 26),
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: AppColors.amber,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      size: 14,
-                      color: AppColors.nearBlack,
+                  GestureDetector(
+                    onTap: onAdd,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: AppColors.amber,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        size: 14,
+                        color: AppColors.nearBlack,
+                      ),
                     ),
                   ),
                 ],
