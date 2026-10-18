@@ -1571,7 +1571,10 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         orderUsdCents: pricing.orderUsdCents,
         description: 'Vente ${widget.checkoutId}',
       );
-      if (!mounted) return;
+      if (!mounted || _method != _RPayMethod.card) {
+        if (mounted) setState(() => _remoteBusy = false);
+        return;
+      }
       openPaymentUrl(session.url);
       setState(() => _remoteBusy = false);
       _pollPayment(
@@ -1609,7 +1612,10 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         orderId: widget.checkoutId,
         amountHtg: amount,
       );
-      if (!mounted) return;
+      if (!mounted || _method != _RPayMethod.moncash) {
+        if (mounted) setState(() => _remoteBusy = false);
+        return;
+      }
       openPaymentUrl(payment.paymentUrl);
       setState(() => _remoteBusy = false);
       _pollPayment(

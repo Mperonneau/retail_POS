@@ -21,8 +21,6 @@ import hashlib
 import hmac
 import json
 import os
-import secrets
-import string
 import threading
 import time
 import urllib.error
@@ -158,9 +156,10 @@ def _stripe_error(raw: bytes) -> str:
     return "Stripe a refusé la demande."
 
 
-def integration_identifier() -> str:
-    alphabet = string.ascii_lowercase
-    suffix = "".join(secrets.choice(alphabet) for _ in range(8))
+def integration_identifier(reference: str) -> str:
+    """Stable per reference so a retry reuses the same Checkout Session."""
+    digest = hashlib.sha256(reference.encode() or b"retail").hexdigest()
+    suffix = "".join(chr(ord("a") + int(char, 16) % 26) for char in digest[:8])
     return f"retail_pos_{suffix}"
 
 
@@ -183,7 +182,7 @@ def create_checkout(
         ("success_url", f"{origin}/paid?session_id={{CHECKOUT_SESSION_ID}}"),
         ("cancel_url", f"{origin}/cancel"),
         ("client_reference_id", reference[:200] or "retail"),
-        ("integration_identifier", integration_identifier()),
+        ("integration_identifier", integration_identifier(reference or "retail")),
         ("line_items[0][quantity]", "1"),
         ("line_items[0][price_data][currency]", "usd"),
         ("line_items[0][price_data][unit_amount]", str(pricing["order_usd_cents"])),
