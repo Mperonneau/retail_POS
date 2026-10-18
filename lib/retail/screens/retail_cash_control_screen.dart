@@ -281,10 +281,9 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                             ),
                           ],
                         );
-                        final actions = Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                        final actions = SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
                           children: [
                             _HeaderBtn(
                               icon: Icons.history_rounded,
@@ -321,14 +320,24 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                                     ),
                                   ),
                             ),
+                            const SizedBox(width: 8),
                             _HeaderBtn(
                               icon: Icons.payments_outlined,
                               label: 'Pourboires',
                               isDark: isDark,
                               onTap: () => showTipsPanel(context, isDark),
                             ),
+                            const SizedBox(width: 8),
+                            _HeaderBtn(
+                              icon: Icons.print_outlined,
+                              label: 'Rapport',
+                              isDark: isDark,
+                              onTap: () => _exportSessionReport(context),
+                            ),
+                            const SizedBox(width: 8),
                             _StatusBadge(open: true),
                           ],
+                          ),
                         );
                         if (narrow) {
                           return Column(
@@ -344,7 +353,8 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(child: titleBlock),
-                            actions,
+                            const SizedBox(width: 12),
+                            Flexible(child: actions),
                           ],
                         );
                       },
@@ -410,6 +420,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                       state: state,
                       isDark: isDark,
                       onPrintHandoff: () => _exportLatestHandoff(context),
+                      onOpenBox: (box) => _openTillBox(context, box, isDark),
                     ),
                   ),
                 ),
@@ -572,34 +583,142 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
         Divider(height: 1, color: divColor),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Row(
             children: [
-              AppButton(
-                label: 'Fin de service',
-                onPressed: () => _openShiftHandoff(context, isDark),
-                icon: Icons.swap_horiz_rounded,
-                variant: AppButtonVariant.secondary,
+              Expanded(
+                child: AppButton(
+                  label: 'Fin de service',
+                  onPressed: () => _openShiftHandoff(context, isDark),
+                  icon: Icons.swap_horiz_rounded,
+                  variant: AppButtonVariant.secondary,
+                  compact: true,
+                ),
               ),
-              const SizedBox(height: 8),
-              AppButton(
-                label: 'Fermer le tiroir et rapprocher',
-                onPressed: () => context.go(AppRoutes.retailCashReconciliation),
-                icon: Icons.lock_outlined,
-                variant: AppButtonVariant.secondary,
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => _exportSessionReport(context),
-                  icon: const Icon(Icons.print_outlined, size: 18),
-                  label: const Text('Rapport'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: AppButton(
+                  label: 'Fermer le tiroir et rapprocher',
+                  onPressed: () =>
+                      context.go(AppRoutes.retailCashReconciliation),
+                  icon: Icons.lock_outlined,
+                  variant: AppButtonVariant.secondary,
+                  compact: true,
                 ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  void _openTillBox(BuildContext context, _TillBox box, bool isDark) {
+    final state = widget.state;
+    final session = state.activeSession;
+    if (session == null) return;
+    final usd = box == _TillBox.attenduUsd ||
+        box == _TillBox.ouvertureUsd ||
+        box == _TillBox.entreeUsd ||
+        box == _TillBox.sortieUsd;
+    final tender = usd ? PaymentTender.cashUsd : PaymentTender.cashHtg;
+    final drawer = state.sessionMovements
+        .where((m) => m.tender == tender)
+        .toList();
+    String money(double value) => usd
+        ? CurrencyFormatter.usd(value)
+        : CurrencyFormatter.local(context, value);
+
+    late final String title;
+    late final String amount;
+    late final Color accent;
+    late final List<CashMovement> movements;
+    late final List<CashPanelFact> facts;
+    var showTypeFilters = true;
+    String? note;
+
+    switch (box) {
+      case _TillBox.attenduHtg:
+      case _TillBox.attenduUsd:
+        title = usd ? 'Attendu USD' : 'Attendu HTG';
+        amount = money(usd ? state.drawerExpectedUsd : state.drawerExpectedHtg);
+        accent = AppColors.amber;
+        movements = drawer;
+        facts = [
+          CashPanelFact(
+            label: 'Ouverture',
+            value: money(usd ? session.openingBalanceUsd : session.openingBalanceHtg),
+          ),
+          CashPanelFact(
+            label: 'Entrées',
+            value: money(usd ? state.drawerCashInUsd : state.drawerCashInHtg),
+          ),
+          CashPanelFact(
+            label: 'Sorties',
+            value: money(usd ? state.drawerCashOutUsd : state.drawerCashOutHtg),
+          ),
+          CashPanelFact(label: 'Attendu', value: amount),
+        ];
+        note = usd
+            ? 'Dollars du tiroir seulement. La carte est en dollars, mais elle n\'est pas dans le tiroir.'
+            : 'Gourdes du tiroir seulement. MonCash et les chèques restent hors du tiroir.';
+        break;
+      case _TillBox.ouvertureHtg:
+      case _TillBox.ouvertureUsd:
+        title = usd ? 'Ouverture USD' : 'Ouverture HTG';
+        amount = money(usd ? session.openingBalanceUsd : session.openingBalanceHtg);
+        accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+        movements = const [];
+        facts = [
+          CashPanelFact(label: 'Ouvert par', value: session.openedBy),
+          CashPanelFact(label: 'Ouvert à', value: _timeStr(session.openedAt)),
+          CashPanelFact(label: 'Fonds de caisse', value: amount),
+        ];
+        note = 'Montant saisi à l\'ouverture. Cette case ne contient pas les ventes.';
+        break;
+      case _TillBox.entreeHtg:
+      case _TillBox.entreeUsd:
+        title = usd ? 'Entrée USD' : 'Entrée HTG';
+        amount = money(usd ? state.drawerCashInUsd : state.drawerCashInHtg);
+        accent = AppColors.deepGreen;
+        movements = drawer
+            .where((m) => m.type == CashMovementType.cashIn)
+            .toList();
+        showTypeFilters = false;
+        facts = [
+          CashPanelFact(label: 'Total des entrées', value: amount),
+          CashPanelFact(label: 'Mouvements', value: '${movements.length}'),
+        ];
+        break;
+      case _TillBox.sortieHtg:
+      case _TillBox.sortieUsd:
+        title = usd ? 'Sortie USD' : 'Sortie HTG';
+        amount = money(usd ? state.drawerCashOutUsd : state.drawerCashOutHtg);
+        accent = AppColors.boldRed;
+        movements = drawer
+            .where((m) => m.type == CashMovementType.cashOut)
+            .toList();
+        showTypeFilters = false;
+        facts = [
+          CashPanelFact(label: 'Total des sorties', value: amount),
+          CashPanelFact(label: 'Mouvements', value: '${movements.length}'),
+        ];
+        if (movements.isEmpty) {
+          note = 'Aucune sortie dans cette devise.';
+        }
+        break;
+    }
+
+    showTenderMovementsPanel(
+      context,
+      movements: movements,
+      tender: null,
+      isDark: isDark,
+      title: title,
+      amount: amount,
+      accent: accent,
+      facts: facts,
+      note: note,
+      showTypeFilters: showTypeFilters,
     );
   }
 
@@ -799,14 +918,27 @@ class _ClosedSessionView extends ConsumerWidget {
 
 // ─── Physical drawer: Attendu first, one currency per card ───────────────────
 
+enum _TillBox {
+  attenduHtg,
+  attenduUsd,
+  ouvertureHtg,
+  ouvertureUsd,
+  entreeHtg,
+  entreeUsd,
+  sortieHtg,
+  sortieUsd,
+}
+
 class _DrawerSummary extends StatelessWidget {
   final CashControlState state;
   final bool isDark;
   final VoidCallback? onPrintHandoff;
+  final ValueChanged<_TillBox> onOpenBox;
 
   const _DrawerSummary({
     required this.state,
     required this.isDark,
+    required this.onOpenBox,
     this.onPrintHandoff,
   });
 
@@ -823,42 +955,50 @@ class _DrawerSummary extends StatelessWidget {
         amount: CurrencyFormatter.local(context, state.drawerExpectedHtg),
         color: AppColors.amber,
         emphasize: true,
+        onTap: () => onOpenBox(_TillBox.attenduHtg),
       ),
       _MoneyCard(
         label: 'Attendu USD',
         amount: CurrencyFormatter.usd(state.drawerExpectedUsd),
         color: AppColors.amber,
         emphasize: true,
+        onTap: () => onOpenBox(_TillBox.attenduUsd),
       ),
       _MoneyCard(
         label: 'Ouverture HTG',
         amount: CurrencyFormatter.local(context, session?.openingBalanceHtg ?? 0),
         color: blue,
+        onTap: () => onOpenBox(_TillBox.ouvertureHtg),
       ),
       _MoneyCard(
         label: 'Ouverture USD',
         amount: CurrencyFormatter.usd(session?.openingBalanceUsd ?? 0),
         color: blue,
+        onTap: () => onOpenBox(_TillBox.ouvertureUsd),
       ),
       _MoneyCard(
         label: 'Entrée HTG',
         amount: CurrencyFormatter.local(context, state.drawerCashInHtg),
         color: AppColors.deepGreen,
+        onTap: () => onOpenBox(_TillBox.entreeHtg),
       ),
       _MoneyCard(
         label: 'Entrée USD',
         amount: CurrencyFormatter.usd(state.drawerCashInUsd),
         color: AppColors.deepGreen,
+        onTap: () => onOpenBox(_TillBox.entreeUsd),
       ),
       _MoneyCard(
         label: 'Sortie HTG',
         amount: CurrencyFormatter.local(context, state.drawerCashOutHtg),
         color: AppColors.boldRed,
+        onTap: () => onOpenBox(_TillBox.sortieHtg),
       ),
       _MoneyCard(
         label: 'Sortie USD',
         amount: CurrencyFormatter.usd(state.drawerCashOutUsd),
         color: AppColors.boldRed,
+        onTap: () => onOpenBox(_TillBox.sortieUsd),
       ),
     ];
 
@@ -943,46 +1083,67 @@ class _MoneyCard extends StatelessWidget {
   final String amount;
   final Color color;
   final bool emphasize;
+  final VoidCallback? onTap;
 
   const _MoneyCard({
     required this.label,
     required this.amount,
     required this.color,
     this.emphasize = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.topLeft,
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: emphasize ? 14 : 12,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: emphasize ? 0.16 : 0.08),
-        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        border: Border.all(
-          color: color.withValues(alpha: emphasize ? 0.55 : 0.25),
-          width: emphasize ? 1.5 : 1,
+    final radius = BorderRadius.circular(AppConstants.radiusCard);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Ink(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: emphasize ? 0.16 : 0.08),
+            borderRadius: radius,
+            border: Border.all(
+              color: color.withValues(alpha: emphasize ? 0.55 : 0.25),
+              width: emphasize ? 1.5 : 1,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: emphasize ? 14 : 12,
+            ),
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: AppTextStyles.caption(color: color)
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  if (onTap != null)
+                    Icon(Icons.chevron_right_rounded, size: 16, color: color),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                amount,
+                style: (emphasize
+                        ? AppTextStyles.h3(color: color)
+                        : AppTextStyles.body(color: color))
+                    .copyWith(fontWeight: FontWeight.w800),
+              ),
+            ],
+            ),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.caption(color: color)
-                .copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            amount,
-            style: (emphasize ? AppTextStyles.h3(color: color) : AppTextStyles.body(color: color))
-                .copyWith(fontWeight: FontWeight.w800),
-          ),
-        ],
       ),
     );
   }

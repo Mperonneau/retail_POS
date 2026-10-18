@@ -8,13 +8,27 @@ import '../utils/currency_formatter.dart';
 import 'tender_stat_card.dart';
 import 'app_close_button.dart';
 
+/// One labeled figure shown above the movement list.
+class CashPanelFact {
+  final String label;
+  final String value;
+  const CashPanelFact({required this.label, required this.value});
+}
+
 /// Opens a slide-in side panel showing movements for [tender].
 /// Pass [tender] = null to show all movements.
+/// [title] and [facts] describe a till card (Attendu, Ouverture, Entrée, Sortie).
 void showTenderMovementsPanel(
   BuildContext context, {
   required List<CashMovement> movements,
   required PaymentTender? tender,
   required bool isDark,
+  String? title,
+  String? amount,
+  Color? accent,
+  List<CashPanelFact> facts = const [],
+  String? note,
+  bool showTypeFilters = true,
 }) {
   Navigator.of(context).push(
     PageRouteBuilder(
@@ -26,6 +40,12 @@ void showTenderMovementsPanel(
         movements: movements,
         tender: tender,
         isDark: isDark,
+        title: title,
+        amount: amount,
+        accent: accent,
+        facts: facts,
+        note: note,
+        showTypeFilters: showTypeFilters,
       ),
       transitionsBuilder: (_, animation, __, child) => SlideTransition(
         position: Tween<Offset>(
@@ -47,11 +67,23 @@ class TenderMovementsPanel extends StatefulWidget {
     required this.movements,
     required this.tender,
     required this.isDark,
+    this.title,
+    this.amount,
+    this.accent,
+    this.facts = const [],
+    this.note,
+    this.showTypeFilters = true,
   });
 
   final List<CashMovement> movements;
   final PaymentTender? tender;
   final bool isDark;
+  final String? title;
+  final String? amount;
+  final Color? accent;
+  final List<CashPanelFact> facts;
+  final String? note;
+  final bool showTypeFilters;
 
   @override
   State<TenderMovementsPanel> createState() => _TenderMovementsPanelState();
@@ -109,10 +141,12 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
     final isDark = widget.isDark;
     final tender = widget.tender;
 
-    final title = tender?.label ?? 'Tous les mouvements';
-    final accentColor = tender != null
-        ? paymentTenderColor(tender, isDark: isDark)
-        : (isDark ? AppColors.skyBlue : AppColors.primaryBlue);
+    final title = widget.title ?? tender?.label ?? 'Tous les mouvements';
+    final accentColor = widget.accent ??
+        (tender != null
+            ? paymentTenderColor(tender, isDark: isDark)
+            : (isDark ? AppColors.skyBlue : AppColors.primaryBlue));
+    final showTools = widget.movements.isNotEmpty;
 
     final screenWidth = MediaQuery.of(context).size.width;
     final panelWidth = AppConstants.sidePanelWidth(
@@ -173,9 +207,19 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                                           ? AppColors.warmWhite
                                           : AppColors.nearBlack,
                                     )),
+                                if (widget.amount != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    widget.amount!,
+                                    style: AppTextStyles.h3(color: accentColor)
+                                        .copyWith(fontWeight: FontWeight.w800),
+                                  ),
+                                ],
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${filtered.length} mouvement${filtered.length == 1 ? '' : 's'}',
+                                  showTools
+                                      ? '${filtered.length} mouvement${filtered.length == 1 ? '' : 's'}'
+                                      : 'Détail',
                                   style: AppTextStyles.caption(
                                       color: textSecondary),
                                 ),
@@ -187,7 +231,43 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                       ),
                     ),
 
+                    if (widget.facts.isNotEmpty || widget.note != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final fact in widget.facts)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(fact.label,
+                                          style: AppTextStyles.body(
+                                              color: textSecondary)),
+                                    ),
+                                    Text(
+                                      fact.value,
+                                      style: AppTextStyles.body(
+                                        color: isDark
+                                            ? AppColors.warmWhite
+                                            : AppColors.nearBlack,
+                                      ).copyWith(fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (widget.note != null)
+                              Text(widget.note!,
+                                  style: AppTextStyles.caption(
+                                      color: textSecondary)),
+                          ],
+                        ),
+                      ),
+
                     // ── Search bar ────────────────────────────────────────────
+                    if (showTools)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
                       child: TextField(
@@ -224,6 +304,7 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                     ),
 
                     // ── Type filter chips ─────────────────────────────────────
+                    if (showTools && widget.showTypeFilters)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                       child: SingleChildScrollView(
@@ -258,7 +339,9 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
 
                     // ── List ──────────────────────────────────────────────────
                     Expanded(
-                      child: filtered.isEmpty
+                      child: !showTools
+                          ? const SizedBox.shrink()
+                          : filtered.isEmpty
                           ? Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -269,7 +352,8 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                                   Text(
                                     _query.isNotEmpty
                                         ? 'Aucun résultat pour « $_query »'
-                                        : 'Aucun mouvement pour ce filtre.',
+                                        : (widget.note ??
+                                            'Aucun mouvement pour ce filtre.'),
                                     style: AppTextStyles.body(
                                         color: textSecondary),
                                     textAlign: TextAlign.center,
