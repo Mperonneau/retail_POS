@@ -16,6 +16,7 @@ import '../../core/utils/catalog_price_helpers.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_close_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/empty_state.dart';
@@ -125,7 +126,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
           );
           final addButton = AppButton(
             label: 'Ajouter un produit',
-            onPressed: () => _showProductSheet(context, null),
+            onPressed: () => _openProductPanel(null),
             icon: Icons.add,
             fullWidth: false,
             compact: true,
@@ -276,7 +277,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                                       product: p,
                                       isDark: isDark,
                                       onTap: () =>
-                                          _showProductSheet(context, p),
+                                          _openProductPanel(p),
                                       onMoreTap: () =>
                                           _showOptions(context, p),
                                     ),
@@ -313,7 +314,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                                 return _ProductGridTile(
                                   product: p,
                                   isDark: isDark,
-                                  onTap: () => _showProductSheet(context, p),
+                                  onTap: () => _openProductPanel(p),
                                   onMoreTap: () => _showOptions(context, p),
                                 );
                               },
@@ -373,17 +374,85 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
     );
   }
 
-  void _showProductSheet(BuildContext context, MockProduct? existing) {
-    showAppBottomSheet(
-      context: context,
-      child: _AddProductSheet(
-        existing: existing,
-        onSave: (product) {
-          if (existing == null) {
-            ref.read(mockProductsProvider.notifier).add(product);
-          } else {
-            ref.read(mockProductsProvider.notifier).update(product);
+  void _openProductPanel(MockProduct? existing) {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final isNarrow = screenW <= AppConstants.mobileBreakpoint;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final panelW = min(
+      screenW,
+      AppConstants.retailInventoryDetailPanelWidth(screenW),
+    );
+    final panelColor = isDark ? AppColors.darkSurface : AppColors.white;
+
+    Navigator.of(context, rootNavigator: true).push<void>(
+      PageRouteBuilder<void>(
+        opaque: isNarrow,
+        fullscreenDialog: isNarrow,
+        barrierDismissible: !isNarrow,
+        barrierLabel: 'Fermer',
+        barrierColor: isNarrow ? null : Colors.black.withValues(alpha: 0.45),
+        transitionDuration: AppConstants.animNormal,
+        reverseTransitionDuration: AppConstants.animNormal,
+        pageBuilder: (ctx, animation, secondaryAnimation) {
+          final form = _AddProductSheet(
+            existing: existing,
+            onClose: () {
+              if (!ctx.mounted) return;
+              Navigator.of(ctx).pop();
+            },
+            onSave: (product) {
+              if (existing == null) {
+                ref.read(mockProductsProvider.notifier).add(product);
+              } else {
+                ref.read(mockProductsProvider.notifier).update(product);
+              }
+            },
+          );
+          if (isNarrow) {
+            return Scaffold(
+              backgroundColor: panelColor,
+              body: SafeArea(child: form),
+            );
           }
+          final inset = MediaQuery.viewInsetsOf(ctx).bottom;
+          return Align(
+            alignment: Alignment.topRight,
+            child: SizedBox(
+              width: panelW,
+              height: MediaQuery.sizeOf(ctx).height - inset,
+              child: Material(
+                elevation: 16,
+                shadowColor: Colors.black.withValues(alpha: 0.35),
+                color: panelColor,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.darkGray.withValues(alpha: 0.25),
+                      ),
+                    ),
+                  ),
+                  child: SafeArea(left: false, child: form),
+                ),
+              ),
+            ),
+          );
+        },
+        transitionsBuilder: (ctx, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          );
         },
       ),
     );
@@ -407,7 +476,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
               title: const Text('Modifier le produit'),
               onTap: () {
                 Navigator.pop(context);
-                _showProductSheet(context, product);
+                _openProductPanel(product);
               },
             ),
             ListTile(
@@ -1103,8 +1172,13 @@ class _ProductListTile extends StatelessWidget {
 class _AddProductSheet extends ConsumerStatefulWidget {
   final MockProduct? existing;
   final void Function(MockProduct) onSave;
+  final VoidCallback onClose;
 
-  const _AddProductSheet({this.existing, required this.onSave});
+  const _AddProductSheet({
+    this.existing,
+    required this.onSave,
+    required this.onClose,
+  });
 
   @override
   ConsumerState<_AddProductSheet> createState() => _AddProductSheetState();
@@ -1306,7 +1380,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       stockUnit: _stockUnit,
       options: groups,
     ));
-    Navigator.pop(context);
+    widget.onClose();
   }
 
   @override
@@ -1350,7 +1424,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     final scrollableFields = SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
         AppConstants.spacing24,
-        AppConstants.spacing24,
+        AppConstants.spacing16,
         AppConstants.spacing24,
         AppConstants.spacing16,
       ),
@@ -1358,11 +1432,6 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.existing == null ? 'Ajouter un produit' : 'Modifier le produit',
-            style: AppTextStyles.h2(color: textPrimary),
-          ),
-          const SizedBox(height: AppConstants.spacing20),
           TextField(
             controller: _nameCtrl,
             decoration: fieldDec(label: 'Nom du produit *'),
@@ -1582,11 +1651,11 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
 
     final h = AppConstants.buttonHeightCompact;
     Widget actionRow() => Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: const EdgeInsets.fromLTRB(
             AppConstants.spacing24,
             AppConstants.spacing8,
             AppConstants.spacing24,
-            MediaQuery.of(context).viewInsets.bottom + AppConstants.spacing16,
+            AppConstants.spacing16,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -1606,7 +1675,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 child: SizedBox(
                   height: h,
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: widget.onClose,
                     style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: Size(double.infinity, h),
@@ -1626,9 +1695,31 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         );
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Flexible(child: scrollableFields),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.spacing24,
+            AppConstants.spacing16,
+            AppConstants.spacing12,
+            AppConstants.spacing12,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.existing == null
+                      ? 'Ajouter un produit'
+                      : 'Modifier le produit',
+                  style: AppTextStyles.h2(color: textPrimary),
+                ),
+              ),
+              AppCloseButton(onPressed: widget.onClose),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(child: scrollableFields),
         const Divider(height: 1),
         actionRow(),
       ],
