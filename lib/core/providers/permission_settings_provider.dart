@@ -12,9 +12,13 @@ class PermissionSettingsState {
   /// Per-employee overrides; `null` value = inherit from role default.
   final Map<String, Map<PermissionId, bool?>> userOverrides;
 
+  /// Sellers granted the same rights as the owner. Set by an owner or admin.
+  final Set<String> ownerPowerIds;
+
   const PermissionSettingsState({
     required this.roleDefaults,
     required this.userOverrides,
+    this.ownerPowerIds = const {},
   });
 
   factory PermissionSettingsState.initial() {
@@ -31,10 +35,12 @@ class PermissionSettingsState {
   PermissionSettingsState copyWith({
     Map<ActiveModule, Map<StaffRole, Map<PermissionId, bool>>>? roleDefaults,
     Map<String, Map<PermissionId, bool?>>? userOverrides,
+    Set<String>? ownerPowerIds,
   }) =>
       PermissionSettingsState(
         roleDefaults: roleDefaults ?? this.roleDefaults,
         userOverrides: userOverrides ?? this.userOverrides,
+        ownerPowerIds: ownerPowerIds ?? this.ownerPowerIds,
       );
 }
 
@@ -74,6 +80,16 @@ class PermissionSettingsNotifier extends StateNotifier<PermissionSettingsState> 
     state = state.copyWith(userOverrides: ov);
   }
 
+  void setOwnerPower(String employeeId, bool enabled) {
+    final ids = Set<String>.from(state.ownerPowerIds);
+    if (enabled) {
+      ids.add(employeeId);
+    } else {
+      ids.remove(employeeId);
+    }
+    state = state.copyWith(ownerPowerIds: ids);
+  }
+
   void clearUserOverrides(String employeeId) {
     final ov = Map<String, Map<PermissionId, bool?>>.from(state.userOverrides);
     ov.remove(employeeId);
@@ -107,6 +123,9 @@ final effectivePermissionsProvider = Provider<Map<PermissionId, bool>>((ref) {
   }
 
   final settings = ref.read(permissionSettingsProvider);
+  if (settings.ownerPowerIds.contains(session.employeeId)) {
+    return {for (final p in PermissionId.values) p: true};
+  }
   final base = settings.roleDefaults[module]![session.role]!;
   final ov = settings.userOverrides[session.employeeId];
 

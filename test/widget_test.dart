@@ -113,7 +113,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     final firstProduct = container.read(mockProductsProvider).first;
-    await tester.tap(find.text(firstProduct.name).first);
+    await tester.tap(_productAddButton(firstProduct.name));
     await tester.pump();
     await tester.tap(find.textContaining('Panier').last);
     await tester.pump();
@@ -168,7 +168,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     final firstProduct = container.read(mockProductsProvider).first;
-    await tester.tap(find.text(firstProduct.name).first);
+    await tester.tap(_productAddButton(firstProduct.name));
     await tester.pump();
     for (final label in ['Encaisser', 'Suivant', 'Payer', 'Confirmer le paiement']) {
       expect(find.text(label), findsWidgets, reason: label);
@@ -282,6 +282,14 @@ void main() {
     expect(find.text('Rien à envoyer pour l\'instant.'), findsOneWidget);
     expect(find.text('ORD-2026-0042'), findsNothing);
   });
+}
+
+Finder _productAddButton(String productName) {
+  final card = find.ancestor(
+    of: find.text(productName).first,
+    matching: find.byType(GestureDetector),
+  );
+  return find.descendant(of: card.first, matching: find.byIcon(Icons.add));
 }
 
 Future<void> _signInToRetailShell(

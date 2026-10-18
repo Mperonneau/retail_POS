@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/staff_directory_entry.dart';
 import '../../core/models/staff_role.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/staff_directory_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -55,7 +56,9 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
     _phoneCtrl = TextEditingController(text: e?.phone ?? '');
     _pinCtrl = TextEditingController();
     _pinConfirmCtrl = TextEditingController();
-    _role = e?.role ?? StaffRole.waiter;
+    final module = ref.read(authProvider).module;
+    _role = e?.role ??
+        (module == ActiveModule.retail ? StaffRole.seller : StaffRole.waiter);
     _isActive = e?.isActive ?? true;
   }
 
@@ -253,14 +256,19 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
                 ),
               ),
-              items: StaffRole.values
-                  .map(
-                    (r) => DropdownMenuItem(
-                      value: r,
-                      child: Text(staffRoleDisplayLabel(r)),
-                    ),
-                  )
-                  .toList(),
+              items: () {
+                final module = ref.watch(authProvider.select((a) => a.module));
+                final roles = [...staffRolesForModule(module)];
+                if (!roles.contains(_role)) roles.add(_role);
+                return roles
+                    .map(
+                      (r) => DropdownMenuItem(
+                        value: r,
+                        child: Text(staffRoleDisplayLabel(r)),
+                      ),
+                    )
+                    .toList();
+              }(),
               onChanged: (v) {
                 if (v != null) setState(() => _role = v);
               },

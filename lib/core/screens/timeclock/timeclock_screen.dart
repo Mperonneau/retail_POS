@@ -64,7 +64,9 @@ class _TimeclockScreenState extends ConsumerState<TimeclockScreen> {
 
   bool get _isAdmin {
     final role = ref.read(staffSessionProvider)?.role;
-    return role == StaffRole.admin || role == StaffRole.manager;
+    return role == StaffRole.admin ||
+        role == StaffRole.manager ||
+        role == StaffRole.owner;
   }
 
   @override

@@ -19,7 +19,7 @@ String? _preferredRoleHomeRoute(ActiveModule module, StaffRole role) {
       }
       return null;
     case ActiveModule.retail:
-      if (role == StaffRole.cashier) {
+      if (role == StaffRole.cashier || role == StaffRole.seller) {
         return AppRoutes.retailPos;
       }
       return null;

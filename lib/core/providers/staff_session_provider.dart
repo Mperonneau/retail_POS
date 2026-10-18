@@ -56,9 +56,9 @@ class StaffSessionNotifier extends StateNotifier<StaffSessionState?> {
       case '1234':
         return StaffRole.cashier;
       case '1111':
-        return StaffRole.waiter;
+        return StaffRole.seller;
       case '2222':
-        return StaffRole.manager;
+        return StaffRole.owner;
       case '3333':
         return StaffRole.admin;
       case '4444':
@@ -78,6 +78,8 @@ class StaffSessionNotifier extends StateNotifier<StaffSessionState?> {
       StaffRole.manager => 'Gérant',
       StaffRole.admin => 'Admin',
       StaffRole.kitchen => 'Cuisine',
+      StaffRole.owner => 'Propriétaire',
+      StaffRole.seller => 'Vendeur',
     };
   }
 

@@ -1,3 +1,5 @@
+import '../providers/auth_provider.dart';
+
 /// Sample permission keys (expand later per module).
 enum PermissionId {
   /// Open Settings (all tabs).
@@ -16,16 +18,21 @@ enum PermissionId {
   financialCash,
 }
 
-String permissionLabel(PermissionId id) {
+String permissionLabel(PermissionId id, {ActiveModule? module}) {
+  final retail = module == ActiveModule.retail;
   switch (id) {
     case PermissionId.settingsAccess:
       return 'Accéder aux paramètres';
     case PermissionId.reportsView:
       return 'Voir les rapports';
     case PermissionId.catalogManage:
-      return 'Gérer le catalogue et le stock';
+      return retail
+          ? 'Gérer les produits et le stock'
+          : 'Gérer le catalogue et le stock';
     case PermissionId.transactionsOperate:
-      return 'Encaisser (commandes, salle, chambres)';
+      return retail
+          ? 'Vendre (caisse, commandes, devis)'
+          : 'Encaisser (commandes, salle, chambres)';
     case PermissionId.financialCash:
       return 'Caisse et paiements';
   }

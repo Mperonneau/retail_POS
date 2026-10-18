@@ -617,7 +617,12 @@ class _Sidebar extends ConsumerWidget {
     final displayFirstName =
         firstNameFromDisplayName(staff?.employeeName ?? userName);
     final roleSubtitle =
-        staff != null ? staffRoleDisplayLabel(staff.role) : 'Gérant';
+        staff != null
+            ? staffRoleDisplayLabel(staff.role)
+            : (ref.watch(authProvider.select((a) => a.module)) ==
+                    ActiveModule.retail
+                ? 'Propriétaire'
+                : 'Gérant');
 
     // Sidebar width is fixed (rail vs full); do not use parent Row constraints —
     // they are unbounded horizontally, which breaks flex children inside list rows.
