@@ -905,11 +905,30 @@ class _PayLinkCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  link.reference,
-                  style: AppTextStyles.body(
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
-                  ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        link.reference,
+                        style: AppTextStyles.body(
+                          color: isDark
+                              ? AppColors.skyBlue
+                              : AppColors.primaryBlue,
+                        ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      CurrencyFormatter.local(context, link.amountHtg),
+                      maxLines: 1,
+                      softWrap: false,
+                      style: AppTextStyles.body(color: ink).copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -920,23 +939,13 @@ class _PayLinkCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${_shortDate(link.createdAt)} · $_channelLabel',
-                  style: AppTextStyles.caption(color: muted).copyWith(fontSize: 11),
-                ),
-                const SizedBox(height: 6),
                 Row(
                   children: [
                     Expanded(
                       child: Text(
-                        CurrencyFormatter.local(context, link.amountHtg),
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.fade,
-                        style: AppTextStyles.body(color: ink).copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
+                        '${_shortDate(link.createdAt)} · $_channelLabel',
+                        style: AppTextStyles.caption(color: muted)
+                            .copyWith(fontSize: 11),
                       ),
                     ),
                     if (isActive) ...[
