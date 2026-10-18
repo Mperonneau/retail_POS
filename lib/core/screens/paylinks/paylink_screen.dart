@@ -256,10 +256,10 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
             ),
           ),
 
-          // ── Table header ───────────────────────────────────────────────────
-          const _TableHeader(),
+          // ── Table header (desktop). Phones use cards, like Devis. ─────────
+          if (!narrow) const _TableHeader(),
 
-          // ── Paylink table ──────────────────────────────────────────────────
+          // ── Paylink list ───────────────────────────────────────────────────
           Expanded(
             child: pageItems.isEmpty
                 ? Center(
@@ -289,12 +289,21 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: EdgeInsets.fromLTRB(
+                      narrow ? AppConstants.spacing16 : 0,
+                      narrow ? AppConstants.spacing8 : 0,
+                      narrow ? AppConstants.spacing16 : 0,
+                      narrow ? AppConstants.spacing16 : 4,
+                    ),
                     itemCount: pageItems.length +
                         (narrow && pageCount > 1 ? 1 : 0),
                     separatorBuilder: (_, i) {
-                      if (narrow && pageCount > 1 && i >= pageItems.length - 1) {
-                        return const SizedBox(height: 8);
+                      if (narrow) {
+                        return SizedBox(
+                          height: pageCount > 1 && i >= pageItems.length - 1
+                              ? AppConstants.spacing16
+                              : AppConstants.spacing8,
+                        );
                       }
                       return Divider(
                         height: 1,
@@ -309,23 +318,34 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                       if (i >= pageItems.length) {
                         return Align(
                           alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ListPageNav(
-                              isDark: isDark,
-                              currentPage: safePage + 1,
-                              totalPages: pageCount,
-                              onPrevious: safePage > 0
-                                  ? () => setState(() => _page = safePage - 1)
-                                  : null,
-                              onNext: safePage < pageCount - 1
-                                  ? () => setState(() => _page = safePage + 1)
-                                  : null,
-                            ),
+                          child: ListPageNav(
+                            isDark: isDark,
+                            currentPage: safePage + 1,
+                            totalPages: pageCount,
+                            onPrevious: safePage > 0
+                                ? () => setState(() => _page = safePage - 1)
+                                : null,
+                            onNext: safePage < pageCount - 1
+                                ? () => setState(() => _page = safePage + 1)
+                                : null,
                           ),
                         );
                       }
                       final link = pageItems[i];
+                      if (narrow) {
+                        return _PayLinkCard(
+                          link: link,
+                          isDark: isDark,
+                          isActive: _tab == 0,
+                          onTap: () => showPayLinkDetail(
+                            context,
+                            link: link,
+                            payLinkProvider: widget.payLinkProvider,
+                          ),
+                          onResend: () => _showResendSuccess(link),
+                          onCancel: () => _showCancelConfirm(link),
+                        );
+                      }
                       return _PayLinkRow(
                         link: link,
                         isDark: isDark,
@@ -824,6 +844,122 @@ class _PayLinkRow extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PayLinkCard extends StatelessWidget {
+  final PayLink link;
+  final bool isDark;
+  final bool isActive;
+  final VoidCallback onTap;
+  final VoidCallback onResend;
+  final VoidCallback onCancel;
+
+  const _PayLinkCard({
+    required this.link,
+    required this.isDark,
+    required this.isActive,
+    required this.onTap,
+    required this.onResend,
+    required this.onCancel,
+  });
+
+  String get _channelLabel {
+    switch (link.channel) {
+      case PayLinkChannel.whatsApp:
+        return 'WhatsApp';
+      case PayLinkChannel.email:
+        return 'E-mail';
+      case PayLinkChannel.sms:
+        return 'SMS';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.white,
+            borderRadius: BorderRadius.circular(AppConstants.radiusCard),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : const Color(0xFFE8E8E8),
+            ),
+            boxShadow: isDark ? AppColors.cardShadowDark : AppColors.cardShadow,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.spacing16,
+              vertical: AppConstants.spacing12,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  link.reference,
+                  style: AppTextStyles.body(
+                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                  ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  link.customerName,
+                  style: AppTextStyles.body(color: ink).copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_shortDate(link.createdAt)} · $_channelLabel',
+                  style: AppTextStyles.caption(color: muted).copyWith(fontSize: 11),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        CurrencyFormatter.local(context, link.amountHtg),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.fade,
+                        style: AppTextStyles.body(color: ink).copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    if (isActive) ...[
+                      _ActionIcon(
+                        icon: Icons.refresh_rounded,
+                        color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                        tooltip: 'Renvoyer',
+                        onTap: onResend,
+                      ),
+                      const SizedBox(width: 4),
+                      _ActionIcon(
+                        icon: Icons.cancel_outlined,
+                        color: AppColors.boldRed,
+                        tooltip: 'Annuler',
+                        onTap: onCancel,
+                      ),
+                    ],
+                    Icon(Icons.chevron_right_rounded, size: 18, color: muted),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
