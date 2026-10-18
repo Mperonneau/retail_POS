@@ -2248,14 +2248,16 @@ class _RetailOrderDetailPage extends ConsumerWidget {
             .where((o) => o.id == order.id)
             .firstOrNull ??
         order;
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
-        title: Text(current.orderNumber,
-            style: AppTextStyles.h3(
-                color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+        title: Text(current.orderNumber, style: AppTextStyles.h3(color: ink)),
+        // The app theme paints app bar icons white. This bar is white, so
+        // the icon color has to be set or the close button disappears.
+        foregroundColor: ink,
+        iconTheme: IconThemeData(color: ink),
+        leading: AppCloseButton(
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [

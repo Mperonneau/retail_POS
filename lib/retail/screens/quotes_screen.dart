@@ -1842,16 +1842,14 @@ class _QuoteDetailPage extends ConsumerWidget {
         .where((q) => q.id == quoteId)
         .firstOrNull;
     final isDraft = quote?.status == MockRetailQuoteStatus.draft;
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
-        title: Text(
-          'Détails du devis',
-          style: AppTextStyles.h3(
-              color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+        title: Text('Détails du devis', style: AppTextStyles.h3(color: ink)),
+        foregroundColor: ink,
+        iconTheme: IconThemeData(color: ink),
+        leading: AppCloseButton(
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
