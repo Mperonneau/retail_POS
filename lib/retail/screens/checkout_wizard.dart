@@ -1,5 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/payments/card_charge_pricing.dart';
+import '../../core/payments/open_payment_url.dart';
+import '../../core/payments/payments_client.dart';
+import '../../core/providers/currency_settings_provider.dart';
+import '../../core/widgets/card_fee_breakdown.dart';
 import '../../core/mock/mock_retail_data.dart';
 import '../../core/mock/mock_retail_orders.dart';
 import '../../core/models/customer.dart';
@@ -119,9 +126,11 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   RetailFulfillmentMode _fulfillment = RetailFulfillmentMode.inStore;
   double _deliveryFee = 0;
   String _searchQuery = '';
+
   /// Phone from directory selection (not the search field text).
   String _linkedClientPhone = '';
   bool _submitting = false;
+
   /// Shown on success screen (mock sale #).
   int _completedSaleNumber = 0;
 
@@ -170,8 +179,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   bool get _isDeliveryMode =>
       _deliveryOptionEnabled && _fulfillment == RetailFulfillmentMode.delivery;
 
-  static bool _fulfillmentAllowed(
-      RetailFulfillmentMode m, RetailSettings s) {
+  static bool _fulfillmentAllowed(RetailFulfillmentMode m, RetailSettings s) {
     if (!s.pickupEnabled && !s.deliveryEnabled) {
       return m == RetailFulfillmentMode.inStore;
     }
@@ -251,10 +259,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
     }
   }
 
-  double _subtotal(List<RetailCartEntry> lines) => lines.fold(
-        0.0,
-        (s, e) => s + e.unitPriceHtg * e.quantity,
-      );
+  double _subtotal(List<RetailCartEntry> lines) =>
+      lines.fold(0.0, (s, e) => s + e.unitPriceHtg * e.quantity);
 
   double _discountAmt(double sub) => sub * (widget.discountPercent / 100);
 
@@ -273,7 +279,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   bool _validateClientStepForQuote() {
     if (!widget.isQuote) return true;
     final hasName = _clientNameCtrl.text.trim().isNotEmpty;
-    final hasContact = _linkedClientPhone.trim().isNotEmpty ||
+    final hasContact =
+        _linkedClientPhone.trim().isNotEmpty ||
         _clientEmailCtrl.text.trim().isNotEmpty;
     return hasName && hasContact;
   }
@@ -327,18 +334,22 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   void _saveQuote() {
     // Snapshot prices at save time — future catalog changes won't affect this quote.
     final lines = widget.cart
-            .map((e) => MockQuoteLine(
-              product: e.options.isEmpty
-                  ? e.product
-                  : e.product.copyWith(name: e.lineLabel),
-              quantity: e.quantity,
-              unitPriceHtg: e.unitPriceHtg,
-              unitPriceUsd: e.product.sellingPriceUsd,
-            ))
+        .map(
+          (e) => MockQuoteLine(
+            product: e.options.isEmpty
+                ? e.product
+                : e.product.copyWith(name: e.lineLabel),
+            quantity: e.quantity,
+            unitPriceHtg: e.unitPriceHtg,
+            unitPriceUsd: e.product.sellingPriceUsd,
+          ),
+        )
         .toList();
     final existing = widget.existingQuote;
     if (existing != null && widget.isQuote) {
-      ref.read(quotesProvider.notifier).updateQuote(
+      ref
+          .read(quotesProvider.notifier)
+          .updateQuote(
             existing.copyWith(
               lines: lines,
               clientName: _clientNameCtrl.text.trim().isEmpty
@@ -353,16 +364,20 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               fulfillmentMode: _fulfillmentSectionVisible
                   ? _fulfillment
                   : RetailFulfillmentMode.inStore,
-              deliveryLocation:
-                  _isDeliveryMode ? _deliveryLocationCtrl.text.trim() : null,
-              deliveryPhone:
-                  _isDeliveryMode ? _deliveryPhoneCtrl.text.trim() : null,
+              deliveryLocation: _isDeliveryMode
+                  ? _deliveryLocationCtrl.text.trim()
+                  : null,
+              deliveryPhone: _isDeliveryMode
+                  ? _deliveryPhoneCtrl.text.trim()
+                  : null,
               discountPercent: widget.discountPercent,
               paymentLinkSent: false,
             ),
           );
     } else {
-      ref.read(quotesProvider.notifier).add(
+      ref
+          .read(quotesProvider.notifier)
+          .add(
             MockRetailQuote(
               id: 'qte_${DateTime.now().millisecondsSinceEpoch}',
               quoteNumber: QuotesNotifier.newQuoteNumber(),
@@ -380,10 +395,12 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               fulfillmentMode: _fulfillmentSectionVisible
                   ? _fulfillment
                   : RetailFulfillmentMode.inStore,
-              deliveryLocation:
-                  _isDeliveryMode ? _deliveryLocationCtrl.text.trim() : null,
-              deliveryPhone:
-                  _isDeliveryMode ? _deliveryPhoneCtrl.text.trim() : null,
+              deliveryLocation: _isDeliveryMode
+                  ? _deliveryLocationCtrl.text.trim()
+                  : null,
+              deliveryPhone: _isDeliveryMode
+                  ? _deliveryPhoneCtrl.text.trim()
+                  : null,
               discountPercent: widget.discountPercent,
               status: MockRetailQuoteStatus.draft,
               createdAt: DateTime.now(),
@@ -471,7 +488,10 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('OK', style: AppTextStyles.button(color: AppColors.primaryBlue)),
+            child: Text(
+              'OK',
+              style: AppTextStyles.button(color: AppColors.primaryBlue),
+            ),
           ),
         ],
       ),
@@ -543,7 +563,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                       child: Text(
                         'Retour',
                         style: AppTextStyles.caption(
-                            color: AppColors.primaryBlue),
+                          color: AppColors.primaryBlue,
+                        ),
                       ),
                     ),
                 ],
@@ -637,8 +658,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           showDeliveryFeeRow: _isDeliveryMode,
           isDark: isDark,
           isQuote: widget.isQuote,
-          isUpdatingQuote:
-              widget.existingQuote != null && widget.isQuote,
+          isUpdatingQuote: widget.existingQuote != null && widget.isQuote,
           onPay: () => setState(() => _step = _paymentStepIndex),
           onSaveQuote: _saveQuote,
         ),
@@ -662,13 +682,13 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             return true;
           },
           onConfirm: (method) async {
-            final map = {
-              for (final e in lines) e.product.id: e.quantity,
-            };
+            final map = {for (final e in lines) e.product.id: e.quantity};
             final now = DateTime.now();
             final saleNo = 100 + (now.millisecondsSinceEpoch % 8999);
             final clientName = _clientNameCtrl.text.trim();
-            ref.read(retailOrdersProvider.notifier).add(
+            ref
+                .read(retailOrdersProvider.notifier)
+                .add(
                   RetailOrder(
                     id: 'pos-$_checkoutId',
                     orderNumber: 'ORD-${now.year}-$saleNo',
@@ -712,10 +732,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                   ),
                 );
             ref.read(mockProductsProvider.notifier).applySale(map);
-            ref.read(retailInventoryLedgerProvider.notifier).recordSalesFromCheckout(
-                  map,
-                  DateTime.now(),
-                );
+            ref
+                .read(retailInventoryLedgerProvider.notifier)
+                .recordSalesFromCheckout(map, DateTime.now());
             if (widget.existingQuote != null) {
               ref
                   .read(quotesProvider.notifier)
@@ -740,8 +759,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           showHeader: true,
           contextSubtitle: _successContextSubtitle(),
           statusLine: 'Vente n°$_completedSaleNumber payée',
-          receiptDetailLine:
-              name.isNotEmpty ? 'Reçu pour : $name' : null,
+          receiptDetailLine: name.isNotEmpty ? 'Reçu pour : $name' : null,
           printReceiptName: name.isNotEmpty ? name : null,
           onDone: _finishPaymentSuccess,
           onHeaderBack: _finishPaymentSuccess,
@@ -801,12 +819,12 @@ class _ClientStep extends ConsumerWidget {
     final results = searchQuery.trim().isEmpty
         ? <MockCustomer>[]
         : mockList
-            .where(
-              (c) =>
-                  c.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                  c.phone.contains(searchQuery),
-            )
-            .toList();
+              .where(
+                (c) =>
+                    c.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                    c.phone.contains(searchQuery),
+              )
+              .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -818,7 +836,8 @@ class _ClientStep extends ConsumerWidget {
               right: AppConstants.spacing12,
               top: AppConstants.spacing12,
               bottom:
-                  MediaQuery.of(context).viewInsets.bottom + AppConstants.spacing8,
+                  MediaQuery.of(context).viewInsets.bottom +
+                  AppConstants.spacing8,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -838,8 +857,9 @@ class _ClientStep extends ConsumerWidget {
                         : 'Nom du client (facultatif)',
                     prefixIcon: const Icon(Icons.person_outline, size: 18),
                     border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusInput),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusInput,
+                      ),
                     ),
                     isDense: true,
                   ),
@@ -851,11 +871,11 @@ class _ClientStep extends ConsumerWidget {
                     controller: clientEmailCtrl,
                     decoration: InputDecoration(
                       labelText: 'E-mail (obligatoire sans téléphone)',
-                      prefixIcon:
-                          const Icon(Icons.email_outlined, size: 18),
+                      prefixIcon: const Icon(Icons.email_outlined, size: 18),
                       border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppConstants.radiusInput),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
                       ),
                       isDense: true,
                     ),
@@ -865,11 +885,11 @@ class _ClientStep extends ConsumerWidget {
                   const SizedBox(height: AppConstants.spacing4),
                   Row(
                     children: [
-                      Icon(Icons.info_outline,
-                          size: 13,
-                          color: isDark
-                              ? AppColors.coolGray
-                              : AppColors.darkGray),
+                      Icon(
+                        Icons.info_outline,
+                        size: 13,
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -892,8 +912,9 @@ class _ClientStep extends ConsumerWidget {
                     labelText: 'Rechercher un client',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusInput),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusInput,
+                      ),
                     ),
                     isDense: true,
                   ),
@@ -943,17 +964,17 @@ class _ClientStep extends ConsumerWidget {
                     onSelectionChanged: (s) => onFulfillmentChanged(s.first),
                     style: ButtonStyle(
                       visualDensity: VisualDensity.compact,
-                      foregroundColor:
-                          WidgetStateProperty.resolveWith((states) {
+                      foregroundColor: WidgetStateProperty.resolveWith((
+                        states,
+                      ) {
                         if (states.contains(WidgetState.selected)) {
                           return AppColors.nearBlack;
                         }
-                        return isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray;
+                        return isDark ? AppColors.coolGray : AppColors.darkGray;
                       }),
-                      backgroundColor:
-                          WidgetStateProperty.resolveWith((states) {
+                      backgroundColor: WidgetStateProperty.resolveWith((
+                        states,
+                      ) {
                         if (states.contains(WidgetState.selected)) {
                           return AppColors.amber;
                         }
@@ -967,7 +988,8 @@ class _ClientStep extends ConsumerWidget {
                         ? Padding(
                             key: const ValueKey('del'),
                             padding: const EdgeInsets.only(
-                                top: AppConstants.spacing12),
+                              top: AppConstants.spacing12,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -976,8 +998,7 @@ class _ClientStep extends ConsumerWidget {
                                   controller: deliveryLocationCtrl,
                                   prefixIcon: Icons.place_outlined,
                                 ),
-                                const SizedBox(
-                                    height: AppConstants.spacing8),
+                                const SizedBox(height: AppConstants.spacing8),
                                 AppInput(
                                   label: 'Téléphone *',
                                   controller: deliveryPhoneCtrl,
@@ -985,14 +1006,14 @@ class _ClientStep extends ConsumerWidget {
                                   inputFormatters: InputFormatters.phone,
                                   prefixIcon: Icons.phone_outlined,
                                 ),
-                                const SizedBox(
-                                    height: AppConstants.spacing8),
+                                const SizedBox(height: AppConstants.spacing8),
                                 AppInput(
                                   label: 'Frais de livraison (HTG)',
                                   controller: deliveryFeeCtrl,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
-                                          decimal: true),
+                                        decimal: true,
+                                      ),
                                   inputFormatters:
                                       InputFormatters.decimalAmount,
                                   prefixIcon: Icons.local_shipping_outlined,
@@ -1044,6 +1065,7 @@ class _ReviewStep extends ConsumerWidget {
   final bool showDeliveryFeeRow;
   final bool isDark;
   final bool isQuote;
+
   /// True when editing an existing draft quote (label becomes "Mettre à jour le devis").
   final bool isUpdatingQuote;
   final VoidCallback onPay;
@@ -1076,7 +1098,8 @@ class _ReviewStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final surface = isDark ? AppColors.darkBackground : AppColors.white;
-    final hasContext = clientName.isNotEmpty ||
+    final hasContext =
+        clientName.isNotEmpty ||
         linkedClientPhone.isNotEmpty ||
         showFulfillmentChip;
 
@@ -1142,8 +1165,9 @@ class _ReviewStep extends ConsumerWidget {
                 color: surface,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
                 border: Border.all(
-                  color:
-                      isDark ? AppColors.darkBorder : const Color(0xFFE8E8E8),
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : const Color(0xFFE8E8E8),
                 ),
               ),
               child: Column(
@@ -1154,7 +1178,8 @@ class _ReviewStep extends ConsumerWidget {
                   ...lines.map(
                     (e) => Padding(
                       padding: const EdgeInsets.only(
-                          bottom: AppConstants.spacing8),
+                        bottom: AppConstants.spacing8,
+                      ),
                       child: Row(
                         children: [
                           SizedBox(
@@ -1183,8 +1208,7 @@ class _ReviewStep extends ConsumerWidget {
                           SizedBox(
                             width: 88,
                             child: Text(
-                              CurrencyFormatter.amountOnly(
-                                  e.unitPriceHtg),
+                              CurrencyFormatter.amountOnly(e.unitPriceHtg),
                               textAlign: TextAlign.right,
                               style: AppTextStyles.caption(
                                 color: isDark
@@ -1226,8 +1250,9 @@ class _ReviewStep extends ConsumerWidget {
                     _moneyRow(context, 'Frais de service', gratuity, isDark),
                   if (showDeliveryFeeRow)
                     Padding(
-                      padding:
-                          const EdgeInsets.only(top: AppConstants.spacing4),
+                      padding: const EdgeInsets.only(
+                        top: AppConstants.spacing4,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1241,14 +1266,13 @@ class _ReviewStep extends ConsumerWidget {
                           ),
                           Text(
                             deliveryFee > 0
-                                ? CurrencyFormatter.local(
-                                    context, deliveryFee)
+                                ? CurrencyFormatter.local(context, deliveryFee)
                                 : 'Free',
                             style: AppTextStyles.body(
                               color: deliveryFee > 0
                                   ? (isDark
-                                      ? AppColors.warmWhite
-                                      : AppColors.nearBlack)
+                                        ? AppColors.warmWhite
+                                        : AppColors.nearBlack)
                                   : AppColors.deepGreen,
                             ),
                           ),
@@ -1287,7 +1311,9 @@ class _ReviewStep extends ConsumerWidget {
             children: [
               if (isQuote) ...[
                 AppButton(
-                  label: isUpdatingQuote ? 'Mettre à jour le devis' : 'Enregistrer comme devis',
+                  label: isUpdatingQuote
+                      ? 'Mettre à jour le devis'
+                      : 'Enregistrer comme devis',
                   onPressed: onSaveQuote,
                   icon: Icons.request_quote_outlined,
                   variant: AppButtonVariant.secondary,
@@ -1314,10 +1340,7 @@ class _ReviewStep extends ConsumerWidget {
       children: [
         SizedBox(
           width: 36,
-          child: Text(
-            'Qté',
-            style: AppTextStyles.caption(color: headerColor),
-          ),
+          child: Text('Qté', style: AppTextStyles.caption(color: headerColor)),
         ),
         Expanded(
           child: Text(
@@ -1345,7 +1368,12 @@ class _ReviewStep extends ConsumerWidget {
     );
   }
 
-  Widget _moneyRow(BuildContext context, String label, double amount, bool isDark) {
+  Widget _moneyRow(
+    BuildContext context,
+    String label,
+    double amount,
+    bool isDark,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppConstants.spacing4),
       child: Row(
@@ -1393,10 +1421,7 @@ class _ContextChip extends StatelessWidget {
       children: [
         Icon(icon, size: 12, color: color),
         const SizedBox(width: 3),
-        Text(
-          label,
-          style: AppTextStyles.caption(color: color),
-        ),
+        Text(label, style: AppTextStyles.caption(color: color)),
       ],
     );
   }
@@ -1426,6 +1451,13 @@ class _RetailPaymentPanel extends ConsumerStatefulWidget {
 
 class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   _RPayMethod _method = _RPayMethod.moncash;
+  final PaymentsClient _payments = PaymentsClient();
+  Timer? _poll;
+  bool _remoteBusy = false;
+  bool _saleCompleted = false;
+  String? _remoteError;
+  bool _cardPaid = false;
+  bool _moncashPaid = false;
 
   // Cash
   double _cashReceived = 0;
@@ -1442,6 +1474,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
 
   @override
   void dispose() {
+    _poll?.cancel();
+    _payments.close();
     _cashCtrl.dispose();
     _newNameCtrl.dispose();
     _newPhoneCtrl.dispose();
@@ -1450,15 +1484,32 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   }
 
   bool get _canConfirm {
-    if (widget.submitting) return false;
+    if (widget.submitting || _remoteBusy || _saleCompleted) return false;
     if (_method == _RPayMethod.credit) {
       return _selectedCustomer != null && !_selectedCustomer!.isCreditBlocked;
     }
     return true;
   }
 
+  String get _confirmLabel {
+    if (widget.submitting || _remoteBusy) return 'Traitement…';
+    if (_method == _RPayMethod.card && !_cardPaid) return 'Ouvrir Stripe';
+    if (_method == _RPayMethod.moncash && !_moncashPaid) {
+      return 'Ouvrir MonCash';
+    }
+    return 'Confirmer le paiement';
+  }
+
   Future<void> _confirm() async {
     if (!_canConfirm) return;
+    if (_method == _RPayMethod.card && !_cardPaid) {
+      await _startCard();
+      return;
+    }
+    if (_method == _RPayMethod.moncash && !_moncashPaid) {
+      await _startMoncash();
+      return;
+    }
     if (!await widget.onValidateStock()) return;
     if (_method == _RPayMethod.credit && _selectedCustomer != null) {
       final creditAmount = widget.total - _creditPartialPaid;
@@ -1467,7 +1518,9 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         final balance = state.balanceFor(_selectedCustomer!.id);
         final limit = _selectedCustomer!.creditLimitHtg;
         if (limit != null && (balance + creditAmount) > limit) return;
-        ref.read(customerProvider.notifier).postCharge(
+        ref
+            .read(customerProvider.notifier)
+            .postCharge(
               customerId: _selectedCustomer!.id,
               amountHtg: widget.total,
               paidAmountHtg: _creditPartialPaid,
@@ -1476,11 +1529,134 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             );
       }
     }
-    await widget.onConfirm(switch (_method) {
+    await _finishSale(switch (_method) {
       _RPayMethod.moncash => PaymentMethodType.moncash,
       _RPayMethod.card => PaymentMethodType.card,
       _RPayMethod.cash => PaymentMethodType.cash,
       _RPayMethod.credit => PaymentMethodType.credit,
+    });
+  }
+
+  Future<void> _finishSale(PaymentMethodType method) async {
+    if (_saleCompleted) return;
+    _saleCompleted = true;
+    _poll?.cancel();
+    await widget.onConfirm(method);
+  }
+
+  CardChargePricing? _cardPricing() {
+    final rate = ref.read(currencySettingsProvider).usdToLocalRate;
+    final cents = CardChargePricing.htgToUsdCents(widget.total, rate);
+    if (cents <= 0) return null;
+    return CardChargePricing.fromOrderUsdCents(cents);
+  }
+
+  Future<void> _startCard() async {
+    final pricing = _cardPricing();
+    if (pricing == null) {
+      setState(
+        () => _remoteError =
+            'Taux de change indisponible — impossible d\'encaisser en dollars.',
+      );
+      return;
+    }
+    _poll?.cancel();
+    setState(() {
+      _remoteBusy = true;
+      _remoteError = null;
+    });
+    try {
+      final session = await _payments.createCheckout(
+        reference: widget.checkoutId,
+        orderUsdCents: pricing.orderUsdCents,
+        description: 'Vente ${widget.checkoutId}',
+      );
+      if (!mounted || _method != _RPayMethod.card) {
+        if (mounted) setState(() => _remoteBusy = false);
+        return;
+      }
+      openPaymentUrl(session.url);
+      setState(() => _remoteBusy = false);
+      _pollPayment(
+        () => _payments.checkoutPaid(session.id),
+        onPaid: () async {
+          setState(() => _cardPaid = true);
+          if (!await widget.onValidateStock()) return;
+          await _finishSale(PaymentMethodType.card);
+        },
+      );
+    } on PaymentsException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _remoteBusy = false;
+        _remoteError = e.message;
+      });
+    }
+  }
+
+  Future<void> _startMoncash() async {
+    final amount = widget.total.round();
+    if (amount < 1) {
+      setState(
+        () => _remoteError = 'Le montant MonCash doit être d\'au moins 1 HTG.',
+      );
+      return;
+    }
+    _poll?.cancel();
+    setState(() {
+      _remoteBusy = true;
+      _remoteError = null;
+    });
+    try {
+      final payment = await _payments.createMoncash(
+        orderId: widget.checkoutId,
+        amountHtg: amount,
+      );
+      if (!mounted || _method != _RPayMethod.moncash) {
+        if (mounted) setState(() => _remoteBusy = false);
+        return;
+      }
+      openPaymentUrl(payment.paymentUrl);
+      setState(() => _remoteBusy = false);
+      _pollPayment(
+        () => _payments.moncashPaid(payment.orderId),
+        onPaid: () async {
+          setState(() => _moncashPaid = true);
+          if (!await widget.onValidateStock()) return;
+          await _finishSale(PaymentMethodType.moncash);
+        },
+      );
+    } on PaymentsException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _remoteBusy = false;
+        _remoteError = e.message;
+      });
+    }
+  }
+
+  void _pollPayment(
+    Future<bool> Function() check, {
+    required Future<void> Function() onPaid,
+  }) {
+    _poll?.cancel();
+    var attempts = 0;
+    _poll = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      attempts++;
+      if (!mounted || attempts > 80) {
+        timer.cancel();
+        return;
+      }
+      try {
+        final paid = await check();
+        if (!paid || !mounted) return;
+        timer.cancel();
+        await onPaid();
+      } on PaymentsException catch (e) {
+        if (!mounted) return;
+        timer.cancel();
+        setState(() => _remoteError = e.message);
+      }
     });
   }
 
@@ -1529,25 +1705,41 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
                 label: 'MonCash',
                 icon: Icons.phone_android_outlined,
                 selected: _method == _RPayMethod.moncash,
-                onTap: () => setState(() => _method = _RPayMethod.moncash),
+                onTap: () => setState(() {
+                  _poll?.cancel();
+                  _method = _RPayMethod.moncash;
+                  _remoteError = null;
+                }),
               ),
               _RetailMethodTab(
                 label: 'Carte',
                 icon: Icons.credit_card_outlined,
                 selected: _method == _RPayMethod.card,
-                onTap: () => setState(() => _method = _RPayMethod.card),
+                onTap: () => setState(() {
+                  _poll?.cancel();
+                  _method = _RPayMethod.card;
+                  _remoteError = null;
+                }),
               ),
               _RetailMethodTab(
                 label: 'Espèces',
                 icon: Icons.payments_outlined,
                 selected: _method == _RPayMethod.cash,
-                onTap: () => setState(() => _method = _RPayMethod.cash),
+                onTap: () => setState(() {
+                  _poll?.cancel();
+                  _method = _RPayMethod.cash;
+                  _remoteError = null;
+                }),
               ),
               _RetailMethodTab(
                 label: 'Crédit',
                 icon: Icons.account_balance_wallet_outlined,
                 selected: _method == _RPayMethod.credit,
-                onTap: () => setState(() => _method = _RPayMethod.credit),
+                onTap: () => setState(() {
+                  _poll?.cancel();
+                  _method = _RPayMethod.credit;
+                  _remoteError = null;
+                }),
                 accentColor: AppColors.amber,
               ),
             ],
@@ -1571,7 +1763,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: AppButton(
-            label: widget.submitting ? 'Traitement…' : 'Confirmer le paiement',
+            label: _confirmLabel,
             onPressed: _canConfirm ? _confirm : null,
             isLoading: widget.submitting,
             icon: Icons.check_circle_outline,
@@ -1585,9 +1777,22 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   Widget _buildMethodContent(bool isDark, CustomerState customerState) {
     switch (_method) {
       case _RPayMethod.moncash:
-        return _RMonCashContent(totalHtg: widget.total, isDark: isDark);
+        return _RMonCashContent(
+          totalHtg: widget.total,
+          isDark: isDark,
+          error: _remoteError,
+          waiting: _remoteBusy || ((_poll?.isActive ?? false) && !_moncashPaid),
+          paid: _moncashPaid,
+        );
       case _RPayMethod.card:
-        return _RCardContent(isDark: isDark);
+        return _RCardContent(
+          isDark: isDark,
+          pricing: _cardPricing(),
+          orderLocalLabel: CurrencyFormatter.local(context, widget.total),
+          error: _remoteError,
+          waiting: _remoteBusy || ((_poll?.isActive ?? false) && !_cardPaid),
+          paid: _cardPaid,
+        );
       case _RPayMethod.cash:
         return _RCashContent(
           totalHtg: widget.total,
@@ -1685,7 +1890,9 @@ class _RetailMethodTab extends StatelessWidget {
               icon,
               size: 20,
               color: selected
-                  ? (accentColor != null ? AppColors.nearBlack : AppColors.white)
+                  ? (accentColor != null
+                        ? AppColors.nearBlack
+                        : AppColors.white)
                   : (isDark ? AppColors.coolGray : AppColors.darkGray),
             ),
             const SizedBox(height: 4),
@@ -1694,8 +1901,8 @@ class _RetailMethodTab extends StatelessWidget {
               style: AppTextStyles.caption(
                 color: selected
                     ? (accentColor != null
-                        ? AppColors.nearBlack
-                        : AppColors.white)
+                          ? AppColors.nearBlack
+                          : AppColors.white)
                     : (isDark ? AppColors.coolGray : AppColors.darkGray),
               ),
             ),
@@ -1711,10 +1918,21 @@ class _RetailMethodTab extends StatelessWidget {
 class _RMonCashContent extends StatelessWidget {
   final double totalHtg;
   final bool isDark;
-  const _RMonCashContent({required this.totalHtg, required this.isDark});
+  final String? error;
+  final bool waiting;
+  final bool paid;
+
+  const _RMonCashContent({
+    required this.totalHtg,
+    required this.isDark,
+    required this.error,
+    required this.waiting,
+    required this.paid,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     return AppCard(
       child: SingleChildScrollView(
         child: Column(
@@ -1729,47 +1947,23 @@ class _RMonCashContent extends StatelessWidget {
             Text('Paiement MonCash', style: AppTextStyles.h3()),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'Saisissez le téléphone du client ou montrez le code QR',
-              style: AppTextStyles.body(
-                  color: isDark ? AppColors.coolGray : AppColors.darkGray),
+              'Le client paie le montant de la vente sur la page Digicel. '
+              'Les frais MonCash restent ceux de Digicel.',
+              style: AppTextStyles.body(color: muted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppConstants.spacing12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Téléphone du client',
-                hintText: '+509 3XXX-XXXX',
-                prefixIcon: const Icon(Icons.phone_outlined, size: 20),
-                border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput)),
-              ),
-              keyboardType: TextInputType.phone,
-              inputFormatters: InputFormatters.phone,
+            Text(
+              CurrencyFormatter.local(context, totalHtg),
+              style: AppTextStyles.price(),
             ),
             const SizedBox(height: AppConstants.spacing12),
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color:
-                    isDark ? AppColors.darkBackground : AppColors.lightBlue,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.qr_code_2_rounded,
-                      size: 52,
-                      color:
-                          isDark ? AppColors.skyBlue : AppColors.primaryBlue),
-                  Text('Code QR', style: AppTextStyles.caption()),
-                ],
-              ),
+            _RemoteStatus(
+              error: error,
+              waiting: waiting,
+              paid: paid,
+              isDark: isDark,
             ),
-            const SizedBox(height: AppConstants.spacing8),
-            Text(CurrencyFormatter.local(context, totalHtg),
-                style: AppTextStyles.price()),
           ],
         ),
       ),
@@ -1781,10 +1975,24 @@ class _RMonCashContent extends StatelessWidget {
 
 class _RCardContent extends StatelessWidget {
   final bool isDark;
-  const _RCardContent({required this.isDark});
+  final CardChargePricing? pricing;
+  final String orderLocalLabel;
+  final String? error;
+  final bool waiting;
+  final bool paid;
+
+  const _RCardContent({
+    required this.isDark,
+    required this.pricing,
+    required this.orderLocalLabel,
+    required this.error,
+    required this.waiting,
+    required this.paid,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     return AppCard(
       child: SingleChildScrollView(
         child: Column(
@@ -1793,67 +2001,94 @@ class _RCardContent extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.credit_card_outlined,
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+                Icon(
+                  Icons.credit_card_outlined,
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ),
                 const SizedBox(width: 8),
                 Text('Paiement par carte', style: AppTextStyles.h3()),
               ],
             ),
-            const SizedBox(height: AppConstants.spacing12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Numéro de carte',
-                hintText: '1234 5678 9012 3456',
-                prefixIcon: const Icon(Icons.credit_card, size: 20),
-                border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput)),
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: InputFormatters.cardNumber,
-            ),
             const SizedBox(height: AppConstants.spacing8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Expiry',
-                      hintText: 'MM/YY',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppConstants.radiusInput)),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: InputFormatters.cardExpiry,
-                  ),
-                ),
-                const SizedBox(width: AppConstants.spacing8),
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      labelText: 'CVV',
-                      hintText: '123',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppConstants.radiusInput)),
-                    ),
-                    obscureText: true,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: InputFormatters.cardCvv,
-                  ),
-                ),
-              ],
+            Text(
+              'La carte est saisie sur la page Stripe. Elle ne passe pas par la caisse.',
+              style: AppTextStyles.body(color: muted),
             ),
-            const SizedBox(height: AppConstants.spacing4),
-            Text('Propulsé par Stripe',
-                style: AppTextStyles.caption(
-                    color:
-                        isDark ? AppColors.coolGray : AppColors.darkGray)),
+            const SizedBox(height: AppConstants.spacing12),
+            if (pricing == null)
+              Text(
+                'Taux de change indisponible.',
+                style: AppTextStyles.body(color: AppColors.boldRed),
+              )
+            else
+              CardFeeBreakdown(
+                pricing: pricing!,
+                isDark: isDark,
+                orderLocalLabel: orderLocalLabel,
+              ),
+            const SizedBox(height: AppConstants.spacing8),
+            Text(
+              'Propulsé par Stripe',
+              style: AppTextStyles.caption(color: muted),
+            ),
+            _RemoteStatus(
+              error: error,
+              waiting: waiting,
+              paid: paid,
+              isDark: isDark,
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _RemoteStatus extends StatelessWidget {
+  final String? error;
+  final bool waiting;
+  final bool paid;
+  final bool isDark;
+
+  const _RemoteStatus({
+    required this.error,
+    required this.waiting,
+    required this.paid,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (paid) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          'Paiement reçu.',
+          style: AppTextStyles.body(color: AppColors.deepGreen),
+        ),
+      );
+    }
+    if (error != null && error!.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          error!,
+          style: AppTextStyles.body(color: AppColors.boldRed),
+        ),
+      );
+    }
+    if (waiting) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          'En attente du paiement…',
+          style: AppTextStyles.body(
+            color: isDark ? AppColors.coolGray : AppColors.darkGray,
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 
@@ -1887,8 +2122,10 @@ class _RCashContent extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.payments_outlined,
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+                Icon(
+                  Icons.payments_outlined,
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ),
                 const SizedBox(width: 8),
                 Text('Paiement en espèces', style: AppTextStyles.h3()),
               ],
@@ -1898,8 +2135,10 @@ class _RCashContent extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Montant dû', style: AppTextStyles.body()),
-                Text(CurrencyFormatter.local(context, totalHtg),
-                    style: AppTextStyles.price()),
+                Text(
+                  CurrencyFormatter.local(context, totalHtg),
+                  style: AppTextStyles.price(),
+                ),
               ],
             ),
             const SizedBox(height: AppConstants.spacing12),
@@ -1910,11 +2149,12 @@ class _RCashContent extends StatelessWidget {
                 labelText: 'Espèces reçues (HTG)',
                 prefixText: 'HTG ',
                 border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput)),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                ),
               ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: InputFormatters.decimalAmount,
             ),
             const SizedBox(height: AppConstants.spacing8),
@@ -1922,12 +2162,13 @@ class _RCashContent extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [500, 1000, 2000, 5000, 10000]
-                  .map((amt) => ActionChip(
-                        label: Text(
-                            CurrencyFormatter.compact(amt.toDouble())),
-                        onPressed: () => onQuickCash(amt.toDouble()),
-                        visualDensity: VisualDensity.compact,
-                      ))
+                  .map(
+                    (amt) => ActionChip(
+                      label: Text(CurrencyFormatter.compact(amt.toDouble())),
+                      onPressed: () => onQuickCash(amt.toDouble()),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  )
                   .toList(),
             ),
             if (change >= 0) ...[
@@ -1994,13 +2235,15 @@ class _RCreditContent extends StatelessWidget {
     final results = creditSearch.isEmpty
         ? <Customer>[]
         : customerState.customers
-            .where((c) =>
-                c.isActive &&
-                (c.name
-                        .toLowerCase()
-                        .contains(creditSearch.toLowerCase()) ||
-                    c.phone.contains(creditSearch)))
-            .toList();
+              .where(
+                (c) =>
+                    c.isActive &&
+                    (c.name.toLowerCase().contains(
+                          creditSearch.toLowerCase(),
+                        ) ||
+                        c.phone.contains(creditSearch)),
+              )
+              .toList();
 
     return AppCard(
       child: SingleChildScrollView(
@@ -2010,8 +2253,10 @@ class _RCreditContent extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.account_balance_wallet_outlined,
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+                Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ),
                 const SizedBox(width: 8),
                 Text('Compte crédit', style: AppTextStyles.h3()),
               ],
@@ -2024,8 +2269,10 @@ class _RCreditContent extends StatelessWidget {
                   labelText: 'Rechercher un client par nom ou téléphone',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusInput)),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.radiusInput,
+                    ),
+                  ),
                 ),
               ),
               if (results.isNotEmpty) ...[
@@ -2055,21 +2302,30 @@ class _RCreditContent extends StatelessWidget {
                         ),
                       ),
                     ),
-                    title: Row(children: [
-                      Expanded(
-                          child: Text(c.name, style: AppTextStyles.body())),
-                      if (c.isCreditBlocked)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                              color: AppColors.boldRed.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4)),
-                          child: Text('BLOQUÉ',
-                              style: AppTextStyles.caption(
-                                  color: AppColors.boldRed)),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(c.name, style: AppTextStyles.body()),
                         ),
-                    ]),
+                        if (c.isCreditBlocked)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.boldRed.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'BLOQUÉ',
+                              style: AppTextStyles.caption(
+                                color: AppColors.boldRed,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     subtitle: Text(
                       '${c.phone}${bal > 0 ? ' · Owes ${CurrencyFormatter.local(context, bal)}' : ''}',
                       style: AppTextStyles.caption(),
@@ -2088,8 +2344,7 @@ class _RCreditContent extends StatelessWidget {
                   size: 16,
                 ),
                 label: Text(showNewCustomer ? 'Annuler' : 'Nouveau client'),
-                style:
-                    TextButton.styleFrom(foregroundColor: AppColors.amber),
+                style: TextButton.styleFrom(foregroundColor: AppColors.amber),
               ),
               if (showNewCustomer) ...[
                 const SizedBox(height: AppConstants.spacing8),
@@ -2098,8 +2353,10 @@ class _RCreditContent extends StatelessWidget {
                   decoration: InputDecoration(
                     labelText: 'Nom complet *',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppConstants.radiusInput)),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusInput,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacing8),
@@ -2110,8 +2367,10 @@ class _RCreditContent extends StatelessWidget {
                   decoration: InputDecoration(
                     labelText: 'Téléphone *',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppConstants.radiusInput)),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusInput,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacing8),
@@ -2125,12 +2384,14 @@ class _RCreditContent extends StatelessWidget {
                     final n = newNameCtrl.text.trim();
                     final p = newPhoneCtrl.text.trim();
                     if (n.isEmpty || p.isEmpty) return;
-                    onCustomerCreated(Customer(
-                      id: 'cust_${DateTime.now().millisecondsSinceEpoch}',
-                      name: n,
-                      phone: p,
-                      createdAt: DateTime.now(),
-                    ));
+                    onCustomerCreated(
+                      Customer(
+                        id: 'cust_${DateTime.now().millisecondsSinceEpoch}',
+                        name: n,
+                        phone: p,
+                        createdAt: DateTime.now(),
+                      ),
+                    );
                   },
                   child: const Text('Créer et choisir'),
                 ),
@@ -2143,20 +2404,27 @@ class _RCreditContent extends StatelessWidget {
                     color: AppColors.boldRed.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: AppColors.boldRed.withValues(alpha: 0.35)),
-                  ),
-                  child: Row(children: [
-                    const Icon(Icons.block_outlined,
-                        color: AppColors.boldRed, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${selectedCustomer!.name} est BLOQUÉ',
-                        style: AppTextStyles.body(color: AppColors.boldRed)
-                            .copyWith(fontWeight: FontWeight.w700),
-                      ),
+                      color: AppColors.boldRed.withValues(alpha: 0.35),
                     ),
-                  ]),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.block_outlined,
+                        color: AppColors.boldRed,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${selectedCustomer!.name} est BLOQUÉ',
+                          style: AppTextStyles.body(
+                            color: AppColors.boldRed,
+                          ).copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
                 )
               else ...[
                 Container(
@@ -2167,116 +2435,149 @@ class _RCreditContent extends StatelessWidget {
                         : AppColors.lightBlue,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
                           color: AppColors.primaryBlue,
-                          shape: BoxShape.circle),
-                      child: Center(
-                        child: Text(
-                          selectedCustomer!.name[0].toUpperCase(),
-                          style: AppTextStyles.body(color: AppColors.white),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            selectedCustomer!.name[0].toUpperCase(),
+                            style: AppTextStyles.body(color: AppColors.white),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(selectedCustomer!.name,
-                                style: AppTextStyles.body(
-                                    color: isDark
-                                        ? AppColors.warmWhite
-                                        : AppColors.nearBlack)),
-                            Builder(builder: (ctx) {
-                              final bal = customerState
-                                  .balanceFor(selectedCustomer!.id);
-                              if (bal <= 0) return const SizedBox.shrink();
-                              return Text(
-                                'Owes ${CurrencyFormatter.local(ctx, bal)}',
-                                style: AppTextStyles.caption(
-                                    color: AppColors.boldRed),
-                              );
-                            }),
-                          ]),
-                    ),
-                    TextButton(
-                      onPressed: onCustomerCleared,
-                      child: const Text('Monnaie'),
-                    ),
-                  ]),
-                ),
-                Builder(builder: (ctx) {
-                  final bal =
-                      customerState.balanceFor(selectedCustomer!.id);
-                  final limit = selectedCustomer!.creditLimitHtg;
-                  final creditAmt = totalHtg - creditPartialPaid;
-                  if (limit != null && (bal + creditAmt) > limit) {
-                    return Padding(
-                      padding:
-                          const EdgeInsets.only(top: AppConstants.spacing8),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.boldRed.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                              color:
-                                  AppColors.boldRed.withValues(alpha: 0.35)),
+                            Text(
+                              selectedCustomer!.name,
+                              style: AppTextStyles.body(
+                                color: isDark
+                                    ? AppColors.warmWhite
+                                    : AppColors.nearBlack,
+                              ),
+                            ),
+                            Builder(
+                              builder: (ctx) {
+                                final bal = customerState.balanceFor(
+                                  selectedCustomer!.id,
+                                );
+                                if (bal <= 0) return const SizedBox.shrink();
+                                return Text(
+                                  'Owes ${CurrencyFormatter.local(ctx, bal)}',
+                                  style: AppTextStyles.caption(
+                                    color: AppColors.boldRed,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.warning_outlined,
-                              color: AppColors.boldRed, size: 16),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text('La limite de crédit sera dépassée.',
-                                style: AppTextStyles.caption(
-                                    color: AppColors.boldRed)),
-                          ),
-                        ]),
                       ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                }),
+                      TextButton(
+                        onPressed: onCustomerCleared,
+                        child: const Text('Monnaie'),
+                      ),
+                    ],
+                  ),
+                ),
+                Builder(
+                  builder: (ctx) {
+                    final bal = customerState.balanceFor(selectedCustomer!.id);
+                    final limit = selectedCustomer!.creditLimitHtg;
+                    final creditAmt = totalHtg - creditPartialPaid;
+                    if (limit != null && (bal + creditAmt) > limit) {
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          top: AppConstants.spacing8,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.boldRed.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: AppColors.boldRed.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_outlined,
+                                color: AppColors.boldRed,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'La limite de crédit sera dépassée.',
+                                  style: AppTextStyles.caption(
+                                    color: AppColors.boldRed,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
                 const SizedBox(height: AppConstants.spacing8),
                 TextField(
                   controller: partialCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: InputFormatters.decimalAmount,
                   onChanged: onPartialChanged,
                   decoration: InputDecoration(
                     labelText: 'Montant payé maintenant (HTG) — facultatif',
                     prefixText: 'HTG ',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppConstants.radiusInput)),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusInput,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacing8),
                 Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Payé maintenant', style: AppTextStyles.body()),
-                      Text(CurrencyFormatter.local(context, creditPartialPaid),
-                          style: AppTextStyles.body(color: AppColors.deepGreen)
-                              .copyWith(fontWeight: FontWeight.w700)),
-                    ]),
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Payé maintenant', style: AppTextStyles.body()),
+                    Text(
+                      CurrencyFormatter.local(context, creditPartialPaid),
+                      style: AppTextStyles.body(
+                        color: AppColors.deepGreen,
+                      ).copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Sur compte crédit', style: AppTextStyles.body()),
-                      Text(
-                          CurrencyFormatter.local(
-                              context, totalHtg - creditPartialPaid),
-                          style: AppTextStyles.body(color: AppColors.boldRed)
-                              .copyWith(fontWeight: FontWeight.w700)),
-                    ]),
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Sur compte crédit', style: AppTextStyles.body()),
+                    Text(
+                      CurrencyFormatter.local(
+                        context,
+                        totalHtg - creditPartialPaid,
+                      ),
+                      style: AppTextStyles.body(
+                        color: AppColors.boldRed,
+                      ).copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
               ],
             ],
           ],

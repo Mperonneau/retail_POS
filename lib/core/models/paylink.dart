@@ -51,6 +51,16 @@ class PayLink {
   final String? note;
   final String? linkedOrderId;
 
+  /// Hosted Stripe Checkout URL. Empty on older links created before Stripe.
+  final String? paymentUrl;
+
+  /// Checkout Session id (`cs_…`) used to confirm the payer actually paid.
+  final String? stripeSessionId;
+
+  final int? payerTotalUsdCents;
+  final int? platformFeeUsdCents;
+  final int? stripeFeeUsdCents;
+
   // ─ Payment confirmation (filled in when status → paidUnused) ─
   final String? paymentTransactionId;
   final String? paymentLast4;
@@ -78,6 +88,11 @@ class PayLink {
     this.createdBy = 'Personnel',
     this.note,
     this.linkedOrderId,
+    this.paymentUrl,
+    this.stripeSessionId,
+    this.payerTotalUsdCents,
+    this.platformFeeUsdCents,
+    this.stripeFeeUsdCents,
     this.paymentTransactionId,
     this.paymentLast4,
     this.paymentMethod,
@@ -108,6 +123,11 @@ class PayLink {
     String? createdBy,
     Object? note = _sentinel,
     Object? linkedOrderId = _sentinel,
+    Object? paymentUrl = _sentinel,
+    Object? stripeSessionId = _sentinel,
+    Object? payerTotalUsdCents = _sentinel,
+    Object? platformFeeUsdCents = _sentinel,
+    Object? stripeFeeUsdCents = _sentinel,
     Object? paymentTransactionId = _sentinel,
     Object? paymentLast4 = _sentinel,
     Object? paymentMethod = _sentinel,
@@ -118,7 +138,9 @@ class PayLink {
       customerId: customerId ?? this.customerId,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
-      payerEmail: payerEmail == _sentinel ? this.payerEmail : payerEmail as String?,
+      payerEmail: payerEmail == _sentinel
+          ? this.payerEmail
+          : payerEmail as String?,
       amountHtg: amountHtg ?? this.amountHtg,
       status: status ?? this.status,
       channel: channel ?? this.channel,
@@ -126,18 +148,45 @@ class PayLink {
       sentTo: sentTo ?? this.sentTo,
       createdAt: createdAt ?? this.createdAt,
       paidAt: paidAt == _sentinel ? this.paidAt : paidAt as DateTime?,
-      canceledAt: canceledAt == _sentinel ? this.canceledAt : canceledAt as DateTime?,
-      expiresAt: expiresAt == _sentinel ? this.expiresAt : expiresAt as DateTime?,
+      canceledAt: canceledAt == _sentinel
+          ? this.canceledAt
+          : canceledAt as DateTime?,
+      expiresAt: expiresAt == _sentinel
+          ? this.expiresAt
+          : expiresAt as DateTime?,
       reference: reference ?? this.reference,
       createdBy: createdBy ?? this.createdBy,
       note: note == _sentinel ? this.note : note as String?,
-      linkedOrderId: linkedOrderId == _sentinel ? this.linkedOrderId : linkedOrderId as String?,
+      linkedOrderId: linkedOrderId == _sentinel
+          ? this.linkedOrderId
+          : linkedOrderId as String?,
+      paymentUrl: paymentUrl == _sentinel
+          ? this.paymentUrl
+          : paymentUrl as String?,
+      stripeSessionId: stripeSessionId == _sentinel
+          ? this.stripeSessionId
+          : stripeSessionId as String?,
+      payerTotalUsdCents: payerTotalUsdCents == _sentinel
+          ? this.payerTotalUsdCents
+          : payerTotalUsdCents as int?,
+      platformFeeUsdCents: platformFeeUsdCents == _sentinel
+          ? this.platformFeeUsdCents
+          : platformFeeUsdCents as int?,
+      stripeFeeUsdCents: stripeFeeUsdCents == _sentinel
+          ? this.stripeFeeUsdCents
+          : stripeFeeUsdCents as int?,
       paymentTransactionId: paymentTransactionId == _sentinel
           ? this.paymentTransactionId
           : paymentTransactionId as String?,
-      paymentLast4: paymentLast4 == _sentinel ? this.paymentLast4 : paymentLast4 as String?,
-      paymentMethod: paymentMethod == _sentinel ? this.paymentMethod : paymentMethod as String?,
-      canceledBy: canceledBy == _sentinel ? this.canceledBy : canceledBy as String?,
+      paymentLast4: paymentLast4 == _sentinel
+          ? this.paymentLast4
+          : paymentLast4 as String?,
+      paymentMethod: paymentMethod == _sentinel
+          ? this.paymentMethod
+          : paymentMethod as String?,
+      canceledBy: canceledBy == _sentinel
+          ? this.canceledBy
+          : canceledBy as String?,
     );
   }
 }
@@ -161,28 +210,22 @@ class PayLinkState {
       links.where((l) => l.status == PayLinkStatus.inactive).toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-  double get totalActivePendingHtg =>
-      active.fold(0, (s, l) => s + l.amountHtg);
+  double get totalActivePendingHtg => active.fold(0, (s, l) => s + l.amountHtg);
 
-  double get totalPaidHtg =>
-      paid.fold(0, (s, l) => s + l.amountHtg);
+  double get totalPaidHtg => paid.fold(0, (s, l) => s + l.amountHtg);
 }
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class PayLinkNotifier extends StateNotifier<PayLinkState> {
-  PayLinkNotifier(
-    super.initial,
-    this._ref,
-    this._customerProvider,
-  );
+  PayLinkNotifier(super.initial, this._ref, this._customerProvider);
 
   final Ref _ref;
-  final StateNotifierProvider<CustomerNotifier, CustomerState> _customerProvider;
+  final StateNotifierProvider<CustomerNotifier, CustomerState>
+  _customerProvider;
   int _counter = 0;
 
-  /// Creates and returns the paylink record. The public checkout URL is derived
-  /// when sending (e.g. `…/pl/{id}`) — it does not exist before this call.
+  /// Creates the paylink after Stripe returns a hosted Checkout URL.
   PayLink create({
     required String customerId,
     required String customerName,
@@ -196,6 +239,12 @@ class PayLinkNotifier extends StateNotifier<PayLinkState> {
     DateTime? expiresAt,
     PayLinkSource source = PayLinkSource.standalone,
     String? linkedOrderId,
+    String? reference,
+    String? paymentUrl,
+    String? stripeSessionId,
+    int? payerTotalUsdCents,
+    int? platformFeeUsdCents,
+    int? stripeFeeUsdCents,
   }) {
     _counter++;
     final now = DateTime.now();
@@ -211,11 +260,17 @@ class PayLinkNotifier extends StateNotifier<PayLinkState> {
       source: source,
       sentTo: sentTo,
       createdAt: now,
-      reference: 'PL-${now.year}-${_counter.toString().padLeft(4, '0')}',
+      reference:
+          reference ?? 'PL-${now.year}-${_counter.toString().padLeft(4, '0')}',
       createdBy: createdBy,
       note: note,
       expiresAt: expiresAt,
       linkedOrderId: linkedOrderId,
+      paymentUrl: paymentUrl,
+      stripeSessionId: stripeSessionId,
+      payerTotalUsdCents: payerTotalUsdCents,
+      platformFeeUsdCents: platformFeeUsdCents,
+      stripeFeeUsdCents: stripeFeeUsdCents,
     );
     state = PayLinkState(links: [...state.links, link]);
     return link;
@@ -239,13 +294,17 @@ class PayLinkNotifier extends StateNotifier<PayLinkState> {
         paymentMethod: paymentMethod,
       ),
     );
-    // Auto-issue the full amount as store credit on the customer profile.
-    _ref.read(_customerProvider.notifier).issueStoreCredit(
-      customerId: link.customerId,
-      amountHtg: link.amountHtg,
-      description: 'Lien ${link.reference} — paiement reçu',
-      recordedBy: 'System',
-    );
+    // A link sent to anyone may have no customer file. Credit only a real client.
+    if (link.customerId.isNotEmpty) {
+      _ref
+          .read(_customerProvider.notifier)
+          .issueStoreCredit(
+            customerId: link.customerId,
+            amountHtg: link.amountHtg,
+            description: 'Lien ${link.reference} — paiement reçu',
+            recordedBy: 'System',
+          );
+    }
   }
 
   void cancel(String id, {String canceledBy = 'Personnel'}) {
@@ -287,18 +346,22 @@ class PayLinkNotifier extends StateNotifier<PayLinkState> {
 
 final retailPayLinkProvider =
     StateNotifierProvider<PayLinkNotifier, PayLinkState>((ref) {
-  return PayLinkNotifier(_buildSeedState(), ref, customerProvider);
-});
+      return PayLinkNotifier(_buildSeedState(), ref, customerProvider);
+    });
 
 final restaurantPayLinkProvider =
     StateNotifierProvider<PayLinkNotifier, PayLinkState>((ref) {
-  return PayLinkNotifier(_buildSeedState(), ref, restaurantCustomersProvider);
-});
+      return PayLinkNotifier(
+        _buildSeedState(),
+        ref,
+        restaurantCustomersProvider,
+      );
+    });
 
 final hotelPayLinkProvider =
     StateNotifierProvider<PayLinkNotifier, PayLinkState>((ref) {
-  return PayLinkNotifier(_buildSeedState(), ref, hotelCustomersProvider);
-});
+      return PayLinkNotifier(_buildSeedState(), ref, hotelCustomersProvider);
+    });
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
@@ -307,88 +370,341 @@ PayLinkState _buildSeedState() {
 
   // 20 active paylinks
   final active = <PayLink>[
-    _active('pl_a1',  'c1',  'Jean-Pierre Étienne',     '+509 3456-1234', 5000,  PayLinkChannel.whatsApp, '+509 3456-1234', 'PL-2026-0001', now, 3),
-    _active('pl_a2',  'c2',  'Marie-Josée Beaumont',    '+509 3789-5678', 8500,  PayLinkChannel.email,    'marie.beaumont@email.com', 'PL-2026-0002', now, 5),
-    _active('pl_a3',  'c3',  'Boutique Soleil',         '+509 4111-2222', 12000, PayLinkChannel.whatsApp, '+509 4111-2222', 'PL-2026-0003', now, 7),
-    _active('pl_a4',  'c4',  'Rosnel Dupont',           '+509 3222-9900', 3000,  PayLinkChannel.sms,      '+509 3222-9900', 'PL-2026-0004', now, 10),
-    _active('pl_a5',  'c5',  'Hôtel Mont Joli',         '+509 3600-1111', 25000, PayLinkChannel.email,    'hotel@montjoli.ht', 'PL-2026-0005', now, 1),
-    _active('pl_a6',  'c6',  'Sophie Laurent',          '+509 3711-3344', 4500,  PayLinkChannel.whatsApp, '+509 3711-3344', 'PL-2026-0006', now, 12),
-    _active('pl_a7',  'c7',  'Restaurant Le Gourmet',   '+509 3800-5555', 15000, PayLinkChannel.whatsApp, '+509 3800-5555', 'PL-2026-0007', now, 2),
-    _active('pl_a8',  'c8',  'Marc Antoine',            '+509 3912-6677', 2000,  PayLinkChannel.sms,      '+509 3912-6677', 'PL-2026-0008', now, 20),
-    _active('pl_a9',  'c9',  'École Saint-Louis',       '+509 4023-7788', 30000, PayLinkChannel.email,    'admin@ecole-sl.ht', 'PL-2026-0009', now, 4),
-    _active('pl_a10', 'c10', 'Claudette Jean',          '+509 4134-8899', 1500,  PayLinkChannel.whatsApp, '+509 4134-8899', 'PL-2026-0010', now, 25),
-    _active('pl_a11', 'c11', 'Boulangerie Douceur',     '+509 4245-9900', 7000,  PayLinkChannel.whatsApp, '+509 4245-9900', 'PL-2026-0011', now, 18),
-    _active('pl_a12', 'c12', 'Pierre Emmanuel',         '+509 4356-1011', 3500,  PayLinkChannel.sms,      '+509 4356-1011', 'PL-2026-0012', now, 30),
-    _active('pl_a13', 'c13', 'Clinique Bon Samaritain', '+509 4467-2122', 50000, PayLinkChannel.email,    'finance@clinique-bs.ht', 'PL-2026-0013', now, 6),
-    _active('pl_a14', 'c14', 'Marie-Claire Dupuis',     '+509 4578-3233', 2500,  PayLinkChannel.whatsApp, '+509 4578-3233', 'PL-2026-0014', now, 8),
-    _active('pl_a15', 'c15', 'Super Marché Central',    '+509 4689-4344', 20000, PayLinkChannel.whatsApp, '+509 4689-4344', 'PL-2026-0015', now, 9),
-    _active('pl_a16', 'c1',  'Jean-Pierre Étienne',     '+509 3456-1234', 6000,  PayLinkChannel.whatsApp, '+509 3456-1234', 'PL-2026-0016', now, 15),
-    _active('pl_a17', 'c2',  'Marie-Josée Beaumont',    '+509 3789-5678', 9000,  PayLinkChannel.email,    'marie.beaumont@email.com', 'PL-2026-0017', now, 16),
-    _active('pl_a18', 'c5',  'Hôtel Mont Joli',         '+509 3600-1111', 18000, PayLinkChannel.email,    'hotel@montjoli.ht', 'PL-2026-0018', now, 17),
-    _active('pl_a19', 'c7',  'Restaurant Le Gourmet',   '+509 3800-5555', 11000, PayLinkChannel.whatsApp, '+509 3800-5555', 'PL-2026-0019', now, 22),
-    _active('pl_a20', 'c9',  'École Saint-Louis',       '+509 4023-7788', 14000, PayLinkChannel.email,    'admin@ecole-sl.ht', 'PL-2026-0020', now, 28),
+    _active(
+      'pl_a1',
+      'c1',
+      'Jean-Pierre Étienne',
+      '+509 3456-1234',
+      5000,
+      PayLinkChannel.whatsApp,
+      '+509 3456-1234',
+      'PL-2026-0001',
+      now,
+      3,
+    ),
+    _active(
+      'pl_a2',
+      'c2',
+      'Marie-Josée Beaumont',
+      '+509 3789-5678',
+      8500,
+      PayLinkChannel.email,
+      'marie.beaumont@email.com',
+      'PL-2026-0002',
+      now,
+      5,
+    ),
+    _active(
+      'pl_a3',
+      'c3',
+      'Boutique Soleil',
+      '+509 4111-2222',
+      12000,
+      PayLinkChannel.whatsApp,
+      '+509 4111-2222',
+      'PL-2026-0003',
+      now,
+      7,
+    ),
+    _active(
+      'pl_a4',
+      'c4',
+      'Rosnel Dupont',
+      '+509 3222-9900',
+      3000,
+      PayLinkChannel.sms,
+      '+509 3222-9900',
+      'PL-2026-0004',
+      now,
+      10,
+    ),
+    _active(
+      'pl_a5',
+      'c5',
+      'Hôtel Mont Joli',
+      '+509 3600-1111',
+      25000,
+      PayLinkChannel.email,
+      'hotel@montjoli.ht',
+      'PL-2026-0005',
+      now,
+      1,
+    ),
+    _active(
+      'pl_a6',
+      'c6',
+      'Sophie Laurent',
+      '+509 3711-3344',
+      4500,
+      PayLinkChannel.whatsApp,
+      '+509 3711-3344',
+      'PL-2026-0006',
+      now,
+      12,
+    ),
+    _active(
+      'pl_a7',
+      'c7',
+      'Restaurant Le Gourmet',
+      '+509 3800-5555',
+      15000,
+      PayLinkChannel.whatsApp,
+      '+509 3800-5555',
+      'PL-2026-0007',
+      now,
+      2,
+    ),
+    _active(
+      'pl_a8',
+      'c8',
+      'Marc Antoine',
+      '+509 3912-6677',
+      2000,
+      PayLinkChannel.sms,
+      '+509 3912-6677',
+      'PL-2026-0008',
+      now,
+      20,
+    ),
+    _active(
+      'pl_a9',
+      'c9',
+      'École Saint-Louis',
+      '+509 4023-7788',
+      30000,
+      PayLinkChannel.email,
+      'admin@ecole-sl.ht',
+      'PL-2026-0009',
+      now,
+      4,
+    ),
+    _active(
+      'pl_a10',
+      'c10',
+      'Claudette Jean',
+      '+509 4134-8899',
+      1500,
+      PayLinkChannel.whatsApp,
+      '+509 4134-8899',
+      'PL-2026-0010',
+      now,
+      25,
+    ),
+    _active(
+      'pl_a11',
+      'c11',
+      'Boulangerie Douceur',
+      '+509 4245-9900',
+      7000,
+      PayLinkChannel.whatsApp,
+      '+509 4245-9900',
+      'PL-2026-0011',
+      now,
+      18,
+    ),
+    _active(
+      'pl_a12',
+      'c12',
+      'Pierre Emmanuel',
+      '+509 4356-1011',
+      3500,
+      PayLinkChannel.sms,
+      '+509 4356-1011',
+      'PL-2026-0012',
+      now,
+      30,
+    ),
+    _active(
+      'pl_a13',
+      'c13',
+      'Clinique Bon Samaritain',
+      '+509 4467-2122',
+      50000,
+      PayLinkChannel.email,
+      'finance@clinique-bs.ht',
+      'PL-2026-0013',
+      now,
+      6,
+    ),
+    _active(
+      'pl_a14',
+      'c14',
+      'Marie-Claire Dupuis',
+      '+509 4578-3233',
+      2500,
+      PayLinkChannel.whatsApp,
+      '+509 4578-3233',
+      'PL-2026-0014',
+      now,
+      8,
+    ),
+    _active(
+      'pl_a15',
+      'c15',
+      'Super Marché Central',
+      '+509 4689-4344',
+      20000,
+      PayLinkChannel.whatsApp,
+      '+509 4689-4344',
+      'PL-2026-0015',
+      now,
+      9,
+    ),
+    _active(
+      'pl_a16',
+      'c1',
+      'Jean-Pierre Étienne',
+      '+509 3456-1234',
+      6000,
+      PayLinkChannel.whatsApp,
+      '+509 3456-1234',
+      'PL-2026-0016',
+      now,
+      15,
+    ),
+    _active(
+      'pl_a17',
+      'c2',
+      'Marie-Josée Beaumont',
+      '+509 3789-5678',
+      9000,
+      PayLinkChannel.email,
+      'marie.beaumont@email.com',
+      'PL-2026-0017',
+      now,
+      16,
+    ),
+    _active(
+      'pl_a18',
+      'c5',
+      'Hôtel Mont Joli',
+      '+509 3600-1111',
+      18000,
+      PayLinkChannel.email,
+      'hotel@montjoli.ht',
+      'PL-2026-0018',
+      now,
+      17,
+    ),
+    _active(
+      'pl_a19',
+      'c7',
+      'Restaurant Le Gourmet',
+      '+509 3800-5555',
+      11000,
+      PayLinkChannel.whatsApp,
+      '+509 3800-5555',
+      'PL-2026-0019',
+      now,
+      22,
+    ),
+    _active(
+      'pl_a20',
+      'c9',
+      'École Saint-Louis',
+      '+509 4023-7788',
+      14000,
+      PayLinkChannel.email,
+      'admin@ecole-sl.ht',
+      'PL-2026-0020',
+      now,
+      28,
+    ),
   ];
 
   // 3 paid paylinks (amount already issued as store credit to the customer)
   final paid = <PayLink>[
     PayLink(
-      id: 'pl_p1', customerId: 'c2', customerName: 'Marie-Josée Beaumont',
-      customerPhone: '+509 3789-5678', payerEmail: 'marie.beaumont@email.com',
-      amountHtg: 8500, status: PayLinkStatus.paidUnused,
-      channel: PayLinkChannel.email, sentTo: 'marie.beaumont@email.com',
+      id: 'pl_p1',
+      customerId: 'c2',
+      customerName: 'Marie-Josée Beaumont',
+      customerPhone: '+509 3789-5678',
+      payerEmail: 'marie.beaumont@email.com',
+      amountHtg: 8500,
+      status: PayLinkStatus.paidUnused,
+      channel: PayLinkChannel.email,
+      sentTo: 'marie.beaumont@email.com',
       createdAt: now.subtract(const Duration(days: 3)),
       paidAt: now.subtract(const Duration(days: 2)),
-      reference: 'PL-2026-0021', createdBy: 'Caissier',
+      reference: 'PL-2026-0021',
+      createdBy: 'Caissier',
       paymentTransactionId: 'TXN-MC-2026-88421',
-      paymentLast4: '4829', paymentMethod: 'MonCash',
+      paymentLast4: '4829',
+      paymentMethod: 'MonCash',
     ),
     PayLink(
-      id: 'pl_p2', customerId: 'c9', customerName: 'École Saint-Louis',
-      customerPhone: '+509 4023-7788', payerEmail: 'admin@ecole-sl.ht',
-      amountHtg: 20000, status: PayLinkStatus.paidUnused,
-      channel: PayLinkChannel.email, sentTo: 'admin@ecole-sl.ht',
+      id: 'pl_p2',
+      customerId: 'c9',
+      customerName: 'École Saint-Louis',
+      customerPhone: '+509 4023-7788',
+      payerEmail: 'admin@ecole-sl.ht',
+      amountHtg: 20000,
+      status: PayLinkStatus.paidUnused,
+      channel: PayLinkChannel.email,
+      sentTo: 'admin@ecole-sl.ht',
       createdAt: now.subtract(const Duration(days: 5)),
       paidAt: now.subtract(const Duration(days: 4)),
-      reference: 'PL-2026-0022', createdBy: 'Gérant',
+      reference: 'PL-2026-0022',
+      createdBy: 'Gérant',
       paymentTransactionId: 'TXN-MC-2026-77310',
-      paymentLast4: '1122', paymentMethod: 'MonCash',
+      paymentLast4: '1122',
+      paymentMethod: 'MonCash',
       note: 'School semester prepaid',
     ),
     PayLink(
-      id: 'pl_p3', customerId: 'c5', customerName: 'Hôtel Mont Joli',
-      customerPhone: '+509 3600-1111', payerEmail: 'hotel@montjoli.ht',
-      amountHtg: 35000, status: PayLinkStatus.paidUnused,
-      channel: PayLinkChannel.email, sentTo: 'hotel@montjoli.ht',
+      id: 'pl_p3',
+      customerId: 'c5',
+      customerName: 'Hôtel Mont Joli',
+      customerPhone: '+509 3600-1111',
+      payerEmail: 'hotel@montjoli.ht',
+      amountHtg: 35000,
+      status: PayLinkStatus.paidUnused,
+      channel: PayLinkChannel.email,
+      sentTo: 'hotel@montjoli.ht',
       createdAt: now.subtract(const Duration(days: 1)),
       paidAt: now.subtract(const Duration(hours: 6)),
-      reference: 'PL-2026-0023', createdBy: 'Gérant',
+      reference: 'PL-2026-0023',
+      createdBy: 'Gérant',
       paymentTransactionId: 'TXN-CARD-2026-55901',
-      paymentLast4: '7743', paymentMethod: 'Carte',
+      paymentLast4: '7743',
+      paymentMethod: 'Carte',
     ),
   ];
 
   // 2 inactive
   final inactive = <PayLink>[
     PayLink(
-      id: 'pl_i1', customerId: 'c3', customerName: 'Boutique Soleil',
-      customerPhone: '+509 4111-2222', amountHtg: 3000,
-      status: PayLinkStatus.inactive, channel: PayLinkChannel.sms,
+      id: 'pl_i1',
+      customerId: 'c3',
+      customerName: 'Boutique Soleil',
+      customerPhone: '+509 4111-2222',
+      amountHtg: 3000,
+      status: PayLinkStatus.inactive,
+      channel: PayLinkChannel.sms,
       sentTo: '+509 4111-2222',
       createdAt: now.subtract(const Duration(days: 12)),
       canceledAt: now.subtract(const Duration(days: 10)),
-      reference: 'PL-2026-0024', createdBy: 'Personnel',
-      note: 'Commande annulée par le client', canceledBy: 'Gérant',
+      reference: 'PL-2026-0024',
+      createdBy: 'Personnel',
+      note: 'Commande annulée par le client',
+      canceledBy: 'Gérant',
     ),
     PayLink(
-      id: 'pl_i2', customerId: 'c4', customerName: 'Rosnel Dupont',
-      customerPhone: '+509 3222-9900', amountHtg: 5000,
-      status: PayLinkStatus.inactive, channel: PayLinkChannel.whatsApp,
+      id: 'pl_i2',
+      customerId: 'c4',
+      customerName: 'Rosnel Dupont',
+      customerPhone: '+509 3222-9900',
+      amountHtg: 5000,
+      status: PayLinkStatus.inactive,
+      channel: PayLinkChannel.whatsApp,
       sentTo: '+509 3222-9900',
       createdAt: now.subtract(const Duration(days: 30)),
       canceledAt: now.subtract(const Duration(days: 28)),
       expiresAt: now.subtract(const Duration(days: 20)),
-      reference: 'PL-2026-0025', createdBy: 'Caissier',
-      note: 'Lien expiré sans paiement', canceledBy: 'System',
+      reference: 'PL-2026-0025',
+      createdBy: 'Caissier',
+      note: 'Lien expiré sans paiement',
+      canceledBy: 'System',
     ),
   ];
 

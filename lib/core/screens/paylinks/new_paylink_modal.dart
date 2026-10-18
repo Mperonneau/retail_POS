@@ -6,7 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/customer.dart';
 import '../../models/paylink.dart';
+import '../../payments/card_charge_pricing.dart';
+import '../../payments/payments_client.dart';
+import '../../providers/currency_settings_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/card_fee_breakdown.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
@@ -20,7 +24,7 @@ Future<PayLink?> showNewPayLinkModal(
   required bool isDark,
   required StateNotifierProvider<PayLinkNotifier, PayLinkState> payLinkProvider,
   required StateNotifierProvider<CustomerNotifier, CustomerState>
-      customerProvider,
+  customerProvider,
 }) async {
   return showDialog<PayLink?>(
     context: context,
@@ -53,13 +57,16 @@ class _NewPayLinkModal extends ConsumerStatefulWidget {
 enum _ModalStep { pickCustomer, fillDetails }
 
 class _NewPayLinkModalState extends ConsumerState<_NewPayLinkModal> {
-  _ModalStep _step = _ModalStep.pickCustomer;
+  _ModalStep _step = _ModalStep.fillDetails;
   bool _creatingCustomer = false;
+  bool _sending = false;
+  String? _sendError;
 
-  // Chosen customer
+  // Optional existing customer. The link can be sent to anyone.
   Customer? _customer;
 
   // Form controllers
+  final _nameCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _contactCtrl = TextEditingController();
@@ -70,6 +77,7 @@ class _NewPayLinkModalState extends ConsumerState<_NewPayLinkModal> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _amountCtrl.dispose();
     _noteCtrl.dispose();
     _contactCtrl.dispose();
@@ -80,37 +88,96 @@ class _NewPayLinkModalState extends ConsumerState<_NewPayLinkModal> {
   void _selectCustomer(Customer c) {
     setState(() {
       _customer = c;
-      // Payer contact: do not prefill from client record; user enters payer phone/email.
-      _contactCtrl.clear();
+      if (_nameCtrl.text.trim().isEmpty) {
+        _nameCtrl.text = c.displayFirstLastName;
+      }
       _step = _ModalStep.fillDetails;
       _creatingCustomer = false;
     });
   }
 
   bool get _canSend {
+    if (_sending) return false;
     final amt = double.tryParse(_amountCtrl.text.replaceAll(',', '').trim());
     if (amt == null || amt <= 0) return false;
+    if (_nameCtrl.text.trim().isEmpty) return false;
     return _contactCtrl.text.trim().isNotEmpty;
   }
 
-  void _send() {
-    if (!_canSend || _customer == null) return;
-    final amt =
-        double.parse(_amountCtrl.text.replaceAll(',', '').trim());
+  CardChargePricing? _pricingFor(double localPerUsd) {
+    final amt = double.tryParse(_amountCtrl.text.replaceAll(',', '').trim());
+    if (amt == null || amt <= 0) return null;
+    final cents = CardChargePricing.htgToUsdCents(amt, localPerUsd);
+    if (cents <= 0) return null;
+    return CardChargePricing.fromOrderUsdCents(cents);
+  }
 
-    final link = ref.read(widget.payLinkProvider.notifier).create(
-          customerId: _customer!.id,
-          customerName: _customer!.displayFirstLastName,
-          customerPhone: _customer!.phone,
-          amountHtg: amt,
-          channel: _channel,
-          sentTo: _contactCtrl.text.trim(),
-          note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
-          expiresAt: _expiresAt,
-          createdBy: 'Personnel',
-        );
-
-    Navigator.of(context).pop<PayLink?>(link);
+  Future<void> _send() async {
+    if (!_canSend) return;
+    final amt = double.parse(_amountCtrl.text.replaceAll(',', '').trim());
+    final pricing = _pricingFor(
+      ref.read(currencySettingsProvider).usdToLocalRate,
+    );
+    if (pricing == null) {
+      setState(
+        () => _sendError =
+            'Taux de change indisponible — impossible de créer le lien en dollars.',
+      );
+      return;
+    }
+    final name = _nameCtrl.text.trim();
+    final contact = _contactCtrl.text.trim();
+    final email = _channel == PayLinkChannel.email ? contact : null;
+    final phone = _channel == PayLinkChannel.email
+        ? (_customer?.phone ?? '')
+        : contact;
+    final reference =
+        'PL-${DateTime.now().year}-${DateTime.now().millisecondsSinceEpoch}';
+    setState(() {
+      _sending = true;
+      _sendError = null;
+    });
+    final client = PaymentsClient();
+    try {
+      final session = await client.createCheckout(
+        reference: reference,
+        orderUsdCents: pricing.orderUsdCents,
+        description: 'Lien $reference',
+        recipientName: name,
+        recipientEmail: email ?? '',
+        recipientPhone: phone,
+      );
+      if (!mounted) return;
+      final link = ref
+          .read(widget.payLinkProvider.notifier)
+          .create(
+            customerId: _customer?.id ?? '',
+            customerName: name,
+            customerPhone: phone,
+            payerEmail: email,
+            amountHtg: amt,
+            channel: _channel,
+            sentTo: contact,
+            note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+            expiresAt: _expiresAt,
+            createdBy: 'Personnel',
+            reference: reference,
+            paymentUrl: session.url,
+            stripeSessionId: session.id,
+            payerTotalUsdCents: session.pricing.totalUsdCents,
+            platformFeeUsdCents: session.pricing.platformFeeUsdCents,
+            stripeFeeUsdCents: session.pricing.stripeFeeUsdCents,
+          );
+      Navigator.of(context).pop<PayLink?>(link);
+    } on PaymentsException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _sendError = e.message;
+      });
+    } finally {
+      client.close();
+    }
   }
 
   @override
@@ -152,16 +219,15 @@ class _NewPayLinkModalState extends ConsumerState<_NewPayLinkModal> {
               customer: _customer,
               textColor: textColor,
               mutedColor: mutedColor,
-              onBack: _step == _ModalStep.fillDetails
+              onBack: _step == _ModalStep.pickCustomer
                   ? () => setState(() {
-                        _step = _ModalStep.pickCustomer;
-                        _customer = null;
-                        _amountCtrl.clear();
-                        _noteCtrl.clear();
-                      })
-                  : _creatingCustomer
-                      ? () => setState(() => _creatingCustomer = false)
-                      : null,
+                      if (_creatingCustomer) {
+                        _creatingCustomer = false;
+                      } else {
+                        _step = _ModalStep.fillDetails;
+                      }
+                    })
+                  : null,
               onClose: () => Navigator.pop(context),
             ),
             Flexible(
@@ -169,43 +235,50 @@ class _NewPayLinkModalState extends ConsumerState<_NewPayLinkModal> {
                 duration: AppConstants.animNormal,
                 child: _step == _ModalStep.pickCustomer
                     ? (_creatingCustomer
-                        ? _QuickCreateCustomer(
-                            key: const ValueKey('create'),
-                            isDark: isDark,
-                            customerProvider: widget.customerProvider,
-                            textColor: textColor,
-                            mutedColor: mutedColor,
-                            onCreated: _selectCustomer,
-                          )
-                        : _CustomerPicker(
-                            key: const ValueKey('pick'),
-                            isDark: isDark,
-                            customerProvider: widget.customerProvider,
-                            searchCtrl: _searchCtrl,
-                            onSelect: _selectCustomer,
-                            onCreateTap: () =>
-                                setState(() => _creatingCustomer = true),
-                            textColor: textColor,
-                            mutedColor: mutedColor,
-                          ))
+                          ? _QuickCreateCustomer(
+                              key: const ValueKey('create'),
+                              isDark: isDark,
+                              customerProvider: widget.customerProvider,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                              onCreated: _selectCustomer,
+                            )
+                          : _CustomerPicker(
+                              key: const ValueKey('pick'),
+                              isDark: isDark,
+                              customerProvider: widget.customerProvider,
+                              searchCtrl: _searchCtrl,
+                              onSelect: _selectCustomer,
+                              onCreateTap: () =>
+                                  setState(() => _creatingCustomer = true),
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                            ))
                     : _PayLinkForm(
                         key: const ValueKey('form'),
                         isDark: isDark,
-                        customer: _customer!,
+                        customer: _customer,
+                        nameCtrl: _nameCtrl,
                         amountCtrl: _amountCtrl,
                         noteCtrl: _noteCtrl,
                         contactCtrl: _contactCtrl,
                         channel: _channel,
                         expiresAt: _expiresAt,
                         canSend: _canSend,
+                        sending: _sending,
+                        pricing: _pricingFor(
+                          ref.watch(currencySettingsProvider).usdToLocalRate,
+                        ),
+                        error: _sendError,
                         textColor: textColor,
                         mutedColor: mutedColor,
-                        onChannelChanged: (c) =>
-                            setState(() => _channel = c),
-                        onExpiryChanged: (d) =>
-                            setState(() => _expiresAt = d),
+                        onChannelChanged: (c) => setState(() => _channel = c),
+                        onExpiryChanged: (d) => setState(() => _expiresAt = d),
                         onAmountChanged: () => setState(() {}),
                         onContactChanged: () => setState(() {}),
+                        onPickCustomer: () =>
+                            setState(() => _step = _ModalStep.pickCustomer),
+                        onClearCustomer: () => setState(() => _customer = null),
                         onSend: _send,
                       ),
               ),
@@ -263,8 +336,11 @@ class _ModalHeader extends StatelessWidget {
               color: AppColors.primaryBlue.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.add_link_rounded,
-                color: AppColors.primaryBlue, size: 22),
+            child: const Icon(
+              Icons.add_link_rounded,
+              color: AppColors.primaryBlue,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -273,15 +349,16 @@ class _ModalHeader extends StatelessWidget {
               children: [
                 Text(
                   step == _ModalStep.pickCustomer
-                      ? 'Nouveau lien de paiement'
-                      : 'Envoyer à ${customer?.displayFirstLastName ?? ''}',
-                  style: AppTextStyles.h3(color: textColor)
-                      .copyWith(fontWeight: FontWeight.w800, fontSize: 17),
+                      ? 'Choisir un client'
+                      : 'Nouveau lien de paiement',
+                  style: AppTextStyles.h3(
+                    color: textColor,
+                  ).copyWith(fontWeight: FontWeight.w800, fontSize: 17),
                 ),
                 Text(
                   step == _ModalStep.pickCustomer
-                      ? 'Choisissez un client pour le lien de paiement'
-                      : 'Indiquez le montant et le canal',
+                      ? 'Facultatif — le lien peut partir sans fiche client'
+                      : 'Envoyez-le à n\'importe qui',
                   style: AppTextStyles.caption(color: mutedColor),
                 ),
               ],
@@ -341,29 +418,32 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
     // Don't render the list at all until the user starts typing.
     final hasQuery = q.isNotEmpty;
 
-    final filtered = !hasQuery
-        ? <Customer>[]
-        : customerState.customers.where((c) {
-            if (!c.isActive) return false;
-            // Name match (display name + raw name field).
-            final nameBlob =
-                '${c.displayFirstLastName} ${c.name}'.toLowerCase();
-            if (nameBlob.contains(q)) return true;
-            // Phone match — strip all non-digits from both sides so that
-            // spaces, dashes, parentheses, and country-code prefix are ignored.
-            if (qDigits.isNotEmpty) {
-              final phoneDigits = _digitsOnly(c.phone);
-              final altDigits = _digitsOnly(c.secondaryPhone ?? '');
-              if (phoneDigits.contains(qDigits)) return true;
-              if (altDigits.isNotEmpty && altDigits.contains(qDigits)) {
-                return true;
-              }
-            }
-            return false;
-          }).toList()
-          ..sort((a, b) => a.displayFirstLastName
-              .toLowerCase()
-              .compareTo(b.displayFirstLastName.toLowerCase()));
+    final filtered =
+        !hasQuery
+              ? <Customer>[]
+              : customerState.customers.where((c) {
+                  if (!c.isActive) return false;
+                  // Name match (display name + raw name field).
+                  final nameBlob = '${c.displayFirstLastName} ${c.name}'
+                      .toLowerCase();
+                  if (nameBlob.contains(q)) return true;
+                  // Phone match — strip all non-digits from both sides so that
+                  // spaces, dashes, parentheses, and country-code prefix are ignored.
+                  if (qDigits.isNotEmpty) {
+                    final phoneDigits = _digitsOnly(c.phone);
+                    final altDigits = _digitsOnly(c.secondaryPhone ?? '');
+                    if (phoneDigits.contains(qDigits)) return true;
+                    if (altDigits.isNotEmpty && altDigits.contains(qDigits)) {
+                      return true;
+                    }
+                  }
+                  return false;
+                }).toList()
+          ..sort(
+            (a, b) => a.displayFirstLastName.toLowerCase().compareTo(
+              b.displayFirstLastName.toLowerCase(),
+            ),
+          );
 
     final isDark = widget.isDark;
 
@@ -383,22 +463,30 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : const Color(0xFFD0D5DD),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : const Color(0xFFD0D5DD),
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                    color: AppColors.primaryBlue, width: 1.5),
+                  color: AppColors.primaryBlue,
+                  width: 1.5,
+                ),
               ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
               isDense: true,
             ),
           ),
@@ -434,32 +522,36 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.search_rounded,
-                            size: 28,
-                            color: widget.mutedColor.withValues(alpha: 0.5)),
+                        Icon(
+                          Icons.search_rounded,
+                          size: 28,
+                          color: widget.mutedColor.withValues(alpha: 0.5),
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           'Saisissez un nom ou un téléphone pour trouver un client.',
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.caption(color: widget.mutedColor)
-                              .copyWith(height: 1.5),
+                          style: AppTextStyles.caption(
+                            color: widget.mutedColor,
+                          ).copyWith(height: 1.5),
                         ),
                       ],
                     ),
                   ),
                 )
               : filtered.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: Text(
-                          'Aucun résultat. Essayez un autre nom ou numéro, ou créez un client.',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.caption(color: widget.mutedColor)
-                              .copyWith(height: 1.4),
-                        ),
-                      ),
-                    )
+              ? Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Text(
+                      'Aucun résultat. Essayez un autre nom ou numéro, ou créez un client.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.caption(
+                        color: widget.mutedColor,
+                      ).copyWith(height: 1.4),
+                    ),
+                  ),
+                )
               : ListView.separated(
                   shrinkWrap: true,
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
@@ -478,7 +570,9 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
                         borderRadius: BorderRadius.circular(10),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 10),
+                            horizontal: 8,
+                            vertical: 10,
+                          ),
                           child: Row(
                             children: [
                               CircleAvatar(
@@ -509,13 +603,17 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
                                           ? 'Aucun téléphone enregistré'
                                           : c.phone,
                                       style: AppTextStyles.caption(
-                                          color: widget.mutedColor),
+                                        color: widget.mutedColor,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.chevron_right_rounded,
-                                  size: 20, color: AppColors.primaryBlue),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 20,
+                                color: AppColors.primaryBlue,
+                              ),
                             ],
                           ),
                         ),
@@ -540,7 +638,13 @@ class _CustomerPickerState extends ConsumerState<_CustomerPicker> {
 
 // ─── Quick-create customer ────────────────────────────────────────────────────
 
-const _idDocTypes = ['Passeport', 'Carte d\'identité', 'Permis de conduire', 'NIF', 'Autre'];
+const _idDocTypes = [
+  'Passeport',
+  'Carte d\'identité',
+  'Permis de conduire',
+  'NIF',
+  'Autre',
+];
 
 class _QuickCreateCustomer extends ConsumerStatefulWidget {
   final bool isDark;
@@ -592,8 +696,10 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
     final govRaw = _idCtrl.text.trim();
     final gov = govRaw.isEmpty ? null : '$_idType · $govRaw';
     if (gov == null && _dob == null) {
-      setState(() => _error =
-          'Ajoutez une pièce d\'identité ou la date de naissance pour identifier ce client.');
+      setState(
+        () => _error =
+            'Ajoutez une pièce d\'identité ou la date de naissance pour identifier ce client.',
+      );
       return;
     }
     final phone = _phoneCtrl.text.trim();
@@ -613,35 +719,29 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
   }
 
   InputDecoration _dec(String label, IconData icon) => InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, size: 20),
-        filled: true,
-        fillColor: widget.isDark ? AppColors.darkSurface : AppColors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: widget.isDark
-                ? AppColors.darkBorder
-                : const Color(0xFFD0D5DD),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: widget.isDark
-                ? AppColors.darkBorder
-                : const Color(0xFFD0D5DD),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppColors.primaryBlue, width: 1.5),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        isDense: true,
-      );
+    labelText: label,
+    prefixIcon: Icon(icon, size: 20),
+    filled: true,
+    fillColor: widget.isDark ? AppColors.darkSurface : AppColors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(
+        color: widget.isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+      ),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(
+        color: widget.isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+      ),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    isDense: true,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -661,8 +761,9 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
         children: [
           Text(
             'Le nouveau client sera ajouté à votre liste.',
-            style: AppTextStyles.caption(color: widget.mutedColor)
-                .copyWith(height: 1.4),
+            style: AppTextStyles.caption(
+              color: widget.mutedColor,
+            ).copyWith(height: 1.4),
           ),
           const SizedBox(height: 14),
           TextField(
@@ -685,13 +786,17 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
           const SizedBox(height: 14),
           Text(
             'Identification',
-            style: AppTextStyles.caption(color: widget.textColor)
-                .copyWith(fontWeight: FontWeight.w800),
+            style: AppTextStyles.caption(
+              color: widget.textColor,
+            ).copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _idType,
-            decoration: _dec('Type de pièce (facultatif)', Icons.credit_card_outlined),
+            decoration: _dec(
+              'Type de pièce (facultatif)',
+              Icons.credit_card_outlined,
+            ),
             items: _idDocTypes
                 .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                 .toList(),
@@ -702,7 +807,10 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
           const SizedBox(height: 10),
           TextField(
             controller: _idCtrl,
-            decoration: _dec('Numéro de pièce (facultatif)', Icons.credit_card_outlined),
+            decoration: _dec(
+              'Numéro de pièce (facultatif)',
+              Icons.credit_card_outlined,
+            ),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
@@ -710,7 +818,8 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
               final now = DateTime.now();
               final picked = await showDatePicker(
                 context: context,
-                initialDate: _dob ?? DateTime(now.year - 25, now.month, now.day),
+                initialDate:
+                    _dob ?? DateTime(now.year - 25, now.month, now.day),
                 firstDate: DateTime(1900),
                 lastDate: now,
               );
@@ -733,9 +842,12 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!,
-                style: AppTextStyles.caption(color: AppColors.boldRed)
-                    .copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              _error!,
+              style: AppTextStyles.caption(
+                color: AppColors.boldRed,
+              ).copyWith(fontWeight: FontWeight.w600),
+            ),
           ],
           const SizedBox(height: 18),
           FilledButton(
@@ -748,8 +860,10 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Enregistrer et continuer',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Enregistrer et continuer',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -761,71 +875,82 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
 
 class _PayLinkForm extends StatelessWidget {
   final bool isDark;
-  final Customer customer;
+  final Customer? customer;
+  final TextEditingController nameCtrl;
   final TextEditingController amountCtrl;
   final TextEditingController noteCtrl;
   final TextEditingController contactCtrl;
   final PayLinkChannel channel;
   final DateTime? expiresAt;
   final bool canSend;
+  final bool sending;
+  final CardChargePricing? pricing;
+  final String? error;
   final Color textColor;
   final Color mutedColor;
   final void Function(PayLinkChannel) onChannelChanged;
   final void Function(DateTime?) onExpiryChanged;
   final VoidCallback onAmountChanged;
   final VoidCallback onContactChanged;
+  final VoidCallback onPickCustomer;
+  final VoidCallback onClearCustomer;
   final VoidCallback onSend;
 
   const _PayLinkForm({
     super.key,
     required this.isDark,
     required this.customer,
+    required this.nameCtrl,
     required this.amountCtrl,
     required this.noteCtrl,
     required this.contactCtrl,
     required this.channel,
     required this.expiresAt,
     required this.canSend,
+    required this.sending,
+    required this.pricing,
+    required this.error,
     required this.textColor,
     required this.mutedColor,
     required this.onChannelChanged,
     required this.onExpiryChanged,
     required this.onAmountChanged,
     required this.onContactChanged,
+    required this.onPickCustomer,
+    required this.onClearCustomer,
     required this.onSend,
   });
 
   InputDecoration _dec(String label, IconData icon) => InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, size: 20),
-        filled: true,
-        fillColor: isDark ? AppColors.darkSurface : AppColors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppColors.primaryBlue, width: 1.5),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        isDense: true,
-      );
+    labelText: label,
+    prefixIcon: Icon(icon, size: 20),
+    filled: true,
+    fillColor: isDark ? AppColors.darkSurface : AppColors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(
+        color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+      ),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(
+        color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+      ),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    isDense: true,
+  );
 
   @override
   Widget build(BuildContext context) {
-    final parsedAmt =
-        double.tryParse(amountCtrl.text.replaceAll(',', '').trim());
+    final parsedAmt = double.tryParse(
+      amountCtrl.text.replaceAll(',', '').trim(),
+    );
 
     final expiryLabel = expiresAt == null
         ? 'Date d\'expiration (facultatif)'
@@ -841,37 +966,61 @@ class _PayLinkForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─ Client summary chip
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  color: AppColors.primaryBlue.withValues(alpha: 0.25)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.person_rounded,
-                    size: 16, color: AppColors.primaryBlue),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    customer.displayFirstLastName,
-                    style: AppTextStyles.body(color: AppColors.primaryBlue)
-                        .copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                Text(customer.phone,
-                    style: AppTextStyles.caption(
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray)),
-              ],
-            ),
+          _SectionLabel(label: 'PAYEUR', mutedColor: mutedColor),
+          const SizedBox(height: 6),
+          TextField(
+            controller: nameCtrl,
+            onChanged: (_) => onContactChanged(),
+            textCapitalization: TextCapitalization.words,
+            decoration: _dec('Nom du payeur *', Icons.person_outline),
           ),
+          const SizedBox(height: 8),
+          if (customer == null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: onPickCustomer,
+                icon: const Icon(Icons.person_search_rounded, size: 18),
+                label: const Text('Associer un client (facultatif)'),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.person_rounded,
+                    size: 16,
+                    color: AppColors.primaryBlue,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      customer!.displayFirstLastName,
+                      style: AppTextStyles.body(
+                        color: AppColors.primaryBlue,
+                      ).copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onClearCustomer,
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    tooltip: 'Retirer le client',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // ─ Prepaid amount
           _SectionLabel(label: 'MONTANT PRÉPAYÉ', mutedColor: mutedColor),
@@ -879,22 +1028,25 @@ class _PayLinkForm extends StatelessWidget {
           TextField(
             controller: amountCtrl,
             onChanged: (_) => onAmountChanged(),
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
             ],
             decoration: _dec('Montant (HTG) *', Icons.payments_outlined),
           ),
-          if (parsedAmt != null && parsedAmt > 0) ...[
+          if (pricing != null) ...[
+            const SizedBox(height: 10),
+            CardFeeBreakdown(
+              pricing: pricing!,
+              isDark: isDark,
+              orderLocalLabel: parsedAmt == null
+                  ? null
+                  : CurrencyFormatter.local(context, parsedAmt),
+            ),
             const SizedBox(height: 4),
-            Builder(
-              builder: (ctx) {
-                final usd = CurrencyFormatter.usdEquivalentOrNull(ctx, parsedAmt);
-                if (usd == null) return const SizedBox.shrink();
-                return Text(usd,
-                    style: AppTextStyles.caption(color: mutedColor));
-              },
+            Text(
+              'Le payeur règle les frais Stripe et les frais de 1,5 % + 1 \$.',
+              style: AppTextStyles.caption(color: mutedColor),
             ),
           ],
 
@@ -983,18 +1135,19 @@ class _PayLinkForm extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline_rounded,
-                    size: 16,
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Le lien et l\'enregistrement ne sont créés que lorsque vous touchez Envoyer le lien. '
                     'L\'écran de copie et de partage s\'ouvrira juste après.',
                     style: AppTextStyles.caption(
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray),
+                      color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                    ),
                   ),
                 ),
               ],
@@ -1025,9 +1178,7 @@ class _PayLinkForm extends StatelessWidget {
               side: BorderSide(
                 color: expiresAt != null
                     ? AppColors.primaryBlue.withValues(alpha: 0.45)
-                    : (isDark
-                        ? AppColors.darkBorder
-                        : const Color(0xFFD0D5DD)),
+                    : (isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD)),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1039,22 +1190,35 @@ class _PayLinkForm extends StatelessWidget {
             controller: noteCtrl,
             maxLines: 2,
             decoration: _dec(
-                'Note (facultatif — visible par le personnel)', Icons.sticky_note_2_outlined),
+              'Note (facultatif — visible par le personnel)',
+              Icons.sticky_note_2_outlined,
+            ),
           ),
+
+          if (error != null && error!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(error!, style: AppTextStyles.body(color: AppColors.boldRed)),
+          ],
 
           const SizedBox(height: 20),
 
           // ─ Send button
           FilledButton.icon(
             onPressed: canSend ? onSend : null,
-            icon: const Icon(Icons.send_rounded, size: 18),
-            label: const Text('Envoyer le lien',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            icon: Icon(
+              sending ? Icons.hourglass_top_rounded : Icons.send_rounded,
+              size: 18,
+            ),
+            label: Text(
+              sending ? 'Création du lien…' : 'Envoyer le lien',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
               foregroundColor: AppColors.white,
-              disabledBackgroundColor:
-                  isDark ? AppColors.darkBorder : const Color(0xFFEEEEEE),
+              disabledBackgroundColor: isDark
+                  ? AppColors.darkBorder
+                  : const Color(0xFFEEEEEE),
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1080,8 +1244,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: AppTextStyles.caption(color: mutedColor)
-          .copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.8, fontSize: 10),
+      style: AppTextStyles.caption(
+        color: mutedColor,
+      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.8, fontSize: 10),
     );
   }
 }
@@ -1125,11 +1290,13 @@ class _ChannelChip extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 18,
-                color: selected
-                    ? color
-                    : (isDark ? AppColors.coolGray : AppColors.darkGray)),
+            Icon(
+              icon,
+              size: 18,
+              color: selected
+                  ? color
+                  : (isDark ? AppColors.coolGray : AppColors.darkGray),
+            ),
             const SizedBox(height: 3),
             Text(
               label,
@@ -1137,10 +1304,7 @@ class _ChannelChip extends StatelessWidget {
                 color: selected
                     ? color
                     : (isDark ? AppColors.coolGray : AppColors.darkGray),
-              ).copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
-              ),
+              ).copyWith(fontWeight: FontWeight.w600, fontSize: 10),
             ),
           ],
         ),
@@ -1148,4 +1312,3 @@ class _ChannelChip extends StatelessWidget {
     );
   }
 }
-
