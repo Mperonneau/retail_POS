@@ -77,11 +77,13 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
       customerProvider: widget.customerProvider,
     );
     if (!mounted || created == null) return;
-    final path = buildStandalonePaylinkPath(created.id);
+    final path = (created.paymentUrl != null && created.paymentUrl!.isNotEmpty)
+        ? created.paymentUrl!
+        : buildStandalonePaylinkPath(created.id);
     await showPaymentLinkSuccessDialog(
       context,
       isDark: isDark,
-      title: 'Le lien ${created.reference} a été créé et envoyé.',
+      title: 'Le lien ${created.reference} a été créé.',
       pathOrUrl: path,
       subtitle: 'Copiez ou partagez le lien avec le client ou le payeur si besoin.',
     );

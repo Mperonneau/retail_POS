@@ -1,0 +1,1 @@
+void openPaymentUrl(String url) {}
