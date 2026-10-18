@@ -154,7 +154,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                     compact: true,
                     width: 148,
                   ),
-                  if (filtered.isNotEmpty) ...[
+                  if (filtered.isNotEmpty && !narrow) ...[
                     const SizedBox(width: AppConstants.spacing8),
                     _ProductTopPagination(
                       isDark: isDark,
@@ -279,6 +279,23 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                         },
                       ),
               ),
+              if (narrow && filtered.isNotEmpty && totalPages > 1) ...[
+                const SizedBox(height: AppConstants.spacing16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _ProductTopPagination(
+                    isDark: isDark,
+                    currentPage: safePage,
+                    totalPages: totalPages,
+                    onPrevious: safePage > 1
+                        ? () => setState(() => _currentPage = safePage - 1)
+                        : null,
+                    onNext: safePage < totalPages
+                        ? () => setState(() => _currentPage = safePage + 1)
+                        : null,
+                  ),
+                ),
+              ],
             ],
           );
 

@@ -191,7 +191,8 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                       ],
                     ),
                   ),
-                  if (filteredSorted.isNotEmpty)
+                  if (filteredSorted.isNotEmpty &&
+                      constraints.maxWidth >= AppConstants.mobileBreakpoint)
                     _InventoryTopPagination(
                       isDark: isDark,
                       currentPage: safePage,
@@ -330,6 +331,25 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                         },
                       ),
               ),
+              if (constraints.maxWidth < AppConstants.mobileBreakpoint &&
+                  filteredSorted.isNotEmpty &&
+                  totalPages > 1) ...[
+                const SizedBox(height: AppConstants.spacing16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _InventoryTopPagination(
+                    isDark: isDark,
+                    currentPage: safePage,
+                    totalPages: totalPages,
+                    onPrevious: safePage > 1
+                        ? () => setState(() => _currentPage = safePage - 1)
+                        : null,
+                    onNext: safePage < totalPages
+                        ? () => setState(() => _currentPage = safePage + 1)
+                        : null,
+                  ),
+                ),
+              ],
             ],
           );
 

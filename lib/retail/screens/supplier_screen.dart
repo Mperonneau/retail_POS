@@ -290,7 +290,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                     compact: true,
                     width: 148,
                   ),
-                  if (filtered.isNotEmpty) ...[
+                  if (filtered.isNotEmpty &&
+                      constraints.maxWidth >= AppConstants.mobileBreakpoint) ...[
                     const SizedBox(width: AppConstants.spacing8),
                     _SupplierTopPagination(
                       isDark: isDark,
@@ -418,6 +419,25 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                         },
                       ),
               ),
+              if (constraints.maxWidth < AppConstants.mobileBreakpoint &&
+                  filtered.isNotEmpty &&
+                  totalPages > 1) ...[
+                const SizedBox(height: AppConstants.spacing16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _SupplierTopPagination(
+                    isDark: isDark,
+                    currentPage: safePage,
+                    totalPages: totalPages,
+                    onPrevious: safePage > 1
+                        ? () => setState(() => _currentPage = safePage - 1)
+                        : null,
+                    onNext: safePage < totalPages
+                        ? () => setState(() => _currentPage = safePage + 1)
+                        : null,
+                  ),
+                ),
+              ],
             ],
           );
 

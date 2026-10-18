@@ -239,16 +239,6 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                                   : AppColors.primaryBlue,
                             ),
                           ),
-                          if (_retailTab == 1 && _totalPages > 1) ...[
-                            const SizedBox(height: AppConstants.spacing8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: _buildPagination(isDark),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     const SizedBox(height: AppConstants.spacing16),
@@ -488,11 +478,34 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         children: [fromChip, toChip, pillSearch],
       );
     }
-    return Wrap(
-      spacing: dense ? 6 : 8,
-      runSpacing: dense ? 6 : 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [pillSearch, fromChip, toChip],
+    return Row(
+      children: [
+        Expanded(
+          child: _PillSearch(
+            controller: _searchCtrl,
+            hintText: 'Commande n° ou client…',
+            isDark: isDark,
+            dense: dense,
+            expand: true,
+            hasValue: _searchQuery.isNotEmpty,
+            onChanged: (v) => setState(() {
+              _searchQuery = v.trim();
+              _resetPage();
+            }),
+            onClear: () {
+              _searchCtrl.clear();
+              setState(() {
+                _searchQuery = '';
+                _resetPage();
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        fromChip,
+        const SizedBox(width: 6),
+        toChip,
+      ],
     );
   }
 
@@ -553,16 +566,6 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                                 : AppColors.primaryBlue,
                           ),
                         ),
-                        if (_totalPages > 1) ...[
-                          const SizedBox(height: AppConstants.spacing8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: _buildPagination(isDark),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   const SizedBox(height: AppConstants.spacing16),
@@ -572,6 +575,13 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
                   const SizedBox(height: AppConstants.spacing16),
                 ],
                 Expanded(child: _buildTable(context, isDark, isMobile)),
+                if (isMobile && _totalPages > 1) ...[
+                  const SizedBox(height: AppConstants.spacing8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _buildPagination(isDark),
+                  ),
+                ],
               ],
             ),
           ),
@@ -667,13 +677,10 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         ],
       );
     }
-    // Mobile: wrap layout
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.scope == OrderHistoryListScope.hotelIntegrated)
+        if (widget.scope == OrderHistoryListScope.hotelIntegrated) ...[
           SegmentedButton<OrderHistoryModule>(
             segments: const [
               ButtonSegment<OrderHistoryModule>(
@@ -692,9 +699,36 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
               setState(() { _hotelSegment = next.first; _resetPage(); });
             },
           ),
-        pillSearch,
-        fromChip,
-        toChip,
+          const SizedBox(height: 8),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: _PillSearch(
+                controller: _searchCtrl,
+                hintText: 'Reçu n° ou nom…',
+                isDark: isDark,
+                expand: true,
+                hasValue: _searchQuery.isNotEmpty,
+                onChanged: (v) => setState(() {
+                  _searchQuery = v.trim();
+                  _resetPage();
+                }),
+                onClear: () {
+                  _searchCtrl.clear();
+                  setState(() {
+                    _searchQuery = '';
+                    _resetPage();
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            fromChip,
+            const SizedBox(width: 6),
+            toChip,
+          ],
+        ),
       ],
     );
   }
@@ -1253,6 +1287,7 @@ class _PillSearch extends StatelessWidget {
   final bool isDark;
   final bool dense;
   final double width;
+  final bool expand;
   final bool hasValue;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
@@ -1263,6 +1298,7 @@ class _PillSearch extends StatelessWidget {
     required this.isDark,
     this.dense = false,
     this.width = 210,
+    this.expand = false,
     required this.hasValue,
     required this.onChanged,
     required this.onClear,
@@ -1271,9 +1307,7 @@ class _PillSearch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final br = dense ? 20.0 : 24.0;
-    return SizedBox(
-      width: width,
-      child: TextField(
+    final field = TextField(
         controller: controller,
         onChanged: onChanged,
         style: dense
@@ -1329,8 +1363,9 @@ class _PillSearch extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
+    if (expand) return field;
+    return SizedBox(width: width, child: field);
   }
 }
 

@@ -243,16 +243,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                           ),
                         ],
                       ),
-                      if (_totalPages > 1) ...[
-                        const SizedBox(height: AppConstants.spacing8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: _buildPagination(isDark, filtered.length),
-                          ),
-                        ),
-                      ],
                     ],
                   )
                 : Row(
@@ -392,6 +382,22 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     },
                   ),
           ),
+          if (isMobile && _totalPages > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppConstants.spacing24,
+                AppConstants.spacing8,
+                AppConstants.spacing24,
+                AppConstants.spacing12,
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _buildPagination(isDark, filtered.length),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -525,11 +531,34 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           ],
         );
       }
-      return Wrap(
-        spacing: 6,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [searchField, fromChip, toChip],
+      return Row(
+        children: [
+          Expanded(
+            child: _PillSearchField(
+              controller: _searchCtrl,
+              hintText: 'Devis n° ou client…',
+              isDark: isDark,
+              dense: dense,
+              expand: true,
+              hasValue: _searchQuery.isNotEmpty,
+              onChanged: (v) => setState(() {
+                _searchQuery = v.trim();
+                _resetPage();
+              }),
+              onClear: () {
+                _searchCtrl.clear();
+                setState(() {
+                  _searchQuery = '';
+                  _resetPage();
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          fromChip,
+          const SizedBox(width: 6),
+          toChip,
+        ],
       );
     });
   }
@@ -777,6 +806,8 @@ class _QuoteCard extends StatelessWidget {
         ? quote.clientName!
         : 'Client de passage';
     final total = quote.totalBeforeTaxHtg();
+    final narrow =
+        MediaQuery.sizeOf(context).width <= AppConstants.mobileBreakpoint;
 
     return Material(
       color: Colors.transparent,
@@ -808,7 +839,9 @@ class _QuoteCard extends StatelessWidget {
               horizontal: AppConstants.spacing16,
               vertical: AppConstants.spacing8,
             ),
-            child: Row(
+            child: narrow
+                ? _mobileBody(context, isDark, clientLabel, total)
+                : Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Quote # · client | date · lines + fulfillment
@@ -962,10 +995,104 @@ class _QuoteCard extends StatelessWidget {
       ),
     );
   }
-}
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Active quote: share / print (same UX as active retail orders)
+  /// Phone cards give the quote number and the client their own lines.
+  Widget _mobileBody(
+    BuildContext context,
+    bool isDark,
+    String clientLabel,
+    double total,
+  ) {
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                quote.quoteNumber,
+                style: AppTextStyles.body(
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+            ),
+            if (quote.paymentLinkSent) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: AppColors.deepGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.link,
+                        size: 9,
+                        color: isDark
+                            ? AppColors.mediumGreen
+                            : AppColors.deepGreen),
+                    const SizedBox(width: 2),
+                    Text(
+                      'Lien',
+                      style: AppTextStyles.caption(
+                        color: isDark
+                            ? AppColors.mediumGreen
+                            : AppColors.deepGreen,
+                      ).copyWith(fontSize: 9),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          clientLabel,
+          style: AppTextStyles.body(color: ink)
+              .copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              '${_formatDate(quote.createdAt)} · '
+              '${quote.lines.length} ligne${quote.lines.length == 1 ? '' : 's'}',
+              style: AppTextStyles.caption(color: muted).copyWith(fontSize: 11),
+            ),
+            _FulfillmentChip(mode: quote.fulfillmentMode),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Text(
+              CurrencyFormatter.local(context, total),
+              style: AppTextStyles.body(color: ink).copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+            const Spacer(),
+            StatusBadge(
+              status: _statusType,
+              customLabel: _statusLabel,
+              compact: true,
+            ),
+            const SizedBox(width: 2),
+            Icon(Icons.chevron_right_rounded, size: 18, color: muted),
+          ],
+        ),
+      ],
+    );
+  }
+}
 // ──────────────────────────────────────────────────────────────────────────────
 
 void _showActiveQuoteWhatsAppDialog(
@@ -2287,6 +2414,7 @@ class _PillSearchField extends StatelessWidget {
   final double width;
   final bool isDark;
   final bool dense;
+  final bool expand;
   final bool hasValue;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
@@ -2294,9 +2422,10 @@ class _PillSearchField extends StatelessWidget {
   const _PillSearchField({
     required this.controller,
     required this.hintText,
-    required this.width,
+    this.width = 210,
     required this.isDark,
     this.dense = false,
+    this.expand = false,
     required this.hasValue,
     required this.onChanged,
     required this.onClear,
@@ -2305,9 +2434,7 @@ class _PillSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final br = dense ? 20.0 : 24.0;
-    return SizedBox(
-      width: width,
-      child: TextField(
+    final field = TextField(
         controller: controller,
         onChanged: onChanged,
         style: dense
@@ -2363,8 +2490,9 @@ class _PillSearchField extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
+    if (expand) return field;
+    return SizedBox(width: width, child: field);
   }
 }
 
