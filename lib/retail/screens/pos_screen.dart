@@ -17,7 +17,9 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/discount_approval_dialog.dart';
 import '../../core/widgets/empty_state.dart';
+import '../models/product_option.dart';
 import '../models/retail_cart_entry.dart';
+import '../widgets/product_option_picker.dart';
 import 'checkout_wizard.dart';
 import '../../core/widgets/app_close_button.dart';
 
@@ -120,18 +122,35 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     'Papeterie'
   ];
 
-  int _cartIndexFor(int productId) =>
-      _cart.indexWhere((e) => e.product.id == productId);
+  int _cartQtyFor(int productId) => _cart
+      .where((e) => e.product.id == productId)
+      .fold(0, (sum, e) => sum + e.quantity);
 
-  int _cartQtyFor(int productId) {
-    final idx = _cartIndexFor(productId);
+  int _qtyForLine(MockProduct product, List<ProductOptionChoice> options) {
+    final key = RetailCartEntry.lineKeyFor(product.id, options);
+    final idx = _cart.indexWhere((e) => e.lineKey == key);
     return idx >= 0 ? _cart[idx].quantity : 0;
   }
 
-  void _setCartQty(MockProduct product, int requestedQty) {
-    final idx = _cartIndexFor(product.id);
-    final maxQty = product.stockQuantity;
-    final qty = requestedQty.clamp(0, maxQty).toInt();
+  int? _roomFor(MockProduct product, List<ProductOptionChoice> options) {
+    if (!product.trackStock) return null;
+    final key = RetailCartEntry.lineKeyFor(product.id, options);
+    final others = _cart
+        .where((e) => e.product.id == product.id && e.lineKey != key)
+        .fold(0, (sum, e) => sum + e.quantity);
+    final room = product.stockQuantity - others;
+    return room < 0 ? 0 : room;
+  }
+
+  void _setCartQty(
+    MockProduct product,
+    int requestedQty, {
+    List<ProductOptionChoice> options = const [],
+  }) {
+    final key = RetailCartEntry.lineKeyFor(product.id, options);
+    final idx = _cart.indexWhere((e) => e.lineKey == key);
+    final room = _roomFor(product, options);
+    final qty = room == null ? requestedQty : requestedQty.clamp(0, room).toInt();
 
     if (qty <= 0) {
       if (idx >= 0) _cart.removeAt(idx);
@@ -143,23 +162,54 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       return;
     }
 
-    _cart.add(RetailCartEntry(product: product, quantity: qty));
+    _cart.add(RetailCartEntry(
+      product: product,
+      quantity: qty,
+      options: options,
+    ));
   }
 
-  void _addToCart(MockProduct p) {
-    setState(() {
-      _setCartQty(p, _cartQtyFor(p.id) + 1);
-    });
+  Future<void> _addToCart(MockProduct p) async {
+    if (p.options.isNotEmpty) {
+      final picked = await showProductOptionPicker(context, p);
+      if (picked == null || !mounted) return;
+      final room = _roomFor(p, picked);
+      if (room != null && _qtyForLine(p, picked) + 1 > room) {
+        _showQtyWarning(p);
+        return;
+      }
+      setState(() => _setCartQty(p, _qtyForLine(p, picked) + 1, options: picked));
+      return;
+    }
+    final room = _roomFor(p, const []);
+    if (room != null && _cartQtyFor(p.id) + 1 > room) {
+      _showQtyWarning(p);
+      return;
+    }
+    setState(() => _setCartQty(p, _cartQtyFor(p.id) + 1));
   }
 
-  void _setQty(MockProduct p, int qty) {
+  void _setLineQty(int index, int qty) {
+    if (index < 0 || index >= _cart.length) return;
     setState(() {
-      _setCartQty(p, qty);
+      final entry = _cart[index];
+      _setCartQty(entry.product, qty, options: entry.options);
     });
   }
 
   void _updateQty(MockProduct p, int delta) {
+    if (delta > 0) {
+      _addToCart(p);
+      return;
+    }
     setState(() {
+      if (p.options.isNotEmpty) {
+        final idx = _cart.lastIndexWhere((e) => e.product.id == p.id);
+        if (idx < 0) return;
+        final entry = _cart[idx];
+        _setCartQty(entry.product, entry.quantity - 1, options: entry.options);
+        return;
+      }
       _setCartQty(p, _cartQtyFor(p.id) + delta);
     });
   }
@@ -167,7 +217,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   bool get _discountAllowed => ref.watch(discountAllowedProvider);
 
   double get _subtotal =>
-      _cart.fold(0, (s, e) => s + (e.product.priceHtg * e.quantity));
+      _cart.fold(0, (s, e) => s + (e.unitPriceHtg * e.quantity));
   double get _discountAmount => _subtotal * (_discountPercent / 100);
   double get _total => _subtotal - _discountAmount;
 
@@ -833,11 +883,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     _EditableQty(
-                                      key: ValueKey(entry.product.id),
+                                      key: ValueKey(entry.lineKey),
                                       product: entry.product,
                                       quantity: entry.quantity,
-                                      onQtyCommitted: (q) =>
-                                          _setQty(entry.product, q),
+                                      maxQty: _roomFor(entry.product, entry.options),
+                                      onQtyCommitted: (q) => _setLineQty(i, q),
                                       onStockExceeded: () =>
                                           _showQtyWarning(entry.product),
                                     ),
@@ -847,7 +897,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                           left: AppConstants.spacing4,
                                         ),
                                         child: Text(
-                                          entry.product.name,
+                                          entry.lineLabel,
                                           style: AppTextStyles.caption(
                                             color: isDark
                                                 ? AppColors.warmWhite
@@ -862,7 +912,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       width: 76,
                                       child: Text(
                                         CurrencyFormatter.amountOnly(
-                                          entry.product.priceHtg,
+                                          entry.unitPriceHtg,
                                         ),
                                         textAlign: TextAlign.right,
                                         style: AppTextStyles.caption(
@@ -876,7 +926,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       width: 76,
                                       child: Text(
                                         CurrencyFormatter.amountOnly(
-                                          entry.product.priceHtg *
+                                          entry.unitPriceHtg *
                                               entry.quantity,
                                         ),
                                         textAlign: TextAlign.right,
@@ -1119,7 +1169,7 @@ class _ProductTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      CurrencyFormatter.local(context, product.priceHtg),
+                      CurrencyFormatter.local(context, product.sellingPriceHtg),
                       style: AppTextStyles.caption(
                         color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       ).copyWith(fontWeight: FontWeight.w600),
@@ -1127,7 +1177,9 @@ class _ProductTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Stock : ${product.stockQuantity}',
+                      product.trackStock
+                          ? 'Stock : ${product.stockQuantity}'
+                          : 'Stock non suivi',
                       style: AppTextStyles.caption(
                         color: product.isLowStock ? AppColors.amber : AppColors.darkGray,
                       ).copyWith(fontSize: 11),
@@ -1251,7 +1303,7 @@ class _ProductTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      CurrencyFormatter.local(context, product.priceHtg),
+                      CurrencyFormatter.local(context, product.sellingPriceHtg),
                       style: AppTextStyles.caption(
                         color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       ),
@@ -1259,7 +1311,9 @@ class _ProductTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Stock : ${product.stockQuantity}',
+                      product.trackStock
+                          ? 'Stock : ${product.stockQuantity}'
+                          : 'Stock non suivi',
                       style: AppTextStyles.caption(
                         color: product.isLowStock
                             ? AppColors.amber
@@ -1325,6 +1379,7 @@ class _ProductTile extends StatelessWidget {
 class _EditableQty extends StatefulWidget {
   final MockProduct product;
   final int quantity;
+  final int? maxQty;
   final ValueChanged<int> onQtyCommitted;
   final VoidCallback onStockExceeded;
 
@@ -1332,6 +1387,7 @@ class _EditableQty extends StatefulWidget {
     super.key,
     required this.product,
     required this.quantity,
+    required this.maxQty,
     required this.onQtyCommitted,
     required this.onStockExceeded,
   });
@@ -1369,7 +1425,7 @@ class _EditableQtyState extends State<_EditableQty> {
 
   bool _validateAndCommit(int v, {required bool showWarning}) {
     if (v <= 0) return false;
-    if (v > widget.product.stockQuantity) {
+    if (widget.maxQty != null && v > widget.maxQty!) {
       if (showWarning) widget.onStockExceeded();
       _ctrl.text = '${widget.quantity}';
       _ctrl.selection = TextSelection(

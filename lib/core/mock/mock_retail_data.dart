@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/pending_operation.dart';
 import '../models/retail_fulfillment_mode.dart';
 import '../providers/device_session_provider.dart';
+import '../../retail/models/product_option.dart';
 
 class MockProduct {
   final int id;
@@ -17,6 +18,15 @@ class MockProduct {
   final int minStock;
   final String? barcode;
   final bool active;
+  final String description;
+  /// Data URL kept for the future storefront. Not shown at the register.
+  final String? photoDataUrl;
+  /// Percent off [priceHtg]. 0 means no product discount.
+  final int discountPercent;
+  /// When false, sales do not decrement [stockQuantity].
+  final bool trackStock;
+  final String stockUnit;
+  final List<ProductOptionGroup> options;
 
   const MockProduct({
     required this.id,
@@ -29,10 +39,31 @@ class MockProduct {
     required this.minStock,
     this.barcode,
     this.active = true,
+    this.description = '',
+    this.photoDataUrl,
+    this.discountPercent = 0,
+    this.trackStock = true,
+    this.stockUnit = 'u',
+    this.options = const [],
   });
 
-  bool get isLowStock => stockQuantity <= minStock;
-  double get margin => ((priceHtg - costHtg) / priceHtg) * 100;
+  bool get isLowStock => trackStock && stockQuantity <= minStock;
+
+  /// Catalog price after the product discount. Option extras are added later.
+  double get sellingPriceHtg {
+    final pct = discountPercent.clamp(0, 100);
+    if (pct == 0) return priceHtg;
+    return priceHtg * (100 - pct) / 100;
+  }
+
+  double get sellingPriceUsd {
+    final pct = discountPercent.clamp(0, 100);
+    if (pct == 0) return priceUsd;
+    return priceUsd * (100 - pct) / 100;
+  }
+
+  double get margin =>
+      priceHtg == 0 ? 0 : ((priceHtg - costHtg) / priceHtg) * 100;
 
   MockProduct copyWith({
     int? id,
@@ -45,6 +76,12 @@ class MockProduct {
     int? minStock,
     Object? barcode = _sentinel,
     bool? active,
+    String? description,
+    Object? photoDataUrl = _sentinel,
+    int? discountPercent,
+    bool? trackStock,
+    String? stockUnit,
+    List<ProductOptionGroup>? options,
   }) {
     return MockProduct(
       id: id ?? this.id,
@@ -57,6 +94,13 @@ class MockProduct {
       minStock: minStock ?? this.minStock,
       barcode: barcode == _sentinel ? this.barcode : barcode as String?,
       active: active ?? this.active,
+      description: description ?? this.description,
+      photoDataUrl:
+          photoDataUrl == _sentinel ? this.photoDataUrl : photoDataUrl as String?,
+      discountPercent: discountPercent ?? this.discountPercent,
+      trackStock: trackStock ?? this.trackStock,
+      stockUnit: stockUnit ?? this.stockUnit,
+      options: options ?? this.options,
     );
   }
 }
@@ -402,7 +446,7 @@ class ProductsNotifier extends StateNotifier<List<MockProduct>> {
   void applySale(Map<int, int> productIdToQty) {
     state = [
       for (final p in state)
-        if (productIdToQty.containsKey(p.id))
+        if (productIdToQty.containsKey(p.id) && p.trackStock)
           p.copyWith(
             stockQuantity: (p.stockQuantity - productIdToQty[p.id]!).clamp(0, 1 << 30),
           )
@@ -511,7 +555,7 @@ class MockQuoteLine {
     required this.quantity,
     double? unitPriceHtg,
     this.unitPriceUsd,
-  }) : unitPriceHtg = unitPriceHtg ?? product.priceHtg;
+  }) : unitPriceHtg = unitPriceHtg ?? product.sellingPriceHtg;
 
   double get lineTotalHtg => unitPriceHtg * quantity;
 }

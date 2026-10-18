@@ -1,5 +1,8 @@
 import 'dart:math' show max, min;
 
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,7 +21,10 @@ import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/form_field_error.dart';
 import '../../core/widgets/status_badge.dart';
+import '../models/product_option.dart';
 import '../widgets/product_category_field.dart';
+import '../widgets/product_options_editor.dart';
+import '../widgets/product_photo_pick.dart';
 
 const int _kProductPageSize = 15;
 
@@ -882,7 +888,10 @@ class _ProductGridTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          CurrencyFormatter.local(context, product.priceHtg),
+                          CurrencyFormatter.local(
+                            context,
+                            product.sellingPriceHtg,
+                          ),
                           style: AppTextStyles.price(color: textPrimary)
                               .copyWith(fontSize: 11.5, height: 1.15),
                         ),
@@ -911,7 +920,7 @@ class _ProductGridTile extends StatelessWidget {
                           Text(
                             CurrencyFormatter.usdEquivalent(
                               context,
-                              product.priceHtg,
+                              product.sellingPriceHtg,
                             ),
                             style: AppTextStyles.caption().copyWith(
                               fontSize: 8.5,
@@ -936,8 +945,12 @@ class _ProductGridTile extends StatelessWidget {
                             ),
                           ),
                         StatusBadge(
-                          status: StatusType.active,
-                          customLabel: '${product.stockQuantity} u.',
+                          status: product.trackStock
+                              ? StatusType.active
+                              : StatusType.inactive,
+                          customLabel: product.trackStock
+                              ? '${product.stockQuantity} u.'
+                              : 'Non suivi',
                           compact: true,
                           micro: true,
                         ),
@@ -1030,25 +1043,35 @@ class _ProductListTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    CurrencyFormatter.local(context, product.priceHtg),
+                    CurrencyFormatter.local(context, product.sellingPriceHtg),
                     style: AppTextStyles.price(color: textPrimary)
                         .copyWith(fontSize: 12),
                   ),
+                  if (product.discountPercent > 0)
+                    Text(
+                      '−${product.discountPercent} %',
+                      style: AppTextStyles.caption(color: AppColors.amber)
+                          .copyWith(fontSize: 9, fontWeight: FontWeight.w700),
+                    ),
                   if (usd != null)
                     Text(
                       CurrencyFormatter.usdEquivalent(
                         context,
-                        product.priceHtg,
+                        product.sellingPriceHtg,
                       ),
                       style: AppTextStyles.caption().copyWith(fontSize: 9),
                     ),
                   StatusBadge(
-                    status: product.isLowStock
-                        ? StatusType.lowStock
-                        : StatusType.active,
-                    customLabel: product.isLowStock
-                        ? 'Bas ${product.stockQuantity}'
-                        : '${product.stockQuantity}',
+                    status: !product.trackStock
+                        ? StatusType.inactive
+                        : product.isLowStock
+                            ? StatusType.lowStock
+                            : StatusType.active,
+                    customLabel: !product.trackStock
+                        ? 'Non suivi'
+                        : product.isLowStock
+                            ? 'Bas ${product.stockQuantity}'
+                            : '${product.stockQuantity}',
                     compact: true,
                     micro: true,
                   ),
@@ -1087,12 +1110,25 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
   late final TextEditingController _stockCtrl;
   late final TextEditingController _minCtrl;
   late final TextEditingController _barcodeCtrl;
+  late final TextEditingController _discountCtrl;
+  late final TextEditingController _descCtrl;
   late String _category;
+  late String _stockUnit;
+  late bool _active;
+  late bool _trackStock;
+  String? _photoDataUrl;
+  Uint8List? _photoBytes;
+  String _photoMime = 'image/jpeg';
+  bool _photoCleared = false;
+  final List<ProductOptionDraft> _optionDrafts = [];
 
   String? _errorName;
   String? _errorCategory;
   String? _errorPrice;
   String? _errorStockInitial;
+  String? _errorDiscount;
+  String? _errorPhoto;
+  String? _errorOptions;
 
   void _onPriceChanged() => setState(() {});
 
@@ -1107,7 +1143,18 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _stockCtrl = TextEditingController(text: e?.stockQuantity.toString() ?? '');
     _minCtrl = TextEditingController(text: e?.minStock.toString() ?? '');
     _barcodeCtrl = TextEditingController(text: e?.barcode ?? '');
+    _discountCtrl = TextEditingController(
+      text: e != null && e.discountPercent > 0 ? '${e.discountPercent}' : '',
+    );
+    _descCtrl = TextEditingController(text: e?.description ?? '');
     _category = e?.category ?? '';
+    _stockUnit = e?.stockUnit ?? 'u';
+    _active = e?.active ?? true;
+    _trackStock = e?.trackStock ?? true;
+    _photoDataUrl = e?.photoDataUrl;
+    for (final group in e?.options ?? const <ProductOptionGroup>[]) {
+      _optionDrafts.add(ProductOptionDraft.fromGroup(group));
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ex = widget.existing;
@@ -1131,7 +1178,27 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _stockCtrl.dispose();
     _minCtrl.dispose();
     _barcodeCtrl.dispose();
+    _discountCtrl.dispose();
+    _descCtrl.dispose();
+    for (final draft in _optionDrafts) {
+      draft.dispose();
+    }
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final picked = await pickProductPhoto();
+    if (!mounted || picked == null) return;
+    setState(() {
+      if (picked.error != null) {
+        _errorPhoto = picked.error;
+        return;
+      }
+      _errorPhoto = null;
+      _photoBytes = picked.bytes;
+      _photoMime = picked.mime;
+      _photoCleared = false;
+    });
   }
 
   Future<void> _openBarcodeScanner() async {
@@ -1147,6 +1214,8 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       _errorCategory = null;
       _errorPrice = null;
       _errorStockInitial = null;
+      _errorDiscount = null;
+      _errorOptions = null;
     });
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -1165,17 +1234,50 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       setState(() => _errorPrice = 'Le prix est obligatoire');
       return;
     }
-    final stockRaw = _stockCtrl.text.trim();
-    if (stockRaw.isEmpty) {
-      setState(() => _errorStockInitial = 'Le stock initial est obligatoire');
-      return;
+    final discountRaw = _discountCtrl.text.trim();
+    var discount = 0;
+    if (discountRaw.isNotEmpty) {
+      discount = int.tryParse(discountRaw) ?? -1;
+      if (discount < 0 || discount > 100) {
+        setState(() => _errorDiscount = 'Saisissez un rabais entre 0 et 100.');
+        return;
+      }
     }
-    final stockQty = int.tryParse(stockRaw);
-    if (stockQty == null || stockQty < 0) {
-      setState(
-        () => _errorStockInitial = 'Saisissez un nombre entier valide (0 ou plus)',
-      );
-      return;
+    int stockQty = widget.existing?.stockQuantity ?? 0;
+    var minStock = widget.existing?.minStock ?? 0;
+    if (_trackStock) {
+      final stockRaw = _stockCtrl.text.trim();
+      if (stockRaw.isEmpty) {
+        setState(() => _errorStockInitial = 'Le stock initial est obligatoire');
+        return;
+      }
+      final parsedStock = int.tryParse(stockRaw);
+      if (parsedStock == null || parsedStock < 0) {
+        setState(
+          () => _errorStockInitial =
+              'Saisissez un nombre entier valide (0 ou plus)',
+        );
+        return;
+      }
+      stockQty = parsedStock;
+      minStock = int.tryParse(_minCtrl.text) ?? 0;
+    }
+    final groups = <ProductOptionGroup>[];
+    for (final draft in _optionDrafts) {
+      final named = draft.nameCtrl.text.trim().isNotEmpty;
+      final group = draft.toGroup();
+      if (named && group == null) {
+        setState(() => _errorOptions =
+            'Chaque option doit avoir un nom et au moins un choix.');
+        return;
+      }
+      if (group != null) groups.add(group);
+    }
+    String? photo = widget.existing?.photoDataUrl;
+    if (_photoCleared) {
+      photo = null;
+    } else if (_photoBytes != null) {
+      photo = 'data:$_photoMime;base64,${base64Encode(_photoBytes!)}';
     }
     final p = CatalogPriceLogic.commitParsed(s, priceParsed);
     final barcode = _barcodeCtrl.text.trim();
@@ -1187,9 +1289,15 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       priceUsd: p.priceUsd,
       costHtg: double.tryParse(_costCtrl.text) ?? 0,
       stockQuantity: stockQty,
-      minStock: int.tryParse(_minCtrl.text) ?? 0,
+      minStock: minStock,
       barcode: barcode.isEmpty ? null : barcode,
-      active: widget.existing?.active ?? true,
+      active: _active,
+      description: _descCtrl.text.trim(),
+      photoDataUrl: photo,
+      discountPercent: discount,
+      trackStock: _trackStock,
+      stockUnit: _stockUnit,
+      options: groups,
     ));
     Navigator.pop(context);
   }
@@ -1309,41 +1417,140 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
               ),
             ),
           const SizedBox(height: AppConstants.spacing16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _stockCtrl,
-                  decoration: fieldDec(
-                    label: 'Stock initial *',
-                    helperText:
-                        'Unités en stock au moment d\'ajouter ce produit.',
-                    errorText: _errorStockInitial,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: InputFormatters.digitsOnly,
-                  onChanged: (_) {
-                    if (_errorStockInitial != null) {
-                      setState(() => _errorStockInitial = null);
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: AppConstants.spacing12),
-              Expanded(
-                child: TextField(
-                  controller: _minCtrl,
-                  decoration: fieldDec(
-                    label: 'Stock minimum',
-                    helperText: 'Signale un stock bas à ce seuil ou en dessous.',
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: InputFormatters.digitsOnly,
-                ),
-              ),
-            ],
+          TextField(
+            controller: _discountCtrl,
+            decoration: fieldDec(
+              label: 'Rabais article (%)',
+              helperText: 'Facultatif. 0 ou vide = aucun rabais sur le prix.',
+              errorText: _errorDiscount,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: InputFormatters.digitsOnly,
+            onChanged: (_) {
+              if (_errorDiscount != null) setState(() => _errorDiscount = null);
+            },
           ),
+          const SizedBox(height: AppConstants.spacing16),
+          TextField(
+            controller: _descCtrl,
+            minLines: 2,
+            maxLines: 4,
+            decoration: fieldDec(
+              label: 'Description (facultatif)',
+              helperText: 'Détail du produit, pour la fiche et la vitrine.',
+            ),
+          ),
+          const SizedBox(height: AppConstants.spacing16),
+          _PhotoField(
+            bytes: _photoBytes,
+            storedDataUrl: _photoCleared ? null : _photoDataUrl,
+            errorText: _errorPhoto,
+            onPick: _pickPhoto,
+            onClear: (_photoBytes != null ||
+                    (!_photoCleared &&
+                        _photoDataUrl != null &&
+                        _photoDataUrl!.isNotEmpty))
+                ? () => setState(() {
+                      _photoBytes = null;
+                      _photoDataUrl = null;
+                      _photoCleared = true;
+                      _errorPhoto = null;
+                    })
+                : null,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _active,
+            activeThumbColor: AppColors.deepGreen,
+            title: Text(
+              'Disponible à la vente',
+              style: AppTextStyles.body(color: textPrimary).copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Décoché : le produit n’apparaît pas à la caisse.',
+              style: helperStyle,
+            ),
+            onChanged: (value) => setState(() => _active = value),
+          ),
+          const Divider(height: 24),
+          ProductOptionsEditor(
+            drafts: _optionDrafts,
+            errorText: _errorOptions,
+            onChanged: () => setState(() => _errorOptions = null),
+          ),
+          const Divider(height: 24),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _trackStock,
+            activeThumbColor: AppColors.primaryBlue,
+            title: Text(
+              'Suivre le stock',
+              style: AppTextStyles.body(color: textPrimary).copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Décochez si la vente ne doit pas diminuer le stock.',
+              style: helperStyle,
+            ),
+            onChanged: (value) => setState(() => _trackStock = value),
+          ),
+          if (_trackStock) ...[
+            const SizedBox(height: AppConstants.spacing8),
+            DropdownButtonFormField<String>(
+              initialValue: _stockUnit,
+              decoration: fieldDec(label: 'Unité'),
+              items: const [
+                DropdownMenuItem(value: 'u', child: Text('Unité')),
+                DropdownMenuItem(value: 'kg', child: Text('kg')),
+                DropdownMenuItem(value: 'L', child: Text('L')),
+                DropdownMenuItem(value: 'paquet', child: Text('Paquet')),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _stockUnit = value);
+              },
+            ),
+            const SizedBox(height: AppConstants.spacing16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _stockCtrl,
+                    decoration: fieldDec(
+                      label: 'Stock initial *',
+                      helperText:
+                          'Unités en stock au moment d\'ajouter ce produit.',
+                      errorText: _errorStockInitial,
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                    onChanged: (_) {
+                      if (_errorStockInitial != null) {
+                        setState(() => _errorStockInitial = null);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppConstants.spacing12),
+                Expanded(
+                  child: TextField(
+                    controller: _minCtrl,
+                    decoration: fieldDec(
+                      label: 'Stock minimum',
+                      helperText:
+                          'Signale un stock bas à ce seuil ou en dessous.',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppConstants.spacing16),
           TextField(
             controller: _barcodeCtrl,
@@ -1417,6 +1624,111 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         Flexible(child: scrollableFields),
         const Divider(height: 1),
         actionRow(),
+      ],
+    );
+  }
+}
+
+class _PhotoField extends StatelessWidget {
+  const _PhotoField({
+    required this.bytes,
+    required this.storedDataUrl,
+    required this.onPick,
+    this.onClear,
+    this.errorText,
+  });
+
+  final Uint8List? bytes;
+  final String? storedDataUrl;
+  final VoidCallback onPick;
+  final VoidCallback? onClear;
+  final String? errorText;
+
+  Uint8List? get _preview {
+    if (bytes != null) return bytes;
+    final url = storedDataUrl;
+    if (url == null || !url.contains(',')) return null;
+    try {
+      return base64Decode(url.split(',').last);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
+    final preview = _preview;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Photo vitrine (facultatif)',
+          style: AppTextStyles.body(color: ink).copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Pour la vitrine en ligne. Elle n’apparaît pas à la caisse.',
+          style: AppTextStyles.caption(color: muted),
+        ),
+        const SizedBox(height: AppConstants.spacing8),
+        Row(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                borderRadius: BorderRadius.circular(AppConstants.radiusCard),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : const Color(0xFFE4E7EC),
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: preview == null
+                  ? Icon(Icons.image_outlined, color: muted)
+                  : Image.memory(preview, fit: BoxFit.cover),
+            ),
+            const SizedBox(width: AppConstants.spacing12),
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  AppButton(
+                    label: preview == null ? 'Choisir une photo' : 'Changer',
+                    icon: Icons.photo_outlined,
+                    variant: AppButtonVariant.secondary,
+                    compact: true,
+                    fullWidth: false,
+                    onPressed: onPick,
+                  ),
+                  if (onClear != null)
+                    AppButton(
+                      label: 'Retirer',
+                      variant: AppButtonVariant.ghost,
+                      compact: true,
+                      fullWidth: false,
+                      onPressed: onClear,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (errorText != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            errorText!,
+            style: AppTextStyles.caption(color: AppColors.boldRed),
+          ),
+        ],
+        const SizedBox(height: AppConstants.spacing8),
       ],
     );
   }

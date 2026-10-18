@@ -377,6 +377,7 @@ class _RetailProductInventoryPanelState
             const SizedBox(height: AppConstants.spacing8),
             _InlineStockBadges(
               stockQuantity: current.stockQuantity,
+              trackStock: current.trackStock,
               salesToday: salesToday,
               isDark: isDark,
             ),
@@ -400,6 +401,7 @@ class _RetailProductInventoryPanelState
                       const SizedBox(height: AppConstants.spacing8),
                       _InlineStockBadges(
                         stockQuantity: current.stockQuantity,
+                        trackStock: current.trackStock,
                         salesToday: salesToday,
                         isDark: isDark,
                       ),
@@ -576,11 +578,13 @@ class _RetailProductInventoryPanelState
 class _InlineStockBadges extends StatelessWidget {
   const _InlineStockBadges({
     required this.stockQuantity,
+    required this.trackStock,
     required this.salesToday,
     required this.isDark,
   });
 
   final int stockQuantity;
+  final bool trackStock;
   final int salesToday;
   final bool isDark;
 
@@ -632,7 +636,7 @@ class _InlineStockBadges extends StatelessWidget {
         chip(
           icon: Icons.inventory_2_outlined,
           label: 'Stock',
-          value: '$stockQuantity unités',
+          value: trackStock ? '$stockQuantity unités' : 'Non suivi',
           accent: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
         ),
         chip(

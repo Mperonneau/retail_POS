@@ -253,7 +253,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
 
   double _subtotal(List<RetailCartEntry> lines) => lines.fold(
         0.0,
-        (s, e) => s + e.product.priceHtg * e.quantity,
+        (s, e) => s + e.unitPriceHtg * e.quantity,
       );
 
   double _discountAmt(double sub) => sub * (widget.discountPercent / 100);
@@ -327,11 +327,13 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   void _saveQuote() {
     // Snapshot prices at save time — future catalog changes won't affect this quote.
     final lines = widget.cart
-        .map((e) => MockQuoteLine(
-              product: e.product,
+            .map((e) => MockQuoteLine(
+              product: e.options.isEmpty
+                  ? e.product
+                  : e.product.copyWith(name: e.lineLabel),
               quantity: e.quantity,
-              unitPriceHtg: e.product.priceHtg,
-              unitPriceUsd: e.product.priceUsd,
+              unitPriceHtg: e.unitPriceHtg,
+              unitPriceUsd: e.product.sellingPriceUsd,
             ))
         .toList();
     final existing = widget.existingQuote;
@@ -399,16 +401,21 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   List<String>? _stockFailures(List<RetailCartEntry> lines) {
     final products = ref.read(mockProductsProvider);
     final failures = <String>[];
+    final wanted = <int, int>{};
     for (final e in lines) {
       final matches = products.where((p) => p.id == e.product.id).toList();
       if (matches.isEmpty) {
-        failures.add('${e.product.name} — plus au catalogue');
+        failures.add('${e.lineLabel} — plus au catalogue');
         continue;
       }
-      final live = matches.first;
-      if (e.quantity > live.stockQuantity) {
+      if (!matches.first.trackStock) continue;
+      wanted[e.product.id] = (wanted[e.product.id] ?? 0) + e.quantity;
+    }
+    for (final entry in wanted.entries) {
+      final live = products.firstWhere((p) => p.id == entry.key);
+      if (entry.value > live.stockQuantity) {
         failures.add(
-          '${e.product.name} — demandé ${e.quantity}, disponible ${live.stockQuantity}',
+          '${live.name} — demandé ${entry.value}, disponible ${live.stockQuantity}',
         );
       }
     }
@@ -679,11 +686,11 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                     lines: [
                       for (final e in lines)
                         RetailOrderLine(
-                          productName: e.product.name,
+                          productName: e.lineLabel,
                           productId: e.product.id,
                           quantity: e.quantity,
-                          unitPriceHtg: e.product.priceHtg,
-                          unitPriceUsd: e.product.priceUsd,
+                          unitPriceHtg: e.unitPriceHtg,
+                          unitPriceUsd: e.product.sellingPriceUsd,
                         ),
                     ],
                     discountPercent: widget.discountPercent,
@@ -1163,7 +1170,7 @@ class _ReviewStep extends ConsumerWidget {
                           ),
                           Expanded(
                             child: Text(
-                              e.product.name,
+                              e.lineLabel,
                               style: AppTextStyles.body(
                                 color: isDark
                                     ? AppColors.warmWhite
@@ -1177,7 +1184,7 @@ class _ReviewStep extends ConsumerWidget {
                             width: 88,
                             child: Text(
                               CurrencyFormatter.amountOnly(
-                                  e.product.priceHtg),
+                                  e.unitPriceHtg),
                               textAlign: TextAlign.right,
                               style: AppTextStyles.caption(
                                 color: isDark
@@ -1190,7 +1197,7 @@ class _ReviewStep extends ConsumerWidget {
                             width: 88,
                             child: Text(
                               CurrencyFormatter.amountOnly(
-                                e.product.priceHtg * e.quantity,
+                                e.unitPriceHtg * e.quantity,
                               ),
                               textAlign: TextAlign.right,
                               style: AppTextStyles.caption(

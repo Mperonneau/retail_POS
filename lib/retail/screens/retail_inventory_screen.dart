@@ -832,7 +832,9 @@ class _InventoryProductGridTile extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              '${product.stockQuantity}',
+                              product.trackStock
+                                  ? '${product.stockQuantity}'
+                                  : 'Non suivi',
                               style: AppTextStyles.body(
                                 color: product.isLowStock
                                     ? AppColors.boldRed
@@ -979,7 +981,9 @@ class _InventoryProductRow extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${product.stockQuantity}',
+                          product.trackStock
+                              ? '${product.stockQuantity}'
+                              : 'Non suivi',
                           style: AppTextStyles.body(
                             color: product.isLowStock
                                 ? AppColors.boldRed
