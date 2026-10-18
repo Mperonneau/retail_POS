@@ -376,11 +376,19 @@ class _MovementRow extends StatelessWidget {
             ? Icons.tune
             : Icons.south_west;
 
-    final amtHtg = isOut
-        ? '− ${CurrencyFormatter.local(context, m.totalHtg)}'
+    final usd = tenderUsesUsd(m.tender);
+    String money(double value) => usd
+        ? CurrencyFormatter.usd(value)
+        : CurrencyFormatter.local(context, value);
+    final raw = isAdj
+        ? (usd ? m.amountUsd : m.amountHtg)
+        : (usd ? m.totalUsd : m.totalHtg);
+    final sign = isOut
+        ? '−'
         : isAdj
-            ? '${m.adjustmentAddsToDrawer ? '+' : '−'} ${m.amountHtg != 0 ? CurrencyFormatter.local(context, m.amountHtg.abs()) : CurrencyFormatter.usd(m.amountUsd.abs())}'
-            : '+ ${CurrencyFormatter.local(context, m.totalHtg)}';
+            ? (m.adjustmentAddsToDrawer ? '+' : '−')
+            : '+';
+    final amtHtg = '$sign ${money(raw.abs())}';
 
     final timeStr =
         '${m.timestamp.hour.toString().padLeft(2, '0')}:${m.timestamp.minute.toString().padLeft(2, '0')}';

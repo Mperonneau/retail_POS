@@ -15,6 +15,8 @@ void showCashHistoryPanel(
   bool isDark, {
   StateNotifierProvider<CashSessionNotifier, CashControlState>?
       sessionProvider,
+  void Function(BuildContext context, CashControlState state)? onPrintActive,
+  void Function(BuildContext context, SessionSummary summary)? onPrintClosed,
 }) {
   Navigator.of(context).push(
     PageRouteBuilder(
@@ -25,6 +27,8 @@ void showCashHistoryPanel(
       pageBuilder: (_, __, ___) => CashHistoryPanel(
         isDark: isDark,
         sessionProvider: sessionProvider ?? cashSessionProvider,
+        onPrintActive: onPrintActive,
+        onPrintClosed: onPrintClosed,
       ),
       transitionsBuilder: (_, animation, __, child) => SlideTransition(
         position: Tween<Offset>(
@@ -43,10 +47,16 @@ class CashHistoryPanel extends ConsumerStatefulWidget {
   final bool isDark;
   final StateNotifierProvider<CashSessionNotifier, CashControlState>
       sessionProvider;
+  final void Function(BuildContext context, CashControlState state)?
+      onPrintActive;
+  final void Function(BuildContext context, SessionSummary summary)?
+      onPrintClosed;
   CashHistoryPanel({
     super.key,
     required this.isDark,
     required this.sessionProvider,
+    this.onPrintActive,
+    this.onPrintClosed,
   });
 
   @override
@@ -220,7 +230,13 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
                                 // Active session always on top
                                 if (state.activeSession != null) ...[
                                   _ActiveSessionCard(
-                                      state: state, isDark: isDark),
+                                    state: state,
+                                    isDark: isDark,
+                                    onPrint: widget.onPrintActive == null
+                                        ? null
+                                        : () => widget.onPrintActive!(
+                                            context, state),
+                                  ),
                                   const SizedBox(height: 12),
                                 ],
 
@@ -266,7 +282,13 @@ class _CashHistoryPanelState extends ConsumerState<CashHistoryPanel> {
                                       padding:
                                           const EdgeInsets.only(bottom: 12),
                                       child: _ClosedSessionCard(
-                                          summary: s, isDark: isDark),
+                                        summary: s,
+                                        isDark: isDark,
+                                        onPrint: widget.onPrintClosed == null
+                                            ? null
+                                            : () => widget.onPrintClosed!(
+                                                context, s),
+                                      ),
                                     )),
 
                                 // Load more button
@@ -484,7 +506,12 @@ class _LoadMoreButton extends StatelessWidget {
 class _ActiveSessionCard extends StatelessWidget {
   final CashControlState state;
   final bool isDark;
-  const _ActiveSessionCard({required this.state, required this.isDark});
+  final VoidCallback? onPrint;
+  const _ActiveSessionCard({
+    required this.state,
+    required this.isDark,
+    this.onPrint,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -545,36 +572,55 @@ class _ActiveSessionCard extends StatelessWidget {
       ),
       rows: [
         _StatRow(
-          label: 'Solde d\'ouverture',
-          htg: session.openingBalanceHtg,
-          usd: session.openingBalanceUsd,
-          isDark: isDark,
-        ),
-        _StatRow(
-          label: 'Entrée de caisse',
-          htg: state.totalIn,
-          usd: state.totalInUsd,
-          isDark: isDark,
-          color: AppColors.deepGreen,
-          sign: '+',
-        ),
-        _StatRow(
-          label: 'Sortie de caisse',
-          htg: state.totalOut,
-          usd: state.totalOutUsd,
-          isDark: isDark,
-          color: AppColors.boldRed,
-          sign: '-',
-        ),
-        _StatRow(
-          label: 'Solde attendu',
-          htg: state.expectedBalance,
-          usd: state.expectedBalanceUsd,
+          label: 'Attendu HTG',
+          amount: CurrencyFormatter.local(context, state.drawerExpectedHtg),
           isDark: isDark,
           isBold: true,
-          color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+          color: AppColors.amber,
+        ),
+        _StatRow(
+          label: 'Attendu USD',
+          amount: CurrencyFormatter.usd(state.drawerExpectedUsd),
+          isDark: isDark,
+          isBold: true,
+          color: AppColors.amber,
+        ),
+        _StatRow(
+          label: 'Ouverture HTG',
+          amount: CurrencyFormatter.local(context, session.openingBalanceHtg),
+          isDark: isDark,
+        ),
+        _StatRow(
+          label: 'Ouverture USD',
+          amount: CurrencyFormatter.usd(session.openingBalanceUsd),
+          isDark: isDark,
+        ),
+        _StatRow(
+          label: 'Entrée HTG',
+          amount: '+ ${CurrencyFormatter.local(context, state.drawerCashInHtg)}',
+          isDark: isDark,
+          color: AppColors.deepGreen,
+        ),
+        _StatRow(
+          label: 'Entrée USD',
+          amount: '+ ${CurrencyFormatter.usd(state.drawerCashInUsd)}',
+          isDark: isDark,
+          color: AppColors.deepGreen,
+        ),
+        _StatRow(
+          label: 'Sortie HTG',
+          amount: '- ${CurrencyFormatter.local(context, state.drawerCashOutHtg)}',
+          isDark: isDark,
+          color: AppColors.boldRed,
+        ),
+        _StatRow(
+          label: 'Sortie USD',
+          amount: '- ${CurrencyFormatter.usd(state.drawerCashOutUsd)}',
+          isDark: isDark,
+          color: AppColors.boldRed,
         ),
       ],
+      onPrint: onPrint,
     );
   }
 }
@@ -584,8 +630,12 @@ class _ActiveSessionCard extends StatelessWidget {
 class _ClosedSessionCard extends StatelessWidget {
   final SessionSummary summary;
   final bool isDark;
-  const _ClosedSessionCard(
-      {required this.summary, required this.isDark});
+  final VoidCallback? onPrint;
+  const _ClosedSessionCard({
+    required this.summary,
+    required this.isDark,
+    this.onPrint,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -628,7 +678,7 @@ class _ClosedSessionCard extends StatelessWidget {
                   color: balanceColor.withValues(alpha: 0.3)),
             ),
             child: Text(
-              balanced ? 'BALANCED' : 'SHORT',
+              balanced ? 'ÉQUILIBRÉ' : 'ÉCART',
               style: AppTextStyles.caption(color: balanceColor)
                   .copyWith(fontWeight: FontWeight.w700),
             ),
@@ -637,46 +687,84 @@ class _ClosedSessionCard extends StatelessWidget {
       ),
       rows: [
         _StatRow(
-          label: 'Solde d\'ouverture',
-          htg: session.openingBalanceHtg,
-          usd: session.openingBalanceUsd,
+          label: 'Attendu HTG',
+          amount: CurrencyFormatter.local(context, summary.expectedHtg),
           isDark: isDark,
+          isBold: true,
+          color: AppColors.amber,
         ),
         _StatRow(
-          label: 'Entrée de caisse',
-          htg: summary.totalInHtg,
-          usd: summary.totalInUsd,
+          label: 'Attendu USD',
+          amount: CurrencyFormatter.usd(summary.expectedUsd),
           isDark: isDark,
-          color: AppColors.deepGreen,
-          sign: '+',
+          isBold: true,
+          color: AppColors.amber,
         ),
         _StatRow(
-          label: 'Sortie de caisse',
-          htg: summary.totalOutHtg,
-          usd: summary.totalOutUsd,
-          isDark: isDark,
-          color: AppColors.boldRed,
-          sign: '-',
-        ),
-        _StatRow(
-          label: 'Solde final',
-          htg: summary.finalBalanceHtg,
-          usd: summary.finalBalanceUsd,
+          label: 'Compté HTG',
+          amount: CurrencyFormatter.local(context, summary.finalBalanceHtg),
           isDark: isDark,
           isBold: true,
           color: balanceColor,
         ),
-        if (!balanced)
+        _StatRow(
+          label: 'Compté USD',
+          amount: CurrencyFormatter.usd(summary.finalBalanceUsd),
+          isDark: isDark,
+          isBold: true,
+          color: balanceColor,
+        ),
+        _StatRow(
+          label: 'Ouverture HTG',
+          amount: CurrencyFormatter.local(context, session.openingBalanceHtg),
+          isDark: isDark,
+        ),
+        _StatRow(
+          label: 'Ouverture USD',
+          amount: CurrencyFormatter.usd(session.openingBalanceUsd),
+          isDark: isDark,
+        ),
+        _StatRow(
+          label: 'Entrée HTG',
+          amount: '+ ${CurrencyFormatter.local(context, summary.totalInHtg)}',
+          isDark: isDark,
+          color: AppColors.deepGreen,
+        ),
+        _StatRow(
+          label: 'Entrée USD',
+          amount: '+ ${CurrencyFormatter.usd(summary.totalInUsd)}',
+          isDark: isDark,
+          color: AppColors.deepGreen,
+        ),
+        _StatRow(
+          label: 'Sortie HTG',
+          amount: '- ${CurrencyFormatter.local(context, summary.totalOutHtg)}',
+          isDark: isDark,
+          color: AppColors.boldRed,
+        ),
+        _StatRow(
+          label: 'Sortie USD',
+          amount: '- ${CurrencyFormatter.usd(summary.totalOutUsd)}',
+          isDark: isDark,
+          color: AppColors.boldRed,
+        ),
+        if (summary.overShortHtg.abs() >= 1)
           _StatRow(
-            label: summary.overShortHtg < 0 ? 'Manque' : 'Excédent',
-            htg: summary.overShortHtg.abs(),
-            usd: summary.overShortUsd.abs(),
+            label: summary.overShortHtg < 0 ? 'Manque HTG' : 'Excédent HTG',
+            amount: CurrencyFormatter.local(context, summary.overShortHtg.abs()),
             isDark: isDark,
             color: balanceColor,
-            sign: summary.overShortHtg < 0 ? '-' : '+',
+          ),
+        if (summary.overShortUsd.abs() >= 0.01)
+          _StatRow(
+            label: summary.overShortUsd < 0 ? 'Manque USD' : 'Excédent USD',
+            amount: CurrencyFormatter.usd(summary.overShortUsd.abs()),
+            isDark: isDark,
+            color: balanceColor,
           ),
       ],
       note: session.closingNote,
+      onPrint: onPrint,
     );
   }
 }
@@ -689,6 +777,7 @@ class _SessionCardShell extends StatelessWidget {
   final Widget header;
   final List<Widget> rows;
   final String? note;
+  final VoidCallback? onPrint;
 
   const _SessionCardShell({
     required this.isDark,
@@ -696,6 +785,7 @@ class _SessionCardShell extends StatelessWidget {
     required this.header,
     required this.rows,
     this.note,
+    this.onPrint,
   });
 
   @override
@@ -733,6 +823,17 @@ class _SessionCardShell extends StatelessWidget {
                   const Divider(height: 1),
                   const SizedBox(height: 8),
                   ...rows,
+                  if (onPrint != null) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: onPrint,
+                        icon: const Icon(Icons.print_outlined, size: 16),
+                        label: const Text('Imprimer ou télécharger'),
+                      ),
+                    ),
+                  ],
                   if (note != null && note!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     const Divider(height: 1),
@@ -775,21 +876,17 @@ class _SessionCardShell extends StatelessWidget {
 
 class _StatRow extends StatelessWidget {
   final String label;
-  final double htg;
-  final double usd;
+  final String amount;
   final bool isDark;
   final bool isBold;
   final Color? color;
-  final String sign;
 
   const _StatRow({
     required this.label,
-    required this.htg,
-    required this.usd,
+    required this.amount,
     required this.isDark,
     this.isBold = false,
     this.color,
-    this.sign = '',
   });
 
   @override
@@ -808,27 +905,11 @@ class _StatRow extends StatelessWidget {
                 fontWeight:
                     isBold ? FontWeight.w700 : FontWeight.normal),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$sign${CurrencyFormatter.local(context, htg)}',
-                style: AppTextStyles.body(color: valueColor).copyWith(
-                    fontWeight:
-                        isBold ? FontWeight.w700 : FontWeight.w600,
-                    fontSize: 12),
-              ),
-              Text(
-                '$sign\$${usd.toStringAsFixed(2)}',
-                style: AppTextStyles.caption(
-                        color: (color ??
-                                (isDark
-                                    ? AppColors.coolGray
-                                    : AppColors.darkGray))
-                            .withValues(alpha: 0.7))
-                    .copyWith(fontSize: 10),
-              ),
-            ],
+          Text(
+            amount,
+            style: AppTextStyles.body(color: valueColor).copyWith(
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 12),
           ),
         ],
       ),
