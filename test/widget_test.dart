@@ -305,14 +305,6 @@ void main() {
   });
 }
 
-Finder _productAddButton(String productName) {
-  final card = find.ancestor(
-    of: find.text(productName).first,
-    matching: find.byType(GestureDetector),
-  );
-  return find.descendant(of: card.first, matching: find.byIcon(Icons.add));
-}
-
 Future<void> _signInToRetailShell(
   WidgetTester tester, {
   bool expectDemoPins = false,

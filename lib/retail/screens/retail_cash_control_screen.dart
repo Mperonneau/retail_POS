@@ -648,9 +648,10 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
             .where((e) =>
                 e.isActive &&
                 e.id != me?.employeeId &&
-                (e.role == StaffRole.cashier ||
+                (e.role == StaffRole.owner ||
+                    e.role == StaffRole.admin ||
                     e.role == StaffRole.manager ||
-                    e.role == StaffRole.admin))
+                    e.role == StaffRole.cashier))
             .toList(),
       ),
     );
