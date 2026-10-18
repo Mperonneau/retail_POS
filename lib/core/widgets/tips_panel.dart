@@ -9,6 +9,7 @@ import '../utils/constants.dart';
 import '../utils/input_formatters.dart';
 import '../utils/currency_formatter.dart';
 import 'tips_history_panel.dart';
+import 'app_close_button.dart';
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
@@ -469,22 +470,7 @@ class _PayOutDialog extends StatelessWidget {
                       ],
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(false),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1E2E42)
-                            : const Color(0xFFF2F2F2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Icon(Icons.close_rounded,
-                          size: 16, color: subColor),
-                    ),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.of(context).pop(false)),
                 ],
               ),
 
@@ -678,22 +664,7 @@ class _AdjustDialogState extends State<_AdjustDialog> {
                     ),
                   ),
                   // Close button
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1E2E42)
-                            : const Color(0xFFF2F2F2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Icon(Icons.close_rounded,
-                          size: 16, color: labelColor),
-                    ),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                 ],
               ),
 
@@ -934,7 +905,6 @@ class _PanelHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderColor =
         isDark ? AppColors.darkBorder : const Color(0xFFEEEEEE);
-    final iconColor = isDark ? AppColors.coolGray : AppColors.darkGray;
     final textColor = isDark ? AppColors.warmWhite : AppColors.nearBlack;
 
     return Container(
@@ -998,14 +968,7 @@ class _PanelHeader extends StatelessWidget {
           const SizedBox(width: 8),
 
           // Close
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close_rounded),
-            iconSize: 20,
-            color: iconColor,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          ),
+          AppCloseButton(onPressed: () => Navigator.of(context).pop()),
         ],
       ),
     );

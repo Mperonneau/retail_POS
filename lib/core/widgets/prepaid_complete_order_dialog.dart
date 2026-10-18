@@ -9,6 +9,7 @@ import '../utils/currency_formatter.dart';
 import '../utils/order_bill_estimate.dart';
 import 'apply_store_credit_sheet.dart';
 import 'discount_approval_dialog.dart';
+import 'app_close_button.dart';
 
 /// After staff confirms payment on a prepaid table visit, use this flow to
 /// close the order and optionally handle unused prepaid balance (credit / refund).
@@ -103,13 +104,7 @@ Future<void> showPrepaidCompleteOrderDialog(
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        icon: const Icon(Icons.close, size: 20),
-                        color: muted,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                      AppCloseButton(onPressed: () => Navigator.pop(ctx)),
                     ],
                   ),
                   const SizedBox(height: 18),

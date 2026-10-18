@@ -14,6 +14,7 @@ import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
 import 'discount_approval_dialog.dart';
 import 'store_credit_recipient_picker.dart';
+import 'app_close_button.dart';
 
 enum ApplyStoreCreditBillKind { restaurant, hotelRestaurant }
 
@@ -180,11 +181,7 @@ class _ApplyStoreCreditSheetBodyState
                     style: AppTextStyles.h3(color: primary),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  color: secondary,
-                ),
+                AppCloseButton(onPressed: () => Navigator.pop(context)),
               ],
             ),
             Text(

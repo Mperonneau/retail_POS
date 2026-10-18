@@ -8,6 +8,7 @@ import '../../core/mock/mock_retail_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
+import '../../core/widgets/app_close_button.dart';
 
 /// Single product category: type-ahead (saved + taxonomy), free text, browse domains.
 class ProductCategoryField extends ConsumerStatefulWidget {
@@ -402,10 +403,7 @@ class _ProductCategoryBrowseDialogBodyState
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),

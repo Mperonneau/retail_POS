@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:retail_pos/core/theme/app_icons.dart';
+import 'package:retail_pos/core/widgets/app_close_button.dart';
 import 'package:retail_pos/core/mock/mock_retail_data.dart';
 import 'package:retail_pos/core/mock/mock_retail_orders.dart';
 import 'package:retail_pos/core/models/order_history.dart';
@@ -86,6 +87,58 @@ void main() {
     expect(find.byIcon(AppIcons.devices), findsOneWidget);
     expect(find.text('Inventaire'), findsWidgets);
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
+  });
+
+  testWidgets('On a phone the cart and checkout panels fill the screen', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final previousOnError = FlutterError.onError;
+    addTearDown(() => FlutterError.onError = previousOnError);
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('A RenderFlex overflowed')) return;
+      if (message.contains('attached to more than one ScrollPosition')) return;
+      previousOnError?.call(details);
+    };
+
+    await _signInToRetailShell(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    );
+    container.read(appRouterProvider).go('/retail/pos');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    final firstProduct = container.read(mockProductsProvider).first;
+    await tester.tap(find.text(firstProduct.name).first);
+    await tester.pump();
+    await tester.tap(find.textContaining('Panier').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    double panelWidth() => tester
+        .getSize(find
+            .ancestor(of: find.byType(AppCloseButton).last, matching: find.byType(Material))
+            .at(1))
+        .width;
+
+    expect(find.byType(AppCloseButton), findsOneWidget);
+    expect(panelWidth(), 390);
+
+    await tester.tap(find.text('Encaisser').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Suivant'), findsWidgets);
+    final checkoutClose = find.byType(AppCloseButton).last;
+    expect(tester.getSize(checkoutClose), const Size(36, 36));
+    expect(
+      tester.getRect(checkoutClose).right,
+      lessThanOrEqualTo(390),
+    );
+    expect(tester.getRect(checkoutClose).left, lessThan(60));
   });
 
   testWidgets('A sale paid offline waits on the synchronisation page', (tester) async {

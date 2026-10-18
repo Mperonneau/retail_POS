@@ -41,9 +41,12 @@ class AppConstants {
   static const double retailDetailSidePanelMax = 560;
 
   /// Scales slightly with [viewportWidth] (e.g. full scaffold width), clamped.
+  /// Phones get the full width.
   static double retailDetailSidePanelWidth(double viewportWidth) =>
-      (viewportWidth * 0.38)
-          .clamp(retailDetailSidePanelMin, retailDetailSidePanelMax);
+      viewportWidth <= mobileBreakpoint
+          ? viewportWidth
+          : (viewportWidth * 0.38)
+              .clamp(retailDetailSidePanelMin, retailDetailSidePanelMax);
 
   // --- Retail inventory — wide right drawer (wider than quote/order panels) ---
   static const double retailInventoryDetailPanelMin = 640;
@@ -51,10 +54,18 @@ class AppConstants {
 
   /// Fraction of viewport; clamped between [retailInventoryDetailPanelMin] and max.
   static double retailInventoryDetailPanelWidth(double viewportWidth) =>
-      (viewportWidth * 0.50).clamp(
-        retailInventoryDetailPanelMin,
-        retailInventoryDetailPanelMax,
-      );
+      viewportWidth <= mobileBreakpoint
+          ? viewportWidth
+          : (viewportWidth * 0.50).clamp(
+              retailInventoryDetailPanelMin,
+              retailInventoryDetailPanelMax,
+            );
+
+  /// Width of a right-hand panel: full screen on phones, [desktop] otherwise.
+  static double sidePanelWidth(double viewportWidth, double desktop) =>
+      viewportWidth <= mobileBreakpoint
+          ? viewportWidth
+          : desktop.clamp(0.0, viewportWidth);
 
   // --- Animation Durations ---
   static const Duration animFast = Duration(milliseconds: 150);

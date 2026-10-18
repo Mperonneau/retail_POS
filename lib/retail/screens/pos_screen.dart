@@ -19,6 +19,7 @@ import '../../core/widgets/discount_approval_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../models/retail_cart_entry.dart';
 import 'checkout_wizard.dart';
+import '../../core/widgets/app_close_button.dart';
 
 /// Up to 5 columns on wide viewports; fewer on narrow screens so tiles stay usable.
 int _posProductGridCrossAxisCount(double viewportWidth) {
@@ -352,7 +353,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width > 700;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final panelW = min(440.0, width * 0.92);
+    final panelW = AppConstants.sidePanelWidth(width, 440.0);
 
     final rightPane = SizedBox(
       width: 440,
@@ -422,16 +423,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     children: [
                       if (!_checkoutActive) ...[
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 4, 8, 0),
+                          padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
                           child: Row(
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.close_rounded),
-                                color: isDark
-                                    ? AppColors.warmWhite
-                                    : AppColors.nearBlack,
-                                onPressed: _closeMobileCartPanel,
-                              ),
+                              AppCloseButton(onPressed: _closeMobileCartPanel),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'Panier',

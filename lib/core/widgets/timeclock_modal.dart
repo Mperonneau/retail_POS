@@ -11,6 +11,7 @@ import '../providers/timeclock_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
+import 'app_close_button.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -312,13 +313,7 @@ class _PinStep extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.close,
-                    size: 18,
-                    color: isDark ? AppColors.coolGray : AppColors.darkGray),
-                onPressed: onClose,
-                splashRadius: 16,
-              ),
+              AppCloseButton(onPressed: onClose),
             ],
           ),
           const SizedBox(height: 24),

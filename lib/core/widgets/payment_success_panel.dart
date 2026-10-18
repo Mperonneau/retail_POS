@@ -6,6 +6,7 @@ import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
 import 'app_button.dart';
 import 'payment_receipt_dialogs.dart';
+import 'app_close_button.dart';
 
 /// Post-payment confirmation (matches Restaurant / design: check, amount, receipt actions).
 class PaymentSuccessPanel extends StatelessWidget {
@@ -182,11 +183,7 @@ class PaymentSuccessPanel extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded),
-                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                onPressed: onHeaderClose ?? onDone,
-              ),
+              AppCloseButton(onPressed: onHeaderClose ?? onDone),
             ],
           ),
         ),

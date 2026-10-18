@@ -7,6 +7,7 @@ import '../models/customer.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
+import 'app_close_button.dart';
 
 const _idDocumentTypes = [
   'Passeport',
@@ -171,11 +172,7 @@ class _StoreCreditRecipientPickerState
                       tooltip: 'Retour',
                     )
                   else
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded),
-                      color: muted,
-                    ),
+                    AppCloseButton(onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),

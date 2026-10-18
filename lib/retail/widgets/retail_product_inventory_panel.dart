@@ -11,6 +11,7 @@ import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_close_button.dart';
 
 /// Opens the product inventory “account” view.
 /// On narrow viewports, opens as a **full-screen sliding panel** (not a bottom sheet).
@@ -369,11 +370,7 @@ class _RetailProductInventoryPanelState
                     ),
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Fermer',
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                ),
+                AppCloseButton(onPressed: () => Navigator.of(context).pop()),
               ],
             ),
             Text(current.category, style: AppTextStyles.caption()),
@@ -410,11 +407,7 @@ class _RetailProductInventoryPanelState
                   ),
                 ),
                 if (widget.onClose != null)
-                  IconButton(
-                    tooltip: 'Fermer',
-                    onPressed: widget.onClose,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
+                  AppCloseButton(onPressed: widget.onClose),
               ],
             ),
             const SizedBox(height: AppConstants.spacing16),

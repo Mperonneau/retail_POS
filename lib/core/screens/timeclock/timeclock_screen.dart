@@ -18,6 +18,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/page_header.dart';
+import '../../widgets/app_close_button.dart';
 
 /// Defers overlay / route work until after the current frame and microtask queue,
 /// so it does not run during Flutter Web's mouse/pointer device-update phase
@@ -499,10 +500,7 @@ class _MonthPickerDialog extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close_rounded, color: labelColor),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),
@@ -2046,15 +2044,7 @@ class _AddShiftModalDialogState extends ConsumerState<_AddShiftModalDialog> {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded,
-                        color: Colors.white70, size: 22),
-                    tooltip: 'Fermer',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                        minWidth: 36, minHeight: 36),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                 ],
               ),
             ),
@@ -2507,9 +2497,7 @@ class _PrintDialogState extends State<_PrintDialog> {
                 Expanded(
                     child: Text('Imprimer la feuille de temps',
                         style: AppTextStyles.h2(color: textColor))),
-                IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context)),
+                AppCloseButton(onPressed: () => Navigator.pop(context)),
               ]),
               const SizedBox(height: 16),
               Row(children: [

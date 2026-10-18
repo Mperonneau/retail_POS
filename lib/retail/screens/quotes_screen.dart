@@ -18,6 +18,7 @@ import '../../core/widgets/status_badge.dart';
 import '../models/retail_cart_entry.dart';
 import 'checkout_wizard.dart';
 import 'pos_screen.dart';
+import '../../core/widgets/app_close_button.dart';
 
 const int _kPageSize = 10;
 
@@ -1440,16 +1441,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                         IconButton.styleFrom(padding: const EdgeInsets.all(8)),
                   ),
                 ],
-                IconButton(
-                  icon: Icon(Icons.close_rounded,
-                      size: 20,
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray),
-                  onPressed: widget.onClose,
-                  style: IconButton.styleFrom(
-                    padding: const EdgeInsets.all(8),
-                    minimumSize: const Size(36, 36),
-                  ),
-                ),
+                AppCloseButton(onPressed: widget.onClose),
               ],
             ),
           ),

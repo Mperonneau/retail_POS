@@ -17,6 +17,7 @@ import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_close_button.dart';
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
@@ -1426,8 +1427,9 @@ class _SaleSidePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = isDark ? AppColors.darkSurface : AppColors.white;
-    final panelWidth =
-        (MediaQuery.of(context).size.width * 0.65).clamp(280.0, 480.0);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final panelWidth = AppConstants.sidePanelWidth(
+        screenWidth, (screenWidth * 0.65).clamp(280.0, 480.0));
     final itemCount =
         sale.items.fold<int>(0, (s, i) => s + i.quantity);
 
@@ -1500,17 +1502,7 @@ class _SaleSidePanel extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.close_rounded),
-                            iconSize: 20,
-                            color: isDark
-                                ? AppColors.coolGray
-                                : AppColors.darkGray,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                                minWidth: 32, minHeight: 32),
-                          ),
+                          AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                         ],
                       ),
                     ),

@@ -13,6 +13,7 @@ import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../widgets/supplier_category_field.dart';
+import '../../core/widgets/app_close_button.dart';
 
 const int _kSupplierPageSize = 15;
 
@@ -1158,11 +1159,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
               ),
             ),
             if (widget.onClose != null)
-              IconButton(
-                tooltip: 'Fermer',
-                onPressed: widget.onClose,
-                icon: const Icon(Icons.close_rounded),
-              ),
+              AppCloseButton(onPressed: widget.onClose),
           ],
         ),
         const SizedBox(height: AppConstants.spacing20),
@@ -1804,11 +1801,7 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
                         style: AppTextStyles.h2(color: textPrimary),
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Fermer',
-                      onPressed: widget.onCancel,
-                      icon: const Icon(Icons.close_rounded),
-                    ),
+                    AppCloseButton(onPressed: widget.onCancel),
                   ],
                 ),
               ),

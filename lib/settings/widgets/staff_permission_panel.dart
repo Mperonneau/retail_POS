@@ -10,6 +10,7 @@ import '../../core/providers/permission_settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
+import '../../core/widgets/app_close_button.dart';
 
 /// Right-side panel: per-employee permission overrides.
 class StaffPermissionPanel extends ConsumerWidget {
@@ -40,10 +41,7 @@ class StaffPermissionPanel extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +194,10 @@ void showStaffPermissionPanel(BuildContext context, StaffDirectoryEntry entry) {
           child: Material(
             elevation: 12,
             child: SizedBox(
-              width: (MediaQuery.of(ctx).size.width * 0.42).clamp(320.0, 440.0),
+              width: AppConstants.sidePanelWidth(
+                MediaQuery.of(ctx).size.width,
+                (MediaQuery.of(ctx).size.width * 0.42).clamp(320.0, 440.0),
+              ),
               height: MediaQuery.of(ctx).size.height,
               child: StaffPermissionPanel(entry: entry),
             ),

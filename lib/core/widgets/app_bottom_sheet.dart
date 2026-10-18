@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../utils/constants.dart';
+import 'app_close_button.dart';
 
 /// Opens a theme-aware modal bottom sheet pre-wrapped in [AppBottomSheet].
 /// Use this instead of calling [showModalBottomSheet] directly so that
@@ -68,21 +69,10 @@ class AppBottomSheet extends StatelessWidget {
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.close,
-                      size: 22,
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray,
-                    ),
-                    onPressed: () {
+                  AppCloseButton(onPressed: () {
                       if (!context.mounted) return;
                       Navigator.maybePop(context);
-                    },
-                    style: IconButton.styleFrom(
-                      padding: const EdgeInsets.all(8),
-                      minimumSize: const Size(36, 36),
-                    ),
-                  ),
+                    }),
                 ],
               ),
             ),

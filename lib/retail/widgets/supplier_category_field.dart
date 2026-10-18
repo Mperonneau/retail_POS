@@ -8,6 +8,7 @@ import '../../core/mock/mock_retail_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
+import '../../core/widgets/app_close_button.dart';
 
 /// Product categories (types of products this supplier sells): field, chips, picker.
 class SupplierCategoryField extends ConsumerStatefulWidget {
@@ -466,10 +467,7 @@ class _SupplierCategoryDomainPickerState
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),

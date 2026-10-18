@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/order_bill_estimate.dart';
+import 'app_close_button.dart';
 
 // ── Standalone helper — call from any widget ──────────────────────────────────
 
@@ -57,13 +58,7 @@ void showPrepaidDetailSheet(
                   style: AppTextStyles.h3(color: onSurface),
                 ),
               ),
-              IconButton(
-                onPressed: () => Navigator.pop(ctx),
-                icon: const Icon(Icons.close, size: 18),
-                color: muted,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
+              AppCloseButton(onPressed: () => Navigator.pop(ctx)),
             ],
           ),
           const SizedBox(height: 16),

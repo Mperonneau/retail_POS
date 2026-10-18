@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
+import 'app_close_button.dart';
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
@@ -287,15 +288,7 @@ class _TipsHistoryPanelState extends ConsumerState<TipsHistoryPanel> {
           ),
 
           // Close
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close_rounded),
-            iconSize: 20,
-            color: iconColor,
-            padding: EdgeInsets.zero,
-            constraints:
-                const BoxConstraints(minWidth: 32, minHeight: 32),
-          ),
+          AppCloseButton(onPressed: () => Navigator.of(context).pop()),
         ],
       ),
     );

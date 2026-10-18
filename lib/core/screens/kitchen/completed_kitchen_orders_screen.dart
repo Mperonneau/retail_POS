@@ -11,6 +11,7 @@ import '../../utils/constants.dart';
 import '../../utils/date_formatter.dart';
 import '../../widgets/discount_approval_dialog.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/app_close_button.dart';
 
 enum CompletedKitchenOrdersScope { restaurant, hotelRestaurant }
 
@@ -1038,10 +1039,7 @@ class _DetailPanel extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: AppColors.white, size: 20),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                 ],
               ),
             ),

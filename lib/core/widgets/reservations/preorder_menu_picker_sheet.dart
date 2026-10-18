@@ -6,6 +6,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
+import '../app_close_button.dart';
 
 /// Category tab order (matches typical menu sections).
 const _kCategoryOrder = [
@@ -392,22 +393,11 @@ Future<void> showPreOrderMenuPickerSheet({
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.close,
-                          size: 22,
-                          color: isDark ? AppColors.coolGray : AppColors.darkGray,
-                        ),
-                        onPressed: () {
+                      AppCloseButton(onPressed: () {
                           if (sheetContext.mounted) {
                             Navigator.maybePop(sheetContext);
                           }
-                        },
-                        style: IconButton.styleFrom(
-                          padding: const EdgeInsets.all(8),
-                          minimumSize: const Size(36, 36),
-                        ),
-                      ),
+                        }),
                     ],
                   ),
                 ),

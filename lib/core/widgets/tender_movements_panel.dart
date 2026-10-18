@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../models/cash_control.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
 import 'tender_stat_card.dart';
+import 'app_close_button.dart';
 
 /// Opens a slide-in side panel showing movements for [tender].
 /// Pass [tender] = null to show all movements.
@@ -112,8 +114,9 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
         ? paymentTenderColor(tender, isDark: isDark)
         : (isDark ? AppColors.skyBlue : AppColors.primaryBlue);
 
-    final panelWidth =
-        (MediaQuery.of(context).size.width * 0.65).clamp(300.0, 520.0);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final panelWidth = AppConstants.sidePanelWidth(
+        screenWidth, (screenWidth * 0.65).clamp(300.0, 520.0));
     final bg = isDark ? AppColors.darkSurface : AppColors.white;
     final borderColor =
         isDark ? AppColors.darkBorder : const Color(0xFFEEEEEE);
@@ -179,15 +182,7 @@ class _TenderMovementsPanelState extends State<TenderMovementsPanel> {
                               ],
                             ),
                           ),
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.close_rounded),
-                            iconSize: 20,
-                            color: textSecondary,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                                minWidth: 32, minHeight: 32),
-                          ),
+                          AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                         ],
                       ),
                     ),

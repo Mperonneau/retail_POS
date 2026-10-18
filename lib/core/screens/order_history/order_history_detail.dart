@@ -8,6 +8,7 @@ import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
 import '../../widgets/payment_link_details_sheet.dart';
 import '../../widgets/payment_method_block.dart';
+import '../../widgets/app_close_button.dart';
 
 bool _showServiceChargeRow(OrderHistoryRecord record) {
   if (record.serviceChargePercent <= 0) return false;
@@ -30,10 +31,7 @@ class OrderHistoryDetailPage extends StatelessWidget {
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
       appBar: AppBar(
         title: Text(record.receiptNumber, style: AppTextStyles.h3()),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: AppCloseButton(onPressed: () => Navigator.of(context).pop()),
         actions: [
           _ActionBtn(
             icon: Icons.share_outlined,
@@ -374,13 +372,7 @@ class OrderHistoryDetailContent extends StatelessWidget {
                 tooltip: 'Imprimer',
               ),
               if (onClose != null)
-                IconButton(
-                  onPressed: onClose,
-                  icon: Icon(Icons.close,
-                      size: 18,
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray),
-                  tooltip: 'Fermer',
-                ),
+                AppCloseButton(onPressed: onClose),
             ],
           ),
         ),

@@ -14,6 +14,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import 'customer_form_screen.dart';
 import 'customer_payment_modal.dart';
+import '../../widgets/app_close_button.dart';
 
 // ─── Right-side Detail Panel ──────────────────────────────────────────────────
 
@@ -312,16 +313,7 @@ class _AppModal extends StatelessWidget {
                     ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                 ),
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.close, size: 16),
-                    color: isDark ? AppColors.coolGray : AppColors.darkGray,
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
+                AppCloseButton(onPressed: () => Navigator.pop(context)),
               ]),
               const SizedBox(height: 12),
               Divider(
@@ -1099,16 +1091,7 @@ class _DialogHeader extends StatelessWidget {
           ),
           const SizedBox(width: 4),
         ],
-        SizedBox(
-          width: 28,
-          height: 28,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: const Icon(Icons.close, size: 16),
-            color: isDark ? AppColors.coolGray : AppColors.darkGray,
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
+        AppCloseButton(onPressed: () => Navigator.pop(context)),
       ]),
     );
   }
@@ -1263,17 +1246,7 @@ class _PanelHeader extends StatelessWidget {
               tooltip: 'Modifier le client',
             ),
           ),
-          SizedBox(
-            width: 30,
-            height: 30,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: Icon(Icons.close, size: 16),
-              color: isDark ? AppColors.coolGray : AppColors.darkGray,
-              onPressed: onClose,
-              tooltip: 'Fermer',
-            ),
-          ),
+          AppCloseButton(onPressed: onClose),
         ],
       ),
     );

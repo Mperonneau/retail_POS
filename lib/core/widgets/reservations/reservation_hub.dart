@@ -17,6 +17,7 @@ import '../empty_state.dart';
 import '../table_picker_modal.dart';
 import 'preorder_menu_picker_sheet.dart';
 import 'preorder_table.dart';
+import '../app_close_button.dart';
 
 enum _ResFilter { all, today, upcoming, confirmed, pending }
 
@@ -1386,10 +1387,7 @@ class _ReservationDrawerContentState
                   ),
                   if (!_isCreate && r != null) _StatusPill(status: r.status),
                   const SizedBox(width: 4),
-                  IconButton(
-                    icon: Icon(Icons.close, color: muted),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                 ],
               ),
             ),

@@ -17,6 +17,7 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_input.dart';
 import '../../core/widgets/payment_success_panel.dart';
 import '../models/retail_cart_entry.dart';
+import '../../core/widgets/app_close_button.dart';
 
 /// Opens the retail checkout slide-over (desktop) / near-full-width (narrow).
 Future<void> showRetailCheckoutDialog(
@@ -45,7 +46,7 @@ Future<void> showRetailCheckoutDialog(
     ),
     pageBuilder: (ctx, _, __) {
       final w = MediaQuery.sizeOf(ctx).width;
-      final panelW = w < 600 ? w * 0.98 : 480.0;
+      final panelW = AppConstants.sidePanelWidth(w, 480.0);
       return Align(
         alignment: Alignment.centerRight,
         child: SafeArea(
@@ -518,11 +519,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               ),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                    onPressed: _submitting ? null : _closeShell,
-                  ),
+                  AppCloseButton(onPressed: _submitting ? null : _closeShell),
                   Expanded(
                     child: Text(
                       _stepTitle,

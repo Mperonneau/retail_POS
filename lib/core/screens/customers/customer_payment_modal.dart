@@ -9,6 +9,7 @@ import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
 import '../../widgets/payment_receipt_dialogs.dart';
+import '../../widgets/app_close_button.dart';
 
 // ── Payment method enum ────────────────────────────────────────────────────────
 
@@ -250,16 +251,7 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
               ),
             ),
             const SizedBox(width: 6),
-            SizedBox(
-              width: 26,
-              height: 26,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.close, size: 15),
-                color: isDark ? AppColors.coolGray : AppColors.darkGray,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
+            AppCloseButton(onPressed: () => Navigator.pop(context)),
           ]),
         ),
         Divider(height: 1, color: dividerColor),

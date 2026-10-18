@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'app_close_button.dart';
 
 /// 2D symbologies we never treat as a product barcode line.
 bool _isBlockedProductBarcodeFormat(BarcodeFormat format) {
@@ -119,11 +120,7 @@ class _BarcodeScanDialogState extends State<_BarcodeScanDialog> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      tooltip: 'Fermer',
-                      onPressed: () => Navigator.of(context).pop<String?>(),
-                    ),
+                    AppCloseButton(onPressed: () => Navigator.of(context).pop<String?>()),
                     Expanded(
                       child: Text(
                         'Scanner le code-barres',

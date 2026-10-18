@@ -14,6 +14,7 @@ import '../../utils/input_formatters.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/payment_method_block.dart';
 import 'order_history_detail.dart';
+import '../../widgets/app_close_button.dart';
 
 const int _kPageSize = 10;
 
@@ -1976,12 +1977,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   ),
                 ],
                 if (showInlineShareActions)
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: onClose,
-                    tooltip: 'Fermer',
-                    style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
-                  ),
+                  AppCloseButton(onPressed: onClose),
               ],
             ),
           ),

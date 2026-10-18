@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
+import 'app_close_button.dart';
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -310,10 +311,7 @@ class _MergeTableSheetState extends State<_MergeTableSheet> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.close, size: 20, color: muted),
-                  onPressed: () => Navigator.pop(context),
-                ),
+                AppCloseButton(onPressed: () => Navigator.pop(context)),
               ],
             ),
           ),

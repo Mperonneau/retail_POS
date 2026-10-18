@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/app_close_button.dart';
 
 // ─── Entry function ───────────────────────────────────────────────────────────
 
@@ -294,11 +295,7 @@ class _ModalHeader extends StatelessWidget {
               tooltip: 'Retour',
             )
           else
-            IconButton(
-              onPressed: onClose,
-              icon: const Icon(Icons.close_rounded),
-              color: mutedColor,
-            ),
+            AppCloseButton(onPressed: onClose),
         ],
       ),
     );
