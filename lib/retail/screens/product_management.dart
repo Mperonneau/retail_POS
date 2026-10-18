@@ -97,9 +97,58 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
             vertical: AppConstants.spacing24,
           );
 
+          final countBadge = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.primaryBlue.withValues(alpha: 0.25)
+                  : AppColors.lightBlue.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.skyBlue.withValues(alpha: 0.35)
+                    : AppColors.primaryBlue.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Text(
+              '${allProducts.length} produit${allProducts.length == 1 ? '' : 's'}',
+              style: AppTextStyles.caption(
+                color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+              ).copyWith(fontWeight: FontWeight.w600),
+            ),
+          );
+          final addButton = AppButton(
+            label: 'Ajouter un produit',
+            onPressed: () => _showProductSheet(context, null),
+            icon: Icons.add,
+            fullWidth: false,
+            compact: true,
+            width: narrow ? null : 148,
+          );
+
           final listSection = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (narrow)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Produits',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.h1(
+                          color: isDark
+                              ? AppColors.warmWhite
+                              : AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    addButton,
+                  ],
+                )
+              else
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -117,43 +166,11 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                           ),
                         ),
                         const SizedBox(width: AppConstants.spacing12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.primaryBlue.withValues(alpha: 0.25)
-                                : AppColors.lightBlue.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.skyBlue.withValues(alpha: 0.35)
-                                  : AppColors.primaryBlue
-                                      .withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Text(
-                            '${allProducts.length} produit${allProducts.length == 1 ? '' : 's'}',
-                            style: AppTextStyles.caption(
-                              color: isDark
-                                  ? AppColors.skyBlue
-                                  : AppColors.primaryBlue,
-                            ).copyWith(fontWeight: FontWeight.w600),
-                          ),
-                        ),
+                        countBadge,
                       ],
                     ),
                   ),
-                  AppButton(
-                    label: 'Ajouter un produit',
-                    onPressed: () => _showProductSheet(context, null),
-                    icon: Icons.add,
-                    fullWidth: false,
-                    compact: true,
-                    width: 148,
-                  ),
+                  addButton,
                   if (filtered.isNotEmpty && !narrow) ...[
                     const SizedBox(width: AppConstants.spacing8),
                     _ProductTopPagination(
@@ -171,11 +188,23 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                 ],
               ),
               const SizedBox(height: AppConstants.spacing8),
-              Text(
-                'Gérez le catalogue, les prix et les stocks.',
-                style: AppTextStyles.caption(
-                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
-                ),
+              Row(
+                children: [
+                  if (narrow) ...[
+                    countBadge,
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      'Gérez le catalogue, les prix et les stocks.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption(
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppConstants.spacing16),
               _ProductFilterRow(
@@ -494,9 +523,23 @@ class _ProductFilterRow extends StatelessWidget {
     final searchField = TextField(
       controller: searchController,
       onChanged: onSearchChanged,
+      style: AppTextStyles.body(
+        color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+      ).copyWith(fontSize: narrow ? 13 : null),
       decoration: InputDecoration(
-        hintText: 'Rechercher par nom, catégorie, code-barres…',
-        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        hintText: narrow
+            ? 'Nom, catégorie, code-barres…'
+            : 'Rechercher par nom, catégorie, code-barres…',
+        hintStyle: narrow
+            ? AppTextStyles.caption(
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
+              )
+            : null,
+        prefixIcon: Icon(Icons.search_rounded, size: narrow ? 16 : 20),
+        prefixIconConstraints: BoxConstraints(
+          minWidth: narrow ? 34 : 40,
+          minHeight: narrow ? 32 : 40,
+        ),
         suffixIcon: searchController.text.isNotEmpty
             ? IconButton(
                 tooltip: 'Effacer la recherche',
@@ -504,11 +547,15 @@ class _ProductFilterRow extends StatelessWidget {
                   searchController.clear();
                   onSearchChanged('');
                 },
-                icon: Icon(Icons.close_rounded, size: 20, color: clearIconColor),
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: narrow ? 16 : 20,
+                  color: clearIconColor,
+                ),
                 visualDensity: VisualDensity.compact,
                 style: IconButton.styleFrom(
                   padding: const EdgeInsets.all(8),
-                  minimumSize: const Size(36, 36),
+                  minimumSize: const Size(32, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               )
@@ -516,9 +563,9 @@ class _ProductFilterRow extends StatelessWidget {
         filled: true,
         fillColor: fill,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 11,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: narrow ? 10 : 16,
+          vertical: narrow ? 6 : 11,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(999),
@@ -543,19 +590,23 @@ class _ProductFilterRow extends StatelessWidget {
       fill: fill,
       borderColor: borderColor,
       active: active,
-      label: categoryFilter ?? 'Toutes les catégories',
+      label: categoryFilter ??
+          (narrow ? 'Catégories' : 'Toutes les catégories'),
+      compact: narrow,
       categoryFilter: categoryFilter,
       categories: categories,
       onChanged: onCategoryChanged,
     );
 
     if (narrow) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      return Row(
         children: [
-          catChip,
-          const SizedBox(height: AppConstants.spacing8),
-          searchField,
+          Expanded(child: searchField),
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 156),
+            child: catChip,
+          ),
         ],
       );
     }
@@ -578,6 +629,7 @@ class _ProductCategoryFilterButton extends StatelessWidget {
     required this.borderColor,
     required this.active,
     required this.label,
+    this.compact = false,
     required this.categoryFilter,
     required this.categories,
     required this.onChanged,
@@ -588,6 +640,7 @@ class _ProductCategoryFilterButton extends StatelessWidget {
   final Color borderColor;
   final bool active;
   final String label;
+  final bool compact;
   final String? categoryFilter;
   final List<String> categories;
   final ValueChanged<String?> onChanged;
@@ -609,23 +662,38 @@ class _ProductCategoryFilterButton extends StatelessWidget {
       onTap: () => _openMenu(context),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 10 : 14,
+          vertical: compact ? 6 : 9,
+        ),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: border),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
           children: [
             Icon(Icons.category_outlined, size: 16, color: textColor),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: AppTextStyles.caption(color: textColor).copyWith(
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+            if (compact)
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.caption(color: textColor).copyWith(
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              )
+            else
+              Text(
+                label,
+                style: AppTextStyles.caption(color: textColor).copyWith(
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                ),
               ),
-            ),
             const SizedBox(width: 4),
             Icon(Icons.expand_more_rounded, size: 16, color: textColor),
             if (active) ...[
