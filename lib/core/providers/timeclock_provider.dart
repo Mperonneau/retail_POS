@@ -206,11 +206,11 @@ class TimeclockNotifier extends StateNotifier<List<TimeclockEntry>> {
     // Employees to seed (mirrors StaffDirectoryProvider seed)
     const staff = [
       ('seed_1', 'Jean-Marc Dupont', StaffRole.admin),
-      ('seed_2', 'Marie-Carmel Joseph', StaffRole.waiter),
-      ('seed_3', 'Pierre Laguerre', StaffRole.waiter),
+      ('seed_2', 'Marie-Carmel Joseph', StaffRole.seller),
+      ('seed_3', 'Pierre Laguerre', StaffRole.seller),
       ('seed_4', 'Roseline Janvier', StaffRole.cashier),
-      ('seed_6', 'Claudine Bernard', StaffRole.waiter),
-      ('seed_7', 'Sophie Laurent', StaffRole.reception),
+      ('seed_6', 'Claudine Bernard', StaffRole.seller),
+      ('seed_7', 'Sophie Laurent', StaffRole.seller),
     ];
 
     // Generate 14 days of past data (skip Sundays)

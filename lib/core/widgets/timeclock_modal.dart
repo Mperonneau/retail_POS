@@ -129,8 +129,8 @@ class _TimeclockDialogState extends ConsumerState<TimeclockDialog> {
 
   StaffRole? _demoRole(String pin) => switch (pin) {
         '1234' => StaffRole.cashier,
-        '1111' => StaffRole.waiter,
-        '2222' => StaffRole.manager,
+        '1111' => StaffRole.seller,
+        '2222' => StaffRole.owner,
         '3333' => StaffRole.admin,
         '4444' => StaffRole.kitchen,
         '8888' => StaffRole.reception,
@@ -144,6 +144,8 @@ class _TimeclockDialogState extends ConsumerState<TimeclockDialog> {
         StaffRole.admin => 'Admin',
         StaffRole.kitchen => 'Cuisine',
         StaffRole.reception => 'Sophie (Reception)',
+        StaffRole.owner => 'Propriétaire',
+        StaffRole.seller => 'Vendeur',
       };
 
   // ── Clock actions ───────────────────────────────────────────────────────────

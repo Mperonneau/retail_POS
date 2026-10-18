@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/staff_directory_entry.dart';
-import '../../core/models/staff_role.dart';
 import '../../core/permissions/default_role_permissions.dart';
 import '../../core/permissions/permission_id.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/permission_settings_provider.dart';
+import '../../core/providers/staff_session_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
@@ -23,8 +23,15 @@ class StaffPermissionPanel extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final module = ref.watch(authProvider.select((a) => a.module));
     final settings = ref.watch(permissionSettingsProvider);
-    final base = defaultPermissionsForRole(module, entry.role);
+    final session = ref.watch(staffSessionProvider);
+    final base = settings.roleDefaults[module]?[entry.role] ??
+        defaultPermissionsForRole(module, entry.role);
     final userOv = settings.userOverrides[entry.id] ?? {};
+    final ownerPower = settings.ownerPowerIds.contains(entry.id);
+    final canGrant = session != null &&
+        (roleCanGrantOwnerPower(session.role) ||
+            settings.ownerPowerIds.contains(session.employeeId));
+    final showOwnerGrant = entry.role == StaffRole.seller && canGrant;
 
     return SafeArea(
       child: Material(
@@ -86,11 +93,34 @@ class StaffPermissionPanel extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacing16),
+                  if (showOwnerGrant) ...[
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Droits du propriétaire',
+                        style: AppTextStyles.body(),
+                      ),
+                      subtitle: Text(
+                        'Mêmes droits que le propriétaire. Un propriétaire ou un admin peut l\'activer.',
+                        style: AppTextStyles.caption(
+                          color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                        ),
+                      ),
+                      value: ownerPower,
+                      activeThumbColor: AppColors.primaryBlue,
+                      onChanged: (v) => ref
+                          .read(permissionSettingsProvider.notifier)
+                          .setOwnerPower(entry.id, v),
+                    ),
+                    const SizedBox(height: AppConstants.spacing8),
+                  ],
                   for (final p in PermissionId.values)
                     _PermissionRow(
                       id: p,
+                      module: module,
                       roleDefault: base[p] ?? false,
-                      permissionOverride: userOv[p],
+                      permissionOverride: ownerPower ? true : userOv[p],
+                      locked: ownerPower,
                       onSetExplicit: (v) => ref
                           .read(permissionSettingsProvider.notifier)
                           .setUserOverride(entry.id, p, v),
@@ -105,9 +135,10 @@ class StaffPermissionPanel extends ConsumerWidget {
               padding: const EdgeInsets.all(AppConstants.spacing16),
               child: OutlinedButton(
                 onPressed: () {
-                  ref
-                      .read(permissionSettingsProvider.notifier)
-                      .clearUserOverrides(entry.id);
+                  final notifier =
+                      ref.read(permissionSettingsProvider.notifier);
+                  notifier.clearUserOverrides(entry.id);
+                  notifier.setOwnerPower(entry.id, false);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Exceptions effacées — les droits du rôle s\'appliquent')),
@@ -126,17 +157,21 @@ class StaffPermissionPanel extends ConsumerWidget {
 
 class _PermissionRow extends StatelessWidget {
   final PermissionId id;
+  final ActiveModule module;
   final bool roleDefault;
   final bool? permissionOverride;
+  final bool locked;
   final ValueChanged<bool> onSetExplicit;
   final VoidCallback onReset;
 
   const _PermissionRow({
     required this.id,
+    required this.module,
     required this.roleDefault,
     required this.permissionOverride,
     required this.onSetExplicit,
     required this.onReset,
+    this.locked = false,
   });
 
   @override
@@ -148,11 +183,16 @@ class _PermissionRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppConstants.spacing4),
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        title: Text(permissionLabel(id), style: AppTextStyles.body()),
+        title: Text(
+          permissionLabel(id, module: module),
+          style: AppTextStyles.body(),
+        ),
         subtitle: Text(
-          permissionOverride == null
-              ? 'Droit du rôle : ${roleDefault ? 'On' : 'Off'}'
-              : 'Exception personnalisée',
+          locked
+              ? 'Droit du propriétaire'
+              : permissionOverride == null
+                  ? 'Droit du rôle : ${roleDefault ? 'On' : 'Off'}'
+                  : 'Exception personnalisée',
           style: AppTextStyles.caption(
             color: isDark ? AppColors.coolGray : AppColors.darkGray,
           ),
@@ -160,14 +200,14 @@ class _PermissionRow extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (permissionOverride != null)
+            if (permissionOverride != null && !locked)
               TextButton(
                 onPressed: onReset,
                 child: const Text('Réinitialiser'),
               ),
             Switch(
               value: effective,
-              onChanged: (v) => onSetExplicit(v),
+              onChanged: locked ? null : (v) => onSetExplicit(v),
               activeThumbColor: AppColors.primaryBlue,
             ),
           ],
