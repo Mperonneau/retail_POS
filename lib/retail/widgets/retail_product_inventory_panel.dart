@@ -1042,30 +1042,6 @@ class _InventoryActionBar extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, c) {
             final narrow = c.maxWidth < 420;
-            if (narrow) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppButton(
-                    label: 'Ajouter du stock',
-                    icon: Icons.add_circle_outline,
-                    onPressed: onAddStock,
-                    fullWidth: true,
-                    compact: true,
-                  ),
-                  const SizedBox(height: AppConstants.spacing8),
-                  AppButton(
-                    label: 'Ajuster le solde',
-                    icon: Icons.tune_rounded,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: onAdjust,
-                    fullWidth: true,
-                    compact: true,
-                  ),
-                ],
-              );
-            }
             return Row(
               children: [
                 Expanded(
@@ -1074,7 +1050,8 @@ class _InventoryActionBar extends StatelessWidget {
                     icon: Icons.add_circle_outline,
                     onPressed: onAddStock,
                     fullWidth: true,
-                    compact: true,
+                    compact: !narrow,
+                    dense: narrow,
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing8),
@@ -1085,7 +1062,8 @@ class _InventoryActionBar extends StatelessWidget {
                     variant: AppButtonVariant.secondary,
                     onPressed: onAdjust,
                     fullWidth: true,
-                    compact: true,
+                    compact: !narrow,
+                    dense: narrow,
                   ),
                 ),
               ],
