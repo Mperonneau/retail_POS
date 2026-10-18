@@ -126,7 +126,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
             width: narrow ? null : 148,
           );
 
-          final listSection = Column(
+          final header = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (narrow)
@@ -222,7 +222,12 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                   _currentPage = 1;
                 }),
               ),
-              const SizedBox(height: AppConstants.spacing12),
+            ],
+          );
+
+          final listBody = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               AppCard(
                 padding: EdgeInsets.zero,
                 child: filtered.isEmpty
@@ -328,9 +333,31 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
             ],
           );
 
-          return SingleChildScrollView(
-            padding: pad,
-            child: listSection,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  pad.left,
+                  pad.top,
+                  pad.right,
+                  0,
+                ),
+                child: header,
+              ),
+              const SizedBox(height: AppConstants.spacing12),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    pad.left,
+                    0,
+                    pad.right,
+                    pad.bottom,
+                  ),
+                  child: listBody,
+                ),
+              ),
+            ],
           );
         },
       ),
