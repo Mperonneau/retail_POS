@@ -23,7 +23,7 @@ class HelpPage extends StatelessWidget {
     (
       title: 'Favoris et compte',
       body:
-          'Le cœur enregistre une boutique sur cet appareil. Le compte relie vos demandes à votre numéro pour les revoir plus tard.',
+          'Le cœur enregistre une boutique sur cet appareil. Le compte relie vos demandes à votre numéro : un code est envoyé sur ce téléphone pour vous connecter.',
     ),
   ];
 

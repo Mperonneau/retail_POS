@@ -10,6 +10,9 @@ Env:
   MONCASH_CLIENT_ID
   MONCASH_SECRET
   MONCASH_BASE_URL        default https://moncashbutton.digicelgroup.com
+  TWILIO_ACCOUNT_SID      SMS login codes (with TWILIO_AUTH_TOKEN)
+  TWILIO_AUTH_TOKEN
+  TWILIO_FROM             sending number, or TWILIO_MESSAGING_SERVICE_SID
   PUBLIC_BASE_URL         success/cancel pages (Render sets RENDER_EXTERNAL_URL)
   STOREFRONT_DATA_DIR     vitrine catalog, requests and photos (default ./.data)
   DAY_USD_RATE            HTG per USD when a shop has no rate (default 135)
@@ -699,6 +702,18 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, STORE.publish(self._shop_key(), body))
         elif parts == ["shop", "requests"]:
             self._json(200, STORE.create_shop_request(self._shop_key(), self._read_json()))
+        elif parts == ["account", "code"]:
+            body = self._read_json()
+            self._json(200, STORE.request_code(body.get("phone"), body.get("country")))
+        elif parts == ["account", "verify"]:
+            body = self._read_json()
+            self._json(200, STORE.verify_code(body.get("phone"), body.get("country"), body.get("code")))
+        elif parts == ["account", "register"]:
+            body = self._read_json()
+            self._json(
+                200,
+                STORE.register_account(body.get("signup_token"), body.get("name"), body.get("email")),
+            )
         elif parts == ["account", "login"]:
             body = self._read_json()
             self._json(200, STORE.open_account(body.get("phone"), body.get("pin"), body.get("name")))

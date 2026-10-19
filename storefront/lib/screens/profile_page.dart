@@ -5,8 +5,18 @@ import 'package:retail_pos/core/theme/app_text_styles.dart';
 import 'package:retail_pos/core/widgets/app_button.dart';
 import 'package:retail_pos/core/widgets/app_input.dart';
 
+import '../countries.dart';
 import '../session.dart';
 import '../widgets.dart';
+
+String _accountLine(Session session) {
+  final parts = <String>[
+    if (session.phone.isNotEmpty) session.phone,
+    if (countryName(session.country).isNotEmpty) countryName(session.country),
+    if (session.email.isNotEmpty) session.email,
+  ];
+  return parts.join(' · ');
+}
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -45,7 +55,7 @@ class ProfilePage extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         session.isLoggedIn
-                            ? session.phone
+                            ? _accountLine(session)
                             : 'Connectez-vous pour retrouver vos commandes, ou continuez en invité.',
                         style: AppTextStyles.body(color: AppColors.darkGray),
                       ),

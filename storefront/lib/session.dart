@@ -11,12 +11,16 @@ class Session extends ChangeNotifier {
   static const _tokenKey = 'vitrine.account.token';
   static const _nameKey = 'vitrine.account.name';
   static const _phoneKey = 'vitrine.account.phone';
+  static const _countryKey = 'vitrine.account.country';
+  static const _emailKey = 'vitrine.account.email';
   static const _ordersKey = 'vitrine.local.orders';
 
   final _api = StorefrontApi();
   String token = '';
   String name = '';
   String phone = '';
+  String country = '';
+  String email = '';
   List<String> localOrderIds = [];
 
   bool get isLoggedIn => token.isNotEmpty && name.isNotEmpty;
@@ -26,8 +30,46 @@ class Session extends ChangeNotifier {
     token = prefs.getString(_tokenKey) ?? '';
     name = prefs.getString(_nameKey) ?? '';
     phone = prefs.getString(_phoneKey) ?? '';
+    country = prefs.getString(_countryKey) ?? '';
+    email = prefs.getString(_emailKey) ?? '';
     localOrderIds = prefs.getStringList(_ordersKey) ?? [];
     notifyListeners();
+  }
+
+  Future<void> requestCode({
+    required String phoneNumber,
+    required String countryCode,
+  }) {
+    return _api.requestCode(phone: phoneNumber, country: countryCode);
+  }
+
+  Future<CodeVerification> verifyCode({
+    required String phoneNumber,
+    required String countryCode,
+    required String code,
+  }) async {
+    final result = await _api.verifyCode(
+      phone: phoneNumber,
+      country: countryCode,
+      code: code,
+    );
+    final account = result.account;
+    if (result.registered && account != null) await _remember(account);
+    return result;
+  }
+
+  Future<void> register({
+    required String signupToken,
+    required String displayName,
+    required String email,
+  }) async {
+    await _remember(
+      await _api.registerAccount(
+        signupToken: signupToken,
+        name: displayName,
+        email: email,
+      ),
+    );
   }
 
   Future<void> login({
@@ -35,22 +77,33 @@ class Session extends ChangeNotifier {
     required String pin,
     String displayName = '',
   }) async {
-    final account = await _api.login(phone: phoneNumber, pin: pin, name: displayName);
+    await _remember(await _api.login(phone: phoneNumber, pin: pin, name: displayName));
+  }
+
+  Future<void> _remember(CustomerAccount account) async {
     token = account.token;
     name = account.name;
     phone = account.phone;
+    country = account.country;
+    email = account.email;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
     await prefs.setString(_nameKey, name);
     await prefs.setString(_phoneKey, phone);
+    await prefs.setString(_countryKey, country);
+    await prefs.setString(_emailKey, email);
     notifyListeners();
   }
 
   Future<void> rename(String displayName) async {
     final account = await _api.renameAccount(token, displayName);
     name = account.name;
+    if (account.country.isNotEmpty) country = account.country;
+    email = account.email;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_nameKey, name);
+    await prefs.setString(_countryKey, country);
+    await prefs.setString(_emailKey, email);
     notifyListeners();
   }
 
@@ -58,10 +111,14 @@ class Session extends ChangeNotifier {
     token = '';
     name = '';
     phone = '';
+    country = '';
+    email = '';
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_nameKey);
     await prefs.remove(_phoneKey);
+    await prefs.remove(_countryKey);
+    await prefs.remove(_emailKey);
     notifyListeners();
   }
 

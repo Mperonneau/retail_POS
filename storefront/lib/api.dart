@@ -33,13 +33,48 @@ class StorefrontApi {
       'pin': pin,
       'name': name,
     });
-    final account =
-        (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
-    return CustomerAccount(
-      token: body['token']?.toString() ?? '',
-      name: account['name']?.toString() ?? '',
-      phone: account['phone']?.toString() ?? phone,
+    return CustomerAccount.fromBody(body, fallbackPhone: phone);
+  }
+
+  Future<void> requestCode({
+    required String phone,
+    required String country,
+  }) async {
+    await _post('/storefront/account/code', {
+      'phone': phone,
+      'country': country,
+    });
+  }
+
+  Future<CodeVerification> verifyCode({
+    required String phone,
+    required String country,
+    required String code,
+  }) async {
+    final body = await _post('/storefront/account/verify', {
+      'phone': phone,
+      'country': country,
+      'code': code,
+    });
+    final registered = body['registered'] == true;
+    return CodeVerification(
+      registered: registered,
+      signupToken: body['signup_token']?.toString() ?? '',
+      account: registered ? CustomerAccount.fromBody(body, fallbackPhone: phone) : null,
     );
+  }
+
+  Future<CustomerAccount> registerAccount({
+    required String signupToken,
+    required String name,
+    required String email,
+  }) async {
+    final body = await _post('/storefront/account/register', {
+      'signup_token': signupToken,
+      'name': name,
+      'email': email,
+    });
+    return CustomerAccount.fromBody(body);
   }
 
   Future<CustomerAccount> renameAccount(String token, String name) async {
@@ -53,13 +88,7 @@ class StorefrontApi {
         body: jsonEncode({'name': name}),
       ),
     );
-    final account =
-        (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
-    return CustomerAccount(
-      token: token,
-      name: account['name']?.toString() ?? name,
-      phone: account['phone']?.toString() ?? '',
-    );
+    return CustomerAccount.fromBody(body, fallbackToken: token);
   }
 
   Future<List<OrderSummary>> orders(String token) async {
@@ -330,11 +359,44 @@ class CustomerAccount {
     required this.token,
     required this.name,
     required this.phone,
+    this.country = '',
+    this.email = '',
   });
+
+  factory CustomerAccount.fromBody(
+    Map<String, dynamic> body, {
+    String fallbackToken = '',
+    String fallbackPhone = '',
+  }) {
+    final account = (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final token = body['token']?.toString() ?? '';
+    final phone = account['phone']?.toString() ?? '';
+    return CustomerAccount(
+      token: token.isEmpty ? fallbackToken : token,
+      name: account['name']?.toString() ?? '',
+      phone: phone.isEmpty ? fallbackPhone : phone,
+      country: account['country']?.toString() ?? '',
+      email: account['email']?.toString() ?? '',
+    );
+  }
 
   final String token;
   final String name;
   final String phone;
+  final String country;
+  final String email;
+}
+
+class CodeVerification {
+  const CodeVerification({
+    required this.registered,
+    required this.signupToken,
+    required this.account,
+  });
+
+  final bool registered;
+  final String signupToken;
+  final CustomerAccount? account;
 }
 
 class OrderSummary {

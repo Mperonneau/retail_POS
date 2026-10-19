@@ -20,6 +20,7 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -248,8 +249,86 @@ def _phone_digits(value: object) -> str:
     return digits
 
 
+# iso, calling code, national length, required prefixes (NANP), French name.
+# The country the visitor picks is stored on the account at registration.
+LOGIN_COUNTRIES: tuple[tuple[str, str, int, int, tuple[str, ...], str], ...] = (
+    ("HT", "509", 8, 8, (), "Haïti"),
+    ("AR", "54", 10, 10, (), "Argentine"),
+    ("BS", "1", 10, 10, ("242",), "Bahamas"),
+    ("BE", "32", 8, 9, (), "Belgique"),
+    ("BR", "55", 10, 11, (), "Brésil"),
+    ("CA", "1", 10, 10, (), "Canada"),
+    ("CL", "56", 9, 9, (), "Chili"),
+    ("CO", "57", 10, 10, (), "Colombie"),
+    ("CU", "53", 8, 8, (), "Cuba"),
+    ("DE", "49", 10, 11, (), "Allemagne"),
+    ("DO", "1", 10, 10, ("809", "829", "849"), "République dominicaine"),
+    ("ES", "34", 9, 9, (), "Espagne"),
+    ("FR", "33", 9, 9, (), "France"),
+    ("GB", "44", 10, 10, (), "Royaume-Uni"),
+    ("GF", "594", 9, 9, (), "Guyane"),
+    ("GP", "590", 9, 9, (), "Guadeloupe"),
+    ("GY", "592", 7, 7, (), "Guyana"),
+    ("IT", "39", 9, 10, (), "Italie"),
+    ("JM", "1", 10, 10, ("658", "876"), "Jamaïque"),
+    ("MF", "590", 9, 9, (), "Saint-Martin"),
+    ("MQ", "596", 9, 9, (), "Martinique"),
+    ("MX", "52", 10, 10, (), "Mexique"),
+    ("NL", "31", 9, 9, (), "Pays-Bas"),
+    ("PA", "507", 7, 8, (), "Panama"),
+    ("PE", "51", 9, 9, (), "Pérou"),
+    ("PR", "1", 10, 10, ("787", "939"), "Porto Rico"),
+    ("PT", "351", 9, 9, (), "Portugal"),
+    ("BL", "590", 9, 9, (), "Saint-Barthélemy"),
+    ("CH", "41", 9, 9, (), "Suisse"),
+    ("SR", "597", 6, 7, (), "Suriname"),
+    ("TT", "1", 10, 10, ("868",), "Trinité-et-Tobago"),
+    ("US", "1", 10, 10, (), "États-Unis"),
+    ("VE", "58", 10, 10, (), "Venezuela"),
+)
+_LOGIN_COUNTRY = {row[0]: row for row in LOGIN_COUNTRIES}
+
+
+def _login_phone(phone: object, country: object) -> tuple[str, str, str]:
+    """Return (iso, e164, digits) for a national number and a chosen country."""
+    iso = str(country or "").strip().upper()
+    row = _LOGIN_COUNTRY.get(iso)
+    if row is None:
+        raise StorefrontError(400, "Choisissez un pays.")
+    _, dial, low, high, prefixes, _name = row
+    national = re.sub(r"\D", "", str(phone or ""))
+    if national.startswith(dial) and low <= len(national) - len(dial) <= high:
+        national = national[len(dial) :]
+    if national.startswith("0") and low <= len(national) - 1 <= high:
+        national = national[1:]
+    if not (low <= len(national) <= high) or (prefixes and not national.startswith(prefixes)):
+        raise StorefrontError(400, "Indiquez un numéro de téléphone valide.")
+    digits = f"{dial}{national}"
+    if len(digits) > 15:
+        raise StorefrontError(400, "Indiquez un numéro de téléphone valide.")
+    return iso, f"+{digits}", digits
+
+
+def _email(value: object) -> str:
+    text = _text(value, 120)
+    if not text:
+        return ""
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", text):
+        raise StorefrontError(400, "Indiquez un e-mail valide, ou laissez le champ vide.")
+    return text
+
+
 def _pin_hash(phone_digits: str, pin: str) -> str:
     return hashlib.sha256(f"{phone_digits}:{pin}".encode()).hexdigest()
+
+
+def _deliver_login_code(e164: str, message: str) -> None:
+    from sms import SmsError, send_sms
+
+    try:
+        send_sms(e164, message)
+    except SmsError as exc:
+        raise StorefrontError(exc.status, exc.message) from exc
 
 
 def _money(value: object) -> float:
@@ -341,6 +420,9 @@ class StorefrontStore:
         self.requests: dict[str, dict] = {}
         self.accounts: dict[str, dict] = {}
         self.tokens: dict[str, str] = {}
+        # Codes and signup tokens stay in memory. A restart invalidates them.
+        self._codes: dict[str, dict] = {}
+        self._signups: dict[str, dict] = {}
         self._load()
 
     # ---- persistence -------------------------------------------------------
@@ -747,6 +829,99 @@ class StorefrontStore:
             view = self._account_view(account)
         return {"token": token, "account": view}
 
+    def request_code(self, phone: object, country: object, *, deliver=None) -> dict:
+        """Send a one-time code. The reply does not say if the number is registered."""
+        _iso, e164, digits = _login_phone(phone, country)
+        now = time.time()
+        with self._lock:
+            previous = self._codes.get(digits)
+            if previous and now - float(previous.get("sent_at") or 0) < 30:
+                raise StorefrontError(429, "Patientez un instant avant de redemander un code.")
+            code = f"{secrets.randbelow(1_000_000):06d}"
+            self._codes[digits] = {
+                "hash": hashlib.sha256(f"{digits}:{code}".encode()).hexdigest(),
+                "expires": now + 600,
+                "attempts": 0,
+                "sent_at": now,
+                "country": _iso,
+                "phone": e164,
+            }
+        sender = deliver or _deliver_login_code
+        try:
+            sender(e164, f"Vitrine : {code} est votre code de connexion. Il expire dans 10 minutes.")
+        except Exception:
+            with self._lock:
+                self._codes.pop(digits, None)
+            raise
+        return {"sent": True}
+
+    def verify_code(self, phone: object, country: object, code: object) -> dict:
+        """Check the code. A known account gets a session; a new number gets a signup token."""
+        _iso, _e164, digits = _login_phone(phone, country)
+        submitted = str(code or "").strip()
+        if not re.fullmatch(r"\d{6}", submitted):
+            raise StorefrontError(400, "Indiquez le code à 6 chiffres.")
+        with self._lock:
+            challenge = self._codes.get(digits)
+            if not challenge or time.time() > float(challenge.get("expires") or 0):
+                self._codes.pop(digits, None)
+                raise StorefrontError(401, "Ce code a expiré. Demandez-en un nouveau.")
+            challenge["attempts"] = int(challenge.get("attempts") or 0) + 1
+            if challenge["attempts"] > 5:
+                self._codes.pop(digits, None)
+                raise StorefrontError(401, "Trop de tentatives. Demandez un nouveau code.")
+            expected = str(challenge.get("hash") or "")
+            actual = hashlib.sha256(f"{digits}:{submitted}".encode()).hexdigest()
+            if not hmac.compare_digest(expected, actual):
+                raise StorefrontError(401, "Code incorrect.")
+            self._codes.pop(digits, None)
+            account = self.accounts.get(digits)
+            if account and _text(account.get("name"), 80):
+                if not account.get("country"):
+                    account["country"] = challenge["country"]
+                account.setdefault("email", "")
+                token = secrets.token_urlsafe(24)
+                self.tokens[hashlib.sha256(token.encode()).hexdigest()] = digits
+                self._save()
+                return {
+                    "registered": True,
+                    "token": token,
+                    "account": self._account_view(account),
+                }
+            signup = secrets.token_urlsafe(24)
+            self._signups[hashlib.sha256(signup.encode()).hexdigest()] = {
+                "digits": digits,
+                "phone": challenge["phone"],
+                "country": challenge["country"],
+                "expires": time.time() + 900,
+            }
+            return {"registered": False, "signup_token": signup}
+
+    def register_account(self, signup_token: object, name: object, email: object = "") -> dict:
+        """Create the account after the phone was confirmed. Country comes from the dial code."""
+        display = _text(name, 80)
+        if len(display) < 2:
+            raise StorefrontError(400, "Indiquez votre nom complet.")
+        mail = _email(email)
+        digest = hashlib.sha256(str(signup_token or "").encode()).hexdigest()
+        with self._lock:
+            pending = self._signups.get(digest)
+            if not pending or time.time() > float(pending.get("expires") or 0):
+                self._signups.pop(digest, None)
+                raise StorefrontError(401, "Cette étape a expiré. Recommencez avec votre numéro.")
+            self._signups.pop(digest, None)
+            digits = pending["digits"]
+            account = self.accounts.get(digits) or {"created_at": int(time.time())}
+            account["phone"] = pending["phone"]
+            account["country"] = pending["country"]
+            account["name"] = display
+            account["email"] = mail
+            self.accounts[digits] = account
+            token = secrets.token_urlsafe(24)
+            self.tokens[hashlib.sha256(token.encode()).hexdigest()] = digits
+            self._save()
+            return {"token": token, "account": self._account_view(account)}
+
     def account_for_token(self, token: str) -> dict:
         with self._lock:
             digits = self.tokens.get(hashlib.sha256((token or "").encode()).hexdigest())
@@ -785,6 +960,8 @@ class StorefrontStore:
         return {
             "name": account.get("name", ""),
             "phone": account.get("phone", ""),
+            "country": account.get("country", ""),
+            "email": account.get("email", ""),
         }
 
     def _order_row(self, request: dict, shops: dict) -> dict:

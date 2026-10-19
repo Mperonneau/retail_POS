@@ -17,6 +17,8 @@ import 'screens/cart_page.dart';
 import 'screens/favorites_page.dart';
 import 'screens/help_page.dart';
 import 'screens/home_page.dart';
+import 'screens/login_code_page.dart';
+import 'screens/login_name_page.dart';
 import 'screens/login_page.dart';
 import 'screens/orders_page.dart';
 import 'screens/profile_page.dart';
@@ -57,6 +59,14 @@ final _router = GoRouter(
         GoRoute(
           path: '/login',
           pageBuilder: (_, state) => storePage(state, const LoginPage()),
+        ),
+        GoRoute(
+          path: '/login/code',
+          pageBuilder: (_, state) => storePage(state, const LoginCodePage()),
+        ),
+        GoRoute(
+          path: '/login/profil',
+          pageBuilder: (_, state) => storePage(state, const LoginNamePage()),
         ),
         GoRoute(
           path: '/cart',

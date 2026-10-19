@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:retail_pos/core/theme/app_colors.dart';
 import 'package:retail_pos/core/theme/app_text_styles.dart';
 import 'package:retail_pos/core/widgets/app_button.dart';
-import 'package:retail_pos/core/widgets/app_input.dart';
 
 import '../api.dart';
+import '../countries.dart';
 import '../session.dart';
 
-/// Phone and a personal code. No SMS is sent: the code is chosen by the customer.
+/// Phone number only. The country flag and calling code sit on the same row.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -18,35 +18,45 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _name = TextEditingController();
   final _phone = TextEditingController();
-  final _pin = TextEditingController();
   bool _busy = false;
   String? _error;
+  late DialCountry _country;
+
+  @override
+  void initState() {
+    super.initState();
+    _country = loginDraft.country;
+    _phone.text = loginDraft.national;
+  }
 
   @override
   void dispose() {
-    _name.dispose();
     _phone.dispose();
-    _pin.dispose();
     super.dispose();
   }
 
+  Future<void> _pickCountry() async {
+    final picked = await showCountryPicker(context, selected: _country.iso);
+    if (picked != null && mounted) setState(() => _country = picked);
+  }
+
   Future<void> _submit() async {
+    final national = _phone.text.trim();
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await Session.instance.login(
-        displayName: _name.text.trim(),
-        phoneNumber: _phone.text.trim(),
-        pin: _pin.text.trim(),
-      );
+      await Session.instance.requestCode(phoneNumber: national, countryCode: _country.iso);
       if (!mounted) return;
-      context.go('/profile');
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      loginDraft
+        ..iso = _country.iso
+        ..national = national
+        ..signupToken = '';
+      context.go('/login/code');
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -60,28 +70,46 @@ class _LoginPageState extends State<LoginPage> {
         Text('Connexion', style: AppTextStyles.h1(color: AppColors.nearBlack)),
         const SizedBox(height: 8),
         Text(
-          'Entrez votre numéro et un code personnel de 4 à 6 chiffres. '
-          'La première fois, le compte est créé. Ensuite, le même code vous reconnecte. '
-          'Vous pouvez aussi commander sans compte.',
+          'Entrez votre numéro de téléphone. Un code vous sera envoyé pour vous connecter.',
           style: AppTextStyles.body(color: AppColors.darkGray),
         ),
         const SizedBox(height: 20),
-        AppInput(label: 'Nom', controller: _name, textInputAction: TextInputAction.next),
-        const SizedBox(height: 12),
-        AppInput(
-          label: 'Téléphone',
+        Text('Téléphone', style: AppTextStyles.inputLabel(color: AppColors.darkGray)),
+        const SizedBox(height: 4),
+        TextField(
           controller: _phone,
           keyboardType: TextInputType.phone,
-          textInputAction: TextInputAction.next,
-        ),
-        const SizedBox(height: 12),
-        AppInput(
-          label: 'Code personnel',
-          controller: _pin,
-          obscureText: true,
-          showToggleObscure: true,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+          textInputAction: TextInputAction.done,
+          enabled: !_busy,
+          onSubmitted: (_) => _busy ? null : _submit(),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s]')),
+            LengthLimitingTextInputFormatter(18),
+          ],
+          style: AppTextStyles.body(color: AppColors.nearBlack),
+          decoration: InputDecoration(
+            hintText: 'Numéro',
+            prefixIcon: InkWell(
+              onTap: _busy ? null : _pickCountry,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12, right: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_country.flag, style: flagStyle),
+                    const SizedBox(width: 6),
+                    Text(
+                      '+${_country.dial}',
+                      style: AppTextStyles.body(color: AppColors.nearBlack),
+                    ),
+                    Icon(Icons.expand_more, size: 18, color: AppColors.darkGray),
+                  ],
+                ),
+              ),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 48),
+          ),
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),

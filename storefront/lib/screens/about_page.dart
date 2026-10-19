@@ -19,7 +19,7 @@ class AboutPage extends StatelessWidget {
         const _Block(
           title: 'Avec ou sans compte',
           body:
-              'Vous pouvez commander en invité. Un compte, avec votre numéro et un code personnel, retrouve vos devis et vos commandes.',
+              'Vous pouvez commander en invité. Un compte commence par votre numéro : un code est envoyé sur ce téléphone, et votre pays est enregistré avec le compte.',
         ),
         const _Block(
           title: 'Partager pour payer',
