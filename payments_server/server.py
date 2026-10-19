@@ -235,7 +235,9 @@ def create_payment_intent(
     fields: list[tuple[str, str]] = [
         ("amount", str(pricing["total_usd_cents"])),
         ("currency", "usd"),
-        ("payment_method_types[]", "card"),
+        # This API version rejects payment_method_types. Card-only is expressed
+        # as an allow-list; the dashboard still filters incompatible methods.
+        ("allowed_payment_method_types[]", "card"),
         ("description", label[:500]),
         ("metadata[reference]", (reference or "retail")[:500]),
         ("metadata[order_usd_cents]", str(pricing["order_usd_cents"])),
@@ -247,7 +249,7 @@ def create_payment_intent(
         "POST",
         "/payment_intents",
         fields,
-        idempotency_key=f"retail-pi-{reference}-{pricing['total_usd_cents']}",
+        idempotency_key=f"retail-card-{reference}-{pricing['total_usd_cents']}",
     )
     intent_id = str(intent.get("id") or "")
     client_secret = str(intent.get("client_secret") or "")

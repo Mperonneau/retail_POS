@@ -112,9 +112,11 @@ class _StripeCardFieldState extends State<StripeCardField> {
     final element = raw as web.HTMLElement;
     final style = element.style;
     style.width = '100%';
-    style.height = '100%';
+    style.height = '44px';
+    style.maxHeight = '44px';
     style.boxSizing = 'border-box';
-    style.padding = '16px 12px';
+    style.padding = '12px';
+    style.overflow = 'hidden';
     style.border = widget.isDark ? '1px solid #3A3A3A' : '1px solid #E0E0E0';
     style.borderRadius = '8px';
     style.backgroundColor = widget.isDark ? '#1C1C1C' : '#FFFFFF';

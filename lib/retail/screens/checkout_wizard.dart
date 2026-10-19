@@ -2225,16 +2225,14 @@ class _RCardContent extends StatelessWidget {
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     final accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
     final key = publishableKey?.trim() ?? '';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: AppCard(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SingleChildScrollView(
+        child: AppCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                   Row(
                     children: [
                       Icon(Icons.credit_card_outlined, color: accent),
@@ -2324,6 +2322,41 @@ class _RCardContent extends StatelessWidget {
                     'Propulsé par Stripe',
                     style: AppTextStyles.caption(color: muted),
                   ),
+                  if (entry == _CardEntry.form) ...[
+                    const SizedBox(height: 8),
+                    if (configLoading || key.isEmpty)
+                      SizedBox(
+                        height: 44,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            configLoading
+                                ? 'Chargement du formulaire…'
+                                : (configError ??
+                                      'Formulaire carte indisponible.'),
+                            style: AppTextStyles.caption(
+                              color: configError == null
+                                  ? muted
+                                  : AppColors.boldRed,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        height: 44,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: StripeCardField(
+                            publishableKey: key,
+                            controller: cardController,
+                            isDark: isDark,
+                            onReady: onCardReady,
+                            onError: onCardError,
+                          ),
+                        ),
+                      ),
+                  ],
                   _RemoteStatus(
                     error: error,
                     waiting: waiting,
@@ -2334,37 +2367,6 @@ class _RCardContent extends StatelessWidget {
               ),
             ),
           ),
-        ),
-        if (entry == _CardEntry.form) ...[
-          const SizedBox(height: 8),
-          if (configLoading || key.isEmpty)
-            SizedBox(
-              height: 56,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  configLoading
-                      ? 'Chargement du formulaire…'
-                      : (configError ?? 'Formulaire carte indisponible.'),
-                  style: AppTextStyles.caption(
-                    color: configError == null ? muted : AppColors.boldRed,
-                  ),
-                ),
-              ),
-            )
-          else
-            SizedBox(
-              height: 56,
-              child: StripeCardField(
-                publishableKey: key,
-                controller: cardController,
-                isDark: isDark,
-                onReady: onCardReady,
-                onError: onCardError,
-              ),
-            ),
-        ],
-      ],
     );
   }
 }
