@@ -43,7 +43,10 @@ void main() {
 
     await _signInToRetailShell(tester, expectDemoPins: true);
 
-    expect(find.text('Tableau de bord'), findsWidgets);
+    expect(
+      find.text('Rechercher un produit ou scanner un code-barres...'),
+      findsOneWidget,
+    );
     expect(find.text('Boutique Soleil'), findsWidgets);
     expect(find.textContaining('Page not found'), findsNothing);
   });
@@ -356,7 +359,7 @@ Finder _productAddButton(String productName) {
 }
 
 void _expectBottomNavLabelsVisible(WidgetTester tester) {
-  const labels = ['Caisse', 'Produits', 'Commandes', 'Liens', 'Devis'];
+  const labels = ['Vente', 'Produits', 'Commandes', 'Liens', 'Devis'];
   final navBar = find.byType(NavigationBar);
   expect(navBar, findsOneWidget);
   expect(
