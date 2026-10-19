@@ -10,7 +10,7 @@ services:
       export PATH="$PWD/flutter/bin:$PATH" &&
       flutter config --enable-web &&
       flutter pub get &&
-      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=PAYMENTS_API=https://retail-pos-payments.onrender.com &&
+      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=PAYMENTS_API=https://retail-pos-payments.onrender.com --dart-define=STOREFRONT_URL=https://retail-pos-storefront.onrender.com &&
       python3 -c "import json,os; p='build/web/version.json'; d=json.load(open(p)); d['build_id']=os.environ.get('RENDER_GIT_COMMIT',''); json.dump(d, open(p,'w'))"
     staticPublishPath: build/web
     pullRequestPreviewsEnabled: true
@@ -34,7 +34,36 @@ services:
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
+  - type: web
+    name: retail-pos-storefront
+    runtime: static
+    branch: main
+    buildCommand: >-
+      git clone https://github.com/flutter/flutter.git --depth 1 -b stable &&
+      export PATH="$PWD/flutter/bin:$PATH" &&
+      flutter config --enable-web &&
+      cd storefront &&
+      flutter pub get &&
+      flutter build web --release --dart-define=STOREFRONT_API=https://retail-pos-payments.onrender.com
+    staticPublishPath: storefront/build/web
+    pullRequestPreviewsEnabled: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /flutter_service_worker.js
+        name: Cache-Control
+        value: no-cache
+      - path: /flutter_bootstrap.js
+        name: Cache-Control
+        value: no-cache
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
   # Secrets are set in the Render dashboard (sync: false). Never commit them.
+  # Storefront data lives in STOREFRONT_DATA_DIR; attach a Render disk there so
+  # requests survive restarts (the POS republishes the catalogue on its own).
   - type: web
     name: retail-pos-payments
     runtime: python
@@ -56,3 +85,5 @@ services:
         sync: false
       - key: MONCASH_BASE_URL
         value: https://moncashbutton.digicelgroup.com
+      - key: DAY_USD_RATE
+        value: "135"
