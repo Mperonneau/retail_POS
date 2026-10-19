@@ -78,6 +78,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   final Map<int, String> _qtyWarnings = {};
   final Map<int, Timer> _warningTimers = {};
   late final TextEditingController _productSearchController;
+  late final FocusNode _productSearchFocus;
   String _search = '';
   String _category = 'Tous';
   double _discountPercent = 0;
@@ -92,6 +93,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     super.initState();
     _productSearchController = TextEditingController();
     _productSearchController.addListener(_onProductSearchChanged);
+    _productSearchFocus = FocusNode();
+    _productSearchFocus.addListener(_onProductSearchFocus);
     final q = widget.quoteToEdit;
     if (q != null) {
       _cart.clear();
@@ -108,6 +111,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final next = _productSearchController.text;
     if (next == _search) return;
     setState(() => _search = next);
+  }
+
+  void _onProductSearchFocus() {
+    setState(() {});
   }
 
   /// Mobile-only: right slide-over for cart + checkout.
@@ -323,6 +330,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   void dispose() {
     _productSearchController.removeListener(_onProductSearchChanged);
     _productSearchController.dispose();
+    _productSearchFocus.removeListener(_onProductSearchFocus);
+    _productSearchFocus.dispose();
     for (final t in _warningTimers.values) {
       t.cancel();
     }
@@ -697,68 +706,91 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 focusedBorder: pillFocusedBorder,
               );
 
+              final searchFocused = _productSearchFocus.hasFocus;
+              final categoryGap = isNarrow ? 6.0 : 8.0;
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: categoryWidth,
-                    height: fieldMinHeight,
-                    child: DropdownMenu<String>(
-                      width: categoryWidth,
-                      initialSelection: _categories.contains(_category)
-                          ? _category
-                          : 'Tous',
-                      enableFilter: true,
-                      enableSearch: true,
-                      requestFocusOnTap: true,
-                      menuHeight: menuH,
-                      hintText: 'Catégorie',
-                      leadingIcon: Icon(
-                        Icons.category_outlined,
-                        size: filterIconSize,
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray,
+                  IgnorePointer(
+                    ignoring: searchFocused,
+                    child: ClipRect(
+                      child: AnimatedAlign(
+                        duration: AppConstants.animFast,
+                        curve: Curves.easeOut,
+                        alignment: Alignment.centerLeft,
+                        widthFactor: searchFocused ? 0 : 1,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: categoryGap),
+                          child: SizedBox(
+                            width: categoryWidth,
+                            height: fieldMinHeight,
+                            child: DropdownMenu<String>(
+                              width: categoryWidth,
+                              initialSelection: _categories.contains(_category)
+                                  ? _category
+                                  : 'Tous',
+                              enableFilter: true,
+                              enableSearch: true,
+                              requestFocusOnTap: true,
+                              menuHeight: menuH,
+                              hintText: 'Catégorie',
+                              leadingIcon: Icon(
+                                Icons.category_outlined,
+                                size: filterIconSize,
+                                color: isDark
+                                    ? AppColors.coolGray
+                                    : AppColors.darkGray,
+                              ),
+                              trailingIcon: Icon(
+                                Icons.arrow_drop_down_rounded,
+                                size: filterIconSize + 2,
+                                color: isDark
+                                    ? AppColors.coolGray
+                                    : AppColors.darkGray,
+                              ),
+                              filterCallback:
+                                  (
+                                    List<DropdownMenuEntry<String>> entries,
+                                    String filter,
+                                  ) {
+                                    final q = filter.trim().toLowerCase();
+                                    if (q.isEmpty) return entries;
+                                    return entries
+                                        .where(
+                                          (e) =>
+                                              e.label.toLowerCase().contains(q),
+                                        )
+                                        .toList();
+                                  },
+                              inputDecorationTheme: categoryInputTheme,
+                              textStyle: AppTextStyles.body(
+                                color: isDark
+                                    ? AppColors.warmWhite
+                                    : AppColors.nearBlack,
+                              ),
+                              onSelected: (v) {
+                                if (v != null) setState(() => _category = v);
+                              },
+                              dropdownMenuEntries: [
+                                for (final c in _categories)
+                                  DropdownMenuEntry<String>(value: c, label: c),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      trailingIcon: Icon(
-                        Icons.arrow_drop_down_rounded,
-                        size: filterIconSize + 2,
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray,
-                      ),
-                      filterCallback:
-                          (List<DropdownMenuEntry<String>> entries, String filter) {
-                        final q = filter.trim().toLowerCase();
-                        if (q.isEmpty) return entries;
-                        return entries
-                            .where(
-                              (e) => e.label.toLowerCase().contains(q),
-                            )
-                            .toList();
-                      },
-                      inputDecorationTheme: categoryInputTheme,
-                      textStyle: AppTextStyles.body(
-                        color: isDark
-                            ? AppColors.warmWhite
-                            : AppColors.nearBlack,
-                      ),
-                      onSelected: (v) {
-                        if (v != null) setState(() => _category = v);
-                      },
-                      dropdownMenuEntries: [
-                        for (final c in _categories)
-                          DropdownMenuEntry<String>(value: c, label: c),
-                      ],
                     ),
                   ),
-                  SizedBox(width: isNarrow ? 6 : 8),
                   Expanded(
                     child: SizedBox(
                       height: fieldMinHeight,
                       child: TextField(
                         controller: _productSearchController,
+                        focusNode: _productSearchFocus,
                         textAlignVertical: TextAlignVertical.center,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => _productSearchFocus.unfocus(),
+                        onTapOutside: (_) => _productSearchFocus.unfocus(),
                         decoration: InputDecoration(
                           hintText: 'Rechercher un produit ou scanner un code-barres...',
                           prefixIcon: Icon(Icons.search, size: filterIconSize),
@@ -769,24 +801,30 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           suffixIcon: _productSearchController.text
                                   .trim()
                                   .isNotEmpty
-                              ? IconButton(
-                                  tooltip: 'Effacer la recherche',
-                                  onPressed: () {
-                                    _productSearchController.clear();
-                                  },
-                                  padding: EdgeInsets.zero,
-                                  constraints: BoxConstraints.tightFor(
-                                    width: 36,
-                                    height: fieldMinHeight,
+                              ? Focus(
+                                  canRequestFocus: false,
+                                  skipTraversal: true,
+                                  descendantsAreFocusable: false,
+                                  child: IconButton(
+                                    tooltip: 'Effacer la recherche',
+                                    onPressed: () {
+                                      _productSearchController.clear();
+                                      _productSearchFocus.requestFocus();
+                                    },
+                                    padding: EdgeInsets.zero,
+                                    constraints: BoxConstraints.tightFor(
+                                      width: 36,
+                                      height: fieldMinHeight,
+                                    ),
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      size: filterIconSize,
+                                      color: isDark
+                                          ? AppColors.coolGray
+                                          : AppColors.darkGray,
+                                    ),
+                                    visualDensity: VisualDensity.compact,
                                   ),
-                                  icon: Icon(
-                                    Icons.close_rounded,
-                                    size: filterIconSize,
-                                    color: isDark
-                                        ? AppColors.coolGray
-                                        : AppColors.darkGray,
-                                  ),
-                                  visualDensity: VisualDensity.compact,
                                 )
                               : null,
                           suffixIconConstraints: BoxConstraints.tightFor(
