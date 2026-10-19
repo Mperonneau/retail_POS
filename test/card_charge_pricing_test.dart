@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:retail_pos/core/payments/card_charge_pricing.dart';
+import 'package:retail_pos/core/payments/payments_client.dart';
 
 void main() {
   test('payer covers 1.5% + \$1 and the grossed-up Stripe fee', () {
@@ -13,6 +14,16 @@ void main() {
           priced.stripeFeeUsdCents,
       priced.totalUsdCents,
     );
+  });
+
+  test('the register knows the payments service without a build flag', () {
+    expect(
+      PaymentsClient.apiBase,
+      'https://retail-pos-payments.onrender.com',
+    );
+    final client = PaymentsClient();
+    expect(client.isConfigured, isTrue);
+    client.close();
   });
 
   test('HTG converts with the shop rate before the fee', () {

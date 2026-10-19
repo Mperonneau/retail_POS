@@ -44,7 +44,13 @@ class PaymentsClient {
       _ownsClient = httpClient == null,
       baseUrl = (baseUrl ?? apiBase).trim();
 
-  static const String apiBase = String.fromEnvironment('PAYMENTS_API');
+  /// Used when the web build does not pass `--dart-define=PAYMENTS_API`.
+  /// Render's saved build command omits that flag, so the register must
+  /// still know where the payments service lives. Secrets stay on the server.
+  static const String apiBase = String.fromEnvironment(
+    'PAYMENTS_API',
+    defaultValue: 'https://retail-pos-payments.onrender.com',
+  );
 
   final http.Client _http;
   final bool _ownsClient;
