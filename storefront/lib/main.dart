@@ -10,6 +10,7 @@ import 'package:retail_pos/core/theme/app_theme.dart';
 
 import 'session.dart';
 import 'favorites.dart';
+import 'page.dart';
 import 'shell.dart';
 import 'screens/about_page.dart';
 import 'screens/cart_page.dart';
@@ -37,21 +38,49 @@ final _router = GoRouter(
     ShellRoute(
       builder: (_, _, child) => StorefrontShell(child: child),
       routes: [
-        GoRoute(path: '/', builder: (_, _) => const HomePage()),
-        GoRoute(path: '/orders', builder: (_, _) => const OrdersPage()),
-        GoRoute(path: '/favorites', builder: (_, _) => const FavoritesPage()),
-        GoRoute(path: '/profile', builder: (_, _) => const ProfilePage()),
-        GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
-        GoRoute(path: '/cart', builder: (_, _) => const CartPage()),
-        GoRoute(path: '/about', builder: (_, _) => const AboutPage()),
-        GoRoute(path: '/help', builder: (_, _) => const HelpPage()),
+        GoRoute(
+          path: '/',
+          pageBuilder: (_, state) => storePage(state, const HomePage()),
+        ),
+        GoRoute(
+          path: '/orders',
+          pageBuilder: (_, state) => storePage(state, const OrdersPage()),
+        ),
+        GoRoute(
+          path: '/favorites',
+          pageBuilder: (_, state) => storePage(state, const FavoritesPage()),
+        ),
+        GoRoute(
+          path: '/profile',
+          pageBuilder: (_, state) => storePage(state, const ProfilePage()),
+        ),
+        GoRoute(
+          path: '/login',
+          pageBuilder: (_, state) => storePage(state, const LoginPage()),
+        ),
+        GoRoute(
+          path: '/cart',
+          pageBuilder: (_, state) => storePage(state, const CartPage()),
+        ),
+        GoRoute(
+          path: '/about',
+          pageBuilder: (_, state) => storePage(state, const AboutPage()),
+        ),
+        GoRoute(
+          path: '/help',
+          pageBuilder: (_, state) => storePage(state, const HelpPage()),
+        ),
         GoRoute(
           path: '/r/:id',
-          builder: (_, state) => RequestPage(requestId: state.pathParameters['id']!),
+          pageBuilder: (_, state) => storePage(
+            state,
+            RequestPage(requestId: state.pathParameters['id']!),
+          ),
         ),
         GoRoute(
           path: '/:slug',
-          builder: (_, state) => ShopPage(slug: state.pathParameters['slug']!),
+          pageBuilder: (_, state) =>
+              storePage(state, ShopPage(slug: state.pathParameters['slug']!)),
         ),
       ],
     ),
@@ -74,7 +103,9 @@ class StorefrontApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: AppTheme.light.copyWith(scaffoldBackgroundColor: AppColors.warmOffWhite),
+      theme: AppTheme.light.copyWith(
+        scaffoldBackgroundColor: AppColors.warmOffWhite,
+      ),
       scrollBehavior: AppScrollBehavior(),
       routerConfig: _router,
     );

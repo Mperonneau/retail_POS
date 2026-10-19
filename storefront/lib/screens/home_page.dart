@@ -296,22 +296,29 @@ class _FilterButton extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Material(
-            color: AppColors.white,
-            shape: const CircleBorder(),
-            child: IconButton(
-              tooltip: 'Filtres',
-              onPressed: onPressed,
-              icon: Icon(
-                Icons.tune_rounded,
-                color: count > 0 ? AppColors.primaryBlue : AppColors.nearBlack,
+            color: count > 0 ? AppColors.lightBlue : AppColors.white,
+            shape: CircleBorder(
+              side: BorderSide(
+                color: count > 0
+                    ? AppColors.primaryBlue
+                    : const Color(0xFFD5D1C8),
               ),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.white,
-                shape: CircleBorder(
-                  side: BorderSide(
-                    color: count > 0
-                        ? AppColors.primaryBlue
-                        : const Color(0xFFECEAE4),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onPressed,
+              child: Tooltip(
+                message: 'Filtres',
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Center(
+                    child: _FilterMark(
+                      color: count > 0
+                          ? AppColors.primaryBlue
+                          : AppColors.nearBlack,
+                    ),
                   ),
                 ),
               ),
@@ -343,6 +350,45 @@ class _FilterButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Funnel drawn in code so the control stays visible without an icon font.
+class _FilterMark extends StatelessWidget {
+  const _FilterMark({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(18, 18),
+      painter: _FilterMarkPainter(color),
+    );
+  }
+}
+
+class _FilterMarkPainter extends CustomPainter {
+  _FilterMarkPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(w * 0.08, h * 0.12)
+      ..lineTo(w * 0.92, h * 0.12)
+      ..lineTo(w * 0.62, h * 0.48)
+      ..lineTo(w * 0.62, h * 0.88)
+      ..lineTo(w * 0.38, h * 0.88)
+      ..lineTo(w * 0.38, h * 0.48)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_FilterMarkPainter old) => old.color != color;
 }
 
 class _ShopTile extends StatelessWidget {

@@ -28,7 +28,9 @@ class DualPrice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Wrap(
@@ -37,22 +39,24 @@ class DualPrice extends StatelessWidget {
           children: [
             Text(
               Money.usdFromHtg(htg, rate),
-              style: AppTextStyles.price(color: AppColors.nearBlack)
-                  .copyWith(fontSize: large ? 24 : 15, height: 1.2),
+              style: AppTextStyles.price(
+                color: AppColors.nearBlack,
+              ).copyWith(fontSize: large ? 24 : 15, height: 1.2),
             ),
             if (regularHtg > htg)
               Text(
                 Money.usdFromHtg(regularHtg, rate),
-                style: AppTextStyles.caption(color: AppColors.darkGray).copyWith(
-                  decoration: TextDecoration.lineThrough,
-                ),
+                style: AppTextStyles.caption(
+                  color: AppColors.darkGray,
+                ).copyWith(decoration: TextDecoration.lineThrough),
               ),
           ],
         ),
         Text(
           Money.htg(htg),
-          style: AppTextStyles.caption(color: AppColors.darkGray)
-              .copyWith(fontSize: large ? 13 : 11.5),
+          style: AppTextStyles.caption(
+            color: AppColors.darkGray,
+          ).copyWith(fontSize: large ? 13 : 11.5),
         ),
       ],
     );
@@ -60,7 +64,12 @@ class DualPrice extends StatelessWidget {
 }
 
 class ProductPhoto extends StatelessWidget {
-  const ProductPhoto({super.key, required this.url, required this.name, this.radius = 0});
+  const ProductPhoto({
+    super.key,
+    required this.url,
+    required this.name,
+    this.radius = 0,
+  });
 
   final String url;
   final String name;
@@ -82,8 +91,9 @@ class ProductPhoto extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         name.isEmpty ? '?' : name.characters.first.toUpperCase(),
-        style: AppTextStyles.h1(color: AppColors.primaryBlue.withValues(alpha: 0.55))
-            .copyWith(fontSize: 34),
+        style: AppTextStyles.h1(
+          color: AppColors.primaryBlue.withValues(alpha: 0.55),
+        ).copyWith(fontSize: 34),
       ),
     );
     return ClipRRect(
@@ -133,8 +143,9 @@ class Pill extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: AppTextStyles.caption(color: color)
-                  .copyWith(fontWeight: FontWeight.w600, fontSize: 12),
+              style: AppTextStyles.caption(
+                color: color,
+              ).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
         ],
@@ -167,8 +178,72 @@ class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(strokeWidth: 3));
+  Widget build(BuildContext context) => const Center(child: AppSpinner());
+}
+
+/// Rounded arc that turns on the brand blue. Used for loads and page changes.
+class AppSpinner extends StatefulWidget {
+  const AppSpinner({super.key, this.size = 42});
+
+  final double size;
+
+  @override
+  State<AppSpinner> createState() => _AppSpinnerState();
+}
+
+class _AppSpinnerState extends State<AppSpinner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _turn = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: AnimatedBuilder(
+        animation: _turn,
+        builder: (context, _) =>
+            CustomPaint(painter: _SpinnerPainter(turns: _turn.value)),
+      ),
+    );
+  }
+}
+
+class _SpinnerPainter extends CustomPainter {
+  _SpinnerPainter({required this.turns});
+
+  final double turns;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.shortestSide * 0.1;
+    final rect = Offset.zero & size;
+    final arc = rect.deflate(stroke / 2);
+    final track = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = AppColors.lightBlue;
+    final head = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = AppColors.primaryBlue;
+    canvas.drawArc(arc, 0, 6.28318, false, track);
+    canvas.drawArc(arc, turns * 6.28318, 1.9, false, head);
+  }
+
+  @override
+  bool shouldRepaint(_SpinnerPainter old) => old.turns != turns;
 }
 
 class MessageView extends StatelessWidget {
@@ -206,16 +281,25 @@ class MessageView extends StatelessWidget {
                 child: Icon(icon, size: 30, color: AppColors.primaryBlue),
               ),
               const SizedBox(height: AppConstants.spacing16),
-              Text(title,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.h2(color: AppColors.nearBlack)),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.h2(color: AppColors.nearBlack),
+              ),
               const SizedBox(height: AppConstants.spacing8),
-              Text(message,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.body(color: AppColors.darkGray)),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body(color: AppColors.darkGray),
+              ),
               if (actionLabel != null) ...[
                 const SizedBox(height: AppConstants.spacing20),
-                AppButton(label: actionLabel!, onPressed: onAction, fullWidth: false, width: 200),
+                AppButton(
+                  label: actionLabel!,
+                  onPressed: onAction,
+                  fullWidth: false,
+                  width: 200,
+                ),
               ],
             ],
           ),
@@ -230,13 +314,19 @@ Future<bool> confirmClearCart(BuildContext context) async {
   final ok = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text('Vider le panier ?', style: AppTextStyles.h2(color: AppColors.nearBlack)),
+      title: Text(
+        'Vider le panier ?',
+        style: AppTextStyles.h2(color: AppColors.nearBlack),
+      ),
       content: Text(
         'Tous les articles seront retirés.',
         style: AppTextStyles.body(color: AppColors.darkGray),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Annuler'),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
           style: TextButton.styleFrom(foregroundColor: AppColors.boldRed),
@@ -267,19 +357,19 @@ class QtyStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = compact ? 30.0 : 40.0;
     Widget button(IconData icon, VoidCallback? onTap) => SizedBox(
-          width: size,
-          height: size,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            onPressed: onTap,
-            icon: Icon(icon, size: compact ? 16 : 20),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.lightBlue,
-              foregroundColor: AppColors.primaryBlue,
-              disabledBackgroundColor: const Color(0xFFF0F0F0),
-            ),
-          ),
-        );
+      width: size,
+      height: size,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+        icon: Icon(icon, size: compact ? 16 : 20),
+        style: IconButton.styleFrom(
+          backgroundColor: AppColors.lightBlue,
+          foregroundColor: AppColors.primaryBlue,
+          disabledBackgroundColor: const Color(0xFFF0F0F0),
+        ),
+      ),
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -289,8 +379,9 @@ class QtyStepper extends StatelessWidget {
           child: Text(
             '$value',
             textAlign: TextAlign.center,
-            style: AppTextStyles.price(color: AppColors.nearBlack)
-                .copyWith(fontSize: compact ? 14 : 16),
+            style: AppTextStyles.price(
+              color: AppColors.nearBlack,
+            ).copyWith(fontSize: compact ? 14 : 16),
           ),
         ),
         button(Icons.add_rounded, onPlus),
@@ -302,10 +393,12 @@ class QtyStepper extends StatelessWidget {
 void showToast(BuildContext context, String message, {bool error = false}) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text(message),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: error ? AppColors.boldRed : AppColors.nearBlack,
-      width: 420,
-    ));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: error ? AppColors.boldRed : AppColors.nearBlack,
+        width: 420,
+      ),
+    );
 }
