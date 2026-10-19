@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:retail_pos/core/payments/open_payment_url.dart';
 import 'package:retail_pos/core/payments/payments_client.dart';
 import 'package:retail_pos/core/payments/stripe_card_field.dart';
@@ -364,7 +363,7 @@ class _CardPayState extends State<_CardPay> {
   }
 }
 
-/// Bill in gourdes only. QR for another phone, or Payer opens MonCash here.
+/// Bill in gourdes only. Payer opens MonCash on this phone.
 class _MoncashPay extends StatefulWidget {
   const _MoncashPay({required this.api, required this.request});
 
@@ -442,22 +441,10 @@ class _MoncashPayState extends State<_MoncashPay> {
         ]),
         const SizedBox(height: 16),
         if (start != null) ...[
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE6E3DC)),
-              ),
-              child: QrImageView(data: start.paymentUrl, size: 176, backgroundColor: AppColors.white),
-            ),
-          ),
-          const SizedBox(height: 10),
           Text(
-            'Scannez ce code avec un autre téléphone, ou touchez Payer pour ouvrir MonCash sur celui-ci.',
+            'Touchez Payer pour ouvrir MonCash sur ce téléphone.',
             textAlign: TextAlign.center,
-            style: AppTextStyles.caption().copyWith(fontSize: 12, height: 1.4),
+            style: AppTextStyles.caption().copyWith(fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 14),
           AppButton(
