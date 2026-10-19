@@ -12,6 +12,7 @@ import '../../core/utils/constants.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_button.dart';
+import '../../core/widgets/phone_field.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/list_page_nav.dart';
 import '../../core/widgets/status_badge.dart';
@@ -1115,21 +1116,11 @@ void _showActiveQuoteWhatsAppDialog(
       builder: (ctx, setD) {
         return AlertDialog(
           title: const Text('Envoyer par WhatsApp'),
-          content: TextField(
+          content: PhoneField(
             controller: ctrl,
+            label: 'Numéro de téléphone',
+            errorText: errHolder[0],
             onChanged: (_) => setD(() => errHolder[0] = null),
-            decoration: InputDecoration(
-              labelText: 'Numéro de téléphone',
-              hintText: '+509 XXXX-XXXX',
-              prefixIcon: const Icon(Icons.phone_outlined),
-              errorText: errHolder[0],
-              border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(AppConstants.radiusInput),
-              ),
-            ),
-            keyboardType: TextInputType.phone,
-            inputFormatters: InputFormatters.phone,
           ),
           actions: [
             TextButton(

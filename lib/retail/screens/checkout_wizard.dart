@@ -26,6 +26,7 @@ import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_input.dart';
+import '../../core/widgets/phone_field.dart';
 import '../../core/widgets/payment_success_panel.dart';
 import '../models/retail_cart_entry.dart';
 import '../../core/widgets/app_close_button.dart';
@@ -2917,18 +2918,9 @@ class _RCreditContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacing8),
-                TextField(
+                PhoneField(
                   controller: newPhoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: InputFormatters.phone,
-                  decoration: InputDecoration(
-                    labelText: 'Téléphone *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusInput,
-                      ),
-                    ),
-                  ),
+                  label: 'Téléphone *',
                 ),
                 const SizedBox(height: AppConstants.spacing8),
                 ElevatedButton(

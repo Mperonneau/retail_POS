@@ -8,6 +8,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/phone_field.dart';
 
 // ─── Entry ────────────────────────────────────────────────────────────────────
 
@@ -912,10 +913,9 @@ class _EditableContactFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
+        PhoneField(
           controller: phoneCtrl,
-          keyboardType: TextInputType.phone,
-          decoration: _dec('Numéro de téléphone', Icons.phone_outlined),
+          label: 'Numéro de téléphone',
         ),
         const SizedBox(height: 8),
         TextField(

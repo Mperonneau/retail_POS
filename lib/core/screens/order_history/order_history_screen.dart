@@ -11,6 +11,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
+import '../../widgets/phone_field.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/list_page_nav.dart';
 import '../../widgets/payment_method_block.dart';
@@ -1904,20 +1905,11 @@ void _showActiveOrderWhatsAppDialog(BuildContext context, RetailOrder order) {
       builder: (ctx, setD) {
         return AlertDialog(
           title: const Text('Envoyer par WhatsApp'),
-          content: TextField(
+          content: PhoneField(
             controller: ctrl,
+            label: 'Numéro de téléphone',
+            errorText: errHolder[0],
             onChanged: (_) => setD(() => errHolder[0] = null),
-            decoration: InputDecoration(
-              labelText: 'Numéro de téléphone',
-              hintText: '+509 XXXX-XXXX',
-              prefixIcon: const Icon(Icons.phone_outlined),
-              errorText: errHolder[0],
-              border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.radiusInput)),
-            ),
-            keyboardType: TextInputType.phone,
-            inputFormatters: InputFormatters.phone,
           ),
           actions: [
             TextButton(

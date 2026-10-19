@@ -10,6 +10,7 @@ import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
 import '../../widgets/payment_receipt_dialogs.dart';
 import '../../widgets/app_close_button.dart';
+import '../../widgets/phone_field.dart';
 
 // ── Payment method enum ────────────────────────────────────────────────────────
 
@@ -828,6 +829,9 @@ class _PanelField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (keyboardType == TextInputType.phone) {
+      return PhoneField(controller: controller, label: label);
+    }
     return TextField(
       controller: controller,
       keyboardType: keyboardType,

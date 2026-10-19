@@ -15,6 +15,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_close_button.dart';
+import '../../widgets/phone_field.dart';
 
 // ─── Entry function ───────────────────────────────────────────────────────────
 
@@ -778,10 +779,9 @@ class _QuickCreateCustomerState extends ConsumerState<_QuickCreateCustomer> {
             decoration: _dec('Nom *', Icons.badge_outlined),
           ),
           const SizedBox(height: 10),
-          TextField(
+          PhoneField(
             controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
-            decoration: _dec('Téléphone (facultatif)', Icons.phone_outlined),
+            label: 'Téléphone (facultatif)',
           ),
           const SizedBox(height: 14),
           Text(
@@ -1050,24 +1050,22 @@ class _PayLinkForm extends StatelessWidget {
           // ─ Payer contact (not the client record; who receives the link)
           _SectionLabel(label: 'ENVOYER À (PAYEUR)', mutedColor: mutedColor),
           const SizedBox(height: 6),
-          TextField(
-            controller: contactCtrl,
-            onChanged: (_) => onContactChanged(),
-            keyboardType: channel == PayLinkChannel.email
-                ? TextInputType.emailAddress
-                : TextInputType.phone,
-            autofillHints: null,
-            enableSuggestions: false,
-            autocorrect: false,
-            decoration: _dec(
-              channel == PayLinkChannel.email
-                  ? 'E-mail du payeur *'
-                  : 'Téléphone du payeur *',
-              channel == PayLinkChannel.email
-                  ? Icons.email_outlined
-                  : Icons.phone_outlined,
+          if (channel == PayLinkChannel.email)
+            TextField(
+              controller: contactCtrl,
+              onChanged: (_) => onContactChanged(),
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: null,
+              enableSuggestions: false,
+              autocorrect: false,
+              decoration: _dec('E-mail du payeur *', Icons.email_outlined),
+            )
+          else
+            PhoneField(
+              controller: contactCtrl,
+              label: 'Téléphone du payeur *',
+              onChanged: (_) => onContactChanged(),
             ),
-          ),
 
           const SizedBox(height: 12),
 

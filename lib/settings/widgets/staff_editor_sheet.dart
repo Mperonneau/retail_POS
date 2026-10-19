@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/widgets/phone_field.dart';
 
 /// Add or edit staff: name, email, phone (required), role, 4-digit PIN, active.
 class StaffEditorSheet extends ConsumerStatefulWidget {
@@ -234,17 +235,10 @@ class _StaffEditorSheetState extends ConsumerState<StaffEditorSheet> {
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: AppConstants.spacing12),
-            TextField(
+            PhoneField(
               controller: _phoneCtrl,
-              decoration: InputDecoration(
-                labelText: 'Téléphone *',
-                errorText: _phoneError,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
-                ),
-              ),
-              keyboardType: TextInputType.phone,
-              inputFormatters: InputFormatters.phone,
+              label: 'Téléphone *',
+              errorText: _phoneError,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: AppConstants.spacing12),

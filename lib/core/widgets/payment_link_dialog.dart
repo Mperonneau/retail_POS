@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
+import 'phone_field.dart';
 
 enum PaymentLinkChannel { whatsApp, email, sms }
 
@@ -431,25 +432,10 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
+              PhoneField(
                 controller: _phoneCtrl,
+                label: 'Téléphone du payeur',
                 onChanged: (_) => setState(() {}),
-                keyboardType: TextInputType.phone,
-                // `null` fully disables platform / browser autofill (default `[]` does not).
-                autofillHints: null,
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: 'Téléphone du payeur',
-                  prefixIcon: const Icon(Icons.phone_outlined, size: 18),
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput),
-                  ),
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
               ),
               const SizedBox(height: 8),
               TextField(

@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 import 'app_close_button.dart';
+import 'phone_field.dart';
 
 const _idDocumentTypes = [
   'Passeport',
@@ -557,14 +558,9 @@ class _QuickCustomerForCreditFormState
             ),
           ),
           const SizedBox(height: 10),
-          TextField(
+          PhoneField(
             controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
-            decoration: _decoration(
-              'Téléphone (facultatif)',
-              Icons.phone_outlined,
-              isDark,
-            ),
+            label: 'Téléphone (facultatif)',
           ),
           const SizedBox(height: 14),
           Text(

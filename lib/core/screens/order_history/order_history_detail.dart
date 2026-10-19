@@ -6,6 +6,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
+import '../../widgets/phone_field.dart';
 import '../../widgets/payment_link_details_sheet.dart';
 import '../../widgets/payment_method_block.dart';
 import '../../widgets/app_close_button.dart';
@@ -68,19 +69,11 @@ class OrderHistoryDetailPage extends StatelessWidget {
           return AlertDialog(
             title: const Text('Envoyer par WhatsApp'),
             content: StatefulBuilder(
-              builder: (ctx2, setD2) => TextField(
+              builder: (ctx2, setD2) => PhoneField(
                 controller: ctrl,
+                label: 'Numéro de téléphone',
+                errorText: err,
                 onChanged: (_) => setD2(() => err = null),
-                decoration: InputDecoration(
-                  labelText: 'Numéro de téléphone',
-                  hintText: '+509 XXXX-XXXX',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  errorText: err,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
-                ),
-                keyboardType: TextInputType.phone,
-                inputFormatters: InputFormatters.phone,
               ),
             ),
             actions: [
@@ -194,19 +187,11 @@ class OrderHistoryDetailContent extends StatelessWidget {
           return AlertDialog(
             title: const Text('Envoyer par WhatsApp'),
             content: StatefulBuilder(
-              builder: (ctx2, setD2) => TextField(
+              builder: (ctx2, setD2) => PhoneField(
                 controller: ctrl,
+                label: 'Numéro de téléphone',
+                errorText: err,
                 onChanged: (_) => setD2(() => err = null),
-                decoration: InputDecoration(
-                  labelText: 'Numéro de téléphone',
-                  hintText: '+509 XXXX-XXXX',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  errorText: err,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
-                ),
-                keyboardType: TextInputType.phone,
-                inputFormatters: InputFormatters.phone,
               ),
             ),
             actions: [

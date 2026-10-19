@@ -15,6 +15,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/widgets/phone_field.dart';
 import '../../core/models/staff_directory_entry.dart';
 import '../../core/models/staff_role.dart';
 import '../../core/providers/staff_directory_provider.dart';
@@ -181,16 +182,9 @@ class _BusinessTabState extends ConsumerState<_BusinessTab> {
               const SizedBox(height: AppConstants.spacing12),
               Row(children: [
                 Expanded(
-                  child: TextField(
+                  child: PhoneField(
                     controller: phoneCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Téléphone',
-                      border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.radiusInput)),
-                    ),
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: InputFormatters.phone,
+                    label: 'Téléphone',
                   ),
                 ),
                 const SizedBox(width: AppConstants.spacing12),

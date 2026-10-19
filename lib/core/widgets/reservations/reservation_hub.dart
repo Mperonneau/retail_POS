@@ -13,6 +13,7 @@ import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
 import '../app_bottom_sheet.dart';
 import '../app_button.dart';
+import '../phone_field.dart';
 import '../empty_state.dart';
 import '../table_picker_modal.dart';
 import 'preorder_menu_picker_sheet.dart';
@@ -2466,6 +2467,13 @@ class _StyledField extends StatelessWidget {
               ? AppColors.darkBorder.withValues(alpha: 0.5)
               : const Color(0xFFE8E8EE)),
     );
+    if (keyboardType == TextInputType.phone) {
+      return PhoneField(
+        controller: controller,
+        label: required ? '$label *' : label,
+        enabled: !readOnly,
+      );
+    }
     return TextField(
       controller: controller,
       readOnly: readOnly,

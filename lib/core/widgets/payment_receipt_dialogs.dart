@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../utils/input_formatters.dart';
+import 'phone_field.dart';
 
 /// Shared receipt actions (Restaurant, Retail, Hotel) — mock send/print.
 class PaymentReceiptDialogs {
@@ -39,20 +40,11 @@ class PaymentReceiptDialogs {
           return AlertDialog(
             title: const Text('Envoyer par WhatsApp'),
             content: StatefulBuilder(
-              builder: (ctx2, setD2) => TextField(
+              builder: (ctx2, setD2) => PhoneField(
                 controller: ctrl,
+                label: 'Numéro de téléphone',
+                errorText: err,
                 onChanged: (_) => setD2(() => err = null),
-                decoration: InputDecoration(
-                  labelText: 'Numéro de téléphone',
-                  hintText: '+509 XXXX-XXXX',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  errorText: err,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                keyboardType: TextInputType.phone,
-                inputFormatters: InputFormatters.phone,
               ),
             ),
             actions: [

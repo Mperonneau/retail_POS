@@ -5,6 +5,7 @@ import 'package:retail_pos/core/theme/app_text_styles.dart';
 import 'package:retail_pos/core/utils/constants.dart';
 import 'package:retail_pos/core/widgets/app_button.dart';
 import 'package:retail_pos/core/widgets/app_close_button.dart';
+import 'package:retail_pos/core/widgets/phone_field.dart';
 
 import '../api.dart';
 import '../cart.dart';
@@ -278,14 +279,9 @@ class _CartSheetState extends State<_CartSheet> {
                             : null,
                       ),
                       const SizedBox(height: 10),
-                      TextFormField(
+                      PhoneField(
                         controller: _phone,
-                        keyboardType: TextInputType.phone,
-                        decoration: _field(
-                          'Téléphone',
-                          hint: '+509 …',
-                          icon: Icons.phone_outlined,
-                        ),
+                        label: 'Téléphone',
                         validator: (v) =>
                             (v ?? '').replaceAll(RegExp(r'\D'), '').length < 8
                             ? 'Indiquez un numéro valide.'
