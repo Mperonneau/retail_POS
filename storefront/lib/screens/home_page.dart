@@ -8,6 +8,7 @@ import 'package:web/web.dart' as web;
 import '../api.dart';
 import '../favorites.dart';
 import '../widgets.dart';
+import 'directory_filters.dart';
 
 /// Directory of every open vitrine, searchable and filtered by department and category.
 class HomePage extends StatefulWidget {
@@ -22,8 +23,8 @@ class _HomePageState extends State<HomePage> {
   final _search = TextEditingController();
   ShopDirectory? _directory;
   String? _error;
-  String? _department;
-  String? _category;
+  final Set<String> _departments = {};
+  final Set<String> _categories = {};
   String _query = '';
 
   @override
@@ -56,40 +57,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<ShopCard> get _visible {
-    final shops = _directory?.results ?? const <ShopCard>[];
+    final directory = _directory;
+    final shops = directory?.results ?? const <ShopCard>[];
+    final known = directory?.categories.toSet() ?? const <String>{};
+    final categories = _categories.where(known.contains).toSet();
     final query = _query.trim().toLowerCase();
-    final category = _usedCategories.contains(_category) ? _category : null;
     return shops.where((shop) {
-      if (_department != null && shop.department != _department) return false;
-      if (category != null && !shop.categories.contains(category)) return false;
+      if (_departments.isNotEmpty && !_departments.contains(shop.department)) {
+        return false;
+      }
+      if (categories.isNotEmpty && !shop.categories.any(categories.contains)) {
+        return false;
+      }
       if (query.isEmpty) return true;
-      final folded = query;
-      return shop.name.toLowerCase().contains(folded) ||
-          shop.city.toLowerCase().contains(folded) ||
-          shop.department.toLowerCase().contains(folded) ||
-          shop.description.toLowerCase().contains(folded) ||
-          shop.categories.any((name) => name.toLowerCase().contains(folded));
+      return shop.name.toLowerCase().contains(query) ||
+          shop.city.toLowerCase().contains(query) ||
+          shop.department.toLowerCase().contains(query) ||
+          shop.description.toLowerCase().contains(query) ||
+          shop.categories.any((name) => name.toLowerCase().contains(query));
     }).toList();
   }
 
-  /// Categories used by the shops in the current department.
-  List<String> get _usedCategories {
-    final directory = _directory;
-    if (directory == null) return const [];
-    final used = <String>{
-      for (final shop in directory.results)
-        if (_department == null || shop.department == _department)
-          for (final name in shop.categories) name,
-    };
-    final ordered = [
-      for (final name in directory.categories)
-        if (used.contains(name)) name,
-    ];
-    for (final name in used) {
-      if (!ordered.contains(name)) ordered.add(name);
-    }
-    return ordered;
-  }
+  int get _filterCount =>
+      _departments.length +
+      _categories
+          .where((_directory?.categories.toSet() ?? const {}).contains)
+          .length;
 
   @override
   Widget build(BuildContext context) {
@@ -110,10 +103,7 @@ class _HomePageState extends State<HomePage> {
     final width = MediaQuery.sizeOf(context).width;
     final columns = width >= 1000 ? 3 : (width >= 680 ? 2 : 1);
     final shops = _visible;
-    final categories = _usedCategories;
-    final category = categories.contains(_category) ? _category : null;
-    final filtering =
-        _query.trim().isNotEmpty || _department != null || category != null;
+    final filtering = _query.trim().isNotEmpty || _filterCount > 0;
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _load,
@@ -123,32 +113,25 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(
               child: _SearchField(
                 controller: _search,
+                filterCount: _filterCount,
                 onChanged: (value) => setState(() => _query = value),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: _FilterChips(
-                heading: 'Département',
-                labels: directory.departments,
-                selected: _department,
-                onSelected: (value) => setState(() {
-                  _department = value;
-                  if (_category != null &&
-                      !_usedCategories.contains(_category)) {
-                    _category = null;
-                  }
-                }),
-              ),
-            ),
-            if (categories.isNotEmpty)
-              SliverToBoxAdapter(
-                child: _FilterChips(
-                  heading: 'Catégorie',
-                  labels: categories,
-                  selected: category,
-                  onSelected: (value) => setState(() => _category = value),
+                onFilter: () => showDirectoryFilters(
+                  context,
+                  departments: directory.departments,
+                  categories: directory.categories,
+                  selectedDepartments: _departments,
+                  selectedCategories: _categories,
+                  onChanged: (departments, categories) => setState(() {
+                    _departments
+                      ..clear()
+                      ..addAll(departments);
+                    _categories
+                      ..clear()
+                      ..addAll(categories);
+                  }),
                 ),
               ),
+            ),
             if (shops.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -216,7 +199,7 @@ class _Intro extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Parcourez les boutiques par département et par catégorie.',
+            'Recherchez une boutique, ou filtrez par département et catégorie.',
             style: AppTextStyles.body(color: AppColors.darkGray),
           ),
         ],
@@ -226,125 +209,136 @@ class _Intro extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.onChanged});
+  const _SearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onFilter,
+    required this.filterCount,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final VoidCallback onFilter;
+  final int filterCount;
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     return Padding(
       padding: EdgeInsets.fromLTRB(_side(width), 16, _side(width), 12),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: AppTextStyles.body(color: AppColors.nearBlack),
-        decoration: InputDecoration(
-          hintText: 'Boutique, ville…',
-          prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: ListenableBuilder(
-            listenable: controller,
-            builder: (context, _) => controller.text.isEmpty
-                ? const SizedBox.shrink()
-                : IconButton(
-                    tooltip: 'Effacer',
-                    onPressed: () {
-                      controller.clear();
-                      onChanged('');
-                    },
-                    icon: const Icon(Icons.close_rounded, size: 18),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: AppTextStyles.body(color: AppColors.nearBlack),
+              decoration: InputDecoration(
+                hintText: 'Boutique, ville…',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: ListenableBuilder(
+                  listenable: controller,
+                  builder: (context, _) => controller.text.isEmpty
+                      ? const SizedBox.shrink()
+                      : IconButton(
+                          tooltip: 'Effacer',
+                          onPressed: () {
+                            controller.clear();
+                            onChanged('');
+                          },
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                        ),
+                ),
+                filled: true,
+                fillColor: AppColors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: Color(0xFFECEAE4)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: Color(0xFFECEAE4)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(
+                    color: AppColors.primaryBlue,
+                    width: 1.5,
                   ),
-          ),
-          filled: true,
-          fillColor: AppColors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: Color(0xFFECEAE4)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: Color(0xFFECEAE4)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(
-              color: AppColors.primaryBlue,
-              width: 1.5,
+                ),
+              ),
             ),
           ),
-        ),
+          const SizedBox(width: 8),
+          _FilterButton(count: filterCount, onPressed: onFilter),
+        ],
       ),
     );
   }
 }
 
-class _FilterChips extends StatelessWidget {
-  const _FilterChips({
-    required this.heading,
-    required this.labels,
-    required this.selected,
-    required this.onSelected,
-  });
+class _FilterButton extends StatelessWidget {
+  const _FilterButton({required this.count, required this.onPressed});
 
-  final String heading;
-  final List<String> labels;
-  final String? selected;
-  final ValueChanged<String?> onSelected;
+  final int count;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final labels = ['Tout', ...this.labels];
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: _side(width)),
-            child: Text(
-              heading,
-              style: AppTextStyles.caption().copyWith(
-                fontWeight: FontWeight.w700,
+          Material(
+            color: AppColors.white,
+            shape: const CircleBorder(),
+            child: IconButton(
+              tooltip: 'Filtres',
+              onPressed: onPressed,
+              icon: Icon(
+                Icons.tune_rounded,
+                color: count > 0 ? AppColors.primaryBlue : AppColors.nearBlack,
               ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            height: 40,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: _side(width)),
-              itemCount: labels.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final label = labels[index];
-                final isAll = index == 0;
-                final active = isAll ? selected == null : selected == label;
-                return ChoiceChip(
-                  label: Text(label),
-                  selected: active,
-                  showCheckmark: false,
-                  labelStyle: AppTextStyles.body(
-                    color: active ? AppColors.white : AppColors.nearBlack,
-                  ).copyWith(fontWeight: FontWeight.w600, fontSize: 13),
-                  selectedColor: AppColors.primaryBlue,
-                  backgroundColor: AppColors.white,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.white,
+                shape: CircleBorder(
                   side: BorderSide(
-                    color: active
+                    color: count > 0
                         ? AppColors.primaryBlue
                         : const Color(0xFFECEAE4),
                   ),
-                  onSelected: (_) => onSelected(isAll ? null : label),
-                );
-              },
+                ),
+              ),
             ),
           ),
+          if (count > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                width: 18,
+                height: 18,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
