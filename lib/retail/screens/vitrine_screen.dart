@@ -18,6 +18,7 @@ import '../../core/utils/constants.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/page_header.dart';
+import '../storefront/business_category_picker.dart';
 import '../storefront/storefront_link_dialog.dart';
 import '../storefront/storefront_settings.dart';
 import '../storefront/storefront_sync.dart';
@@ -70,9 +71,9 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
     if (slug.isEmpty) {
       slug = suggestStorefrontSlug(business);
       if (slug.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _update(
-              (c) => c.copyWith(slug: slug),
-            ));
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _update((c) => c.copyWith(slug: slug)),
+        );
       }
     }
     _slug.text = slug;
@@ -90,13 +91,15 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
     _typing?.cancel();
     _typing = Timer(const Duration(milliseconds: 600), () {
       final slug = _slug.text.trim().toLowerCase();
-      _update((c) => c.copyWith(
-            slug: slug,
-            displayName: _name.text.trim(),
-            description: _description.text.trim(),
-            city: _city.text.trim(),
-            pickupNote: _pickupNote.text.trim(),
-          ));
+      _update(
+        (c) => c.copyWith(
+          slug: slug,
+          displayName: _name.text.trim(),
+          description: _description.text.trim(),
+          city: _city.text.trim(),
+          pickupNote: _pickupNote.text.trim(),
+        ),
+      );
     });
     setState(() {});
   }
@@ -193,14 +196,14 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
   }
 
   Widget _spaced(List<Widget> children) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const SizedBox(height: AppConstants.spacing16),
-            children[i],
-          ],
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (var i = 0; i < children.length; i++) ...[
+        if (i > 0) const SizedBox(height: AppConstants.spacing16),
+        children[i],
+      ],
+    ],
+  );
 
   Widget _statusCard(StorefrontSettings s, bool isDark) {
     return _Section(
@@ -215,7 +218,9 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
           value: s.enabled,
           onChanged: (v) {
             if (v && !_slugValid) {
-              ref.read(appNotificationProvider.notifier).show(
+              ref
+                  .read(appNotificationProvider.notifier)
+                  .show(
                     'Choisissez d\'abord un lien de vitrine valide.',
                     kind: AppNotificationKind.warning,
                   );
@@ -229,7 +234,9 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
           subtitle:
               'Les clients voient la vitrine mais ne peuvent ni commander ni demander de devis.',
           value: s.paused,
-          onChanged: s.enabled ? (v) => _update((c) => c.copyWith(paused: v)) : null,
+          onChanged: s.enabled
+              ? (v) => _update((c) => c.copyWith(paused: v))
+              : null,
         ),
         _SwitchRow(
           title: 'Commander hors horaires',
@@ -244,7 +251,11 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
     );
   }
 
-  Widget _linkCard(StorefrontSettings s, StorefrontSyncState sync, bool isDark) {
+  Widget _linkCard(
+    StorefrontSettings s,
+    StorefrontSyncState sync,
+    bool isDark,
+  ) {
     final raw = _slug.text.trim();
     String? error;
     if (raw.isNotEmpty && !_slugValid) {
@@ -304,13 +315,13 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
               fullWidth: false,
               onPressed: _slugValid
                   ? () => showStorefrontLinkDialog(
-                        context,
-                        title: 'Code QR de la vitrine',
-                        message:
-                            'À afficher en boutique ou à partager : vos clients ouvrent la vitrine en le scannant.',
-                        url: _shopUrl,
-                        openLabel: 'Aperçu de la vitrine',
-                      )
+                      context,
+                      title: 'Code QR de la vitrine',
+                      message:
+                          'À afficher en boutique ou à partager : vos clients ouvrent la vitrine en le scannant.',
+                      url: _shopUrl,
+                      openLabel: 'Aperçu de la vitrine',
+                    )
                   : null,
             ),
             AppButton(
@@ -343,7 +354,10 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
             Expanded(
               child: DropdownButtonFormField<int>(
                 initialValue: s.openHour,
-                decoration: InputDecoration(labelText: 'Ouverture', border: border),
+                decoration: InputDecoration(
+                  labelText: 'Ouverture',
+                  border: border,
+                ),
                 items: [
                   for (final h in hours)
                     DropdownMenuItem(value: h, child: Text(label(h))),
@@ -357,7 +371,10 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
             Expanded(
               child: DropdownButtonFormField<int>(
                 initialValue: s.closeHour,
-                decoration: InputDecoration(labelText: 'Fermeture', border: border),
+                decoration: InputDecoration(
+                  labelText: 'Fermeture',
+                  border: border,
+                ),
                 items: [
                   for (final h in hours)
                     DropdownMenuItem(value: h, child: Text(label(h))),
@@ -426,16 +443,22 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined,
-                              size: 32,
-                              color: isDark
-                                  ? AppColors.coolGray
-                                  : AppColors.darkGray),
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 32,
+                            color: isDark
+                                ? AppColors.coolGray
+                                : AppColors.darkGray,
+                          ),
                           const SizedBox(height: AppConstants.spacing6),
-                          Text('Ajouter une photo de couverture',
-                              style: AppTextStyles.body()),
-                          Text('JPEG, PNG ou WebP, moins de 1,5 Mo',
-                              style: AppTextStyles.caption()),
+                          Text(
+                            'Ajouter une photo de couverture',
+                            style: AppTextStyles.body(),
+                          ),
+                          Text(
+                            'JPEG, PNG ou WebP, moins de 1,5 Mo',
+                            style: AppTextStyles.caption(),
+                          ),
                         ],
                       ),
               ),
@@ -488,8 +511,9 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
         ),
         const SizedBox(height: AppConstants.spacing8),
         DropdownButtonFormField<String>(
-          initialValue:
-              haitiDepartments.contains(s.department) ? s.department : '',
+          initialValue: haitiDepartments.contains(s.department)
+              ? s.department
+              : '',
           decoration: _fieldDecoration('Département'),
           items: [
             const DropdownMenuItem(value: '', child: Text('Non précisé')),
@@ -508,9 +532,48 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
           maxLength: 60,
           decoration: _fieldDecoration('Ville', hint: 'Pétion-Ville'),
         ),
+        const SizedBox(height: AppConstants.spacing12),
+        Text('Catégories', style: AppTextStyles.inputLabel()),
+        const SizedBox(height: AppConstants.spacing6),
+        if (s.categories.isNotEmpty) ...[
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final name in s.categories)
+                InputChip(
+                  label: Text(name),
+                  onDeleted: () => _update(
+                    (c) => c.copyWith(
+                      categories: [
+                        for (final item in c.categories)
+                          if (item != name) item,
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppConstants.spacing8),
+        ],
+        AppButton(
+          label: s.categories.isEmpty
+              ? 'Choisir les catégories'
+              : 'Modifier les catégories',
+          icon: Icons.category_outlined,
+          variant: AppButtonVariant.secondary,
+          compact: true,
+          fullWidth: false,
+          onPressed: () => showBusinessCategoryPicker(
+            context,
+            selected: s.categories,
+            onChanged: (categories) =>
+                _update((c) => c.copyWith(categories: categories)),
+          ),
+        ),
         const SizedBox(height: AppConstants.spacing4),
         Text(
-          'La boutique apparaît dans l\'annuaire de la vitrine, filtrée par département.',
+          'Une boutique peut en avoir plusieurs. L\'annuaire ne propose que les catégories déjà utilisées.',
           style: AppTextStyles.caption(),
         ),
       ],
@@ -540,7 +603,9 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
 
   Widget _catalogCard(bool isDark) {
     final products = ref.watch(mockProductsProvider);
-    final visible = products.where((p) => p.active && p.showOnStorefront).length;
+    final visible = products
+        .where((p) => p.active && p.showOnStorefront)
+        .length;
     final currency = ref.watch(currencySettingsProvider);
     return _Section(
       title: 'Catalogue',
@@ -665,12 +730,15 @@ _Live _liveStatus(StorefrontSettings s) {
 }
 
 (String, Color) _liveLabel(_Live live) => switch (live) {
-      _Live.offline => ('Hors ligne', AppColors.darkGray),
-      _Live.paused => ('En pause', AppColors.amber),
-      _Live.open => ('Ouverte', AppColors.deepGreen),
-      _Live.closedAccepting => ('Fermée · commandes acceptées', AppColors.primaryBlue),
-      _Live.closed => ('Fermée', AppColors.boldRed),
-    };
+  _Live.offline => ('Hors ligne', AppColors.darkGray),
+  _Live.paused => ('En pause', AppColors.amber),
+  _Live.open => ('Ouverte', AppColors.deepGreen),
+  _Live.closedAccepting => (
+    'Fermée · commandes acceptées',
+    AppColors.primaryBlue,
+  ),
+  _Live.closed => ('Fermée', AppColors.boldRed),
+};
 
 class _Section extends StatelessWidget {
   const _Section({
@@ -701,11 +769,15 @@ class _Section extends StatelessWidget {
                   color: isDark
                       ? AppColors.skyBlue.withValues(alpha: 0.16)
                       : AppColors.lightBlue,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.radiusButton,
+                  ),
                 ),
-                child: Icon(icon,
-                    size: 18,
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ),
               ),
               const SizedBox(width: AppConstants.spacing10),
               Expanded(
@@ -753,9 +825,13 @@ class _SwitchRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: AppTextStyles.body()
-                          .copyWith(fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(
+                    title,
+                    style: AppTextStyles.body().copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(subtitle, style: AppTextStyles.caption()),
                 ],
@@ -807,16 +883,16 @@ class _SaveStatus extends StatelessWidget {
     final (label, color, icon) = sync.publishing
         ? ('Publication…', AppColors.primaryBlue, Icons.cloud_upload_outlined)
         : sync.error != null
-            ? ('Non publiée', AppColors.boldRed, Icons.cloud_off_outlined)
-            : sync.publishedAt != null
-                ? (
-                    'Publiée à ${sync.publishedAt!.hour.toString().padLeft(2, '0')}:${sync.publishedAt!.minute.toString().padLeft(2, '0')}',
-                    AppColors.deepGreen,
-                    Icons.cloud_done_outlined,
-                  )
-                : settings.everPublished
-                    ? ('Enregistrée', AppColors.deepGreen, Icons.check_rounded)
-                    : ('Brouillon', AppColors.darkGray, Icons.edit_note_rounded);
+        ? ('Non publiée', AppColors.boldRed, Icons.cloud_off_outlined)
+        : sync.publishedAt != null
+        ? (
+            'Publiée à ${sync.publishedAt!.hour.toString().padLeft(2, '0')}:${sync.publishedAt!.minute.toString().padLeft(2, '0')}',
+            AppColors.deepGreen,
+            Icons.cloud_done_outlined,
+          )
+        : settings.everPublished
+        ? ('Enregistrée', AppColors.deepGreen, Icons.check_rounded)
+        : ('Brouillon', AppColors.darkGray, Icons.edit_note_rounded);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -828,9 +904,12 @@ class _SaveStatus extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
-          Text(label,
-              style: AppTextStyles.caption(color: color)
-                  .copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: AppTextStyles.caption(
+              color: color,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -857,8 +936,10 @@ class _ErrorBanner extends StatelessWidget {
           const Icon(Icons.error_outline, size: 18, color: AppColors.boldRed),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(message,
-                style: AppTextStyles.body(color: AppColors.boldRed)),
+            child: Text(
+              message,
+              style: AppTextStyles.body(color: AppColors.boldRed),
+            ),
           ),
           TextButton(onPressed: onRetry, child: const Text('Réessayer')),
         ],
@@ -927,14 +1008,19 @@ class _PreviewCard extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration:
-                          BoxDecoration(color: color, shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(label,
-                          style: AppTextStyles.caption(color: color)
-                              .copyWith(fontWeight: FontWeight.w600)),
+                      child: Text(
+                        label,
+                        style: AppTextStyles.caption(
+                          color: color,
+                        ).copyWith(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ],
                 ),
@@ -945,24 +1031,36 @@ class _PreviewCard extends StatelessWidget {
                     color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                   ),
                 ),
-                if (settings.city.isNotEmpty || settings.department.isNotEmpty) ...[
+                if (settings.city.isNotEmpty ||
+                    settings.department.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    [settings.city, settings.department]
-                        .where((part) => part.isNotEmpty)
-                        .join(', '),
+                    [
+                      settings.city,
+                      settings.department,
+                    ].where((part) => part.isNotEmpty).join(', '),
+                    style: AppTextStyles.caption(),
+                  ),
+                ],
+                if (settings.categories.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    settings.categories.join(' · '),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.caption(),
                   ),
                 ],
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.body(
-                          color: isDark
-                              ? AppColors.coolGray
-                              : AppColors.darkGray)),
+                  Text(
+                    description,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body(
+                      color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: AppConstants.spacing12),
                 Text(

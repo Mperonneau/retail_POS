@@ -33,7 +33,8 @@ class StorefrontApi {
       'pin': pin,
       'name': name,
     });
-    final account = (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final account =
+        (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
     return CustomerAccount(
       token: body['token']?.toString() ?? '',
       name: account['name']?.toString() ?? '',
@@ -42,15 +43,18 @@ class StorefrontApi {
   }
 
   Future<CustomerAccount> renameAccount(String token, String name) async {
-    final body = await _send(() => _http.post(
-          Uri.parse('$_root/storefront/account'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode({'name': name}),
-        ));
-    final account = (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final body = await _send(
+      () => _http.post(
+        Uri.parse('$_root/storefront/account'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'name': name}),
+      ),
+    );
+    final account =
+        (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
     return CustomerAccount(
       token: token,
       name: account['name']?.toString() ?? name,
@@ -66,8 +70,9 @@ class StorefrontApi {
     ];
   }
 
-  Future<Shop> shop(String slug) async =>
-      Shop.fromJson(await _get('/storefront/shops/${Uri.encodeComponent(slug)}'));
+  Future<Shop> shop(String slug) async => Shop.fromJson(
+    await _get('/storefront/shops/${Uri.encodeComponent(slug)}'),
+  );
 
   Future<RequestView> submit({
     required String slug,
@@ -112,7 +117,9 @@ class StorefrontApi {
 
   Future<RequestView> confirmCard(String id, String intentId) async =>
       RequestView.fromJson(
-        await _post('/storefront/requests/$id/card/confirm', {'intent_id': intentId}),
+        await _post('/storefront/requests/$id/card/confirm', {
+          'intent_id': intentId,
+        }),
       );
 
   Future<MoncashStart> startMoncash(String id) async {
@@ -138,22 +145,28 @@ class StorefrontApi {
     String path,
     Map<String, dynamic> payload, {
     String? token,
-  }) =>
-      _send(() => _http.post(
-            Uri.parse('$_root$path'),
-            headers: {'Content-Type': 'application/json', ..._auth(token)},
-            body: jsonEncode(payload),
-          ));
+  }) => _send(
+    () => _http.post(
+      Uri.parse('$_root$path'),
+      headers: {'Content-Type': 'application/json', ..._auth(token)},
+      body: jsonEncode(payload),
+    ),
+  );
 
-  Map<String, String> _auth(String? token) =>
-      token == null || token.isEmpty ? const {} : {'Authorization': 'Bearer $token'};
+  Map<String, String> _auth(String? token) => token == null || token.isEmpty
+      ? const {}
+      : {'Authorization': 'Bearer $token'};
 
-  Future<Map<String, dynamic>> _send(Future<http.Response> Function() call) async {
+  Future<Map<String, dynamic>> _send(
+    Future<http.Response> Function() call,
+  ) async {
     final http.Response response;
     try {
       response = await call().timeout(const Duration(seconds: 45));
     } catch (_) {
-      throw ApiException('Connexion impossible. Vérifiez votre réseau et réessayez.');
+      throw ApiException(
+        'Connexion impossible. Vérifiez votre réseau et réessayez.',
+      );
     }
     Map<String, dynamic> body = const {};
     try {
@@ -163,7 +176,9 @@ class StorefrontApi {
     if (response.statusCode >= 400) {
       final message = body['error']?.toString().trim() ?? '';
       throw ApiException(
-        message.isEmpty ? 'Une erreur est survenue (${response.statusCode}).' : message,
+        message.isEmpty
+            ? 'Une erreur est survenue (${response.statusCode}).'
+            : message,
         status: response.statusCode,
       );
     }
@@ -171,7 +186,8 @@ class StorefrontApi {
   }
 }
 
-int _int(Object? value) => value is num ? value.round() : int.tryParse('$value') ?? 0;
+int _int(Object? value) =>
+    value is num ? value.round() : int.tryParse('$value') ?? 0;
 
 double _double(Object? value) =>
     value is num ? value.toDouble() : double.tryParse('$value') ?? 0;
@@ -207,21 +223,25 @@ class Availability {
   final List<int> closedWeekdays;
 
   factory Availability.fromJson(Map<String, dynamic> json) => Availability(
-        isOpenNow: json['is_open_now'] == true,
-        paused: json['paused'] == true,
-        acceptsOrders: json['accepts_orders'] == true,
-        acceptsQuotes: json['accepts_quotes'] == true,
-        opensAtLabel: json['opens_at_label']?.toString(),
-        openHour: _int(json['open_hour']),
-        closeHour: _int(json['close_hour']),
-        closedWeekdays: [
-          for (final d in (json['closed_weekdays'] as List? ?? const [])) _int(d),
-        ],
-      );
+    isOpenNow: json['is_open_now'] == true,
+    paused: json['paused'] == true,
+    acceptsOrders: json['accepts_orders'] == true,
+    acceptsQuotes: json['accepts_quotes'] == true,
+    opensAtLabel: json['opens_at_label']?.toString(),
+    openHour: _int(json['open_hour']),
+    closeHour: _int(json['close_hour']),
+    closedWeekdays: [
+      for (final d in (json['closed_weekdays'] as List? ?? const [])) _int(d),
+    ],
+  );
 }
 
 class OptionChoice {
-  const OptionChoice({required this.id, required this.name, required this.deltaHtg});
+  const OptionChoice({
+    required this.id,
+    required this.name,
+    required this.deltaHtg,
+  });
   final String id;
   final String name;
   final double deltaHtg;
@@ -273,40 +293,44 @@ class Product {
   bool get onSale => regularPriceHtg > priceHtg;
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
-        id: json['id']?.toString() ?? '',
-        name: json['name']?.toString() ?? '',
-        category: json['category']?.toString() ?? '',
-        description: json['description']?.toString() ?? '',
-        priceHtg: _double(json['price_htg']),
-        regularPriceHtg: _double(json['regular_price_htg']),
-        photoUrl: StorefrontApi.photo(json['photo_url']?.toString() ?? ''),
-        available: json['available'] == true,
-        maxQuantity: _int(json['max_quantity']),
-        unit: json['unit']?.toString() ?? '',
-        options: [
-          for (final g in (json['options'] as List? ?? const []))
-            if (g is Map)
-              OptionGroup(
-                id: g['id']?.toString() ?? '',
-                name: g['name']?.toString() ?? '',
-                required: g['required'] == true,
-                multiple: g['multiple'] == true,
-                choices: [
-                  for (final c in (g['choices'] as List? ?? const []))
-                    if (c is Map)
-                      OptionChoice(
-                        id: c['id']?.toString() ?? '',
-                        name: c['name']?.toString() ?? '',
-                        deltaHtg: _double(c['delta_htg']),
-                      ),
-                ],
-              ),
-        ],
-      );
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    category: json['category']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    priceHtg: _double(json['price_htg']),
+    regularPriceHtg: _double(json['regular_price_htg']),
+    photoUrl: StorefrontApi.photo(json['photo_url']?.toString() ?? ''),
+    available: json['available'] == true,
+    maxQuantity: _int(json['max_quantity']),
+    unit: json['unit']?.toString() ?? '',
+    options: [
+      for (final g in (json['options'] as List? ?? const []))
+        if (g is Map)
+          OptionGroup(
+            id: g['id']?.toString() ?? '',
+            name: g['name']?.toString() ?? '',
+            required: g['required'] == true,
+            multiple: g['multiple'] == true,
+            choices: [
+              for (final c in (g['choices'] as List? ?? const []))
+                if (c is Map)
+                  OptionChoice(
+                    id: c['id']?.toString() ?? '',
+                    name: c['name']?.toString() ?? '',
+                    deltaHtg: _double(c['delta_htg']),
+                  ),
+            ],
+          ),
+    ],
+  );
 }
 
 class CustomerAccount {
-  const CustomerAccount({required this.token, required this.name, required this.phone});
+  const CustomerAccount({
+    required this.token,
+    required this.name,
+    required this.phone,
+  });
 
   final String token;
   final String name;
@@ -340,28 +364,28 @@ class OrderSummary {
   bool get isQuote => kind == 'devis';
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) => OrderSummary(
-        id: json['id']?.toString() ?? '',
-        number: json['number']?.toString() ?? '',
-        kind: json['kind']?.toString() ?? '',
-        status: json['status']?.toString() ?? '',
-        createdAt: _int(json['created_at']),
-        shopName: json['shop_name']?.toString() ?? '',
-        shopSlug: json['shop_slug']?.toString() ?? '',
-        totalHtg: _double(json['total_htg']),
-        usdRate: _double(json['usd_rate']),
-      );
+    id: json['id']?.toString() ?? '',
+    number: json['number']?.toString() ?? '',
+    kind: json['kind']?.toString() ?? '',
+    status: json['status']?.toString() ?? '',
+    createdAt: _int(json['created_at']),
+    shopName: json['shop_name']?.toString() ?? '',
+    shopSlug: json['shop_slug']?.toString() ?? '',
+    totalHtg: _double(json['total_htg']),
+    usdRate: _double(json['usd_rate']),
+  );
 
   factory OrderSummary.fromRequest(RequestView request) => OrderSummary(
-        id: request.id,
-        number: request.number,
-        kind: request.kind,
-        status: request.status,
-        createdAt: request.createdAt.millisecondsSinceEpoch ~/ 1000,
-        shopName: request.shopName,
-        shopSlug: '',
-        totalHtg: request.totalHtg,
-        usdRate: request.usdRate,
-      );
+    id: request.id,
+    number: request.number,
+    kind: request.kind,
+    status: request.status,
+    createdAt: request.createdAt.millisecondsSinceEpoch ~/ 1000,
+    shopName: request.shopName,
+    shopSlug: '',
+    totalHtg: request.totalHtg,
+    usdRate: request.usdRate,
+  );
 }
 
 class ShopCard {
@@ -370,6 +394,7 @@ class ShopCard {
     required this.name,
     required this.city,
     required this.department,
+    this.categories = const [],
     required this.description,
     required this.coverUrl,
     required this.isOpenNow,
@@ -381,42 +406,57 @@ class ShopCard {
   final String name;
   final String city;
   final String department;
+  final List<String> categories;
   final String description;
   final String coverUrl;
   final bool isOpenNow;
   final bool paused;
   final String opensAtLabel;
 
-  String get place => [city, department].where((part) => part.isNotEmpty).join(', ');
+  String get place =>
+      [city, department].where((part) => part.isNotEmpty).join(', ');
 
   factory ShopCard.fromJson(Map<String, dynamic> json) => ShopCard(
-        slug: json['slug']?.toString() ?? '',
-        name: json['name']?.toString() ?? '',
-        city: json['city']?.toString() ?? '',
-        department: json['department']?.toString() ?? '',
-        description: json['description']?.toString() ?? '',
-        coverUrl: StorefrontApi.photo(json['cover_url']?.toString() ?? ''),
-        isOpenNow: json['is_open_now'] == true,
-        paused: json['paused'] == true,
-        opensAtLabel: json['opens_at_label']?.toString() ?? '',
-      );
+    slug: json['slug']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    city: json['city']?.toString() ?? '',
+    department: json['department']?.toString() ?? '',
+    categories: [
+      for (final name in (json['categories'] as List? ?? const [])) '$name',
+    ],
+    description: json['description']?.toString() ?? '',
+    coverUrl: StorefrontApi.photo(json['cover_url']?.toString() ?? ''),
+    isOpenNow: json['is_open_now'] == true,
+    paused: json['paused'] == true,
+    opensAtLabel: json['opens_at_label']?.toString() ?? '',
+  );
 }
 
 class ShopDirectory {
-  const ShopDirectory({required this.results, required this.departments});
+  const ShopDirectory({
+    required this.results,
+    required this.departments,
+    this.categories = const [],
+  });
 
   final List<ShopCard> results;
   final List<String> departments;
 
+  /// Enterprise types used by at least one open shop, in catalogue order.
+  final List<String> categories;
+
   factory ShopDirectory.fromJson(Map<String, dynamic> json) => ShopDirectory(
-        results: [
-          for (final row in (json['results'] as List? ?? const []))
-            if (row is Map) ShopCard.fromJson(row.cast<String, dynamic>()),
-        ],
-        departments: [
-          for (final name in (json['departments'] as List? ?? const [])) '$name',
-        ],
-      );
+    results: [
+      for (final row in (json['results'] as List? ?? const []))
+        if (row is Map) ShopCard.fromJson(row.cast<String, dynamic>()),
+    ],
+    departments: [
+      for (final name in (json['departments'] as List? ?? const [])) '$name',
+    ],
+    categories: [
+      for (final name in (json['categories'] as List? ?? const [])) '$name',
+    ],
+  );
 }
 
 class Shop {
@@ -427,6 +467,7 @@ class Shop {
     required this.address,
     this.city = '',
     this.department = '',
+    this.businessCategories = const [],
     required this.description,
     required this.pickupNote,
     required this.coverUrl,
@@ -442,6 +483,7 @@ class Shop {
   final String address;
   final String city;
   final String department;
+  final List<String> businessCategories;
   final String description;
   final String pickupNote;
   final String coverUrl;
@@ -453,25 +495,31 @@ class Shop {
   final List<Product> products;
 
   factory Shop.fromJson(Map<String, dynamic> json) => Shop(
-        slug: json['slug']?.toString() ?? '',
-        name: json['name']?.toString() ?? '',
-        phone: json['phone']?.toString() ?? '',
-        address: json['address']?.toString() ?? '',
-        city: json['city']?.toString() ?? '',
-        department: json['department']?.toString() ?? '',
-        description: json['description']?.toString() ?? '',
-        pickupNote: json['pickup_note']?.toString() ?? '',
-        coverUrl: StorefrontApi.photo(json['cover_url']?.toString() ?? ''),
-        usdRate: _double(json['usd_rate']),
-        availability: Availability.fromJson(
-          (json['availability'] as Map?)?.cast<String, dynamic>() ?? const {},
-        ),
-        categories: [for (final c in (json['categories'] as List? ?? const [])) '$c'],
-        products: [
-          for (final p in (json['products'] as List? ?? const []))
-            if (p is Map) Product.fromJson(p.cast<String, dynamic>()),
-        ],
-      );
+    slug: json['slug']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    phone: json['phone']?.toString() ?? '',
+    address: json['address']?.toString() ?? '',
+    city: json['city']?.toString() ?? '',
+    department: json['department']?.toString() ?? '',
+    businessCategories: [
+      for (final name in (json['business_categories'] as List? ?? const []))
+        '$name',
+    ],
+    description: json['description']?.toString() ?? '',
+    pickupNote: json['pickup_note']?.toString() ?? '',
+    coverUrl: StorefrontApi.photo(json['cover_url']?.toString() ?? ''),
+    usdRate: _double(json['usd_rate']),
+    availability: Availability.fromJson(
+      (json['availability'] as Map?)?.cast<String, dynamic>() ?? const {},
+    ),
+    categories: [
+      for (final c in (json['categories'] as List? ?? const [])) '$c',
+    ],
+    products: [
+      for (final p in (json['products'] as List? ?? const []))
+        if (p is Map) Product.fromJson(p.cast<String, dynamic>()),
+    ],
+  );
 }
 
 class RequestLine {
@@ -544,7 +592,9 @@ class RequestView {
       number: json['number']?.toString() ?? '',
       kind: json['kind']?.toString() ?? 'commande',
       status: json['status']?.toString() ?? 'open',
-      createdAt: DateTime.fromMillisecondsSinceEpoch(_int(json['created_at']) * 1000),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        _int(json['created_at']) * 1000,
+      ),
       paymentMethod: json['payment_method']?.toString() ?? '',
       customerName: json['customer_name']?.toString() ?? '',
       note: json['note']?.toString() ?? '',

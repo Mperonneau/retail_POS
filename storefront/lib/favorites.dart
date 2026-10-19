@@ -25,7 +25,9 @@ class Favorites extends ChangeNotifier {
         final list = jsonDecode(raw);
         if (list is List) {
           for (final row in list) {
-            if (row is Map) shops.add(ShopCard.fromJson(row.cast<String, dynamic>()));
+            if (row is Map) {
+              shops.add(ShopCard.fromJson(row.cast<String, dynamic>()));
+            }
           }
         }
       } catch (_) {}
@@ -49,6 +51,7 @@ class Favorites extends ChangeNotifier {
             'name': row.name,
             'city': row.city,
             'department': row.department,
+            'categories': row.categories,
             'description': row.description,
             'cover_url': row.coverUrl,
             'is_open_now': row.isOpenNow,

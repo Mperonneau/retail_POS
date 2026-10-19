@@ -65,8 +65,8 @@ const Object _keep = Object();
 /// devis and paid orders from the server into Devis and Commandes.
 class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
   StorefrontSyncNotifier(this._ref, {StorefrontApi? api})
-      : _api = api ?? StorefrontApi(),
-        super(const StorefrontSyncState());
+    : _api = api ?? StorefrontApi(),
+      super(const StorefrontSyncState());
 
   final Ref _ref;
   final StorefrontApi _api;
@@ -164,6 +164,7 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
           : (business.trim().isNotEmpty ? business.trim() : 'Boutique'),
       'city': s.city,
       'department': s.department,
+      'categories': s.categories,
       'usd_rate': currency.isLocalUsd ? 0 : currency.usdToLocalRate,
       'settings': {
         'enabled': s.enabled,
@@ -198,7 +199,11 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
                   'multiple': g.multiple,
                   'choices': [
                     for (final c in g.choices)
-                      {'id': c.id, 'name': c.name, 'delta_htg': c.priceDeltaHtg},
+                      {
+                        'id': c.id,
+                        'name': c.name,
+                        'delta_htg': c.priceDeltaHtg,
+                      },
                   ],
                 },
             ],
@@ -210,8 +215,9 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
   /// Server path when the photo was already sent this session, else the data URL.
   String _photoRef(String? dataUrl, Set<String> sent) {
     if (dataUrl == null || dataUrl.isEmpty) return '';
-    final match = RegExp(r'^data:image/(png|jpeg|jpg|webp);base64,(.+)$')
-        .firstMatch(dataUrl);
+    final match = RegExp(
+      r'^data:image/(png|jpeg|jpg|webp);base64,(.+)$',
+    ).firstMatch(dataUrl);
     if (match == null) return '';
     final List<int> bytes;
     try {
@@ -219,7 +225,11 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
     } catch (_) {
       return '';
     }
-    final ext = switch (match.group(1)) { 'png' => 'png', 'webp' => 'webp', _ => 'jpg' };
+    final ext = switch (match.group(1)) {
+      'png' => 'png',
+      'webp' => 'webp',
+      _ => 'jpg',
+    };
     final path =
         '/storefront/photos/${sha256.convert(bytes).toString().substring(0, 32)}.$ext';
     if (_uploaded.contains(path)) return path;
@@ -257,8 +267,9 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
     String? newOrder;
     String? newQuote;
     for (final request in rows.reversed) {
-      final quoteId =
-          request.fromRegister ? request.externalRef : 'vit_${request.id}';
+      final quoteId = request.fromRegister
+          ? request.externalRef
+          : 'vit_${request.id}';
       final quotes = _ref.read(quotesProvider);
       var quote = quotes.where((q) => q.id == quoteId).firstOrNull;
 
@@ -277,8 +288,9 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
           ],
           clientName: request.customerName,
           clientPhone: request.customerPhone,
-          clientEmail:
-              request.customerEmail.isEmpty ? null : request.customerEmail,
+          clientEmail: request.customerEmail.isEmpty
+              ? null
+              : request.customerEmail,
           fulfillmentMode: RetailFulfillmentMode.pickup,
           paymentLinkSent: true,
           createdAt: request.createdAt,
@@ -297,17 +309,22 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
           ..markQuotePaid(quote.id)
           ..convertToOrder(quote.id);
       }
-      final subtotal =
-          request.lines.fold<double>(0, (s, l) => s + l.unitHtg * l.quantity);
-      _ref.read(retailOrdersProvider.notifier).add(
+      final subtotal = request.lines.fold<double>(
+        0,
+        (s, l) => s + l.unitHtg * l.quantity,
+      );
+      _ref
+          .read(retailOrdersProvider.notifier)
+          .add(
             RetailOrder(
               id: orderId,
               orderNumber: request.number,
               fromQuoteId: quote?.id,
               clientName: request.customerName,
               clientPhone: request.customerPhone,
-              clientEmail:
-                  request.customerEmail.isEmpty ? null : request.customerEmail,
+              clientEmail: request.customerEmail.isEmpty
+                  ? null
+                  : request.customerEmail,
               fulfillmentMode: RetailFulfillmentMode.pickup,
               status: RetailOrderStatus.paid,
               paymentSource: RetailPaymentSource.storefront,
@@ -390,8 +407,9 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
       'kind': 'devis',
       'reference': quote.id,
       'number': quote.quoteNumber,
-      'discount_htg':
-          double.parse(quote.discountAmountHtg().toStringAsFixed(2)),
+      'discount_htg': double.parse(
+        quote.discountAmountHtg().toStringAsFixed(2),
+      ),
       'customer': {
         'name': quote.clientName ?? '',
         'phone': quote.clientPhone ?? '',
@@ -422,10 +440,10 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
 
 final storefrontSyncProvider =
     StateNotifierProvider<StorefrontSyncNotifier, StorefrontSyncState>((ref) {
-  final notifier = StorefrontSyncNotifier(ref);
-  ref.listen(storefrontSettingsProvider, (_, _) => notifier.schedule());
-  ref.listen(mockProductsProvider, (_, _) => notifier.schedule());
-  ref.listen(currencySettingsProvider, (_, _) => notifier.schedule());
-  Future<void>.microtask(notifier.schedule);
-  return notifier;
-});
+      final notifier = StorefrontSyncNotifier(ref);
+      ref.listen(storefrontSettingsProvider, (_, _) => notifier.schedule());
+      ref.listen(mockProductsProvider, (_, _) => notifier.schedule());
+      ref.listen(currencySettingsProvider, (_, _) => notifier.schedule());
+      Future<void>.microtask(notifier.schedule);
+      return notifier;
+    });

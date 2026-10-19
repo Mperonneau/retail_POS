@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/local_store.dart';
+import 'business_categories.dart';
 
 /// Public storefront site. Pass `--dart-define=STOREFRONT_URL=...` to override.
 class StorefrontLinks {
@@ -44,9 +45,27 @@ bool isValidStorefrontSlug(String slug) => _slugPattern.hasMatch(slug);
 /// Lowercase, accent-free, dash-separated link suggested from the shop name.
 String suggestStorefrontSlug(String name) {
   const accents = {
-    'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ç': 'c', 'é': 'e', 'è': 'e',
-    'ê': 'e', 'ë': 'e', 'î': 'i', 'ï': 'i', 'í': 'i', 'ô': 'o', 'ö': 'o',
-    'ó': 'o', 'ù': 'u', 'û': 'u', 'ü': 'u', 'ú': 'u', 'ÿ': 'y', 'ñ': 'n',
+    'à': 'a',
+    'â': 'a',
+    'ä': 'a',
+    'á': 'a',
+    'ç': 'c',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'î': 'i',
+    'ï': 'i',
+    'í': 'i',
+    'ô': 'o',
+    'ö': 'o',
+    'ó': 'o',
+    'ù': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ú': 'u',
+    'ÿ': 'y',
+    'ñ': 'n',
   };
   final buffer = StringBuffer();
   for (final rune in name.toLowerCase().runes) {
@@ -57,7 +76,9 @@ String suggestStorefrontSlug(String name) {
       .toString()
       .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
       .replaceAll(RegExp(r'^-+|-+$'), '');
-  if (slug.length > 40) slug = slug.substring(0, 40).replaceAll(RegExp(r'-+$'), '');
+  if (slug.length > 40) {
+    slug = slug.substring(0, 40).replaceAll(RegExp(r'-+$'), '');
+  }
   return slug.length >= 3 ? slug : '';
 }
 
@@ -75,6 +96,7 @@ class StorefrontSettings {
     this.description = '',
     this.city = '',
     this.department = '',
+    this.categories = const [],
     this.pickupNote = '',
     this.coverDataUrl,
     this.everPublished = false,
@@ -97,6 +119,9 @@ class StorefrontSettings {
   final String description;
   final String city;
   final String department;
+
+  /// Enterprise types. A shop can belong to several.
+  final List<String> categories;
   final String pickupNote;
   final String? coverDataUrl;
 
@@ -116,6 +141,7 @@ class StorefrontSettings {
     String? description,
     String? city,
     String? department,
+    List<String>? categories,
     String? pickupNote,
     Object? coverDataUrl = _keep,
     bool? everPublished,
@@ -133,29 +159,32 @@ class StorefrontSettings {
       description: description ?? this.description,
       city: city ?? this.city,
       department: department ?? this.department,
+      categories: categories ?? this.categories,
       pickupNote: pickupNote ?? this.pickupNote,
-      coverDataUrl:
-          coverDataUrl == _keep ? this.coverDataUrl : coverDataUrl as String?,
+      coverDataUrl: coverDataUrl == _keep
+          ? this.coverDataUrl
+          : coverDataUrl as String?,
       everPublished: everPublished ?? this.everPublished,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'enabled': enabled,
-        'paused': paused,
-        'acceptWhenClosed': acceptWhenClosed,
-        'openHour': openHour,
-        'closeHour': closeHour,
-        'closedWeekdays': closedWeekdays.toList()..sort(),
-        'slug': slug,
-        'displayName': displayName,
-        'description': description,
-        'city': city,
-        'department': department,
-        'pickupNote': pickupNote,
-        'coverDataUrl': coverDataUrl,
-        'everPublished': everPublished,
-      };
+    'enabled': enabled,
+    'paused': paused,
+    'acceptWhenClosed': acceptWhenClosed,
+    'openHour': openHour,
+    'closeHour': closeHour,
+    'closedWeekdays': closedWeekdays.toList()..sort(),
+    'slug': slug,
+    'displayName': displayName,
+    'description': description,
+    'city': city,
+    'department': department,
+    'categories': categories,
+    'pickupNote': pickupNote,
+    'coverDataUrl': coverDataUrl,
+    'everPublished': everPublished,
+  };
 
   static StorefrontSettings fromJson(Map<String, dynamic> json) {
     int hour(Object? raw, int fallback) {
@@ -181,6 +210,7 @@ class StorefrontSettings {
       department: haitiDepartments.contains(json['department'])
           ? json['department'] as String
           : '',
+      categories: sanitizeBusinessCategories(json['categories']),
       pickupNote: json['pickupNote']?.toString() ?? '',
       coverDataUrl: (json['coverDataUrl'] as String?)?.isNotEmpty == true
           ? json['coverDataUrl'] as String
@@ -231,8 +261,8 @@ class StorefrontSettingsNotifier extends StateNotifier<StorefrontSettings> {
 
 final storefrontSettingsProvider =
     StateNotifierProvider<StorefrontSettingsNotifier, StorefrontSettings>(
-  (ref) => StorefrontSettingsNotifier(),
-);
+      (ref) => StorefrontSettingsNotifier(),
+    );
 
 /// Secret that proves this register owns its vitrine link on the server.
 final storefrontShopKeyProvider = FutureProvider<String>((ref) async {
@@ -240,9 +270,10 @@ final storefrontShopKeyProvider = FutureProvider<String>((ref) async {
   final saved = await LocalStore.instance.getString(key);
   if (saved != null && saved.length >= 32) return saved;
   final random = Random.secure();
-  final created = List<int>.generate(32, (_) => random.nextInt(256))
-      .map((b) => b.toRadixString(16).padLeft(2, '0'))
-      .join();
+  final created = List<int>.generate(
+    32,
+    (_) => random.nextInt(256),
+  ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   await LocalStore.instance.setString(key, created);
   return created;
 });

@@ -46,6 +46,107 @@ MAX_QTY = 999
 MAX_REQUESTS = 20_000
 REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 KINDS = {"devis", "commande"}
+# Enterprise types a shop can claim. Same names as the POS picker.
+# The directory only offers the ones at least one enabled shop uses.
+BUSINESS_CATEGORIES = (
+    "Supermarché",
+    "Supérette",
+    "Épicerie",
+    "Magasin de vivres",
+    "Boulangerie",
+    "Pâtisserie",
+    "Boucherie",
+    "Charcuterie",
+    "Poissonnerie",
+    "Fruits et légumes",
+    "Produits frais et laitiers",
+    "Épicerie fine",
+    "Dépôt alimentaire",
+    "Dépôt de boissons",
+    "Boissons alcoolisées",
+    "Eau en bouteille et bonbonnes",
+    "Glace et surgelés",
+    "Vêtements",
+    "Friperie",
+    "Chaussures",
+    "Sacs et maroquinerie",
+    "Tissus et mercerie",
+    "Uniformes",
+    "Bijouterie",
+    "Horlogerie",
+    "Articles de cérémonie",
+    "Meubles",
+    "Literie",
+    "Linge de maison",
+    "Électroménager",
+    "Vaisselle et articles de cuisine",
+    "Décoration",
+    "Matériaux de construction",
+    "Quincaillerie",
+    "Bois et menuiserie",
+    "Toiture",
+    "Peinture",
+    "Plomberie et sanitaire",
+    "Électricité du bâtiment",
+    "Carrelage et revêtements",
+    "Portes et fenêtres",
+    "Outillage",
+    "Générateurs, onduleurs et batteries",
+    "Énergie solaire",
+    "Gaz domestique",
+    "Station-service",
+    "Téléphones et accessoires",
+    "Informatique",
+    "Électronique et audiovisuel",
+    "Pièces électroniques",
+    "Pharmacie",
+    "Parapharmacie",
+    "Matériel médical",
+    "Optique",
+    "Cosmétiques et soins",
+    "Parfumerie",
+    "Salon de coiffure",
+    "Institut de beauté",
+    "Articles pour bébé",
+    "Jouets",
+    "Fournitures scolaires",
+    "Pièces automobiles",
+    "Pièces moto",
+    "Pneus",
+    "Lubrifiants",
+    "Accessoires auto",
+    "Vélos",
+    "Intrants agricoles",
+    "Semences et plants",
+    "Matériel agricole",
+    "Irrigation",
+    "Aliments pour animaux",
+    "Produits vétérinaires",
+    "Matériel de pêche",
+    "Librairie",
+    "Papeterie",
+    "Fournitures de bureau",
+    "Imprimerie",
+    "Articles de sport",
+    "Musique et instruments",
+    "Artisanat et souvenirs",
+    "Jeux",
+    "Cadeaux",
+    "Fleurs",
+    "Location pour événements",
+    "Traiteur",
+    "Produits d'entretien",
+    "Emballages",
+    "Animalerie",
+    "Sécurité et serrurerie",
+    "Pompes funèbres",
+    "Magasin général",
+    "Grossiste",
+    "Import-export",
+)
+_CATEGORY_SET = set(BUSINESS_CATEGORIES)
+_CATEGORY_ORDER = {name: index for index, name in enumerate(BUSINESS_CATEGORIES)}
+
 # Official departments of Haiti. The directory always offers the full list.
 DEPARTMENTS = (
     "Artibonite",
@@ -124,6 +225,20 @@ def _text(value: object, limit: int) -> str:
 def _department(value: object) -> str:
     text = _text(value, 40)
     return text if text in DEPARTMENTS else ""
+
+
+def _categories(value: object) -> list[str]:
+    """Known enterprise types, in the order the shop selected them."""
+    if not isinstance(value, list):
+        return []
+    chosen: list[str] = []
+    for item in value:
+        name = _text(item, 80)
+        if name in _CATEGORY_SET and name not in chosen:
+            chosen.append(name)
+        if len(chosen) >= 20:
+            break
+    return chosen
 
 
 def _phone_digits(value: object) -> str:
@@ -350,6 +465,11 @@ class StorefrontStore:
                 "address": _text(payload.get("address"), 160),
                 "city": _text(payload.get("city") or settings.get("city"), 60),
                 "department": _department(payload.get("department") or settings.get("department")),
+                "categories": _categories(
+                    payload.get("categories")
+                    if payload.get("categories") is not None
+                    else settings.get("categories")
+                ),
                 "description": _text(settings.get("description"), 300),
                 "pickup_note": _text(settings.get("pickup_note"), 300),
                 "cover_url": cover,
@@ -523,12 +643,19 @@ class StorefrontStore:
         with self._lock:
             shops = [dict(shop) for shop in self.shops.values() if shop.get("enabled")]
         shops.sort(key=lambda shop: str(shop.get("name") or "").lower())
+        used: list[str] = []
+        for shop in shops:
+            for name in shop.get("categories") or []:
+                if name not in used:
+                    used.append(name)
+        used.sort(key=lambda name: _CATEGORY_ORDER.get(name, 10_000))
         if raw and not wanted:
             shops = []
         elif wanted:
             shops = [shop for shop in shops if shop.get("department") == wanted]
         return {
             "departments": list(DEPARTMENTS),
+            "categories": used,
             "results": [self._directory_card(shop, now) for shop in shops],
         }
 
@@ -539,6 +666,7 @@ class StorefrontStore:
             "name": shop["name"],
             "city": shop.get("city", ""),
             "department": shop.get("department", ""),
+            "categories": list(shop.get("categories") or []),
             "description": shop.get("description", ""),
             "cover_url": shop.get("cover_url", ""),
             "is_open_now": info["is_open_now"],
@@ -580,6 +708,7 @@ class StorefrontStore:
             "address": shop.get("address", ""),
             "city": shop.get("city", ""),
             "department": shop.get("department", ""),
+            "business_categories": list(shop.get("categories") or []),
             "description": shop.get("description", ""),
             "pickup_note": shop.get("pickup_note", ""),
             "cover_url": shop.get("cover_url", ""),

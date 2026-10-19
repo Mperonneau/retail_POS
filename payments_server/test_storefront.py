@@ -130,6 +130,27 @@ def test_directory_lists_enabled_shops_by_department():
     assert store.directory("Nord", OPEN)["results"][0]["slug"] == "marche-nord"
     assert store.directory("Mars")["results"] == []
     assert store.public_shop("sans-region", OPEN)["department"] == ""
+    assert listed["categories"] == []
+
+
+def test_business_categories_keep_several_and_list_only_used():
+    store = _store()
+    store.publish(
+        KEY,
+        _catalog(categories=["Supermarché", "Supermarché", "Inconnu", "Quincaillerie"]),
+    )
+    shop = store.public_shop("chez-marie", OPEN)
+    assert shop["business_categories"] == ["Supermarché", "Quincaillerie"]
+    other = _catalog()
+    other["slug"] = "fripe"
+    other["name"] = "Fripe"
+    other["categories"] = ["Friperie", "Vêtements"]
+    store.publish(OTHER, other)
+    listed = store.directory(now=OPEN)
+    assert listed["categories"] == ["Supermarché", "Vêtements", "Friperie", "Quincaillerie"]
+    cards = {row["name"]: row["categories"] for row in listed["results"]}
+    assert cards["Chez Marie"] == ["Supermarché", "Quincaillerie"]
+    assert cards["Fripe"] == ["Friperie", "Vêtements"]
 
 
 def test_account_login_and_orders():
