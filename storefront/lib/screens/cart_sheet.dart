@@ -270,14 +270,17 @@ class _LineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final photo = line.product.photoUrl;
     return Row(
       children: [
-        SizedBox(
-          width: 56,
-          height: 56,
-          child: ProductPhoto(url: line.product.photoUrl, name: line.product.name, radius: 10),
-        ),
-        const SizedBox(width: 12),
+        if (photo.isNotEmpty) ...[
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: ProductPhoto(url: photo, name: line.product.name, radius: 10),
+          ),
+          const SizedBox(width: 12),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
