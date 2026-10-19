@@ -6,7 +6,7 @@ this process; it never sees `STRIPE_SECRET_KEY` or `MONCASH_SECRET`.
 Env:
   STRIPE_SECRET_KEY       sk_… or rk_… (required for card and payment links)
   STRIPE_WEBHOOK_SECRET   whsec_… (required before launch; verifies webhooks)
-  STRIPE_PUBLISHABLE_KEY  pk_… (optional; hosted Checkout does not need it)
+  STRIPE_PUBLISHABLE_KEY  pk_… (required for the in-app card form)
   MONCASH_CLIENT_ID
   MONCASH_SECRET
   MONCASH_BASE_URL        default https://moncashbutton.digicelgroup.com
@@ -221,6 +221,49 @@ def create_checkout(
     return {"id": session_id, "url": url, **pricing}
 
 
+def create_payment_intent(
+    *,
+    reference: str,
+    order_usd_cents: int,
+    description: str,
+) -> dict:
+    """PaymentIntent for the in-app card form. The client confirms with Stripe.js."""
+    if order_usd_cents <= 0:
+        raise PaymentError(400, "Le montant en dollars doit être supérieur à zéro.")
+    pricing = price_card_charge(order_usd_cents)
+    label = description.strip() or f"Vente {reference}".strip()
+    fields: list[tuple[str, str]] = [
+        ("amount", str(pricing["total_usd_cents"])),
+        ("currency", "usd"),
+        ("payment_method_types[]", "card"),
+        ("description", label[:500]),
+        ("metadata[reference]", (reference or "retail")[:500]),
+        ("metadata[order_usd_cents]", str(pricing["order_usd_cents"])),
+        ("metadata[platform_fee_usd_cents]", str(pricing["platform_fee_usd_cents"])),
+        ("metadata[stripe_fee_usd_cents]", str(pricing["stripe_fee_usd_cents"])),
+        ("metadata[kind]", "retail_card"),
+    ]
+    intent = stripe_request(
+        "POST",
+        "/payment_intents",
+        fields,
+        idempotency_key=f"retail-pi-{reference}-{pricing['total_usd_cents']}",
+    )
+    intent_id = str(intent.get("id") or "")
+    client_secret = str(intent.get("client_secret") or "")
+    if not intent_id or not client_secret:
+        raise PaymentError(502, "Stripe n'a pas renvoyé de paiement.")
+    return {"id": intent_id, "client_secret": client_secret, **pricing}
+
+
+def retrieve_payment_intent(intent_id: str) -> dict:
+    if not intent_id.startswith("pi_") or "/" in intent_id:
+        raise PaymentError(400, "Paiement Stripe inconnu.")
+    intent = stripe_request("GET", f"/payment_intents/{urllib.parse.quote(intent_id)}")
+    status = str(intent.get("status") or "")
+    return {"id": intent_id, "status": status, "paid": status == "succeeded"}
+
+
 def retrieve_checkout(session_id: str) -> dict:
     if not session_id or "/" in session_id:
         raise PaymentError(400, "Session Stripe inconnue.")
@@ -420,6 +463,9 @@ class Handler(BaseHTTPRequestHandler):
             elif path.startswith("/payments/checkout/"):
                 session_id = path.split("/")[-1]
                 self._json(200, retrieve_checkout(session_id))
+            elif path.startswith("/payments/intent/"):
+                intent_id = path.split("/")[-1]
+                self._json(200, retrieve_payment_intent(intent_id))
             elif path.startswith("/payments/moncash/"):
                 order_id = path.split("/")[-1]
                 self._json(200, moncash_paid(order_id))
@@ -445,6 +491,14 @@ class Handler(BaseHTTPRequestHandler):
                     recipient_email=str(body.get("recipient_email") or ""),
                     recipient_phone=str(body.get("recipient_phone") or ""),
                     origin=public_base(self.headers.get("Host") or ""),
+                )
+                self._json(200, result)
+            elif path == "/payments/intent":
+                body = self._read_json()
+                result = create_payment_intent(
+                    reference=str(body.get("reference") or "").strip(),
+                    order_usd_cents=int(body.get("order_usd_cents") or 0),
+                    description=str(body.get("description") or ""),
                 )
                 self._json(200, result)
             elif path == "/payments/moncash":

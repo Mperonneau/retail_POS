@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/payments/card_charge_pricing.dart';
 import '../../core/payments/open_payment_url.dart';
 import '../../core/payments/payments_client.dart';
+import '../../core/payments/stripe_card_field.dart';
 import '../../core/providers/currency_settings_provider.dart';
 import '../../core/widgets/card_fee_breakdown.dart';
 import '../../core/mock/mock_retail_data.dart';
@@ -1451,13 +1454,24 @@ class _RetailPaymentPanel extends ConsumerStatefulWidget {
 
 class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   _RPayMethod _method = _RPayMethod.moncash;
+  _CardEntry _cardEntry = _CardEntry.form;
   final PaymentsClient _payments = PaymentsClient();
+  final StripeCardController _cardController = StripeCardController();
   Timer? _poll;
   bool _remoteBusy = false;
   bool _saleCompleted = false;
   String? _remoteError;
   bool _cardPaid = false;
   bool _moncashPaid = false;
+  bool _cardConfigLoading = false;
+  bool _cardConfigLoaded = false;
+  String? _publishableKey;
+  String? _cardConfigError;
+  String? _shareUrl;
+  String? _shareSessionId;
+  bool _linkCopied = false;
+  final _payerNameCtrl = TextEditingController();
+  final _payerContactCtrl = TextEditingController();
 
   // Cash
   double _cashReceived = 0;
@@ -1475,11 +1489,14 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   @override
   void dispose() {
     _poll?.cancel();
+    _cardController.detach();
     _payments.close();
     _cashCtrl.dispose();
     _newNameCtrl.dispose();
     _newPhoneCtrl.dispose();
     _partialCtrl.dispose();
+    _payerNameCtrl.dispose();
+    _payerContactCtrl.dispose();
     super.dispose();
   }
 
@@ -1488,12 +1505,26 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     if (_method == _RPayMethod.credit) {
       return _selectedCustomer != null && !_selectedCustomer!.isCreditBlocked;
     }
+    if (_method == _RPayMethod.card && !_cardPaid) {
+      if (_cardPricing() == null) return false;
+      if (_cardEntry == _CardEntry.form) return _cardController.isReady;
+      if (_shareUrl != null) return false;
+      return _payerNameCtrl.text.trim().isNotEmpty &&
+          _payerContactCtrl.text.trim().isNotEmpty;
+    }
     return true;
   }
 
   String get _confirmLabel {
     if (widget.submitting || _remoteBusy) return 'Traitement…';
-    if (_method == _RPayMethod.card && !_cardPaid) return 'Ouvrir Stripe';
+    if (_method == _RPayMethod.card && !_cardPaid) {
+      if (_cardEntry == _CardEntry.link) {
+        return _shareUrl == null ? 'Créer le lien' : 'En attente du paiement…';
+      }
+      final pricing = _cardPricing();
+      if (pricing == null) return 'Payer par carte';
+      return 'Payer ${CurrencyFormatter.usd(pricing.totalUsd)}';
+    }
     if (_method == _RPayMethod.moncash && !_moncashPaid) {
       return 'Ouvrir MonCash';
     }
@@ -1503,7 +1534,11 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   Future<void> _confirm() async {
     if (!_canConfirm) return;
     if (_method == _RPayMethod.card && !_cardPaid) {
-      await _startCard();
+      if (_cardEntry == _CardEntry.link) {
+        await _createShareLink();
+      } else {
+        await _payByCard();
+      }
       return;
     }
     if (_method == _RPayMethod.moncash && !_moncashPaid) {
@@ -1551,7 +1586,64 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     return CardChargePricing.fromOrderUsdCents(cents);
   }
 
-  Future<void> _startCard() async {
+  Future<void> _loadCardConfig() async {
+    if (_cardConfigLoaded || _cardConfigLoading) return;
+    setState(() => _cardConfigLoading = true);
+    try {
+      final config = await _payments.fetchConfig();
+      if (!mounted) return;
+      setState(() {
+        _cardConfigLoading = false;
+        _cardConfigLoaded = true;
+        _publishableKey = config.publishableKey;
+        if (!config.stripeConfigured) {
+          _cardConfigError = 'Stripe n\'est pas configuré sur le serveur.';
+        } else if (config.publishableKey.isEmpty) {
+          _cardConfigError =
+              'Ajoutez STRIPE_PUBLISHABLE_KEY sur le serveur pour saisir la carte ici.';
+        } else {
+          _cardConfigError = null;
+        }
+      });
+    } on PaymentsException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cardConfigLoading = false;
+        _cardConfigError = e.message;
+      });
+    }
+  }
+
+  void _selectMethod(_RPayMethod method) {
+    _poll?.cancel();
+    setState(() {
+      _method = method;
+      _remoteError = null;
+    });
+    if (method == _RPayMethod.card) {
+      _loadCardConfig();
+      _resumeSharePoll();
+    }
+  }
+
+  void _selectCardEntry(_CardEntry entry) {
+    if (_shareUrl != null || _cardPaid || _remoteBusy) return;
+    if (_cardEntry == entry) return;
+    setState(() {
+      _cardEntry = entry;
+      _remoteError = null;
+    });
+  }
+
+  Future<bool> _intentPaidSoon(String intentId) async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      if (await _payments.cardIntentPaid(intentId)) return true;
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+    }
+    return false;
+  }
+
+  Future<void> _payByCard() async {
     final pricing = _cardPricing();
     if (pricing == null) {
       setState(
@@ -1566,7 +1658,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       _remoteError = null;
     });
     try {
-      final session = await _payments.createCheckout(
+      final intent = await _payments.createCardIntent(
         reference: widget.checkoutId,
         orderUsdCents: pricing.orderUsdCents,
         description: 'Vente ${widget.checkoutId}',
@@ -1575,22 +1667,117 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         if (mounted) setState(() => _remoteBusy = false);
         return;
       }
-      openPaymentUrl(session.url);
-      setState(() => _remoteBusy = false);
-      _pollPayment(
-        () => _payments.checkoutPaid(session.id),
-        onPaid: () async {
-          setState(() => _cardPaid = true);
-          if (!await widget.onValidateStock()) return;
-          await _finishSale(PaymentMethodType.card);
-        },
-      );
+      await _cardController.confirmPayment(intent.clientSecret);
+      final paid = await _intentPaidSoon(intent.id);
+      if (!mounted) return;
+      if (!paid) {
+        setState(() {
+          _remoteBusy = false;
+          _remoteError = 'Le paiement n\'est pas confirmé.';
+        });
+        return;
+      }
+      setState(() {
+        _cardPaid = true;
+        _remoteBusy = false;
+      });
+      if (!await widget.onValidateStock()) return;
+      await _finishSale(PaymentMethodType.card);
     } on PaymentsException catch (e) {
       if (!mounted) return;
       setState(() {
         _remoteBusy = false;
         _remoteError = e.message;
       });
+    }
+  }
+
+  Future<void> _createShareLink() async {
+    final pricing = _cardPricing();
+    if (pricing == null) {
+      setState(
+        () => _remoteError =
+            'Taux de change indisponible — impossible d\'encaisser en dollars.',
+      );
+      return;
+    }
+    final name = _payerNameCtrl.text.trim();
+    final contact = _payerContactCtrl.text.trim();
+    if (name.isEmpty || contact.isEmpty) return;
+    final email = contact.contains('@') ? contact : '';
+    _poll?.cancel();
+    setState(() {
+      _remoteBusy = true;
+      _remoteError = null;
+    });
+    try {
+      final session = await _payments.createCheckout(
+        reference: widget.checkoutId,
+        orderUsdCents: pricing.orderUsdCents,
+        description: 'Vente ${widget.checkoutId}',
+        recipientName: name,
+        recipientEmail: email,
+        recipientPhone: email.isEmpty ? contact : '',
+      );
+      if (!mounted || _method != _RPayMethod.card) {
+        if (mounted) setState(() => _remoteBusy = false);
+        return;
+      }
+      setState(() {
+        _remoteBusy = false;
+        _shareUrl = session.url;
+        _shareSessionId = session.id;
+        _cardEntry = _CardEntry.link;
+      });
+      _watchShare(session.id);
+    } on PaymentsException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _remoteBusy = false;
+        _remoteError = e.message;
+      });
+    }
+  }
+
+  void _watchShare(String sessionId) {
+    _pollPayment(
+      () => _payments.checkoutPaid(sessionId),
+      onPaid: () async {
+        if (!mounted || _cardPaid) return;
+        setState(() => _cardPaid = true);
+        if (!await widget.onValidateStock()) return;
+        await _finishSale(PaymentMethodType.card);
+      },
+    );
+  }
+
+  void _resumeSharePoll() {
+    final id = _shareSessionId;
+    if (id == null || _cardPaid || _method != _RPayMethod.card) return;
+    _watchShare(id);
+  }
+
+  Future<void> _copyShareLink() async {
+    final url = _shareUrl;
+    if (url == null || url.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    setState(() => _linkCopied = true);
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _linkCopied = false);
+    });
+  }
+
+  Future<void> _shareLink() async {
+    final url = _shareUrl;
+    if (url == null || url.isEmpty) return;
+    try {
+      await Share.share(url);
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _remoteError = 'Le partage a échoué. Copiez le lien.',
+      );
     }
   }
 
@@ -1705,41 +1892,25 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
                 label: 'MonCash',
                 icon: Icons.phone_android_outlined,
                 selected: _method == _RPayMethod.moncash,
-                onTap: () => setState(() {
-                  _poll?.cancel();
-                  _method = _RPayMethod.moncash;
-                  _remoteError = null;
-                }),
+                onTap: () => _selectMethod(_RPayMethod.moncash),
               ),
               _RetailMethodTab(
                 label: 'Carte',
                 icon: Icons.credit_card_outlined,
                 selected: _method == _RPayMethod.card,
-                onTap: () => setState(() {
-                  _poll?.cancel();
-                  _method = _RPayMethod.card;
-                  _remoteError = null;
-                }),
+                onTap: () => _selectMethod(_RPayMethod.card),
               ),
               _RetailMethodTab(
                 label: 'Espèces',
                 icon: Icons.payments_outlined,
                 selected: _method == _RPayMethod.cash,
-                onTap: () => setState(() {
-                  _poll?.cancel();
-                  _method = _RPayMethod.cash;
-                  _remoteError = null;
-                }),
+                onTap: () => _selectMethod(_RPayMethod.cash),
               ),
               _RetailMethodTab(
                 label: 'Crédit',
                 icon: Icons.account_balance_wallet_outlined,
                 selected: _method == _RPayMethod.credit,
-                onTap: () => setState(() {
-                  _poll?.cancel();
-                  _method = _RPayMethod.credit;
-                  _remoteError = null;
-                }),
+                onTap: () => _selectMethod(_RPayMethod.credit),
                 accentColor: AppColors.amber,
               ),
             ],
@@ -1765,8 +1936,12 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
           child: AppButton(
             label: _confirmLabel,
             onPressed: _canConfirm ? _confirm : null,
-            isLoading: widget.submitting,
-            icon: Icons.check_circle_outline,
+            isLoading: widget.submitting || _remoteBusy,
+            icon: _method == _RPayMethod.card && !_cardPaid
+                ? (_cardEntry == _CardEntry.link
+                      ? Icons.link
+                      : Icons.credit_card_outlined)
+                : Icons.check_circle_outline,
             compact: true,
           ),
         ),
@@ -1792,6 +1967,27 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
           error: _remoteError,
           waiting: _remoteBusy || ((_poll?.isActive ?? false) && !_cardPaid),
           paid: _cardPaid,
+          entry: _cardEntry,
+          entryLocked: _shareUrl != null || _cardPaid || _remoteBusy,
+          onEntry: _selectCardEntry,
+          publishableKey: _publishableKey,
+          configLoading: _cardConfigLoading,
+          configError: _cardConfigError,
+          cardController: _cardController,
+          onCardReady: () {
+            if (mounted) setState(() {});
+          },
+          onCardError: (message) {
+            if (!mounted) return;
+            setState(() => _remoteError = message);
+          },
+          payerNameCtrl: _payerNameCtrl,
+          payerContactCtrl: _payerContactCtrl,
+          onPayerChanged: () => setState(() {}),
+          shareUrl: _shareUrl,
+          linkCopied: _linkCopied,
+          onCopyLink: _copyShareLink,
+          onShareLink: _shareLink,
         );
       case _RPayMethod.cash:
         return _RCashContent(
@@ -1843,6 +2039,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
 // ─── Payment method enum ──────────────────────────────────────────────────────
 
 enum _RPayMethod { moncash, card, cash, credit }
+
+enum _CardEntry { form, link }
 
 // ─── Method tab ───────────────────────────────────────────────────────────────
 
@@ -1980,6 +2178,22 @@ class _RCardContent extends StatelessWidget {
   final String? error;
   final bool waiting;
   final bool paid;
+  final _CardEntry entry;
+  final bool entryLocked;
+  final ValueChanged<_CardEntry> onEntry;
+  final String? publishableKey;
+  final bool configLoading;
+  final String? configError;
+  final StripeCardController cardController;
+  final VoidCallback onCardReady;
+  final ValueChanged<String> onCardError;
+  final TextEditingController payerNameCtrl;
+  final TextEditingController payerContactCtrl;
+  final VoidCallback onPayerChanged;
+  final String? shareUrl;
+  final bool linkCopied;
+  final VoidCallback onCopyLink;
+  final VoidCallback onShareLink;
 
   const _RCardContent({
     required this.isDark,
@@ -1988,58 +2202,303 @@ class _RCardContent extends StatelessWidget {
     required this.error,
     required this.waiting,
     required this.paid,
+    required this.entry,
+    required this.entryLocked,
+    required this.onEntry,
+    required this.publishableKey,
+    required this.configLoading,
+    required this.configError,
+    required this.cardController,
+    required this.onCardReady,
+    required this.onCardError,
+    required this.payerNameCtrl,
+    required this.payerContactCtrl,
+    required this.onPayerChanged,
+    required this.shareUrl,
+    required this.linkCopied,
+    required this.onCopyLink,
+    required this.onShareLink,
   });
 
   @override
   Widget build(BuildContext context) {
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
-    return AppCard(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    final key = publishableKey?.trim() ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: AppCard(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.credit_card_outlined, color: accent),
+                      const SizedBox(width: 8),
+                      Text('Paiement par carte', style: AppTextStyles.h3()),
+                    ],
+                  ),
+                  const SizedBox(height: AppConstants.spacing12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CardPathButton(
+                          label: 'Par carte',
+                          icon: Icons.credit_card_outlined,
+                          selected: entry == _CardEntry.form,
+                          onTap: entryLocked
+                              ? null
+                              : () => onEntry(_CardEntry.form),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _CardPathButton(
+                          label: 'Lien de paiement',
+                          icon: Icons.link,
+                          selected: entry == _CardEntry.link,
+                          onTap: entryLocked
+                              ? null
+                              : () => onEntry(_CardEntry.link),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppConstants.spacing12),
+                  Text(
+                    entry == _CardEntry.form
+                        ? 'Saisissez la carte ici. Elle est envoyée à Stripe, pas à la caisse.'
+                        : 'Créez un lien à partager. La vente est enregistrée quand le client a payé.',
+                    style: AppTextStyles.body(color: muted),
+                  ),
+                  const SizedBox(height: AppConstants.spacing12),
+                  if (pricing == null)
+                    Text(
+                      'Taux de change indisponible.',
+                      style: AppTextStyles.body(color: AppColors.boldRed),
+                    )
+                  else
+                    CardFeeBreakdown(
+                      pricing: pricing!,
+                      isDark: isDark,
+                      orderLocalLabel: orderLocalLabel,
+                    ),
+                  if (entry == _CardEntry.link) ...[
+                    const SizedBox(height: AppConstants.spacing12),
+                    if (shareUrl == null) ...[
+                      AppInput(
+                        label: 'Nom du payeur',
+                        controller: payerNameCtrl,
+                        onChanged: (_) => onPayerChanged(),
+                      ),
+                      const SizedBox(height: AppConstants.spacing8),
+                      AppInput(
+                        label: 'Téléphone ou e-mail',
+                        controller: payerContactCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        onChanged: (_) => onPayerChanged(),
+                      ),
+                    ] else
+                      _ShareLinkBox(
+                        url: shareUrl!,
+                        isDark: isDark,
+                        copied: linkCopied,
+                        onCopy: onCopyLink,
+                        onShare: onShareLink,
+                      ),
+                  ],
+                  if (entry == _CardEntry.form &&
+                      (configError != null && configError!.isNotEmpty)) ...[
+                    const SizedBox(height: AppConstants.spacing8),
+                    Text(
+                      configError!,
+                      style: AppTextStyles.body(color: AppColors.boldRed),
+                    ),
+                  ],
+                  const SizedBox(height: AppConstants.spacing8),
+                  Text(
+                    'Propulsé par Stripe',
+                    style: AppTextStyles.caption(color: muted),
+                  ),
+                  _RemoteStatus(
+                    error: error,
+                    waiting: waiting,
+                    paid: paid,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (entry == _CardEntry.form) ...[
+          const SizedBox(height: 8),
+          if (configLoading || key.isEmpty)
+            SizedBox(
+              height: 56,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  configLoading
+                      ? 'Chargement du formulaire…'
+                      : (configError ?? 'Formulaire carte indisponible.'),
+                  style: AppTextStyles.caption(
+                    color: configError == null ? muted : AppColors.boldRed,
+                  ),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 56,
+              child: StripeCardField(
+                publishableKey: key,
+                controller: cardController,
+                isDark: isDark,
+                onReady: onCardReady,
+                onError: onCardError,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CardPathButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  const _CardPathButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    final enabled = onTap != null || selected;
+    return Opacity(
+      opacity: enabled ? 1 : 0.55,
+      child: Material(
+        color: selected
+            ? accent
+            : (isDark ? AppColors.darkBackground : AppColors.white),
+        borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+              border: Border.all(
+                color: selected
+                    ? accent
+                    : (isDark ? AppColors.darkBorder : const Color(0xFFE0E0E0)),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.credit_card_outlined,
-                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                  icon,
+                  size: 16,
+                  color: selected
+                      ? AppColors.white
+                      : (isDark ? AppColors.coolGray : AppColors.darkGray),
                 ),
-                const SizedBox(width: 8),
-                Text('Paiement par carte', style: AppTextStyles.h3()),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption(
+                      color: selected
+                          ? AppColors.white
+                          : (isDark ? AppColors.coolGray : AppColors.darkGray),
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: AppConstants.spacing8),
-            Text(
-              'La carte est saisie sur la page Stripe. Elle ne passe pas par la caisse.',
-              style: AppTextStyles.body(color: muted),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShareLinkBox extends StatelessWidget {
+  final String url;
+  final bool isDark;
+  final bool copied;
+  final VoidCallback onCopy;
+  final VoidCallback onShare;
+
+  const _ShareLinkBox({
+    required this.url,
+    required this.isDark,
+    required this.copied,
+    required this.onCopy,
+    required this.onShare,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkBackground : AppColors.lightBlue,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: accent.withValues(alpha: 0.35)),
+          ),
+          child: SelectableText(
+            url,
+            style: AppTextStyles.caption(color: accent).copyWith(
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: AppConstants.spacing12),
-            if (pricing == null)
-              Text(
-                'Taux de change indisponible.',
-                style: AppTextStyles.body(color: AppColors.boldRed),
-              )
-            else
-              CardFeeBreakdown(
-                pricing: pricing!,
-                isDark: isDark,
-                orderLocalLabel: orderLocalLabel,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: AppButton(
+                label: copied ? 'Copié' : 'Copier',
+                icon: copied ? Icons.check : Icons.copy_outlined,
+                variant: AppButtonVariant.secondary,
+                compact: true,
+                onPressed: onCopy,
               ),
-            const SizedBox(height: AppConstants.spacing8),
-            Text(
-              'Propulsé par Stripe',
-              style: AppTextStyles.caption(color: muted),
             ),
-            _RemoteStatus(
-              error: error,
-              waiting: waiting,
-              paid: paid,
-              isDark: isDark,
+            const SizedBox(width: 8),
+            Expanded(
+              child: AppButton(
+                label: 'Partager',
+                icon: Icons.share_outlined,
+                variant: AppButtonVariant.secondary,
+                compact: true,
+                onPressed: onShare,
+              ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

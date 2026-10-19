@@ -8,7 +8,13 @@ import time
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from server import price_card_charge, verify_stripe_signature  # noqa: E402
+from server import (  # noqa: E402
+    PaymentError,
+    create_payment_intent,
+    price_card_charge,
+    retrieve_payment_intent,
+    verify_stripe_signature,
+)
 
 
 def test_ten_dollars():
@@ -36,7 +42,21 @@ def test_signature():
     assert not verify_stripe_signature(payload, f"t={int(stamp) - 9999},v1={digest}", secret)
 
 
+def test_intent_rejects_bad_input():
+    try:
+        create_payment_intent(reference="x", order_usd_cents=0, description="")
+        raise AssertionError("zero amount should fail")
+    except PaymentError as exc:
+        assert exc.status == 400, exc.status
+    try:
+        retrieve_payment_intent("cs_not_an_intent")
+        raise AssertionError("checkout id should fail")
+    except PaymentError as exc:
+        assert exc.status == 400, exc.status
+
+
 if __name__ == "__main__":
     test_ten_dollars()
     test_signature()
+    test_intent_rejects_bad_input()
     print("ok")

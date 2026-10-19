@@ -26,6 +26,28 @@ class HostedCheckout {
   final CardChargePricing pricing;
 }
 
+class PaymentsPublicConfig {
+  const PaymentsPublicConfig({
+    required this.stripeConfigured,
+    required this.publishableKey,
+  });
+
+  final bool stripeConfigured;
+  final String publishableKey;
+}
+
+class CardPaymentIntent {
+  const CardPaymentIntent({
+    required this.id,
+    required this.clientSecret,
+    required this.pricing,
+  });
+
+  final String id;
+  final String clientSecret;
+  final CardChargePricing pricing;
+}
+
 class MoncashCheckout {
   const MoncashCheckout({
     required this.orderId,
@@ -84,12 +106,7 @@ class PaymentsClient {
       'recipient_email': recipientEmail,
       'recipient_phone': recipientPhone,
     });
-    final pricing = CardChargePricing(
-      orderUsdCents: _int(body['order_usd_cents']),
-      platformFeeUsdCents: _int(body['platform_fee_usd_cents']),
-      stripeFeeUsdCents: _int(body['stripe_fee_usd_cents']),
-      totalUsdCents: _int(body['total_usd_cents']),
-    );
+    final pricing = _pricing(body);
     final url = (body['url'] as String?)?.trim() ?? '';
     final id = (body['id'] as String?)?.trim() ?? '';
     if (url.isEmpty || id.isEmpty) {
@@ -102,6 +119,55 @@ class PaymentsClient {
     _requireConfigured();
     final body = await _get('/payments/checkout/$sessionId');
     return body['paid'] == true;
+  }
+
+  Future<PaymentsPublicConfig> fetchConfig() async {
+    _requireConfigured();
+    final body = await _get('/config');
+    return PaymentsPublicConfig(
+      stripeConfigured: body['stripe_configured'] == true,
+      publishableKey: (body['publishable_key'] as String?)?.trim() ?? '',
+    );
+  }
+
+  /// PaymentIntent for the in-app card form. [CardPaymentIntent.clientSecret]
+  /// is handed to Stripe.js and is not a card number.
+  Future<CardPaymentIntent> createCardIntent({
+    required String reference,
+    required int orderUsdCents,
+    required String description,
+  }) async {
+    _requireConfigured();
+    final body = await _post('/payments/intent', {
+      'reference': reference,
+      'order_usd_cents': orderUsdCents,
+      'description': description,
+    });
+    final id = (body['id'] as String?)?.trim() ?? '';
+    final clientSecret = (body['client_secret'] as String?)?.trim() ?? '';
+    if (id.isEmpty || clientSecret.isEmpty) {
+      throw PaymentsException('Stripe n\'a pas renvoyé de paiement.');
+    }
+    return CardPaymentIntent(
+      id: id,
+      clientSecret: clientSecret,
+      pricing: _pricing(body),
+    );
+  }
+
+  Future<bool> cardIntentPaid(String intentId) async {
+    _requireConfigured();
+    final body = await _get('/payments/intent/$intentId');
+    return body['paid'] == true;
+  }
+
+  CardChargePricing _pricing(Map<String, dynamic> body) {
+    return CardChargePricing(
+      orderUsdCents: _int(body['order_usd_cents']),
+      platformFeeUsdCents: _int(body['platform_fee_usd_cents']),
+      stripeFeeUsdCents: _int(body['stripe_fee_usd_cents']),
+      totalUsdCents: _int(body['total_usd_cents']),
+    );
   }
 
   Future<MoncashCheckout> createMoncash({
