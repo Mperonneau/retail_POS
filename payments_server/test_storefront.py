@@ -100,6 +100,38 @@ def test_slug_is_owned_by_first_key():
     assert store.slug_available(OTHER, "chez-marie")
 
 
+def test_directory_lists_enabled_shops_by_department():
+    store = _store()
+    store.publish(KEY, _catalog(city="Pétion-Ville", department="Ouest"))
+    other = _catalog()
+    other["slug"] = "marche-nord"
+    other["name"] = "Marché Nord"
+    other["settings"] = {**other["settings"], "city": "Cap-Haïtien", "department": "Nord"}
+    store.publish(OTHER, other)
+    hidden = _catalog(enabled=False)
+    hidden["slug"] = "fermee"
+    hidden["name"] = "Fermée"
+    store.publish("h" * 40, hidden)
+    bogus = _catalog()
+    bogus["slug"] = "sans-region"
+    bogus["name"] = "Sans région"
+    bogus["department"] = "Mars"
+    store.publish("b" * 40, bogus)
+
+    listed = store.directory(now=OPEN)
+    names = [row["name"] for row in listed["results"]]
+    assert names == ["Chez Marie", "Marché Nord", "Sans région"], names
+    assert "Fermée" not in names
+    assert listed["departments"][0] == "Artibonite"
+    assert len(listed["departments"]) == 10
+    marie = listed["results"][0]
+    assert marie["city"] == "Pétion-Ville" and marie["department"] == "Ouest"
+    assert marie["is_open_now"] is True
+    assert store.directory("Nord", OPEN)["results"][0]["slug"] == "marche-nord"
+    assert store.directory("Mars")["results"] == []
+    assert store.public_shop("sans-region", OPEN)["department"] == ""
+
+
 def test_disabled_shop_is_hidden():
     store = _store()
     store.publish(KEY, _catalog(enabled=False))

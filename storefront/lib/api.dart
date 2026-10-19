@@ -20,6 +20,9 @@ class StorefrontApi {
   static String photo(String path) =>
       path.isEmpty || path.startsWith('http') ? path : '$_root$path';
 
+  Future<ShopDirectory> directory() async =>
+      ShopDirectory.fromJson(await _get('/storefront/shops'));
+
   Future<Shop> shop(String slug) async =>
       Shop.fromJson(await _get('/storefront/shops/${Uri.encodeComponent(slug)}'));
 
@@ -247,12 +250,69 @@ class Product {
       );
 }
 
+class ShopCard {
+  const ShopCard({
+    required this.slug,
+    required this.name,
+    required this.city,
+    required this.department,
+    required this.description,
+    required this.coverUrl,
+    required this.isOpenNow,
+    required this.paused,
+    required this.opensAtLabel,
+  });
+
+  final String slug;
+  final String name;
+  final String city;
+  final String department;
+  final String description;
+  final String coverUrl;
+  final bool isOpenNow;
+  final bool paused;
+  final String opensAtLabel;
+
+  String get place => [city, department].where((part) => part.isNotEmpty).join(', ');
+
+  factory ShopCard.fromJson(Map<String, dynamic> json) => ShopCard(
+        slug: json['slug']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        city: json['city']?.toString() ?? '',
+        department: json['department']?.toString() ?? '',
+        description: json['description']?.toString() ?? '',
+        coverUrl: StorefrontApi.photo(json['cover_url']?.toString() ?? ''),
+        isOpenNow: json['is_open_now'] == true,
+        paused: json['paused'] == true,
+        opensAtLabel: json['opens_at_label']?.toString() ?? '',
+      );
+}
+
+class ShopDirectory {
+  const ShopDirectory({required this.results, required this.departments});
+
+  final List<ShopCard> results;
+  final List<String> departments;
+
+  factory ShopDirectory.fromJson(Map<String, dynamic> json) => ShopDirectory(
+        results: [
+          for (final row in (json['results'] as List? ?? const []))
+            if (row is Map) ShopCard.fromJson(row.cast<String, dynamic>()),
+        ],
+        departments: [
+          for (final name in (json['departments'] as List? ?? const [])) '$name',
+        ],
+      );
+}
+
 class Shop {
   const Shop({
     required this.slug,
     required this.name,
     required this.phone,
     required this.address,
+    this.city = '',
+    this.department = '',
     required this.description,
     required this.pickupNote,
     required this.coverUrl,
@@ -266,6 +326,8 @@ class Shop {
   final String name;
   final String phone;
   final String address;
+  final String city;
+  final String department;
   final String description;
   final String pickupNote;
   final String coverUrl;
@@ -281,6 +343,8 @@ class Shop {
         name: json['name']?.toString() ?? '',
         phone: json['phone']?.toString() ?? '',
         address: json['address']?.toString() ?? '',
+        city: json['city']?.toString() ?? '',
+        department: json['department']?.toString() ?? '',
         description: json['description']?.toString() ?? '',
         pickupNote: json['pickup_note']?.toString() ?? '',
         coverUrl: StorefrontApi.photo(json['cover_url']?.toString() ?? ''),

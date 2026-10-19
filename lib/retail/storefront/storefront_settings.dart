@@ -25,6 +25,20 @@ class StorefrontLinks {
 
 final _slugPattern = RegExp(r'^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$');
 
+/// Official departments of Haiti, same list as the storefront directory.
+const haitiDepartments = [
+  'Artibonite',
+  'Centre',
+  "Grand'Anse",
+  'Nippes',
+  'Nord',
+  'Nord-Est',
+  'Nord-Ouest',
+  'Ouest',
+  'Sud',
+  'Sud-Est',
+];
+
 bool isValidStorefrontSlug(String slug) => _slugPattern.hasMatch(slug);
 
 /// Lowercase, accent-free, dash-separated link suggested from the shop name.
@@ -59,6 +73,8 @@ class StorefrontSettings {
     this.slug = '',
     this.displayName = '',
     this.description = '',
+    this.city = '',
+    this.department = '',
     this.pickupNote = '',
     this.coverDataUrl,
     this.everPublished = false,
@@ -79,6 +95,8 @@ class StorefrontSettings {
   /// Name on the vitrine. Empty means the business name.
   final String displayName;
   final String description;
+  final String city;
+  final String department;
   final String pickupNote;
   final String? coverDataUrl;
 
@@ -96,6 +114,8 @@ class StorefrontSettings {
     String? slug,
     String? displayName,
     String? description,
+    String? city,
+    String? department,
     String? pickupNote,
     Object? coverDataUrl = _keep,
     bool? everPublished,
@@ -111,6 +131,8 @@ class StorefrontSettings {
       slug: slug ?? this.slug,
       displayName: displayName ?? this.displayName,
       description: description ?? this.description,
+      city: city ?? this.city,
+      department: department ?? this.department,
       pickupNote: pickupNote ?? this.pickupNote,
       coverDataUrl:
           coverDataUrl == _keep ? this.coverDataUrl : coverDataUrl as String?,
@@ -128,6 +150,8 @@ class StorefrontSettings {
         'slug': slug,
         'displayName': displayName,
         'description': description,
+        'city': city,
+        'department': department,
         'pickupNote': pickupNote,
         'coverDataUrl': coverDataUrl,
         'everPublished': everPublished,
@@ -153,6 +177,10 @@ class StorefrontSettings {
       slug: json['slug']?.toString() ?? '',
       displayName: json['displayName']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
+      city: json['city']?.toString() ?? '',
+      department: haitiDepartments.contains(json['department'])
+          ? json['department'] as String
+          : '',
       pickupNote: json['pickupNote']?.toString() ?? '',
       coverDataUrl: (json['coverDataUrl'] as String?)?.isNotEmpty == true
           ? json['coverDataUrl'] as String

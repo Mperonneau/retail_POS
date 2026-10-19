@@ -162,6 +162,8 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
       'name': s.displayName.trim().isNotEmpty
           ? s.displayName.trim()
           : (business.trim().isNotEmpty ? business.trim() : 'Boutique'),
+      'city': s.city,
+      'department': s.department,
       'usd_rate': currency.isLocalUsd ? 0 : currency.usdToLocalRate,
       'settings': {
         'enabled': s.enabled,

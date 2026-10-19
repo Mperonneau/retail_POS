@@ -35,6 +35,7 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
   final _slug = TextEditingController();
   final _name = TextEditingController();
   final _description = TextEditingController();
+  final _city = TextEditingController();
   final _pickupNote = TextEditingController();
   Timer? _typing;
   bool _hydrated = false;
@@ -56,6 +57,7 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
     _slug.dispose();
     _name.dispose();
     _description.dispose();
+    _city.dispose();
     _pickupNote.dispose();
     super.dispose();
   }
@@ -76,6 +78,7 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
     _slug.text = slug;
     _name.text = s.displayName;
     _description.text = s.description;
+    _city.text = s.city;
     _pickupNote.text = s.pickupNote;
   }
 
@@ -91,6 +94,7 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
             slug: slug,
             displayName: _name.text.trim(),
             description: _description.text.trim(),
+            city: _city.text.trim(),
             pickupNote: _pickupNote.text.trim(),
           ));
     });
@@ -481,6 +485,33 @@ class _VitrineScreenState extends ConsumerState<VitrineScreen> {
             'Description',
             hint: 'Ce que vous vendez, où vous trouver…',
           ),
+        ),
+        const SizedBox(height: AppConstants.spacing8),
+        DropdownButtonFormField<String>(
+          initialValue:
+              haitiDepartments.contains(s.department) ? s.department : '',
+          decoration: _fieldDecoration('Département'),
+          items: [
+            const DropdownMenuItem(value: '', child: Text('Non précisé')),
+            for (final department in haitiDepartments)
+              DropdownMenuItem(value: department, child: Text(department)),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+            _update((c) => c.copyWith(department: value));
+          },
+        ),
+        const SizedBox(height: AppConstants.spacing8),
+        TextField(
+          controller: _city,
+          onChanged: (_) => _onTyping(),
+          maxLength: 60,
+          decoration: _fieldDecoration('Ville', hint: 'Pétion-Ville'),
+        ),
+        const SizedBox(height: AppConstants.spacing4),
+        Text(
+          'La boutique apparaît dans l\'annuaire de la vitrine, filtrée par département.',
+          style: AppTextStyles.caption(),
         ),
       ],
     );
@@ -914,6 +945,15 @@ class _PreviewCard extends StatelessWidget {
                     color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                   ),
                 ),
+                if (settings.city.isNotEmpty || settings.department.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    [settings.city, settings.department]
+                        .where((part) => part.isNotEmpty)
+                        .join(', '),
+                    style: AppTextStyles.caption(),
+                  ),
+                ],
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(description,

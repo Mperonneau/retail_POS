@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:retail_pos/core/theme/app_colors.dart';
 import 'package:retail_pos/core/theme/app_text_styles.dart';
 import 'package:retail_pos/core/utils/constants.dart';
@@ -232,15 +233,43 @@ class _Header extends StatelessWidget {
                 ),
               ),
               Positioned(
+                left: 8,
+                top: 8,
+                child: IconButton(
+                  tooltip: 'Toutes les boutiques',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.white,
+                    foregroundColor: AppColors.nearBlack,
+                  ),
+                  onPressed: () => context.go('/'),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+              ),
+              Positioned(
                 left: side,
                 right: side,
                 bottom: 18,
-                child: Text(
-                  shop.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.h1(color: AppColors.white)
-                      .copyWith(fontSize: width < 600 ? 26 : 32, height: 1.15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      shop.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.h1(color: AppColors.white)
+                          .copyWith(fontSize: width < 600 ? 26 : 32, height: 1.15),
+                    ),
+                    if (shop.city.isNotEmpty || shop.department.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        [shop.city, shop.department].where((part) => part.isNotEmpty).join(', '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body(color: const Color(0xF2FFFFFF))
+                            .copyWith(fontSize: 14),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],

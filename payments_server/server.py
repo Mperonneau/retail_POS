@@ -653,7 +653,10 @@ class Handler(BaseHTTPRequestHandler):
     def _storefront_get(self, path: str) -> None:
         parts = path.split("/")[2:]
         query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        if len(parts) == 2 and parts[0] == "shops":
+        if parts == ["shops"]:
+            department = (query.get("department") or [""])[0]
+            self._json(200, STORE.directory(department))
+        elif len(parts) == 2 and parts[0] == "shops":
             self._json(200, STORE.public_shop(parts[1]))
         elif len(parts) == 2 and parts[0] == "photos":
             raw, mime = STORE.read_photo(parts[1])

@@ -46,6 +46,19 @@ MAX_QTY = 999
 MAX_REQUESTS = 20_000
 REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 KINDS = {"devis", "commande"}
+# Official departments of Haiti. The directory always offers the full list.
+DEPARTMENTS = (
+    "Artibonite",
+    "Centre",
+    "Grand'Anse",
+    "Nippes",
+    "Nord",
+    "Nord-Est",
+    "Nord-Ouest",
+    "Ouest",
+    "Sud",
+    "Sud-Est",
+)
 WEEKDAYS_FR = {
     1: "lundi",
     2: "mardi",
@@ -106,6 +119,11 @@ def normalize_slug(raw: str) -> str:
 
 def _text(value: object, limit: int) -> str:
     return str(value or "").strip()[:limit]
+
+
+def _department(value: object) -> str:
+    text = _text(value, 40)
+    return text if text in DEPARTMENTS else ""
 
 
 def _money(value: object) -> float:
@@ -309,6 +327,8 @@ class StorefrontStore:
                 "name": name,
                 "phone": _text(payload.get("phone"), 40),
                 "address": _text(payload.get("address"), 160),
+                "city": _text(payload.get("city") or settings.get("city"), 60),
+                "department": _department(payload.get("department") or settings.get("department")),
                 "description": _text(settings.get("description"), 300),
                 "pickup_note": _text(settings.get("pickup_note"), 300),
                 "cover_url": cover,
@@ -475,6 +495,36 @@ class StorefrontStore:
 
     # ---- public ------------------------------------------------------------
 
+    def directory(self, department: str = "", now: datetime | None = None) -> dict:
+        """Public list of enabled vitrines. Disabled shops stay hidden."""
+        raw = _text(department, 40)
+        wanted = _department(raw)
+        with self._lock:
+            shops = [dict(shop) for shop in self.shops.values() if shop.get("enabled")]
+        shops.sort(key=lambda shop: str(shop.get("name") or "").lower())
+        if raw and not wanted:
+            shops = []
+        elif wanted:
+            shops = [shop for shop in shops if shop.get("department") == wanted]
+        return {
+            "departments": list(DEPARTMENTS),
+            "results": [self._directory_card(shop, now) for shop in shops],
+        }
+
+    def _directory_card(self, shop: dict, now: datetime | None) -> dict:
+        info = availability(shop, now)
+        return {
+            "slug": shop["slug"],
+            "name": shop["name"],
+            "city": shop.get("city", ""),
+            "department": shop.get("department", ""),
+            "description": shop.get("description", ""),
+            "cover_url": shop.get("cover_url", ""),
+            "is_open_now": info["is_open_now"],
+            "paused": info["paused"],
+            "opens_at_label": info["opens_at_label"],
+        }
+
     def public_shop(self, raw_slug: str, now: datetime | None = None) -> dict:
         slug = (raw_slug or "").strip().lower()
         with self._lock:
@@ -507,6 +557,8 @@ class StorefrontStore:
             "name": shop["name"],
             "phone": shop.get("phone", ""),
             "address": shop.get("address", ""),
+            "city": shop.get("city", ""),
+            "department": shop.get("department", ""),
             "description": shop.get("description", ""),
             "pickup_note": shop.get("pickup_note", ""),
             "cover_url": shop.get("cover_url", ""),
