@@ -27,12 +27,13 @@ extension RetailOrderStatusExt on RetailOrderStatus {
 }
 
 /// How the payment was initiated.
-enum RetailPaymentSource { pos, paymentLink }
+enum RetailPaymentSource { pos, paymentLink, storefront }
 
 extension RetailPaymentSourceExt on RetailPaymentSource {
   String get label => switch (this) {
         RetailPaymentSource.pos => 'Caisse',
         RetailPaymentSource.paymentLink => 'Lien de paiement',
+        RetailPaymentSource.storefront => 'Vitrine',
       };
 }
 

@@ -23,6 +23,7 @@ import '../widgets/keyboard_scroll_shortcuts.dart';
 import '../widgets/loading_overlay.dart';
 import 'app_routes.dart';
 import '../theme/app_icons.dart';
+import '../../retail/storefront/storefront_sync.dart';
 
 class _NavDestination {
   final String label;
@@ -73,6 +74,7 @@ final _retailDestinations = <_NavDestination>[
   _NavDestination(label: 'Commandes', icon: Icons.manage_search_outlined, selectedIcon: Icons.manage_search, route: AppRoutes.retailOrderHistory),
   _NavDestination(label: 'Liens', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.retailPayLinks),
   _NavDestination(label: 'Devis', icon: Icons.request_quote_outlined, selectedIcon: Icons.request_quote, route: AppRoutes.retailQuotes),
+  _NavDestination(label: 'Vitrine en ligne', icon: Icons.language_outlined, selectedIcon: Icons.language, route: AppRoutes.retailVitrine),
   _NavDestination(label: 'Clients', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.retailCustomers),
   _NavDestination(label: 'Fournisseurs', icon: Icons.local_shipping_outlined, selectedIcon: Icons.local_shipping, route: AppRoutes.retailSuppliers),
   _NavDestination(label: 'Inventaire', icon: Icons.warehouse_outlined, selectedIcon: Icons.warehouse, route: AppRoutes.retailInventory),
@@ -267,6 +269,10 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.module == ActiveModule.retail) {
+      // Keeps the vitrine published and its inbox imported while the shop is open.
+      ref.listen(storefrontSyncProvider, (_, _) {});
+    }
     final location = GoRouterState.of(context).matchedLocation;
     final width = MediaQuery.of(context).size.width;
 

@@ -100,6 +100,7 @@ class AppRoutes {
   static const String hotelOrderHistory = '/hotel/order-history';
   static const String retailOrderHistory = '/retail/order-history';
   static const String retailQuotes = '/retail/quotes';
+  static const String retailVitrine = '/retail/vitrine';
 
   // Timeclock (admin/manager) — one per module shell
   static const String restaurantTimeclock = '/restaurant/timeclock';

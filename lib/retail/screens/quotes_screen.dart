@@ -14,9 +14,11 @@ import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/list_page_nav.dart';
-import '../../core/widgets/payment_link_dialog.dart';
 import '../../core/widgets/status_badge.dart';
 import '../models/retail_cart_entry.dart';
+import '../storefront/storefront_api.dart';
+import '../storefront/storefront_link_dialog.dart';
+import '../storefront/storefront_sync.dart';
 import 'checkout_wizard.dart';
 import 'pos_screen.dart';
 import '../../core/widgets/app_close_button.dart';
@@ -1262,37 +1264,28 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       .firstOrNull;
 
   Future<void> _sendPaymentLink(MockRetailQuote quote) async {
-    final result = await showDialog<PaymentLinkSendResult>(
-      context: context,
-      builder: (ctx) => PaymentLinkDialog(
-        referenceLabel: quote.quoteNumber,
-        description: "Partagez une page de paiement Stripe. Saisissez le contact du payeur ; "
-            'le devis devient une commande active une fois payé.',
-        isDark: widget.isDark,
-      ),
-    );
-
-    if (result != null && mounted) {
-      setState(() => _sendingLink = true);
-      await Future.delayed(const Duration(milliseconds: 700));
+    setState(() => _sendingLink = true);
+    try {
+      final url =
+          await ref.read(storefrontSyncProvider.notifier).shareQuote(quote);
       if (!mounted) return;
-      ref.read(quotesProvider.notifier).markPaymentLinkSent(quote.id);
       setState(() => _sendingLink = false);
       widget.onQuoteUpdated();
-      if (!mounted) return;
-      final channelName = result.channel == PaymentLinkChannel.whatsApp
-          ? 'WhatsApp'
-          : result.channel == PaymentLinkChannel.email
-              ? 'E-mail'
-              : 'SMS';
-      final path = buildQuotePaymentLinkPath(quote.quoteNumber);
-      await showPaymentLinkSuccessDialog(
+      await showStorefrontLinkDialog(
         context,
-        isDark: widget.isDark,
-        title: 'Lien de paiement pour ${quote.quoteNumber} — envoyé via $channelName',
-        pathOrUrl: path,
-        subtitle: 'Le lien est actif. Copiez-le ou partagez-le avec votre client.',
+        title: 'Lien de paiement ${quote.quoteNumber}',
+        message: 'Toute personne qui a ce lien peut consulter le devis et le '
+            'payer par carte ou MonCash. Une fois payé, il devient une commande.',
+        url: url,
+        openLabel: 'Ouvrir la page de paiement',
       );
+    } on StorefrontApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _sendingLink = false);
+      ref.read(appNotificationProvider.notifier).show(
+            e.message,
+            kind: AppNotificationKind.warning,
+          );
     }
   }
 

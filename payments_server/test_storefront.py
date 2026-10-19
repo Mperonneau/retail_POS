@@ -223,6 +223,17 @@ def test_card_settlement_checks_reference_and_amount():
         server.STORE = previous
 
 
+def test_known_photo_paths_are_reused_or_reported_missing():
+    store = _store()
+    store.publish(KEY, _catalog())
+    cover = store.public_shop("chez-marie", OPEN)["cover_url"]
+    again = _catalog(cover=cover)
+    again["products"][1]["photo"] = "/storefront/photos/" + "a" * 32 + ".png"
+    result = store.publish(KEY, again)
+    assert result["missing_photos"] == ["/storefront/photos/" + "a" * 32 + ".png"], result
+    assert store.public_shop("chez-marie", OPEN)["cover_url"] == cover
+
+
 def test_data_survives_reload():
     folder = tempfile.mkdtemp()
     store = StorefrontStore(folder)

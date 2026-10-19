@@ -1196,6 +1196,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
   late String _category;
   late String _stockUnit;
   late bool _active;
+  late bool _showOnStorefront;
   late bool _trackStock;
   String? _photoDataUrl;
   Uint8List? _photoBytes;
@@ -1231,6 +1232,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _category = e?.category ?? '';
     _stockUnit = e?.stockUnit ?? 'u';
     _active = e?.active ?? true;
+    _showOnStorefront = e?.showOnStorefront ?? true;
     _trackStock = e?.trackStock ?? true;
     _photoDataUrl = e?.photoDataUrl;
     for (final group in e?.options ?? const <ProductOptionGroup>[]) {
@@ -1379,6 +1381,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       trackStock: _trackStock,
       stockUnit: _stockUnit,
       options: groups,
+      showOnStorefront: _showOnStorefront,
     ));
     widget.onClose();
   }
@@ -1549,6 +1552,26 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
               style: helperStyle,
             ),
             onChanged: (value) => setState(() => _active = value),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _showOnStorefront && _active,
+            activeThumbColor: AppColors.primaryBlue,
+            title: Text(
+              'Afficher sur la vitrine',
+              style: AppTextStyles.body(color: textPrimary).copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              _active
+                  ? 'Les clients le voient et peuvent le commander en ligne.'
+                  : 'Rendez le produit disponible pour le montrer en ligne.',
+              style: helperStyle,
+            ),
+            onChanged: _active
+                ? (value) => setState(() => _showOnStorefront = value)
+                : null,
           ),
           const Divider(height: 24),
           ProductOptionsEditor(

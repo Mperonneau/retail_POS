@@ -255,12 +255,20 @@ class StorefrontStore:
         mime = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[name.rsplit(".", 1)[1]]
         return raw, mime
 
-    def _photo(self, value: object) -> str:
+    def _photo(self, value: object, missing: list[str]) -> str:
+        """Data URLs are stored; known photo paths are kept when the file exists.
+
+        A path whose file is gone (fresh disk) is reported in [missing] so
+        the POS sends the image again.
+        """
         text = str(value or "").strip()
         if text.startswith("data:"):
             return self.save_photo(text)
-        if text.startswith("/storefront/photos/") and PHOTO_NAME_RE.match(text.rsplit("/", 1)[-1]):
-            return text
+        name = text.rsplit("/", 1)[-1]
+        if text.startswith("/storefront/photos/") and PHOTO_NAME_RE.match(name):
+            if os.path.exists(os.path.join(self.photo_dir, name)):
+                return text
+            missing.append(text)
         return ""
 
     # ---- shop (authenticated by key) ---------------------------------------
@@ -278,7 +286,9 @@ class StorefrontStore:
         name = _text(payload.get("name"), 80)
         if not name:
             raise StorefrontError(400, "Le nom de la boutique est requis.")
-        products = self._clean_products(payload.get("products"))
+        missing: list[str] = []
+        products = self._clean_products(payload.get("products"), missing)
+        cover = self._photo(settings.get("cover"), missing)
         closed = sorted(
             {int(d) for d in (settings.get("closed_weekdays") or []) if str(d).isdigit() and 1 <= int(d) <= 7}
         )
@@ -301,7 +311,7 @@ class StorefrontStore:
                 "address": _text(payload.get("address"), 160),
                 "description": _text(settings.get("description"), 300),
                 "pickup_note": _text(settings.get("pickup_note"), 300),
-                "cover_url": self._photo(settings.get("cover")),
+                "cover_url": cover,
                 "enabled": bool(settings.get("enabled")),
                 "paused": bool(settings.get("paused")),
                 "accept_when_closed": bool(settings.get("accept_when_closed", True)),
@@ -315,9 +325,14 @@ class StorefrontStore:
             self.shops[owner] = shop
             self.slugs[slug] = owner
             self._save()
-        return {"slug": slug, "published_at": shop["published_at"], "products": len(products)}
+        return {
+            "slug": slug,
+            "published_at": shop["published_at"],
+            "products": len(products),
+            "missing_photos": missing,
+        }
 
-    def _clean_products(self, raw: object) -> list[dict]:
+    def _clean_products(self, raw: object, missing: list[str]) -> list[dict]:
         if not isinstance(raw, list):
             return []
         cleaned: list[dict] = []
@@ -369,7 +384,7 @@ class StorefrontStore:
                     "description": _text(item.get("description"), 600),
                     "price_htg": price,
                     "regular_price_htg": regular if regular > price else 0,
-                    "photo_url": self._photo(item.get("photo")),
+                    "photo_url": self._photo(item.get("photo"), missing),
                     "track_stock": track,
                     "stock": max(0, stock),
                     "unit": _text(item.get("unit"), 12),

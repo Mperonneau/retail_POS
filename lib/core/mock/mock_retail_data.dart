@@ -27,6 +27,8 @@ class MockProduct {
   final bool trackStock;
   final String stockUnit;
   final List<ProductOptionGroup> options;
+  /// Listed on the online vitrine when the product is also [active].
+  final bool showOnStorefront;
 
   const MockProduct({
     required this.id,
@@ -45,6 +47,7 @@ class MockProduct {
     this.trackStock = true,
     this.stockUnit = 'u',
     this.options = const [],
+    this.showOnStorefront = true,
   });
 
   bool get isLowStock => trackStock && stockQuantity <= minStock;
@@ -82,6 +85,7 @@ class MockProduct {
     bool? trackStock,
     String? stockUnit,
     List<ProductOptionGroup>? options,
+    bool? showOnStorefront,
   }) {
     return MockProduct(
       id: id ?? this.id,
@@ -101,6 +105,7 @@ class MockProduct {
       trackStock: trackStock ?? this.trackStock,
       stockUnit: stockUnit ?? this.stockUnit,
       options: options ?? this.options,
+      showOnStorefront: showOnStorefront ?? this.showOnStorefront,
     );
   }
 }
