@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:retail_pos/core/theme/app_colors.dart';
 import 'package:retail_pos/core/theme/app_scroll_behavior.dart';
 import 'package:retail_pos/core/theme/app_theme.dart';
+import 'package:retail_pos/core/widgets/app_update_banner.dart';
 
 import 'session.dart';
 import 'favorites.dart';
@@ -118,6 +119,7 @@ class StorefrontApp extends StatelessWidget {
       ),
       scrollBehavior: AppScrollBehavior(),
       routerConfig: _router,
+      builder: (context, child) => AppUpdateHost(child: child ?? const SizedBox.shrink()),
     );
   }
 }

@@ -44,7 +44,8 @@ services:
       flutter config --enable-web &&
       cd storefront &&
       flutter pub get &&
-      flutter build web --release --dart-define=STOREFRONT_API=https://retail-pos-payments.onrender.com
+      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=STOREFRONT_API=https://retail-pos-payments.onrender.com &&
+      python3 -c "import json,os; p='build/web/version.json'; d=json.load(open(p)); d['build_id']=os.environ.get('RENDER_GIT_COMMIT',''); json.dump(d, open(p,'w'))"
     staticPublishPath: storefront/build/web
     pullRequestPreviewsEnabled: true
     routes:
@@ -52,6 +53,9 @@ services:
         source: /*
         destination: /index.html
     headers:
+      - path: /version.json
+        name: Cache-Control
+        value: no-cache
       - path: /flutter_service_worker.js
         name: Cache-Control
         value: no-cache
