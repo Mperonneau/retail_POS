@@ -2467,8 +2467,10 @@ class _ShareLinkBox extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: accent.withValues(alpha: 0.35)),
           ),
-          child: SelectableText(
+          child: Text(
             url,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.caption(color: accent).copyWith(
               fontWeight: FontWeight.w600,
             ),

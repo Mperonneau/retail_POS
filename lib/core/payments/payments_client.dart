@@ -220,7 +220,7 @@ class PaymentsClient {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(payload),
           )
-          .timeout(const Duration(seconds: 25));
+          .timeout(const Duration(seconds: 60));
     } catch (_) {
       throw PaymentsException(
         'Impossible de joindre le serveur de paiement. Vérifiez la connexion.',
@@ -234,7 +234,7 @@ class PaymentsClient {
     try {
       response = await _http
           .get(_uri(path))
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 45));
     } catch (_) {
       throw PaymentsException(
         'Impossible de joindre le serveur de paiement. Vérifiez la connexion.',
