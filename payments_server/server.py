@@ -370,7 +370,18 @@ def moncash_paid(order_id: str) -> dict:
     safe_id = "".join(ch for ch in order_id if ch.isalnum())[:40]
     if not safe_id:
         raise PaymentError(400, "Commande MonCash inconnue.")
-    body = moncash_post("/v1/RetrieveOrderPayment", {"orderId": safe_id})
+    try:
+        body = moncash_post("/v1/RetrieveOrderPayment", {"orderId": safe_id})
+    except PaymentError as exc:
+        # Digicel answers this until the customer has actually paid.
+        if "transaction not found" in exc.message.lower():
+            return {
+                "order_id": safe_id,
+                "paid": False,
+                "message": "pending",
+                "transaction_id": "",
+            }
+        raise
     payment = body.get("payment") if isinstance(body, dict) else None
     message = ""
     txn = ""

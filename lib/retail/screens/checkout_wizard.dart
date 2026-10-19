@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/payments/card_charge_pricing.dart';
-import '../../core/payments/open_payment_url.dart';
 import '../../core/payments/payments_client.dart';
 import '../../core/payments/stripe_card_field.dart';
 import '../../core/providers/currency_settings_provider.dart';
@@ -1463,6 +1463,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   String? _remoteError;
   bool _cardPaid = false;
   bool _moncashPaid = false;
+  String? _moncashUrl;
+  String? _moncashOrderId;
   bool _cardConfigLoading = false;
   bool _cardConfigLoaded = false;
   String? _publishableKey;
@@ -1505,6 +1507,9 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     if (_method == _RPayMethod.credit) {
       return _selectedCustomer != null && !_selectedCustomer!.isCreditBlocked;
     }
+    if (_method == _RPayMethod.moncash && !_moncashPaid) {
+      return _moncashUrl == null && widget.total.round() >= 1;
+    }
     if (_method == _RPayMethod.card && !_cardPaid) {
       if (_cardPricing() == null) return false;
       if (_cardEntry == _CardEntry.form) return _cardController.isReady;
@@ -1526,7 +1531,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       return 'Payer ${CurrencyFormatter.usd(pricing.totalUsd)}';
     }
     if (_method == _RPayMethod.moncash && !_moncashPaid) {
-      return 'Ouvrir MonCash';
+      if (_moncashUrl != null) return 'En attente du paiement…';
+      return 'Payer ${CurrencyFormatter.local(context, widget.total)}';
     }
     return 'Confirmer le paiement';
   }
@@ -1623,6 +1629,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     if (method == _RPayMethod.card) {
       _loadCardConfig();
       _resumeSharePoll();
+    } else if (method == _RPayMethod.moncash) {
+      _resumeMoncashPoll();
     }
   }
 
@@ -1803,16 +1811,12 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         if (mounted) setState(() => _remoteBusy = false);
         return;
       }
-      openPaymentUrl(payment.paymentUrl);
-      setState(() => _remoteBusy = false);
-      _pollPayment(
-        () => _payments.moncashPaid(payment.orderId),
-        onPaid: () async {
-          setState(() => _moncashPaid = true);
-          if (!await widget.onValidateStock()) return;
-          await _finishSale(PaymentMethodType.moncash);
-        },
-      );
+      setState(() {
+        _remoteBusy = false;
+        _moncashUrl = payment.paymentUrl;
+        _moncashOrderId = payment.orderId;
+      });
+      _watchMoncash(payment.orderId);
     } on PaymentsException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -1822,9 +1826,35 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     }
   }
 
+  void _watchMoncash(String orderId) {
+    _pollPayment(
+      () => _payments.moncashPaid(orderId),
+      pendingIsUnpaid: true,
+      onPaid: () async {
+        if (!mounted || _moncashPaid) return;
+        setState(() => _moncashPaid = true);
+        if (!await widget.onValidateStock()) return;
+        await _finishSale(PaymentMethodType.moncash);
+      },
+    );
+  }
+
+  void _resumeMoncashPoll() {
+    final id = _moncashOrderId;
+    if (id == null || _moncashPaid || _method != _RPayMethod.moncash) return;
+    _watchMoncash(id);
+  }
+
+  bool _moncashStillPending(String message) {
+    final lower = message.toLowerCase();
+    return lower.contains('transaction not found') ||
+        lower.contains('transaction inexistante');
+  }
+
   void _pollPayment(
     Future<bool> Function() check, {
     required Future<void> Function() onPaid,
+    bool pendingIsUnpaid = false,
   }) {
     _poll?.cancel();
     var attempts = 0;
@@ -1841,6 +1871,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         await onPaid();
       } on PaymentsException catch (e) {
         if (!mounted) return;
+        if (pendingIsUnpaid && _moncashStillPending(e.message)) return;
         timer.cancel();
         setState(() => _remoteError = e.message);
       }
@@ -1941,6 +1972,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
                 ? (_cardEntry == _CardEntry.link
                       ? Icons.link
                       : Icons.credit_card_outlined)
+                : _method == _RPayMethod.moncash && !_moncashPaid
+                ? Icons.phone_android_outlined
                 : Icons.check_circle_outline,
             compact: true,
           ),
@@ -1958,6 +1991,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
           error: _remoteError,
           waiting: _remoteBusy || ((_poll?.isActive ?? false) && !_moncashPaid),
           paid: _moncashPaid,
+          paymentUrl: _moncashUrl,
         );
       case _RPayMethod.card:
         return _RCardContent(
@@ -2119,6 +2153,7 @@ class _RMonCashContent extends StatelessWidget {
   final String? error;
   final bool waiting;
   final bool paid;
+  final String? paymentUrl;
 
   const _RMonCashContent({
     required this.totalHtg,
@@ -2126,43 +2161,77 @@ class _RMonCashContent extends StatelessWidget {
     required this.error,
     required this.waiting,
     required this.paid,
+    required this.paymentUrl,
   });
 
   @override
   Widget build(BuildContext context) {
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
-    return AppCard(
+    final url = paymentUrl?.trim() ?? '';
+    return Align(
+      alignment: Alignment.topCenter,
       child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.phone_android_outlined,
-              size: 44,
-              color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
-            ),
-            const SizedBox(height: AppConstants.spacing12),
-            Text('Paiement MonCash', style: AppTextStyles.h3()),
-            const SizedBox(height: AppConstants.spacing8),
-            Text(
-              'Le client paie le montant de la vente sur la page Digicel. '
-              'Les frais MonCash restent ceux de Digicel.',
-              style: AppTextStyles.body(color: muted),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppConstants.spacing12),
-            Text(
-              CurrencyFormatter.local(context, totalHtg),
-              style: AppTextStyles.price(),
-            ),
-            const SizedBox(height: AppConstants.spacing12),
-            _RemoteStatus(
-              error: error,
-              waiting: waiting,
-              paid: paid,
-              isDark: isDark,
-            ),
-          ],
+        child: AppCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.phone_android_outlined,
+                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                  ),
+                  const SizedBox(width: 8),
+                  Text('Paiement MonCash', style: AppTextStyles.h3()),
+                ],
+              ),
+              const SizedBox(height: AppConstants.spacing8),
+              Text(
+                url.isEmpty
+                    ? 'Appuyez sur Payer. Un code apparaîtra pour le téléphone du client. '
+                          'Les frais MonCash restent ceux de Digicel.'
+                    : 'Le client scanne ce code avec son téléphone. '
+                          'Les frais MonCash restent ceux de Digicel.',
+                style: AppTextStyles.body(color: muted),
+              ),
+              const SizedBox(height: AppConstants.spacing12),
+              Text(
+                CurrencyFormatter.local(context, totalHtg),
+                style: AppTextStyles.price(),
+              ),
+              if (url.isNotEmpty) ...[
+                const SizedBox(height: AppConstants.spacing12),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: QrImageView(
+                      data: url,
+                      size: 180,
+                      backgroundColor: AppColors.white,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: AppColors.nearBlack,
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.square,
+                        color: AppColors.nearBlack,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              _RemoteStatus(
+                error: error,
+                waiting: waiting,
+                paid: paid,
+                isDark: isDark,
+              ),
+            ],
+          ),
         ),
       ),
     );
