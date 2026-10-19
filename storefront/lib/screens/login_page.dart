@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
         Text('Connexion', style: AppTextStyles.h1(color: AppColors.nearBlack)),
         const SizedBox(height: 8),
         Text(
-          'Entrez votre numéro de téléphone. Un code vous sera envoyé pour vous connecter.',
+          'Entrez votre numéro de téléphone. Vous indiquerez ensuite un code pour continuer.',
           style: AppTextStyles.body(color: AppColors.darkGray),
         ),
         const SizedBox(height: 20),

@@ -9,7 +9,7 @@ import '../api.dart';
 import '../countries.dart';
 import '../session.dart';
 
-/// The code that was sent to the phone number from the previous step.
+/// Placeholder code step. Any code continues until Firebase sends a real one.
 class LoginCodePage extends StatefulWidget {
   const LoginCodePage({super.key});
 
@@ -74,24 +74,6 @@ class _LoginCodePageState extends State<LoginCodePage> {
     }
   }
 
-  Future<void> _resend() async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await Session.instance.requestCode(
-        phoneNumber: loginDraft.national,
-        countryCode: loginDraft.iso,
-      );
-      if (mounted) setState(() => _error = null);
-    } on ApiException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final digits = _code.text;
@@ -101,7 +83,7 @@ class _LoginCodePageState extends State<LoginCodePage> {
         Text('Code', style: AppTextStyles.h1(color: AppColors.nearBlack)),
         const SizedBox(height: 8),
         Text(
-          'Entrez le code envoyé au ${loginDraft.displayPhone}.',
+          'Entrez un code pour ${loginDraft.displayPhone}.',
           style: AppTextStyles.body(color: AppColors.darkGray),
         ),
         const SizedBox(height: 24),
@@ -179,11 +161,6 @@ class _LoginCodePageState extends State<LoginCodePage> {
           onPressed: _busy || digits.length != 6 ? null : _submit,
         ),
         const SizedBox(height: 8),
-        AppButton(
-          label: 'Renvoyer le code',
-          variant: AppButtonVariant.ghost,
-          onPressed: _busy ? null : _resend,
-        ),
         AppButton(
           label: 'Changer de numéro',
           variant: AppButtonVariant.ghost,

@@ -316,30 +316,10 @@ def test_known_photo_paths_are_reused_or_reported_missing():
     assert store.public_shop("chez-marie", OPEN)["cover_url"] == cover
 
 
-def _sent_code():
-    box: dict[str, str] = {}
-
-    def deliver(phone: str, message: str) -> None:
-        box["phone"] = phone
-        box["message"] = message
-
-    return box, deliver
-
-
-def _code(message: str) -> str:
-    import re
-
-    match = re.search(r"\d{6}", message)
-    assert match, message
-    return match.group(0)
-
-
 def test_phone_code_creates_account_with_country():
     store = _store()
-    sent, deliver = _sent_code()
-    assert store.request_code("3700 1111", "ht", deliver=deliver) == {"sent": True}
-    assert sent["phone"] == "+50937001111"
-    checked = store.verify_code("37001111", "HT", _code(sent["message"]))
+    assert store.request_code("3700 1111", "ht") == {"sent": True}
+    checked = store.verify_code("37001111", "HT", "000000")
     assert checked["registered"] is False
     created = store.register_account(checked["signup_token"], "Marie Joseph", "")
     assert created["account"]["name"] == "Marie Joseph"
@@ -351,18 +331,17 @@ def test_phone_code_creates_account_with_country():
         raise AssertionError("signup reused")
     except StorefrontError as exc:
         assert exc.status == 401
-    store.request_code("+509 3700 1111", "HT", deliver=deliver)
-    again = store.verify_code("50937001111", "HT", _code(sent["message"]))
+    store.request_code("+509 3700 1111", "HT")
+    again = store.verify_code("50937001111", "HT", "123456")
     assert again["registered"] is True
     assert again["account"]["name"] == "Marie Joseph"
     assert again["token"]
     with_mail = _store()
-    sent2, deliver2 = _sent_code()
-    with_mail.request_code("0612345678", "FR", deliver=deliver2)
-    assert sent2["phone"] == "+33612345678"
-    pending = with_mail.verify_code("0612345678", "FR", _code(sent2["message"]))
+    with_mail.request_code("0612345678", "FR")
+    pending = with_mail.verify_code("0612345678", "FR", "999999")
     saved = with_mail.register_account(pending["signup_token"], "Jean Pierre", "jean@exemple.fr")
     assert saved["account"]["country"] == "FR"
+    assert saved["account"]["phone"] == "+33612345678"
     assert saved["account"]["email"] == "jean@exemple.fr"
     try:
         with_mail.register_account("nope", "Jean Pierre", "pas-un-email")
@@ -373,29 +352,24 @@ def test_phone_code_creates_account_with_country():
 
 def test_phone_code_rejects_bad_input():
     store = _store()
-    sent, deliver = _sent_code()
-    store.request_code("37001111", "HT", deliver=deliver)
+    store.request_code("37001111", "HT")
+    assert store.verify_code("37001111", "HT", "111111")["registered"] is False
     try:
-        store.verify_code("37001111", "HT", "000000")
-        raise AssertionError("bad code")
+        store.verify_code("37001111", "HT", "   ")
+        raise AssertionError("empty code")
     except StorefrontError as exc:
-        assert exc.status == 401
+        assert exc.status == 400
     try:
-        store.request_code("37001111", "HT", deliver=deliver)
-        raise AssertionError("rate limit")
-    except StorefrontError as exc:
-        assert exc.status == 429
-    try:
-        store.request_code("37001111", "ZZ", deliver=deliver)
+        store.request_code("37001111", "ZZ")
         raise AssertionError("country")
     except StorefrontError as exc:
         assert exc.status == 400
     try:
-        store.request_code("2125551234", "DO", deliver=deliver)
+        store.request_code("2125551234", "DO")
         raise AssertionError("prefix")
     except StorefrontError as exc:
         assert exc.status == 400
-    assert store.request_code("8095551234", "DO", deliver=deliver)["sent"] is True
+    assert store.request_code("8095551234", "DO")["sent"] is True
     try:
         store.register_account("missing", "A", "")
         raise AssertionError("short name")
@@ -406,36 +380,11 @@ def test_phone_code_rejects_bad_input():
 def test_existing_account_returns_home_after_code():
     store = _store()
     store.open_account("50937001111", "1234", "Marie")
-    sent, deliver = _sent_code()
-    store.request_code("37001111", "HT", deliver=deliver)
-    again = store.verify_code("37001111", "HT", _code(sent["message"]))
+    store.request_code("37001111", "HT")
+    again = store.verify_code("37001111", "HT", "424242")
     assert again["registered"] is True
     assert again["account"]["name"] == "Marie"
     assert again["account"]["country"] == "HT"
-
-
-def test_code_is_not_pretend_sent_without_sms():
-    saved = {
-        key: os.environ.pop(key, None)
-        for key in (
-            "TWILIO_ACCOUNT_SID",
-            "TWILIO_AUTH_TOKEN",
-            "TWILIO_FROM",
-            "TWILIO_MESSAGING_SERVICE_SID",
-        )
-    }
-    try:
-        store = _store()
-        try:
-            store.request_code("37001111", "HT")
-            raise AssertionError("sms")
-        except StorefrontError as exc:
-            assert exc.status == 503
-            assert "configuré" in exc.message
-    finally:
-        for key, value in saved.items():
-            if value is not None:
-                os.environ[key] = value
 
 
 def test_data_survives_reload():

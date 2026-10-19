@@ -20,7 +20,6 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
-import hmac
 import json
 import os
 import re
@@ -322,15 +321,6 @@ def _pin_hash(phone_digits: str, pin: str) -> str:
     return hashlib.sha256(f"{phone_digits}:{pin}".encode()).hexdigest()
 
 
-def _deliver_login_code(e164: str, message: str) -> None:
-    from sms import SmsError, send_sms
-
-    try:
-        send_sms(e164, message)
-    except SmsError as exc:
-        raise StorefrontError(exc.status, exc.message) from exc
-
-
 def _money(value: object) -> float:
     try:
         amount = float(value or 0)
@@ -420,8 +410,7 @@ class StorefrontStore:
         self.requests: dict[str, dict] = {}
         self.accounts: dict[str, dict] = {}
         self.tokens: dict[str, str] = {}
-        # Codes and signup tokens stay in memory. A restart invalidates them.
-        self._codes: dict[str, dict] = {}
+        # Signup tokens stay in memory. A restart invalidates them.
         self._signups: dict[str, dict] = {}
         self._load()
 
@@ -829,56 +818,21 @@ class StorefrontStore:
             view = self._account_view(account)
         return {"token": token, "account": view}
 
-    def request_code(self, phone: object, country: object, *, deliver=None) -> dict:
-        """Send a one-time code. The reply does not say if the number is registered."""
-        _iso, e164, digits = _login_phone(phone, country)
-        now = time.time()
-        with self._lock:
-            previous = self._codes.get(digits)
-            if previous and now - float(previous.get("sent_at") or 0) < 30:
-                raise StorefrontError(429, "Patientez un instant avant de redemander un code.")
-            code = f"{secrets.randbelow(1_000_000):06d}"
-            self._codes[digits] = {
-                "hash": hashlib.sha256(f"{digits}:{code}".encode()).hexdigest(),
-                "expires": now + 600,
-                "attempts": 0,
-                "sent_at": now,
-                "country": _iso,
-                "phone": e164,
-            }
-        sender = deliver or _deliver_login_code
-        try:
-            sender(e164, f"Vitrine : {code} est votre code de connexion. Il expire dans 10 minutes.")
-        except Exception:
-            with self._lock:
-                self._codes.pop(digits, None)
-            raise
+    def request_code(self, phone: object, country: object) -> dict:
+        """Accept the number. The code itself is a placeholder until Firebase sends it."""
+        _login_phone(phone, country)
         return {"sent": True}
 
     def verify_code(self, phone: object, country: object, code: object) -> dict:
-        """Check the code. A known account gets a session; a new number gets a signup token."""
-        _iso, _e164, digits = _login_phone(phone, country)
-        submitted = str(code or "").strip()
-        if not re.fullmatch(r"\d{6}", submitted):
-            raise StorefrontError(400, "Indiquez le code à 6 chiffres.")
+        """Accept any code. A known account gets a session; a new number gets a signup token."""
+        iso, e164, digits = _login_phone(phone, country)
+        if not str(code or "").strip():
+            raise StorefrontError(400, "Indiquez le code.")
         with self._lock:
-            challenge = self._codes.get(digits)
-            if not challenge or time.time() > float(challenge.get("expires") or 0):
-                self._codes.pop(digits, None)
-                raise StorefrontError(401, "Ce code a expiré. Demandez-en un nouveau.")
-            challenge["attempts"] = int(challenge.get("attempts") or 0) + 1
-            if challenge["attempts"] > 5:
-                self._codes.pop(digits, None)
-                raise StorefrontError(401, "Trop de tentatives. Demandez un nouveau code.")
-            expected = str(challenge.get("hash") or "")
-            actual = hashlib.sha256(f"{digits}:{submitted}".encode()).hexdigest()
-            if not hmac.compare_digest(expected, actual):
-                raise StorefrontError(401, "Code incorrect.")
-            self._codes.pop(digits, None)
             account = self.accounts.get(digits)
             if account and _text(account.get("name"), 80):
                 if not account.get("country"):
-                    account["country"] = challenge["country"]
+                    account["country"] = iso
                 account.setdefault("email", "")
                 token = secrets.token_urlsafe(24)
                 self.tokens[hashlib.sha256(token.encode()).hexdigest()] = digits
@@ -891,8 +845,8 @@ class StorefrontStore:
             signup = secrets.token_urlsafe(24)
             self._signups[hashlib.sha256(signup.encode()).hexdigest()] = {
                 "digits": digits,
-                "phone": challenge["phone"],
-                "country": challenge["country"],
+                "phone": e164,
+                "country": iso,
                 "expires": time.time() + 900,
             }
             return {"registered": False, "signup_token": signup}

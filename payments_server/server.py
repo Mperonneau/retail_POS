@@ -10,9 +10,6 @@ Env:
   MONCASH_CLIENT_ID
   MONCASH_SECRET
   MONCASH_BASE_URL        default https://moncashbutton.digicelgroup.com
-  TWILIO_ACCOUNT_SID      SMS login codes (with TWILIO_AUTH_TOKEN)
-  TWILIO_AUTH_TOKEN
-  TWILIO_FROM             sending number, or TWILIO_MESSAGING_SERVICE_SID
   PUBLIC_BASE_URL         success/cancel pages (Render sets RENDER_EXTERNAL_URL)
   STOREFRONT_DATA_DIR     vitrine catalog, requests and photos (default ./.data)
   DAY_USD_RATE            HTG per USD when a shop has no rate (default 135)
