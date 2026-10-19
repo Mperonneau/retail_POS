@@ -189,12 +189,11 @@ def create_checkout(
         ("line_items[0][price_data][product_data][name]", label[:120]),
         ("line_items[1][quantity]", "1"),
         ("line_items[1][price_data][currency]", "usd"),
-        ("line_items[1][price_data][unit_amount]", str(pricing["platform_fee_usd_cents"])),
-        ("line_items[1][price_data][product_data][name]", "Frais (1,5 % + 1 $)"),
-        ("line_items[2][quantity]", "1"),
-        ("line_items[2][price_data][currency]", "usd"),
-        ("line_items[2][price_data][unit_amount]", str(pricing["stripe_fee_usd_cents"])),
-        ("line_items[2][price_data][product_data][name]", "Frais Stripe"),
+        (
+            "line_items[1][price_data][unit_amount]",
+            str(pricing["platform_fee_usd_cents"] + pricing["stripe_fee_usd_cents"]),
+        ),
+        ("line_items[1][price_data][product_data][name]", "Frais"),
         ("metadata[reference]", reference[:500]),
         ("metadata[order_usd_cents]", str(pricing["order_usd_cents"])),
         ("metadata[platform_fee_usd_cents]", str(pricing["platform_fee_usd_cents"])),
@@ -212,7 +211,7 @@ def create_checkout(
         "POST",
         "/checkout/sessions",
         fields,
-        idempotency_key=f"retail-{reference}-{pricing['total_usd_cents']}",
+        idempotency_key=f"retail-fee-{reference}-{pricing['total_usd_cents']}",
     )
     url = str(session.get("url") or "")
     session_id = str(session.get("id") or "")

@@ -7,6 +7,7 @@ void main() {
     final priced = CardChargePricing.fromOrderUsdCents(1000);
     expect(priced.platformFeeUsdCents, 115);
     expect(priced.stripeFeeUsdCents, 65);
+    expect(priced.combinedFeeUsdCents, 180);
     expect(priced.totalUsdCents, 1180);
     expect(
       priced.orderUsdCents +

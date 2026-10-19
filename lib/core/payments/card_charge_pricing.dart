@@ -34,6 +34,10 @@ class CardChargePricing {
   double get stripeFeeUsd => stripeFeeUsdCents / 100;
   double get totalUsd => totalUsdCents / 100;
 
+  /// Shop fee plus Stripe fee, shown to the cashier as one amount.
+  int get combinedFeeUsdCents => platformFeeUsdCents + stripeFeeUsdCents;
+  double get combinedFeeUsd => combinedFeeUsdCents / 100;
+
   static CardChargePricing fromOrderUsdCents(int orderUsdCents) {
     final order = orderUsdCents < 0 ? 0 : orderUsdCents;
     final percent = (order * platformPercentBp + 5000) ~/ 10000;

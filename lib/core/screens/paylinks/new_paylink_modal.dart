@@ -1043,11 +1043,6 @@ class _PayLinkForm extends StatelessWidget {
                   ? null
                   : CurrencyFormatter.local(context, parsedAmt),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Le payeur règle les frais Stripe et les frais de 1,5 % + 1 \$.',
-              style: AppTextStyles.caption(color: mutedColor),
-            ),
           ],
 
           const SizedBox(height: 16),

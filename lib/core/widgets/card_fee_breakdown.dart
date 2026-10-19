@@ -5,7 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/currency_formatter.dart';
 
-/// Order, shop fee (1.5% + $1), Stripe fee, and the amount the payer settles.
+/// Order, one combined fee, and the amount the payer settles.
 class CardFeeBreakdown extends StatelessWidget {
   const CardFeeBreakdown({
     super.key,
@@ -35,15 +35,8 @@ class CardFeeBreakdown extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         _row(
-          'Frais 1,5 % + 1 \$',
-          CurrencyFormatter.usd(pricing.platformFeeUsd),
-          muted,
-          text,
-        ),
-        const SizedBox(height: 6),
-        _row(
-          'Frais Stripe',
-          CurrencyFormatter.usd(pricing.stripeFeeUsd),
+          'Frais',
+          CurrencyFormatter.usd(pricing.combinedFeeUsd),
           muted,
           text,
         ),
