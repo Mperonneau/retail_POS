@@ -132,6 +132,35 @@ def test_directory_lists_enabled_shops_by_department():
     assert store.public_shop("sans-region", OPEN)["department"] == ""
 
 
+def test_account_login_and_orders():
+    store = _store()
+    store.publish(KEY, _catalog())
+    created = store.open_account("50937001111", "1234", "Marie")
+    token = created["token"]
+    assert created["account"]["name"] == "Marie"
+    try:
+        store.open_account("50937001111", "0000")
+        raise AssertionError("bad pin")
+    except StorefrontError as exc:
+        assert exc.status == 401
+    again = store.open_account("+509 3700 1111", "1234")
+    assert again["account"]["name"] == "Marie"
+    store.create_request(
+        "chez-marie",
+        {"kind": "devis", "customer": CUSTOMER, "lines": [{"product_id": "1", "quantity": 1}]},
+        OPEN,
+        account_phone=store.phone_for_token(token),
+    )
+    orders = store.account_orders(token)
+    assert len(orders) == 1 and orders[0]["kind"] == "devis"
+    assert orders[0]["shop_name"] == "Chez Marie"
+    assert store.account_orders(again["token"])[0]["id"] == orders[0]["id"]
+    renamed = store.update_account(token, "Marie Joseph")
+    assert renamed["name"] == "Marie Joseph"
+    reloaded = StorefrontStore(store.data_dir)
+    assert reloaded.account_for_token(token)["name"] == "Marie Joseph"
+
+
 def test_disabled_shop_is_hidden():
     store = _store()
     store.publish(KEY, _catalog(enabled=False))

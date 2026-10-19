@@ -7,6 +7,7 @@ import 'package:retail_pos/core/widgets/app_close_button.dart';
 
 import '../api.dart';
 import '../cart.dart';
+import '../session.dart';
 import '../money.dart';
 import '../widgets.dart';
 import 'product_sheet.dart';
@@ -45,6 +46,16 @@ class _CartSheetState extends State<_CartSheet> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    final session = Session.instance;
+    if (session.isLoggedIn) {
+      _name.text = session.name;
+      _phone.text = session.phone;
+    }
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
@@ -68,7 +79,9 @@ class _CartSheetState extends State<_CartSheet> {
         phone: _phone.text.trim(),
         email: _email.text.trim(),
         note: _note.text.trim(),
+        token: Session.instance.isLoggedIn ? Session.instance.token : null,
       );
+      await Session.instance.rememberOrder(request.id);
       widget.cart.clear();
       if (!mounted) return;
       Navigator.of(context).pop();

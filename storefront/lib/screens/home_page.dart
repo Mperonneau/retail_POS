@@ -6,6 +6,7 @@ import 'package:retail_pos/core/utils/constants.dart';
 import 'package:web/web.dart' as web;
 
 import '../api.dart';
+import '../favorites.dart';
 import '../widgets.dart';
 
 /// Directory of every open vitrine, searchable and filtered by department.
@@ -367,6 +368,25 @@ class _ShopTile extends StatelessWidget {
                       ),
                     ],
                   ],
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: ListenableBuilder(
+                  listenable: Favorites.instance,
+                  builder: (context, _) {
+                    final saved = Favorites.instance.contains(shop.slug);
+                    return IconButton(
+                      tooltip: saved ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.white,
+                        foregroundColor: saved ? AppColors.boldRed : AppColors.nearBlack,
+                      ),
+                      onPressed: () => Favorites.instance.toggle(shop),
+                      icon: Icon(saved ? Icons.favorite_rounded : Icons.favorite_border),
+                    );
+                  },
                 ),
               ),
             ],

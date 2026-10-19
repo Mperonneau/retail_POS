@@ -7,6 +7,7 @@ import 'package:web/web.dart' as web;
 
 import '../api.dart';
 import '../cart.dart';
+import '../favorites.dart';
 import '../money.dart';
 import '../widgets.dart';
 import 'cart_sheet.dart';
@@ -23,7 +24,6 @@ class ShopPage extends StatefulWidget {
 
 class _ShopPageState extends State<ShopPage> {
   final _api = StorefrontApi();
-  final _cart = Cart();
   final _search = TextEditingController();
   Shop? _shop;
   String? _error;
@@ -38,7 +38,6 @@ class _ShopPageState extends State<ShopPage> {
 
   @override
   void dispose() {
-    _cart.dispose();
     _search.dispose();
     super.dispose();
   }
@@ -52,6 +51,7 @@ class _ShopPageState extends State<ShopPage> {
       final shop = await _api.shop(widget.slug);
       if (!mounted) return;
       web.document.title = shop.name;
+      appCart.bindShop(shop.slug, shop.name, shop.usdRate);
       setState(() => _shop = shop);
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -80,17 +80,17 @@ class _ShopPageState extends State<ShopPage> {
       _openProduct(product);
       return;
     }
-    if (!_cart.add(product, const [], 1)) {
+    if (!appCart.add(product, const [], 1)) {
       showToast(context, 'Stock maximum atteint pour ${product.name}.', error: true);
     }
   }
 
   void _openProduct(Product product) {
-    showProductSheet(context, shop: _shop!, product: product, cart: _cart);
+    showProductSheet(context, shop: _shop!, product: product, cart: appCart);
   }
 
   void _openCart() {
-    showCartSheet(context, shop: _shop!, cart: _cart, api: _api);
+    showCartSheet(context, shop: _shop!, cart: appCart, api: _api);
   }
 
   @override
@@ -148,7 +148,7 @@ class _ShopPageState extends State<ShopPage> {
                   120,
                 ),
                 sliver: ListenableBuilder(
-                  listenable: _cart,
+                  listenable: appCart,
                   builder: (context, _) => SliverGrid.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: columns,
@@ -160,7 +160,7 @@ class _ShopPageState extends State<ShopPage> {
                     itemBuilder: (context, i) => _ProductCard(
                       product: products[i],
                       rate: shop.usdRate,
-                      inCart: _cart.quantityOf(products[i].id),
+                      inCart: appCart.quantityOf(products[i].id),
                       canBuy: shop.availability.acceptsOrders ||
                           shop.availability.acceptsQuotes,
                       onTap: () => _openProduct(products[i]),
@@ -173,10 +173,10 @@ class _ShopPageState extends State<ShopPage> {
         ),
       ),
       bottomNavigationBar: ListenableBuilder(
-        listenable: _cart,
-        builder: (context, _) => _cart.isEmpty
+        listenable: appCart,
+        builder: (context, _) => appCart.isEmpty || appCart.shopSlug != shop.slug
             ? const SizedBox.shrink()
-            : _CartBar(cart: _cart, rate: shop.usdRate, onTap: _openCart),
+            : _CartBar(cart: appCart, rate: shop.usdRate, onTap: _openCart),
       ),
     );
   }
@@ -230,6 +230,35 @@ class _Header extends StatelessWidget {
                     colors: [Color(0x00000000), Color(0x99000000)],
                     stops: [0.35, 1],
                   ),
+                ),
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: ListenableBuilder(
+                  listenable: Favorites.instance,
+                  builder: (context, _) {
+                    final saved = Favorites.instance.contains(shop.slug);
+                    return IconButton(
+                      tooltip: saved ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.white,
+                        foregroundColor: saved ? AppColors.boldRed : AppColors.nearBlack,
+                      ),
+                      onPressed: () => Favorites.instance.toggle(ShopCard(
+                        slug: shop.slug,
+                        name: shop.name,
+                        city: shop.city,
+                        department: shop.department,
+                        description: shop.description,
+                        coverUrl: shop.coverUrl,
+                        isOpenNow: shop.availability.isOpenNow,
+                        paused: shop.availability.paused,
+                        opensAtLabel: shop.availability.opensAtLabel ?? '',
+                      )),
+                      icon: Icon(saved ? Icons.favorite_rounded : Icons.favorite_border),
+                    );
+                  },
                 ),
               ),
               Positioned(

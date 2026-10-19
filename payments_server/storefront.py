@@ -126,6 +126,17 @@ def _department(value: object) -> str:
     return text if text in DEPARTMENTS else ""
 
 
+def _phone_digits(value: object) -> str:
+    digits = re.sub(r"\D", "", str(value or ""))
+    if len(digits) < 8:
+        raise StorefrontError(400, "Indiquez un numéro de téléphone valide.")
+    return digits
+
+
+def _pin_hash(phone_digits: str, pin: str) -> str:
+    return hashlib.sha256(f"{phone_digits}:{pin}".encode()).hexdigest()
+
+
 def _money(value: object) -> float:
     try:
         amount = float(value or 0)
@@ -213,6 +224,8 @@ class StorefrontStore:
         self.shops: dict[str, dict] = {}
         self.slugs: dict[str, str] = {}
         self.requests: dict[str, dict] = {}
+        self.accounts: dict[str, dict] = {}
+        self.tokens: dict[str, str] = {}
         self._load()
 
     # ---- persistence -------------------------------------------------------
@@ -228,13 +241,21 @@ class StorefrontStore:
         self.shops = dict(data.get("shops") or {})
         self.slugs = dict(data.get("slugs") or {})
         self.requests = dict(data.get("requests") or {})
+        self.accounts = dict(data.get("accounts") or {})
+        self.tokens = dict(data.get("tokens") or {})
 
     def _save(self) -> None:
         os.makedirs(self.data_dir, exist_ok=True)
         tmp = f"{self._path}.tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(
-                {"shops": self.shops, "slugs": self.slugs, "requests": self.requests},
+                {
+                    "shops": self.shops,
+                    "slugs": self.slugs,
+                    "requests": self.requests,
+                    "accounts": self.accounts,
+                    "tokens": self.tokens,
+                },
                 fh,
                 ensure_ascii=False,
             )
@@ -568,7 +589,96 @@ class StorefrontStore:
             "products": products,
         }
 
-    def create_request(self, raw_slug: str, payload: dict, now: datetime | None = None) -> dict:
+    def open_account(self, phone: object, pin: object, name: object = "") -> dict:
+        """Create a customer account or sign back in with the same personal code."""
+        digits = _phone_digits(phone)
+        code = str(pin or "").strip()
+        if not re.fullmatch(r"\d{4,6}", code):
+            raise StorefrontError(400, "Le code personnel doit avoir 4 à 6 chiffres.")
+        with self._lock:
+            account = self.accounts.get(digits)
+            if account is None:
+                display = _text(name, 80)
+                if not display:
+                    raise StorefrontError(400, "Indiquez votre nom pour créer le compte.")
+                account = {
+                    "phone": _text(phone, 40) or digits,
+                    "name": display,
+                    "pin_hash": _pin_hash(digits, code),
+                    "created_at": int(time.time()),
+                }
+                self.accounts[digits] = account
+            elif account.get("pin_hash") != _pin_hash(digits, code):
+                raise StorefrontError(401, "Code personnel incorrect.")
+            elif _text(name, 80):
+                account["name"] = _text(name, 80)
+            token = secrets.token_urlsafe(24)
+            self.tokens[hashlib.sha256(token.encode()).hexdigest()] = digits
+            self._save()
+            view = self._account_view(account)
+        return {"token": token, "account": view}
+
+    def account_for_token(self, token: str) -> dict:
+        with self._lock:
+            digits = self.tokens.get(hashlib.sha256((token or "").encode()).hexdigest())
+            account = self.accounts.get(digits) if digits else None
+            if not account:
+                raise StorefrontError(401, "Connexion requise.")
+            return self._account_view(account)
+
+    def phone_for_token(self, token: str) -> str:
+        with self._lock:
+            digits = self.tokens.get(hashlib.sha256((token or "").encode()).hexdigest())
+        if not digits:
+            raise StorefrontError(401, "Connexion requise.")
+        return digits
+
+    def update_account(self, token: str, name: object) -> dict:
+        display = _text(name, 80)
+        if not display:
+            raise StorefrontError(400, "Indiquez votre nom.")
+        with self._lock:
+            digits = self.phone_for_token(token)
+            account = self.accounts[digits]
+            account["name"] = display
+            self._save()
+            return self._account_view(account)
+
+    def account_orders(self, token: str) -> list[dict]:
+        digits = self.phone_for_token(token)
+        with self._lock:
+            rows = [r for r in self.requests.values() if r.get("account_phone") == digits]
+            shops = dict(self.shops)
+        rows.sort(key=lambda row: int(row.get("created_at") or 0), reverse=True)
+        return [self._order_row(row, shops) for row in rows[:200]]
+
+    def _account_view(self, account: dict) -> dict:
+        return {
+            "name": account.get("name", ""),
+            "phone": account.get("phone", ""),
+        }
+
+    def _order_row(self, request: dict, shops: dict) -> dict:
+        shop = shops.get(request.get("shop")) or {}
+        return {
+            "id": request["id"],
+            "number": request["number"],
+            "kind": request["kind"],
+            "status": request["status"],
+            "created_at": request["created_at"],
+            "shop_name": shop.get("name", ""),
+            "shop_slug": shop.get("slug", ""),
+            "total_htg": request["total_htg"],
+            "usd_rate": request.get("usd_rate") or effective_rate(shop),
+        }
+
+    def create_request(
+        self,
+        raw_slug: str,
+        payload: dict,
+        now: datetime | None = None,
+        account_phone: str = "",
+    ) -> dict:
         slug = (raw_slug or "").strip().lower()
         kind = str(payload.get("kind") or "")
         if kind not in KINDS:
@@ -603,6 +713,7 @@ class StorefrontStore:
                 customer=customer,
                 note=_text(payload.get("note"), 500),
                 source="storefront",
+                account_phone=account_phone,
             )
             self._save()
         return self._public_view(request)
@@ -671,6 +782,7 @@ class StorefrontStore:
         customer: object,
         note: str,
         source: str,
+        account_phone: str = "",
     ) -> dict:
         customer = customer if isinstance(customer, dict) else {}
         subtotal = round(sum(l["total_htg"] for l in lines), 2)
@@ -692,6 +804,7 @@ class StorefrontStore:
                 "email": _text(customer.get("email"), 120),
             },
             "note": note,
+            "account_phone": account_phone,
             "lines": lines,
             "discount_htg": discount,
             "total_htg": round(subtotal - discount, 2),

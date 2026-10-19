@@ -18,9 +18,22 @@ class CartLine {
   String get optionsLabel => choices.map((c) => c.name).join(', ');
 }
 
-/// One cart per shop page. Totals are indicative; the server reprices.
+/// One shared cart. Totals are indicative; the server reprices.
 class Cart extends ChangeNotifier {
   final List<CartLine> lines = [];
+  String? shopSlug;
+  String shopName = '';
+  double usdRate = 135;
+
+  void bindShop(String slug, String name, double rate) {
+    if (shopSlug != null && shopSlug != slug && lines.isNotEmpty) {
+      lines.clear();
+    }
+    shopSlug = slug;
+    shopName = name;
+    usdRate = rate;
+    notifyListeners();
+  }
 
   int get count => lines.fold(0, (s, l) => s + l.quantity);
 
@@ -72,3 +85,6 @@ class Cart extends ChangeNotifier {
           },
       ];
 }
+
+/// Cart shared by the shop, the top bar and the cart page.
+final appCart = Cart();

@@ -511,7 +511,10 @@ class Handler(BaseHTTPRequestHandler):
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature, X-Shop-Key")
+        self.send_header(
+            "Access-Control-Allow-Headers",
+            "Content-Type, Stripe-Signature, X-Shop-Key, Authorization",
+        )
         self.send_header("Access-Control-Max-Age", "600")
 
     def _json(self, status: int, payload: dict) -> None:
@@ -549,6 +552,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def _shop_key(self) -> str:
         return (self.headers.get("X-Shop-Key") or "").strip()
+
+    def _bearer_optional(self) -> str:
+        header = (self.headers.get("Authorization") or "").strip()
+        if header.lower().startswith("bearer "):
+            return header[7:].strip()
+        return ""
+
+    def _bearer(self) -> str:
+        token = self._bearer_optional()
+        if not token:
+            raise StorefrontError(401, "Connexion requise.")
+        return token
 
     def _read_json(self, max_bytes: int = 100_000) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
@@ -665,6 +680,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, STORE.get_request(parts[1]))
         elif len(parts) == 3 and parts[0] == "requests" and parts[2] == "moncash":
             self._json(200, storefront_moncash_status(parts[1]))
+        elif parts == ["account"]:
+            self._json(200, {"account": STORE.account_for_token(self._bearer())})
+        elif parts == ["account", "orders"]:
+            self._json(200, {"orders": STORE.account_orders(self._bearer())})
         elif parts == ["shop", "inbox"]:
             self._json(200, {"requests": STORE.inbox(self._shop_key())})
         elif parts == ["shop", "slug"]:
@@ -680,8 +699,16 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, STORE.publish(self._shop_key(), body))
         elif parts == ["shop", "requests"]:
             self._json(200, STORE.create_shop_request(self._shop_key(), self._read_json()))
+        elif parts == ["account", "login"]:
+            body = self._read_json()
+            self._json(200, STORE.open_account(body.get("phone"), body.get("pin"), body.get("name")))
+        elif parts == ["account"]:
+            body = self._read_json()
+            self._json(200, {"account": STORE.update_account(self._bearer(), body.get("name"))})
         elif len(parts) == 3 and parts[0] == "shops" and parts[2] == "requests":
-            self._json(200, STORE.create_request(parts[1], self._read_json()))
+            token = self._bearer_optional()
+            phone = STORE.phone_for_token(token) if token else ""
+            self._json(200, STORE.create_request(parts[1], self._read_json(), account_phone=phone))
         elif len(parts) == 3 and parts[0] == "requests" and parts[2] == "card":
             self._json(200, storefront_card_intent(parts[1]))
         elif len(parts) == 4 and parts[0] == "requests" and parts[2:] == ["card", "confirm"]:

@@ -23,6 +23,49 @@ class StorefrontApi {
   Future<ShopDirectory> directory() async =>
       ShopDirectory.fromJson(await _get('/storefront/shops'));
 
+  Future<CustomerAccount> login({
+    required String phone,
+    required String pin,
+    String name = '',
+  }) async {
+    final body = await _post('/storefront/account/login', {
+      'phone': phone,
+      'pin': pin,
+      'name': name,
+    });
+    final account = (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
+    return CustomerAccount(
+      token: body['token']?.toString() ?? '',
+      name: account['name']?.toString() ?? '',
+      phone: account['phone']?.toString() ?? phone,
+    );
+  }
+
+  Future<CustomerAccount> renameAccount(String token, String name) async {
+    final body = await _send(() => _http.post(
+          Uri.parse('$_root/storefront/account'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'name': name}),
+        ));
+    final account = (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
+    return CustomerAccount(
+      token: token,
+      name: account['name']?.toString() ?? name,
+      phone: account['phone']?.toString() ?? '',
+    );
+  }
+
+  Future<List<OrderSummary>> orders(String token) async {
+    final body = await _get('/storefront/account/orders', token: token);
+    return [
+      for (final row in (body['orders'] as List? ?? const []))
+        if (row is Map) OrderSummary.fromJson(row.cast<String, dynamic>()),
+    ];
+  }
+
   Future<Shop> shop(String slug) async =>
       Shop.fromJson(await _get('/storefront/shops/${Uri.encodeComponent(slug)}'));
 
@@ -34,13 +77,18 @@ class StorefrontApi {
     required String phone,
     required String email,
     required String note,
+    String? token,
   }) async {
-    final body = await _post('/storefront/shops/${Uri.encodeComponent(slug)}/requests', {
-      'kind': kind,
-      'lines': lines,
-      'customer': {'name': name, 'phone': phone, 'email': email},
-      'note': note,
-    });
+    final body = await _post(
+      '/storefront/shops/${Uri.encodeComponent(slug)}/requests',
+      {
+        'kind': kind,
+        'lines': lines,
+        'customer': {'name': name, 'phone': phone, 'email': email},
+        'note': note,
+      },
+      token: token,
+    );
     return RequestView.fromJson(body);
   }
 
@@ -83,15 +131,22 @@ class StorefrontApi {
     return raw is Map<String, dynamic> ? RequestView.fromJson(raw) : null;
   }
 
-  Future<Map<String, dynamic>> _get(String path) =>
-      _send(() => _http.get(Uri.parse('$_root$path')));
+  Future<Map<String, dynamic>> _get(String path, {String? token}) =>
+      _send(() => _http.get(Uri.parse('$_root$path'), headers: _auth(token)));
 
-  Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> payload) =>
+  Future<Map<String, dynamic>> _post(
+    String path,
+    Map<String, dynamic> payload, {
+    String? token,
+  }) =>
       _send(() => _http.post(
             Uri.parse('$_root$path'),
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json', ..._auth(token)},
             body: jsonEncode(payload),
           ));
+
+  Map<String, String> _auth(String? token) =>
+      token == null || token.isEmpty ? const {} : {'Authorization': 'Bearer $token'};
 
   Future<Map<String, dynamic>> _send(Future<http.Response> Function() call) async {
     final http.Response response;
@@ -247,6 +302,65 @@ class Product {
                 ],
               ),
         ],
+      );
+}
+
+class CustomerAccount {
+  const CustomerAccount({required this.token, required this.name, required this.phone});
+
+  final String token;
+  final String name;
+  final String phone;
+}
+
+class OrderSummary {
+  const OrderSummary({
+    required this.id,
+    required this.number,
+    required this.kind,
+    required this.status,
+    required this.createdAt,
+    required this.shopName,
+    required this.shopSlug,
+    required this.totalHtg,
+    required this.usdRate,
+  });
+
+  final String id;
+  final String number;
+  final String kind;
+  final String status;
+  final int createdAt;
+  final String shopName;
+  final String shopSlug;
+  final double totalHtg;
+  final double usdRate;
+
+  bool get isPaid => status == 'paid';
+  bool get isQuote => kind == 'devis';
+
+  factory OrderSummary.fromJson(Map<String, dynamic> json) => OrderSummary(
+        id: json['id']?.toString() ?? '',
+        number: json['number']?.toString() ?? '',
+        kind: json['kind']?.toString() ?? '',
+        status: json['status']?.toString() ?? '',
+        createdAt: _int(json['created_at']),
+        shopName: json['shop_name']?.toString() ?? '',
+        shopSlug: json['shop_slug']?.toString() ?? '',
+        totalHtg: _double(json['total_htg']),
+        usdRate: _double(json['usd_rate']),
+      );
+
+  factory OrderSummary.fromRequest(RequestView request) => OrderSummary(
+        id: request.id,
+        number: request.number,
+        kind: request.kind,
+        status: request.status,
+        createdAt: request.createdAt.millisecondsSinceEpoch ~/ 1000,
+        shopName: request.shopName,
+        shopSlug: '',
+        totalHtg: request.totalHtg,
+        usdRate: request.usdRate,
       );
 }
 
