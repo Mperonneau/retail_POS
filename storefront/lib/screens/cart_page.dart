@@ -37,8 +37,21 @@ class CartPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
           children: [
-            Text('Panier', style: AppTextStyles.h1(color: AppColors.nearBlack)),
-            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Panier', style: AppTextStyles.h1(color: AppColors.nearBlack)),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    if (await confirmClearCart(context)) cart.clear();
+                  },
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Vider'),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.boldRed),
+                ),
+              ],
+            ),
             Text(cart.shopName, style: AppTextStyles.body(color: AppColors.darkGray)),
             const SizedBox(height: 16),
             for (final line in cart.lines)
@@ -47,15 +60,39 @@ class CartPage extends StatelessWidget {
                 child: Material(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(14),
-                  child: ListTile(
-                    title: Text(line.product.name),
-                    subtitle: Text(
-                      [
-                        if (line.optionsLabel.isNotEmpty) line.optionsLabel,
-                        '${line.quantity} × ${Money.usdFromHtg(line.unitHtg, cart.usdRate)}',
-                      ].join(' · '),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 4, 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                line.product.name,
+                                style: AppTextStyles.body(color: AppColors.nearBlack)
+                                    .copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                [
+                                  if (line.optionsLabel.isNotEmpty) line.optionsLabel,
+                                  '${line.quantity} × ${Money.usdFromHtg(line.unitHtg, cart.usdRate)}',
+                                ].join(' · '),
+                                style: AppTextStyles.caption(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(Money.usdFromHtg(line.totalHtg, cart.usdRate)),
+                        IconButton(
+                          tooltip: 'Retirer',
+                          onPressed: () => cart.remove(line),
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          color: AppColors.darkGray,
+                        ),
+                      ],
                     ),
-                    trailing: Text(Money.usdFromHtg(line.totalHtg, cart.usdRate)),
                   ),
                 ),
               ),

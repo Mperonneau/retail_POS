@@ -136,6 +136,14 @@ class _CartSheetState extends State<_CartSheet> {
                             style: AppTextStyles.h1(color: AppColors.nearBlack)
                                 .copyWith(fontSize: 22)),
                       ),
+                      if (!cart.isEmpty)
+                        TextButton(
+                          onPressed: () async {
+                            if (await confirmClearCart(context)) cart.clear();
+                          },
+                          style: TextButton.styleFrom(foregroundColor: AppColors.boldRed),
+                          child: const Text('Vider'),
+                        ),
                       AppCloseButton(onPressed: () => Navigator.of(context).pop()),
                     ],
                   ),
@@ -154,6 +162,7 @@ class _CartSheetState extends State<_CartSheet> {
                       _LineTile(
                         line: line,
                         rate: rate,
+                        onRemove: () => cart.remove(line),
                         onMinus: () => cart.decrement(line),
                         onPlus: () {
                           if (!cart.increment(line)) {
@@ -261,10 +270,17 @@ class _CartSheetState extends State<_CartSheet> {
 }
 
 class _LineTile extends StatelessWidget {
-  const _LineTile({required this.line, required this.rate, required this.onMinus, required this.onPlus});
+  const _LineTile({
+    required this.line,
+    required this.rate,
+    required this.onRemove,
+    required this.onMinus,
+    required this.onPlus,
+  });
 
   final CartLine line;
   final double rate;
+  final VoidCallback onRemove;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
 
@@ -302,6 +318,13 @@ class _LineTile extends StatelessWidget {
           ),
         ),
         QtyStepper(value: line.quantity, onMinus: onMinus, onPlus: onPlus, compact: true),
+        IconButton(
+          tooltip: 'Retirer',
+          onPressed: onRemove,
+          icon: const Icon(Icons.close_rounded, size: 18),
+          color: AppColors.darkGray,
+          visualDensity: VisualDensity.compact,
+        ),
       ],
     );
   }

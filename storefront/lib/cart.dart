@@ -71,6 +71,11 @@ class Cart extends ChangeNotifier {
     notifyListeners();
   }
 
+  void remove(CartLine line) {
+    lines.remove(line);
+    notifyListeners();
+  }
+
   void clear() {
     lines.clear();
     notifyListeners();

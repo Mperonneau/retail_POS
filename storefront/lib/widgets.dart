@@ -225,6 +225,29 @@ class MessageView extends StatelessWidget {
   }
 }
 
+/// Asks before wiping every line. Returns true when the shopper confirms.
+Future<bool> confirmClearCart(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Vider le panier ?', style: AppTextStyles.h2(color: AppColors.nearBlack)),
+      content: Text(
+        'Tous les articles seront retirés.',
+        style: AppTextStyles.body(color: AppColors.darkGray),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: TextButton.styleFrom(foregroundColor: AppColors.boldRed),
+          child: const Text('Vider'),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
+}
+
 /// Tap-to-change quantity control.
 class QtyStepper extends StatelessWidget {
   const QtyStepper({
