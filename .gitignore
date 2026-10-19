@@ -49,3 +49,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/build/
+
+# Storefront data written by the payments server in development
+payments_server/.data/

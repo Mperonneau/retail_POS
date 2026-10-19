@@ -11,6 +11,8 @@ Env:
   MONCASH_SECRET
   MONCASH_BASE_URL        default https://moncashbutton.digicelgroup.com
   PUBLIC_BASE_URL         success/cancel pages (Render sets RENDER_EXTERNAL_URL)
+  STOREFRONT_DATA_DIR     vitrine catalog, requests and photos (default ./.data)
+  DAY_USD_RATE            HTG per USD when a shop has no rate (default 135)
   PORT                    default 8787
 """
 
@@ -27,6 +29,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+from storefront import StorefrontError, StorefrontStore
 
 STRIPE_API = "https://api.stripe.com/v1"
 STRIPE_VERSION = "2026-09-30.endive"
@@ -225,6 +229,7 @@ def create_payment_intent(
     reference: str,
     order_usd_cents: int,
     description: str,
+    kind: str = "retail_card",
 ) -> dict:
     """PaymentIntent for the in-app card form. The client confirms with Stripe.js."""
     if order_usd_cents <= 0:
@@ -242,7 +247,7 @@ def create_payment_intent(
         ("metadata[order_usd_cents]", str(pricing["order_usd_cents"])),
         ("metadata[platform_fee_usd_cents]", str(pricing["platform_fee_usd_cents"])),
         ("metadata[stripe_fee_usd_cents]", str(pricing["stripe_fee_usd_cents"])),
-        ("metadata[kind]", "retail_card"),
+        ("metadata[kind]", kind),
     ]
     intent = stripe_request(
         "POST",
@@ -257,10 +262,14 @@ def create_payment_intent(
     return {"id": intent_id, "client_secret": client_secret, **pricing}
 
 
-def retrieve_payment_intent(intent_id: str) -> dict:
+def fetch_payment_intent(intent_id: str) -> dict:
     if not intent_id.startswith("pi_") or "/" in intent_id:
         raise PaymentError(400, "Paiement Stripe inconnu.")
-    intent = stripe_request("GET", f"/payment_intents/{urllib.parse.quote(intent_id)}")
+    return stripe_request("GET", f"/payment_intents/{urllib.parse.quote(intent_id)}")
+
+
+def retrieve_payment_intent(intent_id: str) -> dict:
+    intent = fetch_payment_intent(intent_id)
     status = str(intent.get("status") or "")
     return {"id": intent_id, "status": status, "paid": status == "succeeded"}
 
@@ -385,11 +394,22 @@ def moncash_paid(order_id: str) -> dict:
     payment = body.get("payment") if isinstance(body, dict) else None
     message = ""
     txn = ""
+    cost = 0
     if isinstance(payment, dict):
         message = str(payment.get("message") or "").strip().lower()
         txn = str(payment.get("transaction_id") or "")
+        try:
+            cost = int(round(float(payment.get("cost") or 0)))
+        except (TypeError, ValueError):
+            cost = 0
     paid = message in {"successful", "success", "succeeded"}
-    return {"order_id": safe_id, "paid": paid, "message": message, "transaction_id": txn}
+    return {
+        "order_id": safe_id,
+        "paid": paid,
+        "message": message,
+        "transaction_id": txn,
+        "cost_htg": cost,
+    }
 
 
 class PaymentError(Exception):
@@ -397,6 +417,88 @@ class PaymentError(Exception):
         super().__init__(message)
         self.status = status
         self.message = message
+
+
+STORE = StorefrontStore(
+    _env("STOREFRONT_DATA_DIR") or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".data")
+)
+
+
+def storefront_card_intent(request_id: str) -> dict:
+    request = STORE.payable(request_id)
+    order_cents = STORE.card_order_cents(request)
+    if order_cents < 50:
+        raise PaymentError(400, "Le montant est trop faible pour un paiement par carte.")
+    shop = STORE.get_request(request_id)["shop"]
+    intent = create_payment_intent(
+        reference=request_id,
+        order_usd_cents=order_cents,
+        description=f"{shop.get('name') or 'Boutique'} · {request['number']}",
+        kind="storefront",
+    )
+    STORE.attach(request_id, card_intent_id=intent["id"])
+    return {**intent, "publishable_key": _env("STRIPE_PUBLISHABLE_KEY")}
+
+
+def storefront_card_confirm(request_id: str, intent_id: str) -> dict:
+    request = STORE.get_request(request_id)
+    if request["status"] == "paid":
+        return request
+    intent = fetch_payment_intent(intent_id)
+    return _settle_intent(request_id, intent)
+
+
+def _settle_intent(request_id: str, intent: dict) -> dict:
+    """Mark paid only when Stripe reports success for this request's amount."""
+    request = STORE.get_request(request_id)
+    if request["status"] == "paid":
+        return request
+    metadata = intent.get("metadata") or {}
+    expected = price_card_charge(request["order_usd_cents"])["total_usd_cents"]
+    if str(metadata.get("reference") or "") != request_id:
+        raise PaymentError(400, "Ce paiement ne correspond pas à la demande.")
+    if str(intent.get("status") or "") != "succeeded":
+        raise PaymentError(402, "Le paiement par carte n'est pas confirmé.")
+    received = int(intent.get("amount_received") or intent.get("amount") or 0)
+    if received < expected:
+        raise PaymentError(402, "Le montant reçu ne correspond pas au total.")
+    return STORE.mark_paid(
+        request_id,
+        method="card",
+        reference=str(intent.get("id") or ""),
+        amount=received,
+        currency="usd",
+    )
+
+
+def storefront_moncash_start(request_id: str) -> dict:
+    request = STORE.payable(request_id)
+    amount = STORE.moncash_amount(request)
+    result = create_moncash(request_id, amount)
+    STORE.attach(request_id, moncash_order_id=result["order_id"])
+    return result
+
+
+def storefront_moncash_status(request_id: str) -> dict:
+    view = STORE.get_request(request_id)
+    if view["status"] == "paid":
+        return {"paid": True, "request": view}
+    order_id = STORE.moncash_order_id(request_id)
+    if not order_id:
+        return {"paid": False, "request": view}
+    status = moncash_paid(order_id)
+    if not status["paid"]:
+        return {"paid": False, "request": view}
+    if status["cost_htg"] and status["cost_htg"] < view["moncash_htg"]:
+        raise PaymentError(402, "Le montant MonCash reçu ne correspond pas au total.")
+    view = STORE.mark_paid(
+        request_id,
+        method="moncash",
+        reference=status["transaction_id"] or order_id,
+        amount=status["cost_htg"] or view["moncash_htg"],
+        currency="htg",
+    )
+    return {"paid": True, "request": view}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -409,7 +511,7 @@ class Handler(BaseHTTPRequestHandler):
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature, X-Shop-Key")
         self.send_header("Access-Control-Max-Age", "600")
 
     def _json(self, status: int, payload: dict) -> None:
@@ -436,9 +538,24 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(page)
 
-    def _read_json(self) -> dict:
+    def _bytes(self, status: int, raw: bytes, mime: str) -> None:
+        self.send_response(status)
+        self._cors()
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def _shop_key(self) -> str:
+        return (self.headers.get("X-Shop-Key") or "").strip()
+
+    def _read_json(self, max_bytes: int = 100_000) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
-        if length <= 0 or length > 100_000:
+        if length <= 0 or length > max_bytes:
+            if length > max_bytes:
+                self.close_connection = True
+                raise PaymentError(413, "Envoi trop volumineux.")
             return {}
         raw = self.rfile.read(length)
         try:
@@ -481,13 +598,15 @@ class Handler(BaseHTTPRequestHandler):
             elif path.startswith("/payments/moncash/"):
                 order_id = path.split("/")[-1]
                 self._json(200, moncash_paid(order_id))
+            elif path.startswith("/storefront/"):
+                self._storefront_get(path)
             elif path == "/paid":
                 self._html(200, "Paiement reçu", "Vous pouvez fermer cette page et revenir à la caisse.")
             elif path == "/cancel":
                 self._html(200, "Paiement annulé", "Aucun montant n'a été encaissé. Revenez à la caisse pour réessayer.")
             else:
                 self._json(404, {"error": "Introuvable."})
-        except PaymentError as exc:
+        except (PaymentError, StorefrontError) as exc:
             self._json(exc.status, {"error": exc.message})
 
     def do_POST(self) -> None:
@@ -522,12 +641,53 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, result)
             elif path == "/payments/webhook":
                 self._webhook()
+            elif path.startswith("/storefront/"):
+                self._storefront_post(path)
             else:
                 self._json(404, {"error": "Introuvable."})
-        except PaymentError as exc:
+        except (PaymentError, StorefrontError) as exc:
             self._json(exc.status, {"error": exc.message})
         except (TypeError, ValueError):
             self._json(400, {"error": "Requête invalide."})
+
+    def _storefront_get(self, path: str) -> None:
+        parts = path.split("/")[2:]
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        if len(parts) == 2 and parts[0] == "shops":
+            self._json(200, STORE.public_shop(parts[1]))
+        elif len(parts) == 2 and parts[0] == "photos":
+            raw, mime = STORE.read_photo(parts[1])
+            self._bytes(200, raw, mime)
+        elif len(parts) == 2 and parts[0] == "requests":
+            self._json(200, STORE.get_request(parts[1]))
+        elif len(parts) == 3 and parts[0] == "requests" and parts[2] == "moncash":
+            self._json(200, storefront_moncash_status(parts[1]))
+        elif parts == ["shop", "inbox"]:
+            self._json(200, {"requests": STORE.inbox(self._shop_key())})
+        elif parts == ["shop", "slug"]:
+            slug = (query.get("slug") or [""])[0]
+            self._json(200, {"available": STORE.slug_available(self._shop_key(), slug)})
+        else:
+            self._json(404, {"error": "Introuvable."})
+
+    def _storefront_post(self, path: str) -> None:
+        parts = path.split("/")[2:]
+        if parts == ["shop", "publish"]:
+            body = self._read_json(max_bytes=24_000_000)
+            self._json(200, STORE.publish(self._shop_key(), body))
+        elif parts == ["shop", "requests"]:
+            self._json(200, STORE.create_shop_request(self._shop_key(), self._read_json()))
+        elif len(parts) == 3 and parts[0] == "shops" and parts[2] == "requests":
+            self._json(200, STORE.create_request(parts[1], self._read_json()))
+        elif len(parts) == 3 and parts[0] == "requests" and parts[2] == "card":
+            self._json(200, storefront_card_intent(parts[1]))
+        elif len(parts) == 4 and parts[0] == "requests" and parts[2:] == ["card", "confirm"]:
+            body = self._read_json()
+            self._json(200, storefront_card_confirm(parts[1], str(body.get("intent_id") or "")))
+        elif len(parts) == 3 and parts[0] == "requests" and parts[2] == "moncash":
+            self._json(200, storefront_moncash_start(parts[1]))
+        else:
+            self._json(404, {"error": "Introuvable."})
 
     def _webhook(self) -> None:
         secret = _env("STRIPE_WEBHOOK_SECRET")
@@ -550,6 +710,15 @@ class Handler(BaseHTTPRequestHandler):
             return
         kind = str(event.get("type") or "")
         obj = ((event.get("data") or {}).get("object") or {}) if isinstance(event, dict) else {}
+        if kind == "payment_intent.succeeded" and (obj.get("metadata") or {}).get("kind") == "storefront":
+            request_id = str((obj.get("metadata") or {}).get("reference") or "")
+            settled = False
+            try:
+                settled = _settle_intent(request_id, obj)["status"] == "paid"
+            except (PaymentError, StorefrontError):
+                settled = False
+            self._json(200, {"received": True, "paid": settled})
+            return
         payment_status = str(obj.get("payment_status") or "")
         accepted = kind in {
             "checkout.session.completed",

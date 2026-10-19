@@ -1,0 +1,766 @@
+"""Retail storefront (vitrine) store.
+
+The retail POS publishes its vitrine settings and catalog here with a per-shop
+secret key. Visitors browse the public catalog, then submit a devis or a
+commande. Every request gets an unguessable link that anyone can open and pay
+(card in USD with fees, or MonCash in HTG). The POS pulls its inbox to import
+devis and paid orders.
+
+Prices are always recomputed here from the published catalog; client totals
+are never trusted. Payment providers are called from server.py; this module
+only records what they confirmed.
+
+Storage is one JSON file plus a photos folder under STOREFRONT_DATA_DIR.
+On a host without a persistent disk the data resets on restart and the POS
+republishes its catalog on its next sync.
+"""
+
+from __future__ import annotations
+
+import base64
+import binascii
+import hashlib
+import json
+import os
+import re
+import secrets
+import threading
+import time
+from datetime import datetime, timedelta, timezone
+
+try:
+    from zoneinfo import ZoneInfo
+
+    _SHOP_TZ = ZoneInfo("America/Port-au-Prince")
+except Exception:  # tzdata missing on the host
+    _SHOP_TZ = timezone(timedelta(hours=-5))
+
+DEFAULT_DAY_USD_RATE = 135.0
+SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$")
+PHOTO_RE = re.compile(r"^data:image/(png|jpeg|jpg|webp);base64,(.+)$", re.DOTALL)
+PHOTO_NAME_RE = re.compile(r"^[a-f0-9]{32}\.(png|jpg|webp)$")
+MAX_PHOTO_BYTES = 2_000_000
+MAX_PRODUCTS = 2000
+MAX_LINES = 100
+MAX_QTY = 999
+MAX_REQUESTS = 20_000
+REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+KINDS = {"devis", "commande"}
+WEEKDAYS_FR = {
+    1: "lundi",
+    2: "mardi",
+    3: "mercredi",
+    4: "jeudi",
+    5: "vendredi",
+    6: "samedi",
+    7: "dimanche",
+}
+
+
+class StorefrontError(Exception):
+    def __init__(self, status: int, message: str):
+        super().__init__(message)
+        self.status = status
+        self.message = message
+
+
+def day_usd_rate() -> float:
+    try:
+        value = float(os.environ.get("DAY_USD_RATE") or 0)
+    except ValueError:
+        value = 0
+    return value if value > 0 else DEFAULT_DAY_USD_RATE
+
+
+def effective_rate(shop: dict) -> float:
+    """HTG per 1 USD: the shop's rate, else the day rate."""
+    try:
+        rate = float(shop.get("usd_rate") or 0)
+    except (TypeError, ValueError):
+        rate = 0
+    return rate if rate > 0 else day_usd_rate()
+
+
+def htg_to_usd_cents(amount_htg: float, rate: float) -> int:
+    if amount_htg <= 0 or rate <= 0:
+        return 0
+    return int(round(amount_htg / rate * 100))
+
+
+def key_hash(shop_key: str) -> str:
+    key = (shop_key or "").strip()
+    if len(key) < 32:
+        raise StorefrontError(401, "Clé de boutique invalide.")
+    return hashlib.sha256(key.encode()).hexdigest()
+
+
+def normalize_slug(raw: str) -> str:
+    slug = (raw or "").strip().lower()
+    if not SLUG_RE.match(slug):
+        raise StorefrontError(
+            400,
+            "Le lien doit faire 3 à 40 caractères : lettres, chiffres ou tirets.",
+        )
+    return slug
+
+
+def _text(value: object, limit: int) -> str:
+    return str(value or "").strip()[:limit]
+
+
+def _money(value: object) -> float:
+    try:
+        amount = float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return round(max(0.0, amount), 2)
+
+
+def _hour(value: object, default: int) -> int:
+    try:
+        hour = int(value)
+    except (TypeError, ValueError):
+        return default
+    return hour if 0 <= hour <= 23 else default
+
+
+def is_open_now(shop: dict, now: datetime | None = None) -> bool:
+    if not shop.get("enabled") or shop.get("paused"):
+        return False
+    now = now or datetime.now(_SHOP_TZ)
+    if now.isoweekday() in set(shop.get("closed_weekdays") or []):
+        return False
+    open_h = int(shop.get("open_hour", 8))
+    close_h = int(shop.get("close_hour", 18))
+    if open_h == close_h:
+        return True
+    if open_h < close_h:
+        return open_h <= now.hour < close_h
+    return now.hour >= open_h or now.hour < close_h
+
+
+def next_open_at(shop: dict, now: datetime | None = None) -> datetime | None:
+    now = now or datetime.now(_SHOP_TZ)
+    if is_open_now(shop, now) or shop.get("paused") or not shop.get("enabled"):
+        return None
+    closed = set(shop.get("closed_weekdays") or [])
+    open_h = int(shop.get("open_hour", 8))
+    for delta in range(0, 8):
+        day = now + timedelta(days=delta)
+        if day.isoweekday() in closed:
+            continue
+        candidate = day.replace(hour=open_h, minute=0, second=0, microsecond=0)
+        if candidate > now:
+            return candidate
+    return None
+
+
+def opens_at_label(now: datetime, nxt: datetime | None) -> str | None:
+    if nxt is None:
+        return None
+    hour = f"{nxt.hour}h"
+    if nxt.date() == now.date():
+        return f"à {hour}"
+    if nxt.date() == (now + timedelta(days=1)).date():
+        return f"demain à {hour}"
+    return f"{WEEKDAYS_FR.get(nxt.isoweekday(), '')} à {hour}".strip()
+
+
+def availability(shop: dict, now: datetime | None = None) -> dict:
+    now = now or datetime.now(_SHOP_TZ)
+    open_now = is_open_now(shop, now)
+    paused = bool(shop.get("paused"))
+    enabled = bool(shop.get("enabled"))
+    accepts = enabled and not paused and (open_now or bool(shop.get("accept_when_closed")))
+    nxt = next_open_at(shop, now)
+    return {
+        "is_open_now": open_now,
+        "paused": paused,
+        "accepts_orders": accepts,
+        "accepts_quotes": enabled and not paused,
+        "accept_when_closed": bool(shop.get("accept_when_closed")),
+        "opens_at_label": opens_at_label(now, nxt),
+        "open_hour": int(shop.get("open_hour", 8)),
+        "close_hour": int(shop.get("close_hour", 18)),
+        "closed_weekdays": list(shop.get("closed_weekdays") or []),
+    }
+
+
+class StorefrontStore:
+    def __init__(self, data_dir: str):
+        self.data_dir = data_dir
+        self.photo_dir = os.path.join(data_dir, "photos")
+        self._path = os.path.join(data_dir, "storefront.json")
+        self._lock = threading.RLock()
+        self.shops: dict[str, dict] = {}
+        self.slugs: dict[str, str] = {}
+        self.requests: dict[str, dict] = {}
+        self._load()
+
+    # ---- persistence -------------------------------------------------------
+
+    def _load(self) -> None:
+        try:
+            with open(self._path, encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            return
+        if not isinstance(data, dict):
+            return
+        self.shops = dict(data.get("shops") or {})
+        self.slugs = dict(data.get("slugs") or {})
+        self.requests = dict(data.get("requests") or {})
+
+    def _save(self) -> None:
+        os.makedirs(self.data_dir, exist_ok=True)
+        tmp = f"{self._path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(
+                {"shops": self.shops, "slugs": self.slugs, "requests": self.requests},
+                fh,
+                ensure_ascii=False,
+            )
+        os.replace(tmp, self._path)
+
+    # ---- photos ------------------------------------------------------------
+
+    def save_photo(self, data_url: str) -> str:
+        match = PHOTO_RE.match((data_url or "").strip())
+        if not match:
+            return ""
+        ext = {"jpeg": "jpg", "jpg": "jpg", "png": "png", "webp": "webp"}[match.group(1)]
+        try:
+            raw = base64.b64decode(match.group(2), validate=False)
+        except (binascii.Error, ValueError):
+            return ""
+        if not raw or len(raw) > MAX_PHOTO_BYTES:
+            return ""
+        name = f"{hashlib.sha256(raw).hexdigest()[:32]}.{ext}"
+        path = os.path.join(self.photo_dir, name)
+        if not os.path.exists(path):
+            os.makedirs(self.photo_dir, exist_ok=True)
+            with open(path, "wb") as fh:
+                fh.write(raw)
+        return f"/storefront/photos/{name}"
+
+    def read_photo(self, name: str) -> tuple[bytes, str]:
+        if not PHOTO_NAME_RE.match(name or ""):
+            raise StorefrontError(404, "Photo introuvable.")
+        path = os.path.join(self.photo_dir, name)
+        try:
+            with open(path, "rb") as fh:
+                raw = fh.read()
+        except OSError as exc:
+            raise StorefrontError(404, "Photo introuvable.") from exc
+        mime = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[name.rsplit(".", 1)[1]]
+        return raw, mime
+
+    def _photo(self, value: object) -> str:
+        text = str(value or "").strip()
+        if text.startswith("data:"):
+            return self.save_photo(text)
+        if text.startswith("/storefront/photos/") and PHOTO_NAME_RE.match(text.rsplit("/", 1)[-1]):
+            return text
+        return ""
+
+    # ---- shop (authenticated by key) ---------------------------------------
+
+    def slug_available(self, shop_key: str, raw_slug: str) -> bool:
+        owner = key_hash(shop_key)
+        slug = normalize_slug(raw_slug)
+        with self._lock:
+            return self.slugs.get(slug) in (None, owner)
+
+    def publish(self, shop_key: str, payload: dict) -> dict:
+        owner = key_hash(shop_key)
+        slug = normalize_slug(str(payload.get("slug") or ""))
+        settings = payload.get("settings") if isinstance(payload.get("settings"), dict) else {}
+        name = _text(payload.get("name"), 80)
+        if not name:
+            raise StorefrontError(400, "Le nom de la boutique est requis.")
+        products = self._clean_products(payload.get("products"))
+        closed = sorted(
+            {int(d) for d in (settings.get("closed_weekdays") or []) if str(d).isdigit() and 1 <= int(d) <= 7}
+        )
+        try:
+            rate = float(payload.get("usd_rate") or 0)
+        except (TypeError, ValueError):
+            rate = 0
+        with self._lock:
+            holder = self.slugs.get(slug)
+            if holder not in (None, owner):
+                raise StorefrontError(409, "Ce lien est déjà pris. Choisissez-en un autre.")
+            previous = self.shops.get(owner) or {}
+            old_slug = previous.get("slug")
+            if old_slug and old_slug != slug and self.slugs.get(old_slug) == owner:
+                del self.slugs[old_slug]
+            shop = {
+                "slug": slug,
+                "name": name,
+                "phone": _text(payload.get("phone"), 40),
+                "address": _text(payload.get("address"), 160),
+                "description": _text(settings.get("description"), 300),
+                "pickup_note": _text(settings.get("pickup_note"), 300),
+                "cover_url": self._photo(settings.get("cover")),
+                "enabled": bool(settings.get("enabled")),
+                "paused": bool(settings.get("paused")),
+                "accept_when_closed": bool(settings.get("accept_when_closed", True)),
+                "open_hour": _hour(settings.get("open_hour"), 8),
+                "close_hour": _hour(settings.get("close_hour"), 18),
+                "closed_weekdays": closed,
+                "usd_rate": rate if rate > 0 else 0,
+                "products": products,
+                "published_at": int(time.time()),
+            }
+            self.shops[owner] = shop
+            self.slugs[slug] = owner
+            self._save()
+        return {"slug": slug, "published_at": shop["published_at"], "products": len(products)}
+
+    def _clean_products(self, raw: object) -> list[dict]:
+        if not isinstance(raw, list):
+            return []
+        cleaned: list[dict] = []
+        seen: set[str] = set()
+        for item in raw[:MAX_PRODUCTS]:
+            if not isinstance(item, dict):
+                continue
+            pid = _text(item.get("id"), 40)
+            name = _text(item.get("name"), 120)
+            price = _money(item.get("price_htg"))
+            if not pid or not name or price <= 0 or pid in seen:
+                continue
+            seen.add(pid)
+            track = bool(item.get("track_stock", True))
+            try:
+                stock = int(item.get("stock") or 0)
+            except (TypeError, ValueError):
+                stock = 0
+            groups: list[dict] = []
+            for group in (item.get("options") or [])[:12]:
+                if not isinstance(group, dict):
+                    continue
+                choices = []
+                for choice in (group.get("choices") or [])[:30]:
+                    if not isinstance(choice, dict):
+                        continue
+                    cid = _text(choice.get("id"), 80)
+                    cname = _text(choice.get("name"), 60)
+                    if cid and cname:
+                        choices.append({"id": cid, "name": cname, "delta_htg": _money(choice.get("delta_htg"))})
+                gid = _text(group.get("id"), 80)
+                gname = _text(group.get("name"), 60)
+                if gid and gname and choices:
+                    groups.append(
+                        {
+                            "id": gid,
+                            "name": gname,
+                            "required": bool(group.get("required")),
+                            "multiple": bool(group.get("multiple")),
+                            "choices": choices,
+                        }
+                    )
+            regular = _money(item.get("regular_price_htg"))
+            cleaned.append(
+                {
+                    "id": pid,
+                    "name": name,
+                    "category": _text(item.get("category"), 60) or "Autres",
+                    "description": _text(item.get("description"), 600),
+                    "price_htg": price,
+                    "regular_price_htg": regular if regular > price else 0,
+                    "photo_url": self._photo(item.get("photo")),
+                    "track_stock": track,
+                    "stock": max(0, stock),
+                    "unit": _text(item.get("unit"), 12),
+                    "options": groups,
+                }
+            )
+        return cleaned
+
+    def shop_for_key(self, shop_key: str) -> dict:
+        owner = key_hash(shop_key)
+        with self._lock:
+            shop = self.shops.get(owner)
+        if not shop:
+            raise StorefrontError(404, "Vitrine non publiée.")
+        return shop
+
+    def inbox(self, shop_key: str) -> list[dict]:
+        owner = key_hash(shop_key)
+        with self._lock:
+            rows = [r for r in self.requests.values() if r.get("shop") == owner]
+        rows.sort(key=lambda r: r.get("created_at", 0), reverse=True)
+        return [self._shop_view(r) for r in rows[:300]]
+
+    def create_shop_request(self, shop_key: str, payload: dict) -> dict:
+        """A devis or commande prepared at the register, to share by link.
+
+        The shop sets its own prices (discounts, negotiated quotes), so lines
+        are taken as sent once the key is verified.
+        """
+        owner = key_hash(shop_key)
+        with self._lock:
+            shop = self.shops.get(owner)
+        if not shop:
+            raise StorefrontError(409, "Publiez d'abord la vitrine pour partager un lien.")
+        kind = str(payload.get("kind") or "devis")
+        if kind not in KINDS:
+            raise StorefrontError(400, "Type de demande inconnu.")
+        lines: list[dict] = []
+        for raw in (payload.get("lines") or [])[:MAX_LINES]:
+            if not isinstance(raw, dict):
+                continue
+            qty = int(raw.get("quantity") or 0)
+            unit = _money(raw.get("unit_htg"))
+            name = _text(raw.get("name"), 120)
+            if qty < 1 or qty > MAX_QTY or unit <= 0 or not name:
+                continue
+            lines.append(
+                {
+                    "product_id": _text(raw.get("product_id"), 40),
+                    "name": name,
+                    "options": [],
+                    "options_label": _text(raw.get("options_label"), 200),
+                    "quantity": qty,
+                    "unit_htg": unit,
+                    "total_htg": round(unit * qty, 2),
+                }
+            )
+        if not lines:
+            raise StorefrontError(400, "Ajoutez au moins un article.")
+        subtotal = round(sum(l["total_htg"] for l in lines), 2)
+        discount = min(_money(payload.get("discount_htg")), subtotal)
+        external = _text(payload.get("reference"), 40)
+        with self._lock:
+            if external:
+                for existing in self.requests.values():
+                    if existing.get("shop") == owner and existing.get("external_ref") == external:
+                        if existing.get("status") != "paid":
+                            existing["lines"] = lines
+                            existing["discount_htg"] = discount
+                            existing["total_htg"] = round(subtotal - discount, 2)
+                            existing["usd_rate"] = effective_rate(shop)
+                            self._save()
+                        return self._public_view(existing)
+            request = self._new_request(
+                owner,
+                shop,
+                kind=kind,
+                lines=lines,
+                discount=discount,
+                customer=payload.get("customer"),
+                note=_text(payload.get("note"), 500),
+                source="pos",
+            )
+            request["external_ref"] = external
+            request["number"] = _text(payload.get("number"), 30) or request["number"]
+            self._save()
+        return self._public_view(request)
+
+    # ---- public ------------------------------------------------------------
+
+    def public_shop(self, raw_slug: str, now: datetime | None = None) -> dict:
+        slug = (raw_slug or "").strip().lower()
+        with self._lock:
+            owner = self.slugs.get(slug)
+            shop = self.shops.get(owner) if owner else None
+        if not shop or not shop.get("enabled"):
+            raise StorefrontError(404, "Cette vitrine n'est pas disponible.")
+        products = [
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "category": p["category"],
+                "description": p["description"],
+                "price_htg": p["price_htg"],
+                "regular_price_htg": p.get("regular_price_htg", 0),
+                "photo_url": p["photo_url"],
+                "available": (not p["track_stock"]) or p["stock"] > 0,
+                "max_quantity": min(MAX_QTY, p["stock"]) if p["track_stock"] else MAX_QTY,
+                "unit": p.get("unit", ""),
+                "options": p["options"],
+            }
+            for p in shop.get("products") or []
+        ]
+        categories: list[str] = []
+        for product in products:
+            if product["category"] not in categories:
+                categories.append(product["category"])
+        return {
+            "slug": shop["slug"],
+            "name": shop["name"],
+            "phone": shop.get("phone", ""),
+            "address": shop.get("address", ""),
+            "description": shop.get("description", ""),
+            "pickup_note": shop.get("pickup_note", ""),
+            "cover_url": shop.get("cover_url", ""),
+            "usd_rate": effective_rate(shop),
+            "availability": availability(shop, now),
+            "categories": categories,
+            "products": products,
+        }
+
+    def create_request(self, raw_slug: str, payload: dict, now: datetime | None = None) -> dict:
+        slug = (raw_slug or "").strip().lower()
+        kind = str(payload.get("kind") or "")
+        if kind not in KINDS:
+            raise StorefrontError(400, "Choisissez devis ou commande.")
+        with self._lock:
+            owner = self.slugs.get(slug)
+            shop = self.shops.get(owner) if owner else None
+            if not shop or not shop.get("enabled"):
+                raise StorefrontError(404, "Cette vitrine n'est pas disponible.")
+            avail = availability(shop, now)
+            if kind == "commande" and not avail["accepts_orders"]:
+                if avail["paused"]:
+                    raise StorefrontError(409, "La boutique a mis les commandes en pause.")
+                raise StorefrontError(409, "La boutique est fermée pour le moment.")
+            if kind == "devis" and not avail["accepts_quotes"]:
+                raise StorefrontError(409, "La boutique n'accepte pas de demandes pour le moment.")
+            customer = payload.get("customer") if isinstance(payload.get("customer"), dict) else {}
+            if not _text(customer.get("name"), 80):
+                raise StorefrontError(400, "Indiquez votre nom.")
+            if len(re.sub(r"\D", "", str(customer.get("phone") or ""))) < 8:
+                raise StorefrontError(400, "Indiquez un numéro de téléphone valide.")
+            email = _text(customer.get("email"), 120)
+            if email and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+                raise StorefrontError(400, "L'adresse e-mail n'est pas valide.")
+            lines = self._price_lines(shop, payload.get("lines"))
+            request = self._new_request(
+                owner,
+                shop,
+                kind=kind,
+                lines=lines,
+                discount=0,
+                customer=customer,
+                note=_text(payload.get("note"), 500),
+                source="storefront",
+            )
+            self._save()
+        return self._public_view(request)
+
+    def _price_lines(self, shop: dict, raw_lines: object) -> list[dict]:
+        if not isinstance(raw_lines, list) or not raw_lines:
+            raise StorefrontError(400, "Le panier est vide.")
+        catalog = {p["id"]: p for p in shop.get("products") or []}
+        wanted: dict[str, int] = {}
+        lines: list[dict] = []
+        for raw in raw_lines[:MAX_LINES]:
+            if not isinstance(raw, dict):
+                continue
+            product = catalog.get(str(raw.get("product_id") or ""))
+            if not product:
+                raise StorefrontError(409, "Un article n'est plus proposé. Actualisez la vitrine.")
+            try:
+                qty = int(raw.get("quantity") or 0)
+            except (TypeError, ValueError):
+                qty = 0
+            if qty < 1 or qty > MAX_QTY:
+                raise StorefrontError(400, "Quantité invalide.")
+            wanted[product["id"]] = wanted.get(product["id"], 0) + qty
+            if product["track_stock"] and wanted[product["id"]] > product["stock"]:
+                if product["stock"] <= 0:
+                    raise StorefrontError(409, f"{product['name']} est en rupture de stock.")
+                raise StorefrontError(
+                    409, f"Il reste {product['stock']} × {product['name']} en stock."
+                )
+            picked = {str(c) for c in (raw.get("choices") or []) if c}
+            chosen: list[dict] = []
+            extra = 0.0
+            for group in product["options"]:
+                in_group = [c for c in group["choices"] if c["id"] in picked]
+                if group["required"] and not in_group:
+                    raise StorefrontError(400, f"Choisissez « {group['name']} » pour {product['name']}.")
+                if not group["multiple"] and len(in_group) > 1:
+                    raise StorefrontError(400, f"Une seule option « {group['name']} » est possible.")
+                for choice in in_group:
+                    chosen.append({"group": group["name"], "id": choice["id"], "name": choice["name"]})
+                    extra += choice["delta_htg"]
+            unit = round(product["price_htg"] + extra, 2)
+            lines.append(
+                {
+                    "product_id": product["id"],
+                    "name": product["name"],
+                    "options": chosen,
+                    "options_label": ", ".join(c["name"] for c in chosen),
+                    "quantity": qty,
+                    "unit_htg": unit,
+                    "total_htg": round(unit * qty, 2),
+                }
+            )
+        if not lines:
+            raise StorefrontError(400, "Le panier est vide.")
+        return lines
+
+    def _new_request(
+        self,
+        owner: str,
+        shop: dict,
+        *,
+        kind: str,
+        lines: list[dict],
+        discount: float,
+        customer: object,
+        note: str,
+        source: str,
+    ) -> dict:
+        customer = customer if isinstance(customer, dict) else {}
+        subtotal = round(sum(l["total_htg"] for l in lines), 2)
+        prefix = "DEV" if kind == "devis" else "CMD"
+        request_id = secrets.token_urlsafe(18)
+        while request_id in self.requests:
+            request_id = secrets.token_urlsafe(18)
+        request = {
+            "id": request_id,
+            "number": f"{prefix}-{secrets.token_hex(3).upper()}",
+            "shop": owner,
+            "kind": kind,
+            "status": "open",
+            "source": source,
+            "created_at": int(time.time()),
+            "customer": {
+                "name": _text(customer.get("name"), 80),
+                "phone": _text(customer.get("phone"), 40),
+                "email": _text(customer.get("email"), 120),
+            },
+            "note": note,
+            "lines": lines,
+            "discount_htg": discount,
+            "total_htg": round(subtotal - discount, 2),
+            "usd_rate": effective_rate(shop),
+            "paid_at": 0,
+            "payment": {},
+            "card_intent_id": "",
+            "moncash_order_id": "",
+        }
+        self.requests[request_id] = request
+        self._prune()
+        return request
+
+    def _prune(self) -> None:
+        if len(self.requests) <= MAX_REQUESTS:
+            return
+        stale = sorted(
+            (r for r in self.requests.values() if r.get("status") != "paid"),
+            key=lambda r: r.get("created_at", 0),
+        )
+        for row in stale[: len(self.requests) - MAX_REQUESTS]:
+            self.requests.pop(row["id"], None)
+
+    # ---- request lifecycle -------------------------------------------------
+
+    def _get(self, request_id: str) -> dict:
+        if not REQUEST_ID_RE.match(request_id or ""):
+            raise StorefrontError(404, "Ce lien n'existe pas ou a expiré.")
+        request = self.requests.get(request_id)
+        if not request:
+            raise StorefrontError(404, "Ce lien n'existe pas ou a expiré.")
+        return request
+
+    def get_request(self, request_id: str) -> dict:
+        with self._lock:
+            return self._public_view(self._get(request_id))
+
+    def payable(self, request_id: str) -> dict:
+        """Internal record for payment. Raises when already paid."""
+        with self._lock:
+            request = self._get(request_id)
+            if request.get("status") == "paid":
+                raise StorefrontError(409, "Cette demande est déjà payée.")
+            if request["total_htg"] <= 0:
+                raise StorefrontError(400, "Le montant doit être supérieur à zéro.")
+            return dict(request)
+
+    def card_order_cents(self, request: dict) -> int:
+        return htg_to_usd_cents(request["total_htg"], float(request.get("usd_rate") or day_usd_rate()))
+
+    def moncash_amount(self, request: dict) -> int:
+        return int(round(request["total_htg"]))
+
+    def attach(self, request_id: str, **fields: str) -> None:
+        with self._lock:
+            request = self._get(request_id)
+            for key in ("card_intent_id", "moncash_order_id"):
+                if key in fields:
+                    request[key] = fields[key]
+            self._save()
+
+    def mark_paid(self, request_id: str, *, method: str, reference: str, amount: int, currency: str) -> dict:
+        with self._lock:
+            request = self._get(request_id)
+            if request.get("status") != "paid":
+                request["status"] = "paid"
+                request["paid_at"] = int(time.time())
+                request["payment"] = {
+                    "method": method,
+                    "reference": reference[:120],
+                    "amount": int(amount),
+                    "currency": currency,
+                }
+                self._save()
+            return self._public_view(request)
+
+    def moncash_order_id(self, request_id: str) -> str:
+        with self._lock:
+            return str(self._get(request_id).get("moncash_order_id") or "")
+
+    # ---- views -------------------------------------------------------------
+
+    def _public_view(self, request: dict) -> dict:
+        shop = self.shops.get(request["shop"]) or {}
+        rate = float(request.get("usd_rate") or day_usd_rate())
+        payment = request.get("payment") or {}
+        return {
+            "id": request["id"],
+            "number": request["number"],
+            "kind": request["kind"],
+            "status": request["status"],
+            "created_at": request["created_at"],
+            "paid_at": request.get("paid_at") or 0,
+            "payment_method": payment.get("method", ""),
+            "customer_name": request["customer"].get("name", ""),
+            "note": request.get("note", ""),
+            "lines": [
+                {
+                    "name": l["name"],
+                    "options_label": l.get("options_label", ""),
+                    "quantity": l["quantity"],
+                    "unit_htg": l["unit_htg"],
+                    "total_htg": l["total_htg"],
+                }
+                for l in request["lines"]
+            ],
+            "discount_htg": request.get("discount_htg", 0),
+            "total_htg": request["total_htg"],
+            "usd_rate": rate,
+            "order_usd_cents": htg_to_usd_cents(request["total_htg"], rate),
+            "moncash_htg": int(round(request["total_htg"])),
+            "shop": {
+                "slug": shop.get("slug", ""),
+                "name": shop.get("name", ""),
+                "phone": shop.get("phone", ""),
+                "pickup_note": shop.get("pickup_note", ""),
+                "cover_url": shop.get("cover_url", ""),
+            },
+        }
+
+    def _shop_view(self, request: dict) -> dict:
+        view = self._public_view(request)
+        view.pop("shop", None)
+        view["customer"] = dict(request["customer"])
+        view["source"] = request.get("source", "storefront")
+        view["external_ref"] = request.get("external_ref", "")
+        view["payment"] = dict(request.get("payment") or {})
+        view["lines"] = [
+            {
+                "product_id": l.get("product_id", ""),
+                "name": l["name"],
+                "options_label": l.get("options_label", ""),
+                "quantity": l["quantity"],
+                "unit_htg": l["unit_htg"],
+                "total_htg": l["total_htg"],
+            }
+            for l in request["lines"]
+        ]
+        return view
