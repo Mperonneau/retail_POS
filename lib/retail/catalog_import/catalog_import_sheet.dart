@@ -315,7 +315,7 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       children: [
         Text(
-          'Photo, PDF ou tableau. L\'assistant prépare le catalogue. Rien n\'est ajouté avant votre confirmation.',
+          'Photo, PDF, Excel, CSV ou Word. L\'assistant prépare le catalogue. Rien n\'est ajouté avant votre confirmation.',
           style: AppTextStyles.body(
             color: isDark ? AppColors.coolGray : AppColors.darkGray,
           ),

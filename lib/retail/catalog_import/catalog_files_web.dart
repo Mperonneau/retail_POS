@@ -12,7 +12,12 @@ Future<CatalogPick> pickCatalogFiles() async {
   final input = web.HTMLInputElement()
     ..type = 'file'
     ..multiple = true
-    ..accept = 'image/*,application/pdf,.txt,.csv,.md';
+    ..accept = 'image/*,.pdf,.csv,.tsv,.txt,.xlsx,.xlsm,.xls,.docx,.doc,.ods,.odt,'
+        'application/pdf,text/csv,text/plain,'
+        'application/vnd.ms-excel,'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,'
+        'application/msword,'
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   final selected = Completer<List<web.File>>();
   var settled = false;
 

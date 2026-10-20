@@ -1,10 +1,12 @@
 """Catalogue extraction stays a reviewable draft, without calling Claude."""
+import io
 import os
 import sys
+import zipfile
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from catalog_import import CatalogImportError, _extract_json, normalize_draft
+from catalog_import import CatalogImportError, _extract_json, _file_block, normalize_draft
 
 
 def test_prices_and_missing_stock_stay_reviewable():
@@ -67,8 +69,50 @@ def test_empty_upload_is_refused():
         raise AssertionError("empty upload should fail")
 
 
+def _zip(files: dict[str, str]) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as archive:
+        for path, content in files.items():
+            archive.writestr(path, content)
+    return buf.getvalue()
+
+
+def test_excel_csv_and_word_become_text():
+    sheet = _zip({
+        "xl/sharedStrings.xml": "<sst><si><t>Riz blanc 25kg</t></si></sst>",
+        "xl/worksheets/sheet1.xml": (
+            "<worksheet><sheetData>"
+            '<row><c t="s"><v>0</v></c><c><v>3200</v></c></row>'
+            "</sheetData></worksheet>"
+        ),
+    })
+    excel = _file_block("prix.xlsx", "application/octet-stream", sheet)
+    assert excel["type"] == "text"
+    assert "Riz blanc 25kg" in excel["text"]
+    assert "3200" in excel["text"]
+
+    csv = _file_block("prix.csv", "text/csv", "Savon,150\n".encode("utf-8"))
+    assert "Savon" in csv["text"]
+
+    word = _zip({
+        "word/document.xml": (
+            "<document><body><p><r><t>Huile végétale 600 HTG</t></r></p></body></document>"
+        ),
+    })
+    doc = _file_block(
+        "liste.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        word,
+    )
+    assert "Huile végétale" in doc["text"]
+
+    old = _file_block("ancien.xls", "application/vnd.ms-excel", "Riz 25kg 3200".encode("utf-16le"))
+    assert "Riz" in old["text"]
+
+
 if __name__ == "__main__":
     test_prices_and_missing_stock_stay_reviewable()
     test_truncated_json_is_closed()
     test_empty_upload_is_refused()
+    test_excel_csv_and_word_become_text()
     print("ok")

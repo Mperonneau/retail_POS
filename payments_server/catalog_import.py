@@ -6,6 +6,7 @@ for shop products (price, barcode, stock, options) instead of a restaurant menu.
 from __future__ import annotations
 
 import base64
+import io
 import json
 import os
 import re
@@ -14,6 +15,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import xml.etree.ElementTree as ET
+import zipfile
 from typing import Any
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
@@ -235,22 +238,217 @@ def normalize_draft(raw: dict[str, Any], *, usd_rate: int, currency_mode: str) -
     return {"categories": categories}, report
 
 
+def _suffix(name: str) -> str:
+    base = name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    if "." not in base:
+        return ""
+    return "." + base.rsplit(".", 1)[-1].lower()
+
+
+def _xml_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _plain_text(name: str, data: bytes, limit: int = 40000) -> str:
+    for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            text = data.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        text = data.decode("latin-1", errors="replace")
+    text = text.replace("\x00", "").strip()
+    if not text:
+        raise CatalogImportError(f"« {name} » est vide.")
+    return text[:limit]
+
+
+def _xlsx_text(name: str, data: bytes) -> str:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile as exc:
+        raise CatalogImportError(f"« {name} » n'est pas un classeur Excel lisible.") from exc
+    strings: list[str] = []
+    if "xl/sharedStrings.xml" in archive.namelist():
+        root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+        for node in root.iter():
+            if _xml_name(node.tag) != "si":
+                continue
+            strings.append("".join(
+                child.text or ""
+                for child in node.iter()
+                if _xml_name(child.tag) == "t"
+            ))
+    sheets = sorted(
+        path for path in archive.namelist()
+        if path.startswith("xl/worksheets/sheet") and path.endswith(".xml")
+    )
+    blocks: list[str] = []
+    for sheet in sheets:
+        root = ET.fromstring(archive.read(sheet))
+        lines: list[str] = []
+        for row in root.iter():
+            if _xml_name(row.tag) != "row":
+                continue
+            cells: list[str] = []
+            for cell in list(row):
+                if _xml_name(cell.tag) != "c":
+                    continue
+                value = ""
+                for child in list(cell):
+                    local = _xml_name(child.tag)
+                    if local == "v" and child.text:
+                        value = child.text
+                    elif local == "is":
+                        value = "".join(
+                            part.text or ""
+                            for part in child.iter()
+                            if _xml_name(part.tag) == "t"
+                        )
+                if cell.attrib.get("t") == "s" and value.isdigit():
+                    index = int(value)
+                    value = strings[index] if index < len(strings) else ""
+                cells.append(value.strip())
+            if any(cells):
+                lines.append("\t".join(cells))
+        if lines:
+            blocks.append("\n".join(lines))
+    text = "\n\n".join(blocks).strip()
+    if not text:
+        raise CatalogImportError(f"« {name} » ne contient aucune ligne.")
+    return text[:40000]
+
+
+def _docx_text(name: str, data: bytes) -> str:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile as exc:
+        raise CatalogImportError(f"« {name} » n'est pas un document Word lisible.") from exc
+    if "word/document.xml" not in archive.namelist():
+        raise CatalogImportError(f"« {name} » n'est pas un document Word lisible.")
+    root = ET.fromstring(archive.read("word/document.xml"))
+    lines: list[str] = []
+    for paragraph in root.iter():
+        if _xml_name(paragraph.tag) != "p":
+            continue
+        text = "".join(
+            node.text or ""
+            for node in paragraph.iter()
+            if _xml_name(node.tag) == "t"
+        ).strip()
+        if text:
+            lines.append(text)
+    if not lines:
+        raise CatalogImportError(f"« {name} » ne contient aucun texte.")
+    return "\n".join(lines)[:40000]
+
+
+def _ods_text(name: str, data: bytes) -> str:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile as exc:
+        raise CatalogImportError(f"« {name} » n'est pas un tableur lisible.") from exc
+    if "content.xml" not in archive.namelist():
+        raise CatalogImportError(f"« {name} » n'est pas un tableur lisible.")
+    root = ET.fromstring(archive.read("content.xml"))
+    lines: list[str] = []
+    for row in root.iter():
+        if _xml_name(row.tag) != "table-row":
+            continue
+        cells: list[str] = []
+        for cell in list(row):
+            if _xml_name(cell.tag) != "table-cell":
+                continue
+            value = " ".join(
+                (node.text or "").strip()
+                for node in cell.iter()
+                if _xml_name(node.tag) == "p" and (node.text or "").strip()
+            )
+            cells.append(value)
+        if any(cells):
+            lines.append("\t".join(cells).strip())
+    text = "\n".join(lines).strip()
+    if not text:
+        raise CatalogImportError(f"« {name} » ne contient aucune ligne.")
+    return text[:40000]
+
+
+def _odt_text(name: str, data: bytes) -> str:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile as exc:
+        raise CatalogImportError(f"« {name} » n'est pas un document lisible.") from exc
+    if "content.xml" not in archive.namelist():
+        raise CatalogImportError(f"« {name} » n'est pas un document lisible.")
+    root = ET.fromstring(archive.read("content.xml"))
+    lines = [
+        "".join(node.itertext()).strip()
+        for node in root.iter()
+        if _xml_name(node.tag) in {"p", "h"}
+    ]
+    text = "\n".join(line for line in lines if line).strip()
+    if not text:
+        raise CatalogImportError(f"« {name} » ne contient aucun texte.")
+    return text[:40000]
+
+
+def _legacy_office_text(name: str, data: bytes) -> str:
+    """Old .xls and .doc files: keep the readable words embedded in the file."""
+    pieces: list[str] = []
+    run: list[str] = []
+    for byte in data:
+        if 32 <= byte < 127 or byte in (9, 10, 13):
+            run.append(chr(byte))
+        elif len(run) >= 4:
+            pieces.append("".join(run))
+            run = []
+        else:
+            run = []
+    if len(run) >= 4:
+        pieces.append("".join(run))
+    wide = data.decode("utf-16le", errors="ignore")
+    pieces.extend(re.findall(r"[0-9A-Za-zÀ-ÿ][0-9A-Za-zÀ-ÿ .,&%/+\-]{2,}", wide))
+    text = "\n".join(dict.fromkeys(piece.strip() for piece in pieces if piece.strip()))
+    if len(text) < 8:
+        kind = "Excel" if name.lower().endswith(".xls") else "Word"
+        raise CatalogImportError(
+            f"« {name} » est un ancien fichier {kind}. "
+            "Enregistrez-le en .xlsx, .csv ou .docx, puis réessayez."
+        )
+    return text[:40000]
+
+
 def _file_block(name: str, mime: str, data: bytes) -> dict[str, Any]:
     encoded = base64.standard_b64encode(data).decode("ascii")
-    lower = name.lower()
-    if mime.startswith("image/") or lower.endswith((".png", ".jpg", ".jpeg", ".webp", ".gif")):
+    suffix = _suffix(name)
+    if mime.startswith("image/") or suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".heic"}:
         media = mime if mime.startswith("image/") else "image/jpeg"
         return {"type": "image", "source": {"type": "base64", "media_type": media, "data": encoded}}
-    if mime == "application/pdf" or lower.endswith(".pdf"):
+    if mime == "application/pdf" or suffix == ".pdf":
         return {
             "type": "document",
             "source": {"type": "base64", "media_type": "application/pdf", "data": encoded},
         }
-    try:
-        text = data.decode("utf-8")
-    except UnicodeDecodeError:
-        text = data.decode("latin-1", errors="replace")
-    return {"type": "text", "text": f"--- {name} ---\n{text[:20000]}"}
+    if suffix in {".xlsx", ".xlsm"}:
+        text = _xlsx_text(name, data)
+    elif suffix == ".docx":
+        text = _docx_text(name, data)
+    elif suffix == ".ods":
+        text = _ods_text(name, data)
+    elif suffix == ".odt":
+        text = _odt_text(name, data)
+    elif suffix in {".xls", ".doc"}:
+        text = _legacy_office_text(name, data)
+    elif suffix in {".csv", ".tsv", ".txt", ".md", ".json"} or mime.startswith("text/"):
+        text = _plain_text(name, data)
+    elif b"\x00" not in data[:800]:
+        text = _plain_text(name, data)
+    else:
+        raise CatalogImportError(
+            f"« {name} » : utilisez Excel (.xlsx), CSV, Word (.docx), PDF ou une photo."
+        )
+    return {"type": "text", "text": f"--- {name} ---\n{text}"}
 
 
 def _call_claude(content: list[dict[str, Any]]) -> dict[str, Any]:
