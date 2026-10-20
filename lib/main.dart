@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'core/navigation/app_router.dart';
 import 'core/providers/staff_session_provider.dart';
 import 'core/providers/theme_provider.dart';
+import 'core/services/browser_chrome.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_scroll_behavior.dart';
 import 'core/widgets/app_notification_banner.dart';
@@ -37,6 +39,9 @@ class BizManagerApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final headerColor =
+        themeMode == ThemeMode.dark ? AppColors.darkSurface : AppColors.white;
+    paintBrowserChrome(headerColor);
     // Only subscribe to presence of staff session — not lastActivityAt — or every
     // tap rebuilds MaterialApp and breaks gestures/scroll.
     final hasStaffSession =
@@ -44,6 +49,8 @@ class BizManagerApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Caisse détail',
+      // On the web this becomes theme-color, the strip above the top bar.
+      color: headerColor,
       debugShowCheckedModeBanner: false,
       locale: const Locale('fr'),
       supportedLocales: const [Locale('fr')],
