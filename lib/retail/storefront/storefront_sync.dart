@@ -292,6 +292,7 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
               ? null
               : request.customerEmail,
           fulfillmentMode: RetailFulfillmentMode.pickup,
+          deliveryLocation: request.note.isEmpty ? null : request.note,
           paymentLinkSent: true,
           createdAt: request.createdAt,
         );
@@ -326,6 +327,7 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
                   ? null
                   : request.customerEmail,
               fulfillmentMode: RetailFulfillmentMode.pickup,
+              deliveryLocation: request.note.isEmpty ? null : request.note,
               status: RetailOrderStatus.paid,
               paymentSource: RetailPaymentSource.storefront,
               paymentMethod: request.paymentMethod == 'moncash'

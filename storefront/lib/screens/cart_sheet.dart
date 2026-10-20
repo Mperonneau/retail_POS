@@ -97,6 +97,9 @@ class _CartSheetState extends State<_CartSheet> {
   final _phone = TextEditingController();
   final _email = TextEditingController();
   final _note = TextEditingController();
+  final _pickupName = TextEditingController();
+  final _pickupPhone = TextEditingController();
+  bool _forSomeoneElse = false;
   String? _busyKind;
   String? _error;
 
@@ -116,7 +119,16 @@ class _CartSheetState extends State<_CartSheet> {
     _phone.dispose();
     _email.dispose();
     _note.dispose();
+    _pickupName.dispose();
+    _pickupPhone.dispose();
     super.dispose();
+  }
+
+  /// A signed-in account already has a name and a usable phone.
+  bool get _useAccount {
+    final session = Session.instance;
+    final digits = session.phone.replaceAll(RegExp(r'\D'), '');
+    return session.isLoggedIn && digits.length >= 8;
   }
 
   Future<void> _submit(String kind) async {
@@ -126,15 +138,29 @@ class _CartSheetState extends State<_CartSheet> {
       _error = null;
     });
     try {
+      final session = Session.instance;
+      final pickup = _useAccount && _forSomeoneElse;
+      final name = pickup
+          ? _pickupName.text.trim()
+          : (_useAccount ? session.name.trim() : _name.text.trim());
+      final phone = pickup
+          ? _pickupPhone.text.trim()
+          : (_useAccount ? session.phone.trim() : _phone.text.trim());
+      final email = _useAccount ? session.email.trim() : _email.text.trim();
+      var note = _note.text.trim();
+      if (pickup) {
+        final ordered = 'Commandé par ${session.name.trim()}.';
+        note = note.isEmpty ? ordered : '$ordered\n$note';
+      }
       final request = await widget.api.submit(
         slug: widget.shop.slug,
         kind: kind,
         lines: widget.cart.toPayload(),
-        name: _name.text.trim(),
-        phone: _phone.text.trim(),
-        email: _email.text.trim(),
-        note: _note.text.trim(),
-        token: Session.instance.isLoggedIn ? Session.instance.token : null,
+        name: name,
+        phone: phone,
+        email: email,
+        note: note,
+        token: session.isLoggedIn ? session.token : null,
       );
       await Session.instance.rememberOrder(request.id);
       widget.cart.clear();
@@ -148,6 +174,93 @@ class _CartSheetState extends State<_CartSheet> {
         _error = e.message;
       });
     }
+  }
+
+  List<Widget> _accountContact() {
+    final session = Session.instance;
+    return [
+      Text(
+        'Vos coordonnées',
+        style: AppTextStyles.h2(
+          color: AppColors.nearBlack,
+        ).copyWith(fontSize: 16),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        '${session.name} · ${session.phone}',
+        style: AppTextStyles.body(color: AppColors.nearBlack),
+      ),
+      if (!_forSomeoneElse)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _busyKind == null
+                ? () => setState(() => _forSomeoneElse = true)
+                : null,
+            icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+            label: const Text('Quelqu\'un d\'autre récupère'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryBlue,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              alignment: Alignment.centerLeft,
+            ),
+          ),
+        )
+      else ...[
+        const SizedBox(height: 12),
+        Text(
+          'Personne qui récupère',
+          style: AppTextStyles.body(
+            color: AppColors.nearBlack,
+          ).copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Indiquez son nom et son téléphone. Cette personne pourra chercher les articles, par exemple en Haïti.',
+          style: AppTextStyles.caption(),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _pickupName,
+          textCapitalization: TextCapitalization.words,
+          decoration: _field(
+            'Nom complet',
+            icon: Icons.person_outline_rounded,
+          ),
+          validator: (v) => (v ?? '').trim().isEmpty
+              ? 'Indiquez le nom de la personne qui récupère.'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        PhoneField(
+          controller: _pickupPhone,
+          label: 'Téléphone',
+          validator: (v) =>
+              (v ?? '').replaceAll(RegExp(r'\D'), '').length < 8
+              ? 'Indiquez un numéro valide.'
+              : null,
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: _busyKind == null
+                ? () => setState(() {
+                    _forSomeoneElse = false;
+                    _pickupName.clear();
+                    _pickupPhone.clear();
+                  })
+                : null,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.darkGray,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              alignment: Alignment.centerLeft,
+            ),
+            child: const Text('Je récupère moi-même'),
+          ),
+        ),
+      ],
+      const SizedBox(height: 4),
+    ];
   }
 
   InputDecoration _field(String label, {String? hint, IconData? icon}) =>
@@ -260,52 +373,57 @@ class _CartSheetState extends State<_CartSheet> {
                         style: AppTextStyles.caption(),
                       ),
                       const SizedBox(height: 24),
-                      Text(
-                        'Vos coordonnées',
-                        style: AppTextStyles.h2(
-                          color: AppColors.nearBlack,
-                        ).copyWith(fontSize: 16),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _name,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: _field(
-                          'Nom complet',
-                          icon: Icons.person_outline_rounded,
+                      if (_useAccount)
+                        ..._accountContact()
+                      else ...[
+                        Text(
+                          'Vos coordonnées',
+                          style: AppTextStyles.h2(
+                            color: AppColors.nearBlack,
+                          ).copyWith(fontSize: 16),
                         ),
-                        validator: (v) => (v ?? '').trim().isEmpty
-                            ? 'Indiquez votre nom.'
-                            : null,
-                      ),
-                      const SizedBox(height: 10),
-                      PhoneField(
-                        controller: _phone,
-                        label: 'Téléphone',
-                        validator: (v) =>
-                            (v ?? '').replaceAll(RegExp(r'\D'), '').length < 8
-                            ? 'Indiquez un numéro valide.'
-                            : null,
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _email,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: _field(
-                          'E-mail (facultatif)',
-                          icon: Icons.mail_outline_rounded,
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _name,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: _field(
+                            'Nom complet',
+                            icon: Icons.person_outline_rounded,
+                          ),
+                          validator: (v) => (v ?? '').trim().isEmpty
+                              ? 'Indiquez votre nom.'
+                              : null,
                         ),
-                        validator: (v) {
-                          final text = (v ?? '').trim();
-                          if (text.isEmpty) return null;
-                          return RegExp(
-                                r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                              ).hasMatch(text)
-                              ? null
-                              : 'Adresse e-mail invalide.';
-                        },
-                      ),
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 10),
+                        PhoneField(
+                          controller: _phone,
+                          label: 'Téléphone',
+                          validator: (v) =>
+                              (v ?? '').replaceAll(RegExp(r'\D'), '').length <
+                                  8
+                              ? 'Indiquez un numéro valide.'
+                              : null,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _email,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: _field(
+                            'E-mail (facultatif)',
+                            icon: Icons.mail_outline_rounded,
+                          ),
+                          validator: (v) {
+                            final text = (v ?? '').trim();
+                            if (text.isEmpty) return null;
+                            return RegExp(
+                                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                ).hasMatch(text)
+                                ? null
+                                : 'Adresse e-mail invalide.';
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                       TextFormField(
                         controller: _note,
                         maxLines: 3,
