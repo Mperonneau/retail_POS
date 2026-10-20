@@ -17,8 +17,11 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/discount_approval_dialog.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/mock/mock_retail_orders.dart';
 import '../models/product_option.dart';
 import '../models/retail_cart_entry.dart';
+import '../storefront/receipt_scan.dart';
+import '../storefront/storefront_sync.dart';
 import '../widgets/pos_product_detail.dart';
 import '../widgets/product_option_picker.dart';
 import 'checkout_wizard.dart';
@@ -341,7 +344,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   Future<void> _openBarcodeScanner() async {
     String? code;
     if (BarcodeScanScreen.isSupported) {
-      code = await BarcodeScanScreen.showModal(context);
+      code = await BarcodeScanScreen.showModal(context, acceptQr: true);
     } else {
       final ctrl = TextEditingController();
       try {
@@ -378,7 +381,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     _applyBarcodeResult(code.trim());
   }
 
-  void _applyBarcodeResult(String code) {
+  Future<void> _applyBarcodeResult(String code) async {
+    final receiptId = storefrontRequestIdFromScan(code);
+    if (receiptId != null) {
+      await _openScannedReceipt(receiptId);
+      return;
+    }
     final products = ref.read(mockProductsProvider);
     MockProduct? byBarcode;
     for (final p in products) {
@@ -397,6 +405,34 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       return;
     }
     _productSearchController.text = code;
+  }
+
+  /// A vitrine receipt QR opens the matching commande or devis.
+  Future<void> _openScannedReceipt(String requestId) async {
+    await ref.read(storefrontSyncProvider.notifier).pullInbox();
+    if (!mounted) return;
+    final orderId = 'vit_$requestId';
+    final order = ref
+        .read(retailOrdersProvider)
+        .where((row) => row.id == orderId)
+        .firstOrNull;
+    if (order != null) {
+      ref.read(pendingReceiptScanProvider.notifier).state = requestId;
+      context.go(AppRoutes.retailOrderHistory);
+      return;
+    }
+    final quote = ref
+        .read(quotesProvider)
+        .where((row) => row.checkoutId == requestId || row.id == orderId)
+        .firstOrNull;
+    if (quote != null) {
+      ref.read(pendingReceiptScanProvider.notifier).state = requestId;
+      context.go(AppRoutes.retailQuotes);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Aucune commande pour ce code.')),
+    );
   }
 
   void _showQtyWarning(MockProduct product) {

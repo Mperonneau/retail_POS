@@ -87,10 +87,9 @@ class _LoginCodePageState extends State<LoginCodePage> {
           style: AppTextStyles.body(color: AppColors.darkGray),
         ),
         const SizedBox(height: 24),
-        GestureDetector(
-          onTap: () => _focus.requestFocus(),
+        SizedBox(
+          height: 56,
           child: Stack(
-            alignment: Alignment.center,
             children: [
               Row(
                 children: [
@@ -118,17 +117,23 @@ class _LoginCodePageState extends State<LoginCodePage> {
                     ),
                 ],
               ),
-              SizedBox(
-                height: 56,
+              // The field covers every box. A tap on the first box must hit the
+              // real input, otherwise the phone keeps the keyboard closed.
+              Positioned.fill(
                 child: TextField(
                   controller: _code,
                   focusNode: _focus,
                   autofocus: true,
                   keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
                   showCursor: false,
                   enableSuggestions: false,
                   autocorrect: false,
-                  style: const TextStyle(color: Colors.transparent, fontSize: 1),
+                  enableInteractiveSelection: false,
+                  style: const TextStyle(
+                    color: Colors.transparent,
+                    fontSize: 22,
+                  ),
                   cursorColor: Colors.transparent,
                   decoration: const InputDecoration(
                     filled: false,
@@ -145,6 +150,7 @@ class _LoginCodePageState extends State<LoginCodePage> {
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(6),
                   ],
+                  onTap: () => _focus.requestFocus(),
                 ),
               ),
             ],

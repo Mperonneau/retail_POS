@@ -17,6 +17,7 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/list_page_nav.dart';
 import '../../core/widgets/status_badge.dart';
 import '../models/retail_cart_entry.dart';
+import '../storefront/receipt_scan.dart';
 import '../storefront/storefront_api.dart';
 import '../storefront/storefront_link_dialog.dart';
 import '../storefront/storefront_sync.dart';
@@ -49,9 +50,31 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingReceipt());
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _openPendingReceipt() {
+    if (!mounted) return;
+    final id = ref.read(pendingReceiptScanProvider);
+    if (id == null || id.isEmpty) return;
+    final quote = ref
+        .read(quotesProvider)
+        .where((row) => row.checkoutId == id || row.id == 'vit_$id')
+        .firstOrNull;
+    if (quote == null) return;
+    ref.read(pendingReceiptScanProvider.notifier).state = null;
+    _onTapQuote(
+      quote,
+      MediaQuery.sizeOf(context).width < AppConstants.mobileBreakpoint,
+    );
   }
 
   List<MockRetailQuote> get _filtered {

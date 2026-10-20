@@ -1,14 +1,16 @@
 import 'dart:async';
+import 'dart:js_interop';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:retail_pos/core/theme/app_colors.dart';
 import 'package:retail_pos/core/theme/app_text_styles.dart';
 import 'package:retail_pos/core/widgets/app_button.dart';
-import 'package:retail_pos/core/widgets/app_close_button.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:web/web.dart' as web;
 
@@ -16,7 +18,6 @@ import '../api.dart';
 import '../money.dart';
 import '../widgets.dart';
 import 'pay_sheet.dart';
-import 'product_sheet.dart';
 
 class RequestPage extends StatefulWidget {
   const RequestPage({super.key, required this.requestId});
@@ -29,6 +30,8 @@ class RequestPage extends StatefulWidget {
 
 class _RequestPageState extends State<RequestPage> {
   final _api = StorefrontApi();
+  final _receiptKey = GlobalKey();
+  Uint8List? _receiptPng;
   RequestView? _request;
   String? _error;
   bool _notFound = false;
@@ -57,6 +60,7 @@ class _RequestPageState extends State<RequestPage> {
       if (!mounted) return;
       web.document.title = '${request.isQuote ? 'Devis' : 'Commande'} ${request.number}';
       setState(() => _request = request);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _captureReceipt());
     } on ApiException catch (e) {
       if (!mounted || quiet) return;
       setState(() {
@@ -73,8 +77,66 @@ class _RequestPageState extends State<RequestPage> {
     if (paid != null && mounted) setState(() => _request = paid);
   }
 
+  String _shareText(RequestView request) {
+    final items = request.lines.fold<int>(0, (sum, line) => sum + line.quantity);
+    final noun = items > 1 ? 'articles' : 'article';
+    final kind = request.isQuote ? 'Devis' : 'Commande';
+    return '$kind ${request.number} · ${request.shopName}\n'
+        '$items $noun · ${Money.usd(request.orderUsdCents)}\n'
+        '$_link';
+  }
+
+  Future<void> _captureReceipt() async {
+    final boundary =
+        _receiptKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null || !mounted) return;
+    try {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (!mounted || data == null) return;
+      _receiptPng = data.buffer.asUint8List();
+    } catch (_) {
+      _receiptPng = null;
+    }
+  }
+
+  /// Starts the system share sheet in the tap itself, with the picture already ready.
   void _share() {
-    showStoreSheet(context, (_) => _ShareSheet(request: _request!, link: _link));
+    final request = _request;
+    if (request == null) return;
+    final text = _shareText(request);
+    final subject = '${request.isQuote ? 'Devis' : 'Reçu'} ${request.number}';
+    final bytes = _receiptPng;
+    if (bytes != null && _shareImage(bytes, text, subject, request.number)) {
+      return;
+    }
+    Share.share(text, subject: subject);
+  }
+
+  bool _shareImage(
+    Uint8List bytes,
+    String text,
+    String subject,
+    String number,
+  ) {
+    try {
+      final file = web.File(
+        [bytes.buffer.toJS].toJS,
+        'recu-$number.png',
+        web.FilePropertyBag()..type = 'image/png',
+      );
+      final data = web.ShareData(
+        files: [file].toJS,
+        text: text,
+        title: subject,
+      );
+      final navigator = web.window.navigator;
+      if (!navigator.canShare(data)) return false;
+      navigator.share(data);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -104,7 +166,11 @@ class _RequestPageState extends State<RequestPage> {
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: kPhoneMaxWidth),
-                child: Column(
+                child: RepaintBoundary(
+                  key: _receiptKey,
+                  child: ColoredBox(
+                    color: AppColors.warmOffWhite,
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _ShopHeader(request: request),
@@ -208,6 +274,30 @@ class _RequestPageState extends State<RequestPage> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    Panel(
+                      child: Column(
+                        children: [
+                          QrImageView(
+                            data: _link,
+                            size: 168,
+                            backgroundColor: AppColors.white,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            request.number,
+                            style: AppTextStyles.body(color: AppColors.nearBlack)
+                                .copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'La caisse scanne ce code pour retrouver la commande. Ce lien affiche le reçu.',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.caption(),
+                          ),
+                        ],
+                      ),
+                    ),
                     if (!request.isPaid) ...[
                       const SizedBox(height: 12),
                       _Hint(
@@ -220,15 +310,15 @@ class _RequestPageState extends State<RequestPage> {
                       ),
                     ],
                   ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: request.isPaid
-          ? null
-          : SafeArea(
+      bottomNavigationBar: SafeArea(
               child: Center(
                 heightFactor: 1,
                 child: ConstrainedBox(
@@ -239,27 +329,33 @@ class _RequestPageState extends State<RequestPage> {
                       color: AppColors.warmOffWhite,
                       border: Border(top: BorderSide(color: Color(0xFFECEAE4))),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: AppButton(
+                    child: request.isPaid
+                        ? AppButton(
                             label: 'Partager',
                             icon: Icons.ios_share_rounded,
-                            variant: AppButtonVariant.secondary,
-                            onPressed: _share,
+                            onPressed: () => _share(),
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: AppButton(
+                                  label: 'Partager',
+                                  icon: Icons.ios_share_rounded,
+                                  variant: AppButtonVariant.secondary,
+                                  onPressed: () => _share(),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 2,
+                                child: AppButton(
+                                  label: 'Payer ${Money.usd(request.orderUsdCents)}',
+                                  icon: Icons.lock_outline_rounded,
+                                  onPressed: _pay,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 2,
-                          child: AppButton(
-                            label: 'Payer ${Money.usd(request.orderUsdCents)}',
-                            icon: Icons.lock_outline_rounded,
-                            onPressed: _pay,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ),
@@ -407,80 +503,3 @@ class _Hint extends StatelessWidget {
   }
 }
 
-class _ShareSheet extends StatefulWidget {
-  const _ShareSheet({required this.request, required this.link});
-
-  final RequestView request;
-  final String link;
-
-  @override
-  State<_ShareSheet> createState() => _ShareSheetState();
-}
-
-class _ShareSheetState extends State<_ShareSheet> {
-  bool _copied = false;
-
-  String get _message {
-    final r = widget.request;
-    final what = r.isQuote ? 'le devis' : 'la commande';
-    return 'Bonjour, peux-tu payer $what ${r.number} chez ${r.shopName} '
-        '(${Money.usd(r.orderUsdCents)}) ? Paiement par carte ou MonCash : ${widget.link}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text('Partager pour paiement',
-                      style: AppTextStyles.h1(color: AppColors.nearBlack).copyWith(fontSize: 20)),
-                ),
-                AppCloseButton(onPressed: () => Navigator.of(context).pop()),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'La personne qui reçoit ce lien voit le détail et paie par carte (en dollars) ou MonCash (en gourdes).',
-              style: AppTextStyles.body(color: AppColors.darkGray),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE6E3DC)),
-                ),
-                child: QrImageView(data: widget.link, size: 180, backgroundColor: AppColors.white),
-              ),
-            ),
-            const SizedBox(height: 16),
-            AppButton(
-              label: 'Envoyer le lien',
-              icon: Icons.send_rounded,
-              onPressed: () => Share.share(_message, subject: 'Paiement ${widget.request.number}'),
-            ),
-            const SizedBox(height: 10),
-            AppButton(
-              label: _copied ? 'Lien copié' : 'Copier le lien',
-              icon: _copied ? Icons.check_rounded : Icons.copy_rounded,
-              variant: AppButtonVariant.secondary,
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: widget.link));
-                if (mounted) setState(() => _copied = true);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

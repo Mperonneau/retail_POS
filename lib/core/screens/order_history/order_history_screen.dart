@@ -11,6 +11,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
+import '../../../retail/storefront/receipt_scan.dart';
 import '../../widgets/phone_field.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/list_page_nav.dart';
@@ -139,6 +140,32 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.scope == OrderHistoryListScope.retail) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingReceipt());
+    }
+  }
+
+  void _openPendingReceipt() {
+    if (!mounted) return;
+    final id = ref.read(pendingReceiptScanProvider);
+    if (id == null || id.isEmpty) return;
+    final order = ref
+        .read(retailOrdersProvider)
+        .where((row) => row.id == 'vit_$id')
+        .firstOrNull;
+    if (order == null) return;
+    ref.read(pendingReceiptScanProvider.notifier).state = null;
+    final mobile =
+        MediaQuery.sizeOf(context).width < AppConstants.mobileBreakpoint;
+    setState(() {
+      _retailTab = 0;
+      _selectedActiveOrder = mobile ? null : order;
+    });
+    if (mobile) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => _RetailOrderDetailPage(order: order)),
+      );
+    }
   }
 
   void _resetPage() => setState(() => _currentPage = 0);
