@@ -22,6 +22,7 @@ import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/form_field_error.dart';
 import '../../core/widgets/status_badge.dart';
+import '../catalog_import/catalog_import_sheet.dart';
 import '../models/product_option.dart';
 import '../widgets/product_category_field.dart';
 import '../widgets/product_options_editor.dart';
@@ -67,17 +68,19 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
     final categoryNames = allProducts.map((p) => p.category).toSet().toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-    final filtered = allProducts.where((p) {
-      if (_categoryFilter != null && p.category != _categoryFilter) {
-        return false;
-      }
-      if (_query.trim().isEmpty) return true;
-      final q = _query.toLowerCase();
-      return p.name.toLowerCase().contains(q) ||
-          p.category.toLowerCase().contains(q) ||
-          (p.barcode != null && p.barcode!.toLowerCase().contains(q));
-    }).toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final filtered =
+        allProducts.where((p) {
+          if (_categoryFilter != null && p.category != _categoryFilter) {
+            return false;
+          }
+          if (_query.trim().isEmpty) return true;
+          final q = _query.toLowerCase();
+          return p.name.toLowerCase().contains(q) ||
+              p.category.toLowerCase().contains(q) ||
+              (p.barcode != null && p.barcode!.toLowerCase().contains(q));
+        }).toList()..sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
 
     final totalPages = max(
       1,
@@ -91,8 +94,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
       });
     }
     final pageStart = (safePage - 1) * _kProductPageSize;
-    final pageItems =
-        filtered.skip(pageStart).take(_kProductPageSize).toList();
+    final pageItems = filtered.skip(pageStart).take(_kProductPageSize).toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -100,7 +102,9 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
         builder: (context, constraints) {
           final narrow = constraints.maxWidth < AppConstants.mobileBreakpoint;
           final pad = EdgeInsets.symmetric(
-            horizontal: narrow ? AppConstants.spacing16 : AppConstants.spacing24,
+            horizontal: narrow
+                ? AppConstants.spacing16
+                : AppConstants.spacing24,
             vertical: AppConstants.spacing24,
           );
 
@@ -125,12 +129,21 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
             ),
           );
           final addButton = AppButton(
-            label: 'Ajouter un produit',
+            label: narrow ? 'Ajouter' : 'Ajouter un produit',
             onPressed: () => _openProductPanel(null),
             icon: Icons.add,
             fullWidth: false,
             compact: true,
-            width: narrow ? null : 148,
+            width: narrow ? null : 168,
+          );
+          final importButton = AppButton(
+            label: narrow ? 'Avec l\'IA' : 'Importer avec l\'IA',
+            onPressed: _openCatalogImport,
+            icon: Icons.auto_awesome_outlined,
+            variant: AppButtonVariant.secondary,
+            fullWidth: false,
+            compact: true,
+            width: narrow ? null : 176,
           );
 
           final header = Column(
@@ -152,55 +165,56 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    importButton,
+                    const SizedBox(width: 8),
                     addButton,
                   ],
                 )
               else
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Produits',
-                            style: AppTextStyles.h1(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.primaryBlue,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Produits',
+                              style: AppTextStyles.h1(
+                                color: isDark
+                                    ? AppColors.warmWhite
+                                    : AppColors.primaryBlue,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: AppConstants.spacing12),
-                        countBadge,
-                      ],
+                          const SizedBox(width: AppConstants.spacing12),
+                          countBadge,
+                        ],
+                      ),
                     ),
-                  ),
-                  addButton,
-                  if (filtered.isNotEmpty && !narrow) ...[
-                    const SizedBox(width: AppConstants.spacing8),
-                    _ProductTopPagination(
-                      isDark: isDark,
-                      currentPage: safePage,
-                      totalPages: totalPages,
-                      onPrevious: safePage > 1
-                          ? () => setState(() => _currentPage = safePage - 1)
-                          : null,
-                      onNext: safePage < totalPages
-                          ? () => setState(() => _currentPage = safePage + 1)
-                          : null,
-                    ),
+                    importButton,
+                    const SizedBox(width: 8),
+                    addButton,
+                    if (filtered.isNotEmpty && !narrow) ...[
+                      const SizedBox(width: AppConstants.spacing8),
+                      _ProductTopPagination(
+                        isDark: isDark,
+                        currentPage: safePage,
+                        totalPages: totalPages,
+                        onPrevious: safePage > 1
+                            ? () => setState(() => _currentPage = safePage - 1)
+                            : null,
+                        onNext: safePage < totalPages
+                            ? () => setState(() => _currentPage = safePage + 1)
+                            : null,
+                      ),
+                    ],
                   ],
-                ],
-              ),
+                ),
               const SizedBox(height: AppConstants.spacing8),
               Row(
                 children: [
-                  if (narrow) ...[
-                    countBadge,
-                    const SizedBox(width: 8),
-                  ],
+                  if (narrow) ...[countBadge, const SizedBox(width: 8)],
                   Expanded(
                     child: Text(
                       'Gérez le catalogue, les prix et les stocks.',
@@ -276,10 +290,8 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                                     _ProductListTile(
                                       product: p,
                                       isDark: isDark,
-                                      onTap: () =>
-                                          _openProductPanel(p),
-                                      onMoreTap: () =>
-                                          _showOptions(context, p),
+                                      onTap: () => _openProductPanel(p),
+                                      onMoreTap: () => _showOptions(context, p),
                                     ),
                                     if (i < pageItems.length - 1)
                                       const Divider(
@@ -294,20 +306,21 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                           }
 
                           return Padding(
-                            padding:
-                                const EdgeInsets.all(AppConstants.spacing12),
+                            padding: const EdgeInsets.all(
+                              AppConstants.spacing12,
+                            ),
                             child: GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: AppConstants.spacing12,
-                                mainAxisSpacing: AppConstants.spacing12,
-                                childAspectRatio: _productGridAspectRatio(
-                                  crossAxisCount,
-                                ),
-                              ),
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: AppConstants.spacing12,
+                                    mainAxisSpacing: AppConstants.spacing12,
+                                    childAspectRatio: _productGridAspectRatio(
+                                      crossAxisCount,
+                                    ),
+                                  ),
                               itemCount: pageItems.length,
                               itemBuilder: (context, i) {
                                 final p = pageItems[i];
@@ -347,12 +360,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(
-                  pad.left,
-                  pad.top,
-                  pad.right,
-                  0,
-                ),
+                padding: EdgeInsets.fromLTRB(pad.left, pad.top, pad.right, 0),
                 child: header,
               ),
               const SizedBox(height: AppConstants.spacing12),
@@ -368,6 +376,50 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                 ),
               ),
             ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _openCatalogImport() {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final isNarrow = screenW <= AppConstants.mobileBreakpoint;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final panelW = min(screenW, 480.0);
+    final panelColor = isDark ? AppColors.darkSurface : AppColors.white;
+    Navigator.of(context, rootNavigator: true).push<void>(
+      PageRouteBuilder<void>(
+        opaque: isNarrow,
+        fullscreenDialog: isNarrow,
+        barrierDismissible: !isNarrow,
+        barrierLabel: 'Fermer',
+        barrierColor: isNarrow ? null : Colors.black.withValues(alpha: 0.45),
+        transitionDuration: AppConstants.animNormal,
+        reverseTransitionDuration: AppConstants.animNormal,
+        pageBuilder: (ctx, animation, secondaryAnimation) {
+          final sheet = CatalogImportSheet(
+            onClose: () {
+              if (!ctx.mounted) return;
+              Navigator.of(ctx).pop();
+            },
+          );
+          if (isNarrow) {
+            return Scaffold(
+              backgroundColor: panelColor,
+              body: SafeArea(child: sheet),
+            );
+          }
+          return Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: panelW,
+              height: MediaQuery.sizeOf(ctx).height,
+              child: Material(
+                color: panelColor,
+                child: SafeArea(child: sheet),
+              ),
+            ),
           );
         },
       ),
@@ -480,8 +532,10 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
               },
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.delete_outline, color: AppColors.boldRed),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: AppColors.boldRed,
+              ),
               title: const Text(
                 'Supprimer le produit',
                 style: TextStyle(color: AppColors.boldRed),
@@ -695,8 +749,8 @@ class _ProductFilterRow extends StatelessWidget {
       fill: fill,
       borderColor: borderColor,
       active: active,
-      label: categoryFilter ??
-          (narrow ? 'Catégories' : 'Toutes les catégories'),
+      label:
+          categoryFilter ?? (narrow ? 'Catégories' : 'Toutes les catégories'),
       compact: narrow,
       categoryFilter: categoryFilter,
       categories: categories,
@@ -753,8 +807,9 @@ class _ProductCategoryFilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const activeColor = AppColors.primaryBlue;
-    final bg =
-        active ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08) : fill;
+    final bg = active
+        ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08)
+        : fill;
     final border = active
         ? activeColor.withValues(alpha: isDark ? 0.55 : 0.4)
         : borderColor;
@@ -853,14 +908,16 @@ class _ProductCategoryFilterButton extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 c,
-                style: AppTextStyles.body(
-                  color: categoryFilter == c
-                      ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                      : (isDark ? AppColors.warmWhite : AppColors.nearBlack),
-                ).copyWith(
-                  fontWeight:
-                      categoryFilter == c ? FontWeight.w600 : null,
-                ),
+                style:
+                    AppTextStyles.body(
+                      color: categoryFilter == c
+                          ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
+                          : (isDark
+                                ? AppColors.warmWhite
+                                : AppColors.nearBlack),
+                    ).copyWith(
+                      fontWeight: categoryFilter == c ? FontWeight.w600 : null,
+                    ),
               ),
             ],
           ),
@@ -954,10 +1011,10 @@ class _ProductGridTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.body(color: textPrimary)
                                 .copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11.5,
-                              height: 1.15,
-                            ),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11.5,
+                                  height: 1.15,
+                                ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -966,8 +1023,9 @@ class _ProductGridTile extends StatelessWidget {
                             context,
                             product.sellingPriceHtg,
                           ),
-                          style: AppTextStyles.price(color: textPrimary)
-                              .copyWith(fontSize: 11.5, height: 1.15),
+                          style: AppTextStyles.price(
+                            color: textPrimary,
+                          ).copyWith(fontSize: 11.5, height: 1.15),
                         ),
                       ],
                     ),
@@ -1096,19 +1154,16 @@ class _ProductListTile extends StatelessWidget {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.body(color: textPrimary).copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
+                      style: AppTextStyles.body(
+                        color: textPrimary,
+                      ).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                     ),
                     Text(
                       '${product.category} · ${product.margin.toStringAsFixed(0)} % marge',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray,
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
                       ).copyWith(fontSize: 10),
                     ),
                   ],
@@ -1120,14 +1175,16 @@ class _ProductListTile extends StatelessWidget {
                 children: [
                   Text(
                     CurrencyFormatter.local(context, product.sellingPriceHtg),
-                    style: AppTextStyles.price(color: textPrimary)
-                        .copyWith(fontSize: 12),
+                    style: AppTextStyles.price(
+                      color: textPrimary,
+                    ).copyWith(fontSize: 12),
                   ),
                   if (product.discountPercent > 0)
                     Text(
                       '−${product.discountPercent} %',
-                      style: AppTextStyles.caption(color: AppColors.amber)
-                          .copyWith(fontSize: 9, fontWeight: FontWeight.w700),
+                      style: AppTextStyles.caption(
+                        color: AppColors.amber,
+                      ).copyWith(fontSize: 9, fontWeight: FontWeight.w700),
                     ),
                   if (usd != null)
                     Text(
@@ -1141,13 +1198,13 @@ class _ProductListTile extends StatelessWidget {
                     status: !product.trackStock
                         ? StatusType.inactive
                         : product.isLowStock
-                            ? StatusType.lowStock
-                            : StatusType.active,
+                        ? StatusType.lowStock
+                        : StatusType.active,
                     customLabel: !product.trackStock
                         ? 'Non suivi'
                         : product.isLowStock
-                            ? 'Bas ${product.stockQuantity}'
-                            : '${product.stockQuantity}',
+                        ? 'Bas ${product.stockQuantity}'
+                        : '${product.stockQuantity}',
                     compact: true,
                     micro: true,
                   ),
@@ -1221,7 +1278,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _nameCtrl = TextEditingController(text: e?.name ?? '');
     _priceCtrl = TextEditingController();
     _priceCtrl.addListener(_onPriceChanged);
-    _costCtrl = TextEditingController(text: e?.costHtg.toStringAsFixed(0) ?? '');
+    _costCtrl = TextEditingController(
+      text: e?.costHtg.toStringAsFixed(0) ?? '',
+    );
     _stockCtrl = TextEditingController(text: e?.stockQuantity.toString() ?? '');
     _minCtrl = TextEditingController(text: e?.minStock.toString() ?? '');
     _barcodeCtrl = TextEditingController(text: e?.barcode ?? '');
@@ -1350,8 +1409,10 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       final named = draft.nameCtrl.text.trim().isNotEmpty;
       final group = draft.toGroup();
       if (named && group == null) {
-        setState(() => _errorOptions =
-            'Chaque option doit avoir un nom et au moins un choix.');
+        setState(
+          () => _errorOptions =
+              'Chaque option doit avoir un nom et au moins un choix.',
+        );
         return;
       }
       if (group != null) groups.add(group);
@@ -1364,25 +1425,27 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     }
     final p = CatalogPriceLogic.commitParsed(s, priceParsed);
     final barcode = _barcodeCtrl.text.trim();
-    widget.onSave(MockProduct(
-      id: widget.existing?.id ?? 0,
-      name: name,
-      category: cat,
-      priceHtg: p.priceHtg,
-      priceUsd: p.priceUsd,
-      costHtg: double.tryParse(_costCtrl.text) ?? 0,
-      stockQuantity: stockQty,
-      minStock: minStock,
-      barcode: barcode.isEmpty ? null : barcode,
-      active: _active,
-      description: _descCtrl.text.trim(),
-      photoDataUrl: photo,
-      discountPercent: discount,
-      trackStock: _trackStock,
-      stockUnit: _stockUnit,
-      options: groups,
-      showOnStorefront: _showOnStorefront,
-    ));
+    widget.onSave(
+      MockProduct(
+        id: widget.existing?.id ?? 0,
+        name: name,
+        category: cat,
+        priceHtg: p.priceHtg,
+        priceUsd: p.priceUsd,
+        costHtg: double.tryParse(_costCtrl.text) ?? 0,
+        stockQuantity: stockQty,
+        minStock: minStock,
+        barcode: barcode.isEmpty ? null : barcode,
+        active: _active,
+        description: _descCtrl.text.trim(),
+        photoDataUrl: photo,
+        discountPercent: discount,
+        trackStock: _trackStock,
+        stockUnit: _stockUnit,
+        options: groups,
+        showOnStorefront: _showOnStorefront,
+      ),
+    );
     widget.onClose();
   }
 
@@ -1391,8 +1454,8 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     final s = ref.watch(currencySettingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.warmWhite : AppColors.nearBlack;
-    final helperColor =
-        (isDark ? AppColors.coolGray : AppColors.darkGray).withValues(alpha: 0.65);
+    final helperColor = (isDark ? AppColors.coolGray : AppColors.darkGray)
+        .withValues(alpha: 0.65);
     final helperStyle = TextStyle(
       fontSize: 11,
       height: 1.4,
@@ -1410,19 +1473,18 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       String? errorText,
       Widget? prefixIcon,
       Widget? suffixIcon,
-    }) =>
-        InputDecoration(
-          labelText: label,
-          prefixText: prefixText,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          helperText: helperText,
-          helperMaxLines: helperMaxLines,
-          helperStyle: helperText != null ? helperStyle : null,
-          errorText: errorText,
-          errorMaxLines: 2,
-          border: outlineBorder,
-        );
+    }) => InputDecoration(
+      labelText: label,
+      prefixText: prefixText,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      helperText: helperText,
+      helperMaxLines: helperMaxLines,
+      helperStyle: helperText != null ? helperStyle : null,
+      errorText: errorText,
+      errorMaxLines: 2,
+      border: outlineBorder,
+    );
 
     final scrollableFields = SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
@@ -1461,8 +1523,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                     prefixText: CatalogPriceLogic.priceFieldPrefix(s),
                     errorText: _errorPrice,
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: InputFormatters.decimalAmount,
                   onChanged: (_) {
                     if (_errorPrice != null) {
@@ -1479,8 +1542,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                     label: 'Cost (${s.localCurrencyCode})',
                     prefixText: '${s.localCurrencyCode} ',
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: InputFormatters.decimalAmount,
                 ),
               ),
@@ -1525,16 +1589,17 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
             storedDataUrl: _photoCleared ? null : _photoDataUrl,
             errorText: _errorPhoto,
             onPick: _pickPhoto,
-            onClear: (_photoBytes != null ||
+            onClear:
+                (_photoBytes != null ||
                     (!_photoCleared &&
                         _photoDataUrl != null &&
                         _photoDataUrl!.isNotEmpty))
                 ? () => setState(() {
-                      _photoBytes = null;
-                      _photoDataUrl = null;
-                      _photoCleared = true;
-                      _errorPhoto = null;
-                    })
+                    _photoBytes = null;
+                    _photoDataUrl = null;
+                    _photoCleared = true;
+                    _errorPhoto = null;
+                  })
                 : null,
           ),
           SwitchListTile(
@@ -1543,9 +1608,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
             activeThumbColor: AppColors.deepGreen,
             title: Text(
               'Disponible à la vente',
-              style: AppTextStyles.body(color: textPrimary).copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.body(
+                color: textPrimary,
+              ).copyWith(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
               'Décoché : le produit n’apparaît pas à la caisse.',
@@ -1559,9 +1624,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
             activeThumbColor: AppColors.primaryBlue,
             title: Text(
               'Afficher sur la vitrine',
-              style: AppTextStyles.body(color: textPrimary).copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.body(
+                color: textPrimary,
+              ).copyWith(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
               _active
@@ -1586,9 +1651,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
             activeThumbColor: AppColors.primaryBlue,
             title: Text(
               'Suivre le stock',
-              style: AppTextStyles.body(color: textPrimary).copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.body(
+                color: textPrimary,
+              ).copyWith(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
               'Décochez si la vente ne doit pas diminuer le stock.',
@@ -1660,7 +1725,10 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                   'pour le lire avec la caméra.',
               suffixIcon: BarcodeScanScreen.isSupported
                   ? IconButton(
-                      icon: const Icon(Icons.document_scanner_outlined, size: 22),
+                      icon: const Icon(
+                        Icons.document_scanner_outlined,
+                        size: 22,
+                      ),
                       tooltip: 'Scanner le code-barres',
                       onPressed: _openBarcodeScanner,
                     )
@@ -1674,48 +1742,48 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
 
     final h = AppConstants.buttonHeightCompact;
     Widget actionRow() => Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppConstants.spacing24,
-            AppConstants.spacing8,
-            AppConstants.spacing24,
-            AppConstants.spacing16,
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.spacing24,
+        AppConstants.spacing8,
+        AppConstants.spacing24,
+        AppConstants.spacing16,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            flex: 2,
+            child: AppButton(
+              label: widget.existing == null
+                  ? 'Enregistrer le produit'
+                  : 'Mettre à jour le produit',
+              onPressed: _save,
+              compact: true,
+            ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 2,
-                child: AppButton(
-                  label: widget.existing == null
-                      ? 'Enregistrer le produit'
-                      : 'Mettre à jour le produit',
-                  onPressed: _save,
-                  compact: true,
-                ),
-              ),
-              const SizedBox(width: AppConstants.spacing12),
-              Expanded(
-                child: SizedBox(
-                  height: h,
-                  child: OutlinedButton(
-                    onPressed: widget.onClose,
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size(double.infinity, h),
-                      maximumSize: Size(double.infinity, h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.radiusButton,
-                        ),
-                      ),
+          const SizedBox(width: AppConstants.spacing12),
+          Expanded(
+            child: SizedBox(
+              height: h,
+              child: OutlinedButton(
+                onPressed: widget.onClose,
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size(double.infinity, h),
+                  maximumSize: Size(double.infinity, h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.radiusButton,
                     ),
-                    child: const Text('Annuler'),
                   ),
                 ),
+                child: const Text('Annuler'),
               ),
-            ],
+            ),
           ),
-        );
+        ],
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1788,9 +1856,9 @@ class _PhotoField extends StatelessWidget {
       children: [
         Text(
           'Photo vitrine (facultatif)',
-          style: AppTextStyles.body(color: ink).copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.body(
+            color: ink,
+          ).copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 2),
         Text(
@@ -1804,10 +1872,14 @@ class _PhotoField extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                color: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : const Color(0xFFE4E7EC),
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : const Color(0xFFE4E7EC),
                 ),
               ),
               clipBehavior: Clip.antiAlias,

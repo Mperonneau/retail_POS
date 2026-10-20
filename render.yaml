@@ -91,3 +91,7 @@ services:
         value: https://moncashbutton.digicelgroup.com
       - key: DAY_USD_RATE
         value: "135"
+      - key: CLAUDE_API_SECRET_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        sync: false

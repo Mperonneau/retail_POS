@@ -13,6 +13,8 @@ Env:
   PUBLIC_BASE_URL         success/cancel pages (Render sets RENDER_EXTERNAL_URL)
   STOREFRONT_DATA_DIR     vitrine catalog, requests and photos (default ./.data)
   DAY_USD_RATE            HTG per USD when a shop has no rate (default 135)
+  CLAUDE_API_SECRET_KEY   same Claude key as Tabkreyol, for catalogue import
+  CLAUDE_MODEL            optional, default claude-sonnet-4-5
   PORT                    default 8787
 """
 
@@ -30,6 +32,8 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from catalog_import import JOBS as CATALOG_JOBS
+from catalog_import import CatalogImportError
 from storefront import StorefrontError, StorefrontStore
 
 STRIPE_API = "https://api.stripe.com/v1"
@@ -613,6 +617,8 @@ class Handler(BaseHTTPRequestHandler):
             elif path.startswith("/payments/moncash/"):
                 order_id = path.split("/")[-1]
                 self._json(200, moncash_paid(order_id))
+            elif path.startswith("/catalog/imports/"):
+                self._json(200, CATALOG_JOBS.get(path.rsplit("/", 1)[-1]))
             elif path.startswith("/storefront/"):
                 self._storefront_get(path)
             elif path == "/paid":
@@ -621,7 +627,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._html(200, "Paiement annulé", "Aucun montant n'a été encaissé. Revenez à la caisse pour réessayer.")
             else:
                 self._json(404, {"error": "Introuvable."})
-        except (PaymentError, StorefrontError) as exc:
+        except (PaymentError, StorefrontError, CatalogImportError) as exc:
             self._json(exc.status, {"error": exc.message})
 
     def do_POST(self) -> None:
@@ -656,11 +662,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, result)
             elif path == "/payments/webhook":
                 self._webhook()
+            elif path == "/catalog/imports":
+                body = self._read_json(max_bytes=20_000_000)
+                self._json(200, CATALOG_JOBS.start(body))
             elif path.startswith("/storefront/"):
                 self._storefront_post(path)
             else:
                 self._json(404, {"error": "Introuvable."})
-        except (PaymentError, StorefrontError) as exc:
+        except (PaymentError, StorefrontError, CatalogImportError) as exc:
             self._json(exc.status, {"error": exc.message})
         except (TypeError, ValueError):
             self._json(400, {"error": "Requête invalide."})
