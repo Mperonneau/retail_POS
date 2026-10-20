@@ -718,9 +718,12 @@ class Handler(BaseHTTPRequestHandler):
             body = self._read_json()
             self._json(200, {"account": STORE.update_account(self._bearer(), body.get("name"))})
         elif len(parts) == 3 and parts[0] == "shops" and parts[2] == "requests":
-            token = self._bearer_optional()
-            phone = STORE.phone_for_token(token) if token else ""
-            self._json(200, STORE.create_request(parts[1], self._read_json(), account_phone=phone))
+            # Read the body before the session check. Rejecting the token first
+            # left those bytes on the keep-alive connection, so the next order
+            # arrived broken and the app reported a network failure.
+            body = self._read_json()
+            phone = STORE.account_phone(self._bearer_optional())
+            self._json(200, STORE.create_request(parts[1], body, account_phone=phone))
         elif len(parts) == 3 and parts[0] == "requests" and parts[2] == "card":
             self._json(200, storefront_card_intent(parts[1]))
         elif len(parts) == 4 and parts[0] == "requests" and parts[2:] == ["card", "confirm"]:

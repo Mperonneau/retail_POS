@@ -891,6 +891,15 @@ class StorefrontStore:
             raise StorefrontError(401, "Connexion requise.")
         return digits
 
+    def account_phone(self, token: str) -> str:
+        """Phone saved with this session. An unknown token does not block an order."""
+        if not str(token or "").strip():
+            return ""
+        try:
+            return self.phone_for_token(token)
+        except StorefrontError:
+            return ""
+
     def update_account(self, token: str, name: object) -> dict:
         display = _text(name, 80)
         if not display:

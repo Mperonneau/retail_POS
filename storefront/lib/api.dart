@@ -113,17 +113,35 @@ class StorefrontApi {
     required String note,
     String? token,
   }) async {
-    final body = await _post(
-      '/storefront/shops/${Uri.encodeComponent(slug)}/requests',
-      {
-        'kind': kind,
-        'lines': lines,
-        'customer': {'name': name, 'phone': phone, 'email': email},
-        'note': note,
-      },
-      token: token,
-    );
-    return RequestView.fromJson(body);
+    final payload = {
+      'kind': kind,
+      'lines': lines,
+      'customer': {'name': name, 'phone': phone, 'email': email},
+      'note': note,
+    };
+    final path = '/storefront/shops/${Uri.encodeComponent(slug)}/requests';
+    Future<RequestView> once(String? session) async {
+      return RequestView.fromJson(await _post(path, payload, token: session));
+    }
+
+    final started = Stopwatch()..start();
+    try {
+      return await once(token);
+    } on ApiException catch (error) {
+      final hasSession = token != null && token.isNotEmpty;
+      final staleSession = error.status == 401;
+      final droppedFast =
+          error.status == 0 && started.elapsed < const Duration(seconds: 8);
+      // The name and phone are already in the order. A session the server
+      // no longer has must not stop it, and must not break the next try.
+      if (!hasSession || (!staleSession && !droppedFast)) rethrow;
+      try {
+        return await once(null);
+      } on ApiException catch (again) {
+        if (again.status != 0) rethrow;
+        return once(null);
+      }
+    }
   }
 
   Future<RequestView> request(String id) async =>
@@ -194,7 +212,7 @@ class StorefrontApi {
       response = await call().timeout(const Duration(seconds: 45));
     } catch (_) {
       throw ApiException(
-        'Connexion impossible. Vérifiez votre réseau et réessayez.',
+        'Impossible de joindre la boutique. Réessayez.',
       );
     }
     Map<String, dynamic> body = const {};

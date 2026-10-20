@@ -153,6 +153,21 @@ def test_business_categories_keep_several_and_list_only_used():
     assert cards["Fripe"] == ["Friperie", "Vêtements"]
 
 
+def test_unknown_session_still_places_the_order():
+    store = _store()
+    store.publish(KEY, _catalog())
+    assert store.account_phone("") == ""
+    assert store.account_phone("session-oubliée") == ""
+    request = store.create_request(
+        "chez-marie",
+        {"kind": "commande", "customer": CUSTOMER, "lines": [{"product_id": "1", "quantity": 1}]},
+        OPEN,
+        account_phone=store.account_phone("session-oubliée"),
+    )
+    assert request["number"].startswith("CMD-")
+    assert request["customer_name"] == CUSTOMER["name"]
+
+
 def test_account_login_and_orders():
     store = _store()
     store.publish(KEY, _catalog())

@@ -134,8 +134,12 @@ class Session extends ChangeNotifier {
   Future<List<OrderSummary>> orders() async {
     final merged = <String, OrderSummary>{};
     if (isLoggedIn) {
-      for (final row in await _api.orders(token)) {
-        merged[row.id] = row;
+      try {
+        for (final row in await _api.orders(token)) {
+          merged[row.id] = row;
+        }
+      } on ApiException {
+        // This phone still has the name. The server may have a newer session.
       }
     }
     for (final id in localOrderIds) {
