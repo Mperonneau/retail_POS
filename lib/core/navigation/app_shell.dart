@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -941,7 +942,9 @@ class _TabletLayout extends ConsumerWidget {
           Expanded(
             child: Column(
               children: [
-                _TopBar(moduleLabel: moduleLabel, compact: true),
+                _TopBarSafeRegion(
+                  child: _TopBar(moduleLabel: moduleLabel, compact: true),
+                ),
                 const OfflineBanner(),
                 Expanded(
                   child: KeyboardScrollArea(
@@ -1014,10 +1017,12 @@ class _MobileLayout extends ConsumerWidget {
       body: Builder(
         builder: (bodyContext) => Column(
           children: [
-            _TopBar(
-              moduleLabel: moduleLabel,
-              compact: true,
-              onMenu: () => Scaffold.of(bodyContext).openDrawer(),
+            _TopBarSafeRegion(
+              child: _TopBar(
+                moduleLabel: moduleLabel,
+                compact: true,
+                onMenu: () => Scaffold.of(bodyContext).openDrawer(),
+              ),
             ),
             const OfflineBanner(),
             Expanded(
@@ -1035,6 +1040,35 @@ class _MobileLayout extends ConsumerWidget {
           label: d.label,
         )).toList(),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      ),
+    );
+  }
+}
+
+/// Fills the phone status-bar inset with the same color as [_TopBar].
+class _TopBarSafeRegion extends StatelessWidget {
+  const _TopBarSafeRegion({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDark ? AppColors.darkSurface : AppColors.white;
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: color,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      ),
+    );
+    return ColoredBox(
+      color: color,
+      child: SafeArea(
+        bottom: false,
+        left: false,
+        right: false,
+        child: child,
       ),
     );
   }
