@@ -57,6 +57,10 @@ void main() {
     expect(const MeasureChoice.each().unitsEach(rollWidth: 0, unitsPerCase: 24), 1);
     expect(measureFromLabel('36 po').width, 36);
     expect(
+      measureForMode(SaleMode.roll, 'Longueur entière').kind,
+      MeasureKind.fullRoll,
+    );
+    expect(
       measureForMode(SaleMode.roll, 'Rouleau entier').kind,
       MeasureKind.fullRoll,
     );

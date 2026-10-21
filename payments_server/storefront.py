@@ -1132,18 +1132,18 @@ class StorefrontStore:
             width = 0
         if mode == "roll":
             if measure == "roll":
-                return product["roll_price_htg"], int(product["roll_width"]), "Rouleau entier"
+                return product["roll_price_htg"], int(product["roll_width"]), "Longueur entière"
             if measure == "cut":
                 minimum = int(product["min_width"])
                 if width < minimum:
                     raise StorefrontError(
-                        400, f"La largeur minimum pour {name} est {minimum} po."
+                        400, f"La longueur minimum pour {name} est {minimum} po."
                     )
                 if width > 10000:
-                    raise StorefrontError(400, "Cette largeur est trop grande.")
+                    raise StorefrontError(400, "Cette longueur est trop grande.")
                 return round(product["price_htg"] * width, 2), width, f"{width} po"
             raise StorefrontError(
-                400, f"Choisissez le rouleau entier ou une largeur pour {name}."
+                400, f"Choisissez la longueur entière ou une longueur pour {name}."
             )
         if mode == "case":
             if measure == "case":

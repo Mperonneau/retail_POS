@@ -90,7 +90,7 @@ class MockProduct {
   /// Short cue on a product card. Empty for a flat price.
   String get saleHint => switch (saleMode) {
     SaleMode.piece => '',
-    SaleMode.roll => 'Rouleau ou largeur',
+    SaleMode.roll => 'Longueur entière ou une longueur',
     SaleMode.pack => 'Caisse ou unité',
   };
 
@@ -349,8 +349,8 @@ final _mockProductsSeed = [
     stockQuantity: 180,
     minStock: 60,
     description:
-        'Vendu au rouleau entier (60 po) ou à la largeur. Minimum 12 pouces. '
-        'Le rouleau entier a son propre prix.',
+        'Vendu à la longueur entière (60 po) ou à la longueur choisie. '
+        'Minimum 12 pouces. La longueur entière a son propre prix.',
     saleMode: SaleMode.roll,
     rollPriceHtg: 750,
     rollPriceUsd: 7.50,
@@ -367,7 +367,8 @@ final _mockProductsSeed = [
     stockQuantity: 108,
     minStock: 36,
     description:
-        'Vendu au rouleau entier (36 po) ou à la largeur. Minimum 6 pouces.',
+        'Vendu à la longueur entière (36 po) ou à la longueur choisie. '
+        'Minimum 6 pouces.',
     saleMode: SaleMode.roll,
     rollPriceHtg: 250,
     rollPriceUsd: 2.50,

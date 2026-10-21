@@ -279,6 +279,7 @@ def test_roll_and_case_are_priced_from_the_choice():
     assert request["lines"][0]["options_label"] == "36 po"
     assert request["lines"][0]["stock_units"] == 36
     assert request["lines"][1]["unit_htg"] == 750 and request["lines"][1]["stock_units"] == 60
+    assert request["lines"][1]["options_label"] == "Longueur entière"
     assert request["lines"][2]["options_label"] == "Caisse de 24"
     assert request["lines"][2]["stock_units"] == 24
     assert request["lines"][3]["unit_htg"] == 40

@@ -1421,13 +1421,13 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
   String get _saleHelp => switch (_saleMode) {
     SaleMode.piece => 'Un seul prix pour une pièce.',
     SaleMode.roll =>
-      "Le prix ci-dessus est le prix d'un pouce. À la vente, on choisit le rouleau entier ou on saisit une largeur.",
+      "Le prix ci-dessus est le prix d'un pouce. À la vente, on prend la longueur entière ou on saisit une longueur.",
     SaleMode.pack =>
       "Le prix ci-dessus est le prix d'une unité. À la vente, on choisit la caisse ou une seule unité.",
   };
 
   String get _stockHelp => switch (_saleMode) {
-    SaleMode.roll => 'Stock en pouces. Un rouleau entier retire sa largeur.',
+    SaleMode.roll => 'Stock en pouces. La longueur entière retire ses pouces.',
     SaleMode.pack => 'Stock en unités. Une caisse retire toutes ses unités.',
     SaleMode.piece => "Unités en stock au moment d'ajouter ce produit.",
   };
@@ -1519,11 +1519,11 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       rollWidth = int.tryParse(_rollWidthCtrl.text.trim()) ?? 0;
       minWidth = int.tryParse(_minWidthCtrl.text.trim()) ?? 0;
       if (rollParsed == null || rollParsed <= 0) {
-        setState(() => _errorMeasure = 'Indiquez le prix du rouleau entier.');
+        setState(() => _errorMeasure = 'Indiquez le prix de la longueur entière.');
         return;
       }
       if (rollWidth < 1) {
-        setState(() => _errorMeasure = 'Indiquez la largeur du rouleau en pouces.');
+        setState(() => _errorMeasure = 'Indiquez la longueur entière en pouces.');
         return;
       }
       if (minWidth < 1 || minWidth > rollWidth) {
@@ -1729,9 +1729,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
             TextField(
               controller: _rollPriceCtrl,
               decoration: fieldDec(
-                label: 'Prix du rouleau entier *',
+                label: 'Prix de la longueur entière *',
                 prefixText: CatalogPriceLogic.priceFieldPrefix(s),
-                helperText: 'Prix quand le client prend le rouleau complet.',
+                helperText: 'Prix quand le client prend toute la longueur.',
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: InputFormatters.decimalAmount,
@@ -1744,8 +1744,8 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                   child: TextField(
                     controller: _rollWidthCtrl,
                     decoration: fieldDec(
-                      label: 'Largeur du rouleau (po) *',
-                      helperText: 'Pouces dans un rouleau entier.',
+                      label: 'Longueur entière (po) *',
+                      helperText: 'Pouces dans une longueur entière.',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: InputFormatters.digitsOnly,
@@ -1757,7 +1757,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                     controller: _minWidthCtrl,
                     decoration: fieldDec(
                       label: 'Minimum (po) *',
-                      helperText: 'Largeur la plus petite acceptée.',
+                      helperText: 'La plus petite longueur acceptée.',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: InputFormatters.digitsOnly,

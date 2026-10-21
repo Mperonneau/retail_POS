@@ -139,7 +139,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
       setState(() {
         _error = reason ??
             (_p.saleMode == SaleMode.roll
-                ? 'Choisissez le rouleau entier ou une largeur.'
+                ? 'Choisissez la longueur entière ou une longueur.'
                 : 'Choisissez une caisse ou une unité.');
       });
       return;
@@ -167,7 +167,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
     final unit = _unit;
     final room = _room;
     final intro = _p.saleMode == SaleMode.roll
-        ? 'Prenez le rouleau entier, ou indiquez la largeur en pouces.'
+        ? 'Prenez la longueur entière, ou indiquez une longueur en pouces.'
         : 'Prenez une caisse, ou une seule unité.';
 
     return Column(
@@ -183,7 +183,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
               if (_p.saleMode == SaleMode.roll) ...[
                 _ChoiceCard(
                   selected: _kind == MeasureKind.fullRoll,
-                  title: 'Rouleau entier',
+                  title: 'Longueur entière',
                   detail: '${_p.rollWidth} pouces',
                   price: CurrencyFormatter.local(context, _p.sellingRollPriceHtg),
                   onTap: () => _select(MeasureKind.fullRoll),
@@ -191,7 +191,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                 const SizedBox(height: 10),
                 _ChoiceCard(
                   selected: _kind == MeasureKind.width,
-                  title: 'Entrer une largeur',
+                  title: 'Entrer une longueur',
                   detail:
                       '${CurrencyFormatter.local(context, _p.sellingPriceHtg)} par pouce · minimum ${_p.minWidth} po',
                   price: _widthPrice(context),
@@ -205,7 +205,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(
-                      labelText: 'Largeur (pouces)',
+                      labelText: 'Longueur (pouces)',
                       border: OutlineInputBorder(),
                     ),
                     onChanged: (_) => setState(() => _error = null),
@@ -313,7 +313,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
 
   String _widthSentence(BuildContext context) {
     final width = int.tryParse(_widthCtrl.text.trim());
-    if (width == null || width < 1) return 'Le total est le prix par pouce × la largeur.';
+    if (width == null || width < 1) return 'Le total est le prix par pouce × la longueur.';
     if (width < _p.minWidth) return 'Le minimum est ${_p.minWidth} po.';
     final total = _p.sellingPriceHtg * width;
     return '$width po × ${CurrencyFormatter.local(context, _p.sellingPriceHtg)} = ${CurrencyFormatter.local(context, total)}';

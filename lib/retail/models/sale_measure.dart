@@ -83,7 +83,7 @@ class MeasureChoice {
   String label({required int unitsPerCase}) {
     return switch (kind) {
       MeasureKind.plain => '',
-      MeasureKind.fullRoll => 'Rouleau entier',
+      MeasureKind.fullRoll => 'Longueur entière',
       MeasureKind.width => '$width po',
       MeasureKind.casePack => 'Caisse de $unitsPerCase',
       MeasureKind.each => "À l'unité",
@@ -95,12 +95,12 @@ class MeasureChoice {
     if (mode == SaleMode.roll) {
       if (kind == MeasureKind.fullRoll) return null;
       if (kind == MeasureKind.width) {
-        if (width < 1) return 'Indiquez la largeur en pouces.';
+        if (width < 1) return 'Indiquez la longueur en pouces.';
         if (width < minWidth) return 'Le minimum est $minWidth po.';
-        if (width > 10000) return 'Cette largeur est trop grande.';
+        if (width > 10000) return 'Cette longueur est trop grande.';
         return null;
       }
-      return 'Choisissez le rouleau entier ou une largeur.';
+      return 'Choisissez la longueur entière ou une longueur.';
     }
     if (mode == SaleMode.pack) {
       if (kind == MeasureKind.casePack || kind == MeasureKind.each) return null;
@@ -110,10 +110,12 @@ class MeasureChoice {
   }
 }
 
-/// Reads the first label written on a receipt ("36 po", "Rouleau entier"…).
+/// Reads the first label written on a receipt ("36 po", "Longueur entière"…).
 MeasureChoice measureFromLabel(String label) {
   final first = label.split(',').first.trim();
-  if (first == 'Rouleau entier') return const MeasureChoice.fullRoll();
+  if (first == 'Longueur entière' || first == 'Rouleau entier') {
+    return const MeasureChoice.fullRoll();
+  }
   if (first == "À l'unité") return const MeasureChoice.each();
   if (first.startsWith('Caisse de ')) return const MeasureChoice.casePack();
   final match = RegExp(r'^(\d+) po$').firstMatch(first);

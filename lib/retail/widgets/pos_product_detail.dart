@@ -334,8 +334,8 @@ String _priceHeadline(BuildContext context, MockProduct product) {
 String _saleExplanation(BuildContext context, MockProduct product) {
   if (product.saleMode == SaleMode.roll) {
     final roll = CurrencyFormatter.local(context, product.sellingRollPriceHtg);
-    return 'Rouleau entier de ${product.rollWidth} po : $roll. '
-        'Ou une largeur, minimum ${product.minWidth} po.';
+    return 'Longueur entière de ${product.rollWidth} po : $roll. '
+        'Ou une longueur, minimum ${product.minWidth} po.';
   }
   final pack = CurrencyFormatter.local(context, product.sellingCasePriceHtg);
   return 'Caisse de ${product.unitsPerCase} : $pack. '

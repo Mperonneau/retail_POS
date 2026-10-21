@@ -360,7 +360,7 @@ class Product {
 
   String get saleHint => switch (saleMode) {
     SaleMode.piece => '',
-    SaleMode.roll => 'Rouleau ou largeur',
+    SaleMode.roll => 'Longueur entière ou une longueur',
     SaleMode.pack => 'Caisse ou unité',
   };
 

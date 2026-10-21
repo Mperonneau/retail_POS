@@ -136,7 +136,7 @@ class _ProductSheetState extends State<_ProductSheet> {
   String get _widthSentence {
     final width = int.tryParse(_widthCtrl.text.trim());
     if (width == null || width < 1) {
-      return 'Le total est le prix par pouce × la largeur.';
+      return 'Le total est le prix par pouce × la longueur.';
     }
     if (width < _p.minWidth) return 'Le minimum est ${_p.minWidth} po.';
     return '$width po × ${Money.htg(_p.priceHtg)} = ${Money.htg(_p.priceHtg * width)}';
@@ -171,7 +171,7 @@ class _ProductSheetState extends State<_ProductSheet> {
       setState(() {
         _error = reason ??
             (_p.saleMode == SaleMode.roll
-                ? 'Choisissez le rouleau entier ou une largeur.'
+                ? 'Choisissez la longueur entière ou une longueur.'
                 : 'Choisissez une caisse ou une unité.');
       });
       return;
@@ -240,7 +240,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                       ] else ...[
                         Text(
                           _p.saleMode == SaleMode.roll
-                              ? 'Prenez le rouleau entier, ou indiquez la largeur en pouces.'
+                              ? 'Prenez la longueur entière, ou indiquez une longueur en pouces.'
                               : 'Prenez une caisse, ou une seule unité.',
                           style: AppTextStyles.body(color: AppColors.darkGray)
                               .copyWith(fontSize: 14, height: 1.4),
@@ -249,7 +249,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                         if (_p.saleMode == SaleMode.roll) ...[
                           _MeasureCard(
                             selected: _kind == MeasureKind.fullRoll,
-                            title: 'Rouleau entier',
+                            title: 'Longueur entière',
                             detail: '${_p.rollWidth} pouces',
                             htg: _p.rollPriceHtg,
                             regularHtg: _p.regularRollPriceHtg,
@@ -262,7 +262,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                           const SizedBox(height: 10),
                           _MeasureCard(
                             selected: _kind == MeasureKind.width,
-                            title: 'Entrer une largeur',
+                            title: 'Entrer une longueur',
                             detail:
                                 '${Money.htg(_p.priceHtg)} par pouce · minimum ${_p.minWidth} po',
                             htg: _widthTotal,
@@ -280,7 +280,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                               keyboardType: TextInputType.number,
                               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                               decoration: const InputDecoration(
-                                labelText: 'Largeur (pouces)',
+                                labelText: 'Longueur (pouces)',
                                 border: OutlineInputBorder(),
                               ),
                               onChanged: (_) => setState(() => _error = null),
