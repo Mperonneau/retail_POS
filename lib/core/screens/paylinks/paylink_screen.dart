@@ -83,9 +83,10 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
     await showPaymentLinkSuccessDialog(
       context,
       isDark: isDark,
-      title: 'Le lien ${created.reference} a été créé.',
+      headline: 'Lien créé',
+      title: 'Le lien ${created.reference} est prêt.',
       pathOrUrl: path,
-      subtitle: 'Copiez ou partagez le lien avec le client ou le payeur si besoin.',
+      subtitle: 'Copiez-le ou partagez-le avec le payeur.',
     );
   }
 
@@ -102,14 +103,19 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                 color: AppColors.deepGreen.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.check_circle_rounded,
-                  color: AppColors.deepGreen, size: 20),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.deepGreen,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
             const Text('Lien renvoyé'),
           ],
         ),
-        content: Text('Le lien ${link.reference} a été renvoyé à ${link.sentTo}.'),
+        content: Text(
+          'Le lien ${link.reference} a été renvoyé à ${link.sentTo}.',
+        ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
@@ -117,7 +123,9 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
               backgroundColor: AppColors.deepGreen,
               foregroundColor: Colors.white,
               minimumSize: const Size(0, 40),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('OK'),
           ),
@@ -133,7 +141,8 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Annuler le lien de paiement ?'),
         content: Text(
-            'Annuler ${link.reference} pour ${link.customerName} ? Le payeur ne pourra plus payer.'),
+          'Annuler ${link.reference} pour ${link.customerName} ? Le payeur ne pourra plus payer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -149,7 +158,9 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
               backgroundColor: AppColors.boldRed,
               foregroundColor: Colors.white,
               minimumSize: const Size(0, 40),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Annuler le lien'),
           ),
@@ -176,7 +187,9 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
             onPressed: () => Navigator.pop(ctx),
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 40),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('OK'),
           ),
@@ -268,16 +281,23 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.link_off_rounded,
-                            size: 36,
-                            color: isDark ? AppColors.coolGray : AppColors.darkGray),
+                        Icon(
+                          Icons.link_off_rounded,
+                          size: 36,
+                          color: isDark
+                              ? AppColors.coolGray
+                              : AppColors.darkGray,
+                        ),
                         const SizedBox(height: 10),
                         Text(
                           _query.isNotEmpty
                               ? 'Aucun résultat pour « $_query »'
                               : 'Aucun lien ${tabLabels[_tab].toLowerCase()}',
                           style: AppTextStyles.body(
-                              color: isDark ? AppColors.coolGray : AppColors.darkGray),
+                            color: isDark
+                                ? AppColors.coolGray
+                                : AppColors.darkGray,
+                          ),
                         ),
                         if (_tab == 0 && _query.isEmpty) ...[
                           const SizedBox(height: 12),
@@ -297,8 +317,8 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
                       narrow ? AppConstants.spacing16 : 0,
                       narrow ? AppConstants.spacing16 : 4,
                     ),
-                    itemCount: pageItems.length +
-                        (narrow && pageCount > 1 ? 1 : 0),
+                    itemCount:
+                        pageItems.length + (narrow && pageCount > 1 ? 1 : 0),
                     separatorBuilder: (_, i) {
                       if (narrow) {
                         return SizedBox(
@@ -435,7 +455,9 @@ class _PageHeader extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onNewPaylink,
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text(compact ? 'Lien paiement' : 'Nouveau lien de paiement'),
+                label: Text(
+                  compact ? 'Lien paiement' : 'Nouveau lien de paiement',
+                ),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(0, 40),
                   padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
@@ -518,9 +540,9 @@ class _TabToggle extends StatelessWidget {
   });
 
   static const _tabColors = [
-    AppColors.amber,       // Active
-    AppColors.deepGreen,   // Paid
-    AppColors.coolGray,    // Inactive
+    AppColors.amber, // Active
+    AppColors.deepGreen, // Paid
+    AppColors.coolGray, // Inactive
   ];
 
   @override
@@ -582,21 +604,24 @@ class _TabToggle extends StatelessWidget {
                       Text(
                         e.value,
                         style: AppTextStyles.caption(color: textColor).copyWith(
-                          fontWeight:
-                              selected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(width: 5),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: selected
                               ? accentColor.withValues(alpha: 0.15)
                               : (isDark
-                                  ? AppColors.darkBackground
-                                  : const Color(0xFFE0E3E8)),
+                                    ? AppColors.darkBackground
+                                    : const Color(0xFFE0E3E8)),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -605,8 +630,8 @@ class _TabToggle extends StatelessWidget {
                             color: selected
                                 ? accentColor
                                 : (isDark
-                                    ? AppColors.coolGray
-                                    : AppColors.darkGray),
+                                      ? AppColors.coolGray
+                                      : AppColors.darkGray),
                           ).copyWith(fontWeight: FontWeight.w700, fontSize: 10),
                         ),
                       ),
@@ -619,17 +644,15 @@ class _TabToggle extends StatelessWidget {
                       CurrencyFormatter.local(context, amount),
                       style: AppTextStyles.caption(
                         color: selected ? accentColor : AppColors.coolGray,
-                      ).copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10,
-                      ),
+                      ).copyWith(fontWeight: FontWeight.w600, fontSize: 10),
                     ),
                   ] else ...[
                     const SizedBox(height: 2),
                     Text(
                       '—',
-                      style: AppTextStyles.caption(color: AppColors.coolGray)
-                          .copyWith(fontSize: 10),
+                      style: AppTextStyles.caption(
+                        color: AppColors.coolGray,
+                      ).copyWith(fontSize: 10),
                     ),
                   ],
                 ],
@@ -662,17 +685,27 @@ class _SearchField extends StatelessWidget {
       child: TextField(
         controller: controller,
         autofocus: autofocus,
-        style: AppTextStyles.body(color: isDark ? AppColors.warmWhite : AppColors.nearBlack)
-            .copyWith(fontSize: 13),
+        style: AppTextStyles.body(
+          color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+        ).copyWith(fontSize: 13),
         decoration: InputDecoration(
           hintText: 'Rechercher nom, réf., téléphone…',
-          hintStyle: AppTextStyles.caption(color: AppColors.coolGray)
-              .copyWith(fontSize: 12),
-          prefixIcon: const Icon(Icons.search_rounded, size: 16, color: AppColors.coolGray),
+          hintStyle: AppTextStyles.caption(
+            color: AppColors.coolGray,
+          ).copyWith(fontSize: 12),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 16,
+            color: AppColors.coolGray,
+          ),
           suffixIcon: controller.text.isNotEmpty
               ? GestureDetector(
                   onTap: controller.clear,
-                  child: const Icon(Icons.close_rounded, size: 14, color: AppColors.coolGray),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: AppColors.coolGray,
+                  ),
                 )
               : null,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -687,8 +720,10 @@ class _SearchField extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+            borderSide: const BorderSide(
+              color: AppColors.primaryBlue,
+              width: 1.5,
+            ),
           ),
         ),
       ),
@@ -716,22 +751,37 @@ class _TableHeader extends StatelessWidget {
         children: [
           Expanded(
             flex: 5,
-            child: Text('CLIENT / RÉF',
-                style: AppTextStyles.caption(color: color)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: 10, letterSpacing: 0.5)),
+            child: Text(
+              'CLIENT / RÉF',
+              style: AppTextStyles.caption(color: color).copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
-            child: Text('DATE',
-                style: AppTextStyles.caption(color: color)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: 10, letterSpacing: 0.5)),
+            child: Text(
+              'DATE',
+              style: AppTextStyles.caption(color: color).copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
-            child: Text('MONTANT',
-                textAlign: TextAlign.right,
-                style: AppTextStyles.caption(color: color)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: 10, letterSpacing: 0.5)),
+            child: Text(
+              'MONTANT',
+              textAlign: TextAlign.right,
+              style: AppTextStyles.caption(color: color).copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
           const SizedBox(width: 80),
         ],
@@ -780,15 +830,17 @@ class _PayLinkRow extends StatelessWidget {
                 children: [
                   Text(
                     link.customerName,
-                    style: AppTextStyles.body(color: textColor)
-                        .copyWith(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: AppTextStyles.body(
+                      color: textColor,
+                    ).copyWith(fontWeight: FontWeight.w600, fontSize: 13),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 1),
                   Text(
                     link.reference,
-                    style: AppTextStyles.caption(color: mutedColor)
-                        .copyWith(fontSize: 11),
+                    style: AppTextStyles.caption(
+                      color: mutedColor,
+                    ).copyWith(fontSize: 11),
                   ),
                 ],
               ),
@@ -799,8 +851,9 @@ class _PayLinkRow extends StatelessWidget {
               flex: 3,
               child: Text(
                 _shortDate(link.createdAt),
-                style: AppTextStyles.caption(color: mutedColor)
-                    .copyWith(fontSize: 12),
+                style: AppTextStyles.caption(
+                  color: mutedColor,
+                ).copyWith(fontSize: 12),
               ),
             ),
 
@@ -810,8 +863,9 @@ class _PayLinkRow extends StatelessWidget {
               child: Text(
                 CurrencyFormatter.local(context, link.amountHtg),
                 textAlign: TextAlign.right,
-                style: AppTextStyles.body(color: textColor)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: 13),
+                style: AppTextStyles.body(
+                  color: textColor,
+                ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
               ),
             ),
 
@@ -925,20 +979,18 @@ class _PayLinkCard extends StatelessWidget {
                       CurrencyFormatter.local(context, link.amountHtg),
                       maxLines: 1,
                       softWrap: false,
-                      style: AppTextStyles.body(color: ink).copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
+                      style: AppTextStyles.body(
+                        color: ink,
+                      ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
                     ),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
                   link.customerName,
-                  style: AppTextStyles.body(color: ink).copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.body(
+                    color: ink,
+                  ).copyWith(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -946,14 +998,17 @@ class _PayLinkCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${_shortDate(link.createdAt)} · $_channelLabel',
-                        style: AppTextStyles.caption(color: muted)
-                            .copyWith(fontSize: 11),
+                        style: AppTextStyles.caption(
+                          color: muted,
+                        ).copyWith(fontSize: 11),
                       ),
                     ),
                     if (isActive) ...[
                       _ActionIcon(
                         icon: Icons.refresh_rounded,
-                        color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                        color: isDark
+                            ? AppColors.skyBlue
+                            : AppColors.primaryBlue,
                         tooltip: 'Renvoyer',
                         onTap: onResend,
                       ),
@@ -1043,7 +1098,11 @@ class _Pagination extends StatelessWidget {
             onTap: () => onPageChanged(currentPage - 1),
             surface: surfaceColor,
             border: borderColor,
-            child: Icon(Icons.chevron_left_rounded, size: 16, color: mutedColor),
+            child: Icon(
+              Icons.chevron_left_rounded,
+              size: 16,
+              color: mutedColor,
+            ),
           ),
           const SizedBox(width: 4),
 
@@ -1051,9 +1110,12 @@ class _Pagination extends StatelessWidget {
             if (p == -1) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text('…',
-                    style: AppTextStyles.caption(color: mutedColor)
-                        .copyWith(fontSize: 12)),
+                child: Text(
+                  '…',
+                  style: AppTextStyles.caption(
+                    color: mutedColor,
+                  ).copyWith(fontSize: 12),
+                ),
               );
             }
             final isSelected = p == currentPage;
@@ -1085,7 +1147,11 @@ class _Pagination extends StatelessWidget {
             onTap: () => onPageChanged(currentPage + 1),
             surface: surfaceColor,
             border: borderColor,
-            child: Icon(Icons.chevron_right_rounded, size: 16, color: mutedColor),
+            child: Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: mutedColor,
+            ),
           ),
         ],
       ),
@@ -1098,7 +1164,15 @@ class _Pagination extends StatelessWidget {
     if (current <= 3) {
       result.addAll([0, 1, 2, 3, 4, -1, total - 1]);
     } else if (current >= total - 4) {
-      result.addAll([0, -1, total - 5, total - 4, total - 3, total - 2, total - 1]);
+      result.addAll([
+        0,
+        -1,
+        total - 5,
+        total - 4,
+        total - 3,
+        total - 2,
+        total - 1,
+      ]);
     } else {
       result.addAll([0, -1, current - 1, current, current + 1, -1, total - 1]);
     }
@@ -1138,9 +1212,7 @@ class _PagBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: filled ? fillColor : surface,
           borderRadius: BorderRadius.circular(7),
-          border: Border.all(
-            color: filled ? (fillColor ?? border) : border,
-          ),
+          border: Border.all(color: filled ? (fillColor ?? border) : border),
         ),
         alignment: Alignment.center,
         child: Opacity(opacity: enabled || filled ? 1.0 : 0.35, child: child),
@@ -1152,6 +1224,19 @@ class _PagBtn extends StatelessWidget {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _shortDate(DateTime d) {
-  final months = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  final months = [
+    'janv.',
+    'févr.',
+    'mars',
+    'avr.',
+    'mai',
+    'juin',
+    'juil.',
+    'août',
+    'sept.',
+    'oct.',
+    'nov.',
+    'déc.',
+  ];
   return '${d.day} ${months[d.month - 1]}';
 }
