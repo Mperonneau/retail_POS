@@ -56,10 +56,7 @@ class PosProductDetail extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        product.name,
-                        style: AppTextStyles.h2(color: ink),
-                      ),
+                      Text(product.name, style: AppTextStyles.h2(color: ink)),
                       const SizedBox(height: 2),
                       Text(
                         product.category,
@@ -178,20 +175,24 @@ class PosProductDetail extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              line.detailLabel.isEmpty ? 'Quantité' : line.detailLabel,
+                              line.detailLabel.isEmpty
+                                  ? 'Quantité'
+                                  : line.detailLabel,
                               style: AppTextStyles.body(color: ink),
                             ),
                           ),
                           Text(
                             '${line.quantity}',
-                            style: AppTextStyles.body(color: ink).copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: AppTextStyles.body(
+                              color: ink,
+                            ).copyWith(fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(width: 8),
                           _QtyButton(
                             icon: Icons.remove,
-                            background: AppColors.boldRed.withValues(alpha: 0.1),
+                            background: AppColors.boldRed.withValues(
+                              alpha: 0.1,
+                            ),
                             foreground: AppColors.boldRed,
                             onTap: () => onDecrementLine(line),
                           ),
@@ -239,9 +240,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: AppTextStyles.caption(color: color).copyWith(
-        fontWeight: FontWeight.w600,
-      ),
+      style: AppTextStyles.caption(
+        color: color,
+      ).copyWith(fontWeight: FontWeight.w600),
     );
   }
 }
@@ -266,14 +267,11 @@ class _OptionGroupBlock extends StatelessWidget {
       children: [
         Text(
           group.name,
-          style: AppTextStyles.body(color: ink).copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.body(
+            color: ink,
+          ).copyWith(fontWeight: FontWeight.w600),
         ),
-        Text(
-          '$rule · $required',
-          style: AppTextStyles.caption(color: muted),
-        ),
+        Text('$rule · $required', style: AppTextStyles.caption(color: muted)),
         const SizedBox(height: 4),
         for (final choice in group.choices)
           Padding(
@@ -334,8 +332,11 @@ String _priceHeadline(BuildContext context, MockProduct product) {
 String _saleExplanation(BuildContext context, MockProduct product) {
   if (product.saleMode == SaleMode.roll) {
     final roll = CurrencyFormatter.local(context, product.sellingRollPriceHtg);
+    final bounds = product.rollWidth >= 1
+        ? 'de ${product.minWidth} à ${product.rollWidth} po'
+        : 'minimum ${product.minWidth} po';
     return 'Longueur entière de ${product.rollWidth} po : $roll. '
-        'Ou une longueur, minimum ${product.minWidth} po.';
+        'Ou une longueur, $bounds.';
   }
   final pack = CurrencyFormatter.local(context, product.sellingCasePriceHtg);
   return 'Caisse de ${product.unitsPerCase} : $pack. '

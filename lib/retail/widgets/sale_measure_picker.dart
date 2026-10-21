@@ -24,10 +24,8 @@ class SaleMeasureResult {
 }
 
 /// How many more of this choice fit in stock. Null means stock is not tracked.
-typedef MeasureRoom = int? Function(
-  MeasureChoice measure,
-  List<ProductOptionChoice> options,
-);
+typedef MeasureRoom =
+    int? Function(MeasureChoice measure, List<ProductOptionChoice> options);
 
 /// Asks for the roll or the case, then returns the line to add.
 Future<SaleMeasureResult?> showSaleMeasurePicker(
@@ -105,7 +103,12 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
   int? get _room {
     final choice = _choice;
     if (choice == null) return 0;
-    if (choice.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth) != null) {
+    if (choice.rejectReason(
+          mode: _p.saleMode,
+          minWidth: _p.minWidth,
+          maxWidth: _p.rollWidth,
+        ) !=
+        null) {
       return 0;
     }
     return widget.roomFor(choice, _options);
@@ -117,7 +120,12 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
   double? get _unit {
     final choice = _choice;
     if (choice == null) return null;
-    if (choice.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth) != null) {
+    if (choice.rejectReason(
+          mode: _p.saleMode,
+          minWidth: _p.minWidth,
+          maxWidth: _p.rollWidth,
+        ) !=
+        null) {
       return null;
     }
     return _p.priceFor(choice) + _extra;
@@ -134,10 +142,15 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
 
   void _confirm() {
     final choice = _choice;
-    final reason = choice?.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth);
+    final reason = choice?.rejectReason(
+      mode: _p.saleMode,
+      minWidth: _p.minWidth,
+      maxWidth: _p.rollWidth,
+    );
     if (choice == null || reason != null) {
       setState(() {
-        _error = reason ??
+        _error =
+            reason ??
             (_p.saleMode == SaleMode.roll
                 ? 'Choisissez la longueur entière ou une longueur.'
                 : 'Choisissez une caisse ou une unité.');
@@ -185,15 +198,17 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                   selected: _kind == MeasureKind.fullRoll,
                   title: 'Longueur entière',
                   detail: '${_p.rollWidth} pouces',
-                  price: CurrencyFormatter.local(context, _p.sellingRollPriceHtg),
+                  price: CurrencyFormatter.local(
+                    context,
+                    _p.sellingRollPriceHtg,
+                  ),
                   onTap: () => _select(MeasureKind.fullRoll),
                 ),
                 const SizedBox(height: 10),
                 _ChoiceCard(
                   selected: _kind == MeasureKind.width,
                   title: 'Entrer une longueur',
-                  detail:
-                      '${CurrencyFormatter.local(context, _p.sellingPriceHtg)} par pouce · minimum ${_p.minWidth} po',
+                  detail: _lengthDetail(context),
                   price: _widthPrice(context),
                   onTap: () => _select(MeasureKind.width),
                 ),
@@ -203,7 +218,10 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                     controller: _widthCtrl,
                     autofocus: true,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      MaxInchesFormatter(_p.rollWidth),
+                    ],
                     decoration: const InputDecoration(
                       labelText: 'Longueur (pouces)',
                       border: OutlineInputBorder(),
@@ -211,14 +229,20 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                     onChanged: (_) => setState(() => _error = null),
                   ),
                   const SizedBox(height: 6),
-                  Text(_widthSentence(context), style: AppTextStyles.caption(color: muted)),
+                  Text(
+                    _widthSentence(context),
+                    style: AppTextStyles.caption(color: muted),
+                  ),
                 ],
               ] else ...[
                 _ChoiceCard(
                   selected: _kind == MeasureKind.casePack,
                   title: 'Une caisse',
                   detail: '${_p.unitsPerCase} unités',
-                  price: CurrencyFormatter.local(context, _p.sellingCasePriceHtg),
+                  price: CurrencyFormatter.local(
+                    context,
+                    _p.sellingCasePriceHtg,
+                  ),
                   onTap: () => _select(MeasureKind.casePack),
                 ),
                 const SizedBox(height: 10),
@@ -235,7 +259,9 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                 for (final group in _p.options) ...[
                   Text(
                     group.required ? '${group.name} · obligatoire' : group.name,
-                    style: AppTextStyles.body(color: ink).copyWith(fontWeight: FontWeight.w700),
+                    style: AppTextStyles.body(
+                      color: ink,
+                    ).copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -249,7 +275,8 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                                 ? choice.name
                                 : '${choice.name} · +${CurrencyFormatter.local(context, choice.priceDeltaHtg)}',
                           ),
-                          selected: _selected[group.id]?.contains(choice.id) ?? false,
+                          selected:
+                              _selected[group.id]?.contains(choice.id) ?? false,
                           onSelected: (_) => _toggle(group, choice),
                         ),
                     ],
@@ -271,25 +298,37 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                     child: Text(
                       '$_qty',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.body(color: ink).copyWith(fontWeight: FontWeight.w700),
+                      style: AppTextStyles.body(
+                        color: ink,
+                      ).copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
                   _Step(
                     icon: Icons.add,
-                    onTap: room == null || _qty < room ? () => setState(() => _qty++) : null,
+                    onTap: room == null || _qty < room
+                        ? () => setState(() => _qty++)
+                        : null,
                   ),
                 ],
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
-                Text(_error!, style: AppTextStyles.caption(color: AppColors.boldRed)),
+                Text(
+                  _error!,
+                  style: AppTextStyles.caption(color: AppColors.boldRed),
+                ),
               ],
             ],
           ),
         ),
         const Divider(height: 1),
         Padding(
-          padding: EdgeInsets.fromLTRB(24, 12, 24, 16 + MediaQuery.viewInsetsOf(context).bottom),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            12,
+            24,
+            16 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
           child: AppButton(
             label: unit == null
                 ? 'Choisissez'
@@ -305,15 +344,32 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
   String? _widthPrice(BuildContext context) {
     final choice = _widthChoice;
     if (choice == null) return null;
-    if (choice.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth) != null) {
+    if (choice.rejectReason(
+          mode: _p.saleMode,
+          minWidth: _p.minWidth,
+          maxWidth: _p.rollWidth,
+        ) !=
+        null) {
       return null;
     }
     return CurrencyFormatter.local(context, _p.priceFor(choice));
   }
 
+  String _lengthDetail(BuildContext context) {
+    final price = CurrencyFormatter.local(context, _p.sellingPriceHtg);
+    if (_p.rollWidth >= 1) {
+      return '$price par pouce · minimum ${_p.minWidth} po · maximum ${_p.rollWidth} po';
+    }
+    return '$price par pouce · minimum ${_p.minWidth} po';
+  }
+
   String _widthSentence(BuildContext context) {
     final width = int.tryParse(_widthCtrl.text.trim());
-    if (width == null || width < 1) return 'Le total est le prix par pouce × la longueur.';
+    if (width == null || width < 1)
+      return 'Le total est le prix par pouce × la longueur.';
+    if (_p.rollWidth >= 1 && width > _p.rollWidth) {
+      return 'Le maximum est ${_p.rollWidth} po.';
+    }
     if (width < _p.minWidth) return 'Le minimum est ${_p.minWidth} po.';
     final total = _p.sellingPriceHtg * width;
     return '$width po × ${CurrencyFormatter.local(context, _p.sellingPriceHtg)} = ${CurrencyFormatter.local(context, total)}';
@@ -384,18 +440,23 @@ class _ChoiceCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: AppTextStyles.body(color: ink).copyWith(fontWeight: FontWeight.w700),
+                      style: AppTextStyles.body(
+                        color: ink,
+                      ).copyWith(fontWeight: FontWeight.w700),
                     ),
-                    Text(detail, style: AppTextStyles.caption(color: AppColors.darkGray)),
+                    Text(
+                      detail,
+                      style: AppTextStyles.caption(color: AppColors.darkGray),
+                    ),
                   ],
                 ),
               ),
               if (price != null)
                 Text(
                   price!,
-                  style: AppTextStyles.body(color: AppColors.primaryBlue).copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTextStyles.body(
+                    color: AppColors.primaryBlue,
+                  ).copyWith(fontWeight: FontWeight.w700),
                 ),
             ],
           ),

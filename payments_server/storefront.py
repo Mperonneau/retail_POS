@@ -1135,9 +1135,14 @@ class StorefrontStore:
                 return product["roll_price_htg"], int(product["roll_width"]), "Longueur entière"
             if measure == "cut":
                 minimum = int(product["min_width"])
+                maximum = int(product.get("roll_width") or 0)
                 if width < minimum:
                     raise StorefrontError(
                         400, f"La longueur minimum pour {name} est {minimum} po."
+                    )
+                if maximum >= 1 and width > maximum:
+                    raise StorefrontError(
+                        400, f"La longueur maximum pour {name} est {maximum} po."
                     )
                 if width > 10000:
                     raise StorefrontError(400, "Cette longueur est trop grande.")

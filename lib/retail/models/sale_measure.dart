@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 /// How a catalogue price is read.
 ///
 /// [piece] is one price for one piece. [roll] is a price per inch, with a
@@ -53,10 +55,7 @@ class MeasureChoice {
     MeasureKind.each => 'unit',
   };
 
-  int unitsEach({
-    required int rollWidth,
-    required int unitsPerCase,
-  }) {
+  int unitsEach({required int rollWidth, required int unitsPerCase}) {
     return switch (kind) {
       MeasureKind.plain => 1,
       MeasureKind.fullRoll => rollWidth < 1 ? 1 : rollWidth,
@@ -91,12 +90,21 @@ class MeasureChoice {
   }
 
   /// Null when this choice can be sold for [mode].
-  String? rejectReason({required SaleMode mode, required int minWidth}) {
+  ///
+  /// [maxWidth] is the whole roll, in inches. Zero means the roll has no maximum.
+  String? rejectReason({
+    required SaleMode mode,
+    required int minWidth,
+    int maxWidth = 0,
+  }) {
     if (mode == SaleMode.roll) {
       if (kind == MeasureKind.fullRoll) return null;
       if (kind == MeasureKind.width) {
         if (width < 1) return 'Indiquez la longueur en pouces.';
         if (width < minWidth) return 'Le minimum est $minWidth po.';
+        if (maxWidth >= 1 && width > maxWidth) {
+          return 'Le maximum est $maxWidth po.';
+        }
         if (width > 10000) return 'Cette longueur est trop grande.';
         return null;
       }
@@ -107,6 +115,25 @@ class MeasureChoice {
       return 'Choisissez une caisse ou une unité.';
     }
     return null;
+  }
+}
+
+/// Keeps a typed length at or under the whole roll. A roll with no maximum
+/// (zero) accepts any digits.
+class MaxInchesFormatter extends TextInputFormatter {
+  const MaxInchesFormatter(this.max);
+
+  final int max;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (max < 1 || newValue.text.isEmpty) return newValue;
+    final width = int.tryParse(newValue.text);
+    if (width == null || width > max) return oldValue;
+    return newValue;
   }
 }
 
@@ -129,11 +156,13 @@ MeasureChoice measureFromLabel(String label) {
 MeasureChoice measureForMode(SaleMode mode, String label) {
   final parsed = measureFromLabel(label);
   if (mode == SaleMode.roll &&
-      (parsed.kind == MeasureKind.fullRoll || parsed.kind == MeasureKind.width)) {
+      (parsed.kind == MeasureKind.fullRoll ||
+          parsed.kind == MeasureKind.width)) {
     return parsed;
   }
   if (mode == SaleMode.pack &&
-      (parsed.kind == MeasureKind.casePack || parsed.kind == MeasureKind.each)) {
+      (parsed.kind == MeasureKind.casePack ||
+          parsed.kind == MeasureKind.each)) {
     return parsed;
   }
   return const MeasureChoice.plain();

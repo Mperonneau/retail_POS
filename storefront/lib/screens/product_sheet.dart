@@ -42,7 +42,11 @@ Future<void> showProductSheet(
 }
 
 class _ProductSheet extends StatefulWidget {
-  const _ProductSheet({required this.shop, required this.product, required this.cart});
+  const _ProductSheet({
+    required this.shop,
+    required this.product,
+    required this.cart,
+  });
 
   final Shop shop;
   final Product product;
@@ -68,10 +72,10 @@ class _ProductSheetState extends State<_ProductSheet> {
   }
 
   List<OptionChoice> get _choices => [
-        for (final g in _p.options)
-          for (final c in g.choices)
-            if (_picked[g.id]?.contains(c.id) ?? false) c,
-      ];
+    for (final g in _p.options)
+      for (final c in g.choices)
+        if (_picked[g.id]?.contains(c.id) ?? false) c,
+  ];
 
   MeasureChoice? get _choice {
     if (_p.saleMode == SaleMode.piece) return const MeasureChoice.plain();
@@ -93,7 +97,12 @@ class _ProductSheetState extends State<_ProductSheet> {
   double? get _unit {
     final choice = _choice;
     if (choice == null) return null;
-    if (choice.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth) != null) {
+    if (choice.rejectReason(
+          mode: _p.saleMode,
+          minWidth: _p.minWidth,
+          maxWidth: _p.rollWidth,
+        ) !=
+        null) {
       return null;
     }
     final extra = _choices.fold<double>(0, (s, c) => s + c.deltaHtg);
@@ -108,7 +117,12 @@ class _ProductSheetState extends State<_ProductSheet> {
   int get _room {
     final choice = _choice;
     if (choice == null) return 0;
-    if (choice.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth) != null) {
+    if (choice.rejectReason(
+          mode: _p.saleMode,
+          minWidth: _p.minWidth,
+          maxWidth: _p.rollWidth,
+        ) !=
+        null) {
       return 0;
     }
     if (!_p.trackStock) {
@@ -125,12 +139,18 @@ class _ProductSheetState extends State<_ProductSheet> {
   }
 
   bool get _canOrder =>
-      widget.shop.availability.acceptsOrders || widget.shop.availability.acceptsQuotes;
+      widget.shop.availability.acceptsOrders ||
+      widget.shop.availability.acceptsQuotes;
 
   double? get _widthTotal {
     final choice = _widthChoice;
     if (choice == null) return null;
-    if (choice.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth) != null) {
+    if (choice.rejectReason(
+          mode: _p.saleMode,
+          minWidth: _p.minWidth,
+          maxWidth: _p.rollWidth,
+        ) !=
+        null) {
       return null;
     }
     return _p.priceHtg * choice.width;
@@ -140,6 +160,9 @@ class _ProductSheetState extends State<_ProductSheet> {
     final width = int.tryParse(_widthCtrl.text.trim());
     if (width == null || width < 1) {
       return 'Le total est le prix par pouce × la longueur.';
+    }
+    if (_p.rollWidth >= 1 && width > _p.rollWidth) {
+      return 'Le maximum est ${_p.rollWidth} po.';
     }
     if (width < _p.minWidth) return 'Le minimum est ${_p.minWidth} po.';
     return '$width po × ${Money.htg(_p.priceHtg)} = ${Money.htg(_p.priceHtg * width)}';
@@ -169,10 +192,15 @@ class _ProductSheetState extends State<_ProductSheet> {
       return;
     }
     final choice = _choice;
-    final reason = choice?.rejectReason(mode: _p.saleMode, minWidth: _p.minWidth);
+    final reason = choice?.rejectReason(
+      mode: _p.saleMode,
+      minWidth: _p.minWidth,
+      maxWidth: _p.rollWidth,
+    );
     if (choice == null || reason != null) {
       setState(() {
-        _error = reason ??
+        _error =
+            reason ??
             (_p.saleMode == SaleMode.roll
                 ? 'Choisissez la longueur entière ou une longueur.'
                 : 'Choisissez une caisse ou une unité.');
@@ -206,15 +234,18 @@ class _ProductSheetState extends State<_ProductSheet> {
                     AspectRatio(
                       aspectRatio: _p.saleMode == SaleMode.piece ? 4 / 3 : 2,
                       child: ClipRRect(
-                        borderRadius:
-                            const BorderRadius.vertical(top: Radius.circular(22)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(22),
+                        ),
                         child: ProductPhoto(url: _p.photoUrl, name: _p.name),
                       ),
                     ),
                     Positioned(
                       right: 12,
                       top: 12,
-                      child: AppCloseButton(onPressed: () => Navigator.of(context).pop()),
+                      child: AppCloseButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
                     ),
                   ],
                 ),
@@ -223,13 +254,23 @@ class _ProductSheetState extends State<_ProductSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_p.category.toUpperCase(),
-                          style: AppTextStyles.caption(color: AppColors.primaryBlue)
-                              .copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+                      Text(
+                        _p.category.toUpperCase(),
+                        style:
+                            AppTextStyles.caption(
+                              color: AppColors.primaryBlue,
+                            ).copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                            ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(_p.name,
-                          style: AppTextStyles.h1(color: AppColors.nearBlack)
-                              .copyWith(fontSize: 22)),
+                      Text(
+                        _p.name,
+                        style: AppTextStyles.h1(
+                          color: AppColors.nearBlack,
+                        ).copyWith(fontSize: 22),
+                      ),
                       const SizedBox(height: 10),
                       if (_p.saleMode == SaleMode.piece) ...[
                         DualPrice(
@@ -239,14 +280,18 @@ class _ProductSheetState extends State<_ProductSheet> {
                           regularHtg: _p.regularPriceHtg,
                         ),
                         if (_p.unit.isNotEmpty)
-                          Text('Prix par ${_p.unit}', style: AppTextStyles.caption()),
+                          Text(
+                            'Prix par ${_p.unit}',
+                            style: AppTextStyles.caption(),
+                          ),
                       ] else ...[
                         Text(
                           _p.saleMode == SaleMode.roll
                               ? 'Prenez la longueur entière, ou indiquez une longueur en pouces.'
                               : 'Prenez une caisse, ou une seule unité.',
-                          style: AppTextStyles.body(color: AppColors.darkGray)
-                              .copyWith(fontSize: 14, height: 1.4),
+                          style: AppTextStyles.body(
+                            color: AppColors.darkGray,
+                          ).copyWith(fontSize: 14, height: 1.4),
                         ),
                         const SizedBox(height: 12),
                         if (_p.saleMode == SaleMode.roll) ...[
@@ -266,8 +311,9 @@ class _ProductSheetState extends State<_ProductSheet> {
                           _MeasureCard(
                             selected: _kind == MeasureKind.width,
                             title: 'Entrer une longueur',
-                            detail:
-                                '${Money.htg(_p.priceHtg)} par pouce · minimum ${_p.minWidth} po',
+                            detail: _p.rollWidth >= 1
+                                ? '${Money.htg(_p.priceHtg)} par pouce · minimum ${_p.minWidth} po · maximum ${_p.rollWidth} po'
+                                : '${Money.htg(_p.priceHtg)} par pouce · minimum ${_p.minWidth} po',
                             htg: _widthTotal,
                             rate: rate,
                             onTap: () => setState(() {
@@ -281,10 +327,14 @@ class _ProductSheetState extends State<_ProductSheet> {
                               controller: _widthCtrl,
                               autofocus: true,
                               keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                MaxInchesFormatter(_p.rollWidth),
+                              ],
                               // iPhone zooms the page on a field under 16 px.
-                              style: AppTextStyles.body(color: AppColors.nearBlack)
-                                  .copyWith(fontSize: 16),
+                              style: AppTextStyles.body(
+                                color: AppColors.nearBlack,
+                              ).copyWith(fontSize: 16),
                               decoration: const InputDecoration(
                                 labelText: 'Longueur (pouces)',
                                 border: OutlineInputBorder(),
@@ -292,7 +342,10 @@ class _ProductSheetState extends State<_ProductSheet> {
                               onChanged: (_) => setState(() => _error = null),
                             ),
                             const SizedBox(height: 6),
-                            Text(_widthSentence, style: AppTextStyles.caption()),
+                            Text(
+                              _widthSentence,
+                              style: AppTextStyles.caption(),
+                            ),
                           ],
                         ] else ...[
                           _MeasureCard(
@@ -324,22 +377,30 @@ class _ProductSheetState extends State<_ProductSheet> {
                       ],
                       if (_p.description.isNotEmpty) ...[
                         const SizedBox(height: 14),
-                        Text(_p.description,
-                            style: AppTextStyles.body(color: AppColors.darkGray)
-                                .copyWith(fontSize: 14, height: 1.5)),
+                        Text(
+                          _p.description,
+                          style: AppTextStyles.body(
+                            color: AppColors.darkGray,
+                          ).copyWith(fontSize: 14, height: 1.5),
+                        ),
                       ],
                       for (final g in _p.options) ...[
                         const SizedBox(height: 20),
                         Row(
                           children: [
-                            Text(g.name,
-                                style: AppTextStyles.h2(color: AppColors.nearBlack)
-                                    .copyWith(fontSize: 15)),
+                            Text(
+                              g.name,
+                              style: AppTextStyles.h2(
+                                color: AppColors.nearBlack,
+                              ).copyWith(fontSize: 15),
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               g.required
                                   ? 'Obligatoire'
-                                  : (g.multiple ? 'Plusieurs choix' : 'Facultatif'),
+                                  : (g.multiple
+                                        ? 'Plusieurs choix'
+                                        : 'Facultatif'),
                               style: AppTextStyles.caption(),
                             ),
                           ],
@@ -351,19 +412,24 @@ class _ProductSheetState extends State<_ProductSheet> {
                           children: [
                             for (final c in g.choices)
                               ChoiceChip(
-                                label: Text(c.deltaHtg > 0
-                                    ? '${c.name}  +${Money.usdFromHtg(c.deltaHtg, rate).replaceFirst('US ', '')}'
-                                    : c.name),
-                                selected: _picked[g.id]?.contains(c.id) ?? false,
+                                label: Text(
+                                  c.deltaHtg > 0
+                                      ? '${c.name}  +${Money.usdFromHtg(c.deltaHtg, rate).replaceFirst('US ', '')}'
+                                      : c.name,
+                                ),
+                                selected:
+                                    _picked[g.id]?.contains(c.id) ?? false,
                                 showCheckmark: false,
                                 selectedColor: AppColors.lightBlue,
                                 side: BorderSide(
-                                  color: (_picked[g.id]?.contains(c.id) ?? false)
+                                  color:
+                                      (_picked[g.id]?.contains(c.id) ?? false)
                                       ? AppColors.primaryBlue
                                       : const Color(0xFFE0E0E0),
                                 ),
-                                labelStyle: AppTextStyles.body(color: AppColors.nearBlack)
-                                    .copyWith(fontWeight: FontWeight.w600),
+                                labelStyle: AppTextStyles.body(
+                                  color: AppColors.nearBlack,
+                                ).copyWith(fontWeight: FontWeight.w600),
                                 onSelected: (_) => _toggle(g, c),
                               ),
                           ],
@@ -387,15 +453,22 @@ class _ProductSheetState extends State<_ProductSheet> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (_error != null) ...[
-                      Text(_error!, style: AppTextStyles.errorText().copyWith(fontSize: 13)),
+                      Text(
+                        _error!,
+                        style: AppTextStyles.errorText().copyWith(fontSize: 13),
+                      ),
                       const SizedBox(height: 8),
                     ],
                     Row(
                       children: [
                         QtyStepper(
                           value: _qty,
-                          onMinus: _qty > 1 ? () => setState(() => _qty--) : null,
-                          onPlus: _qty < _room ? () => setState(() => _qty++) : null,
+                          onMinus: _qty > 1
+                              ? () => setState(() => _qty--)
+                              : null,
+                          onPlus: _qty < _room
+                              ? () => setState(() => _qty++)
+                              : null,
                         ),
                         const SizedBox(width: AppConstants.spacing16),
                         Expanded(
@@ -468,15 +541,21 @@ class _MeasureCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: AppTextStyles.body(color: AppColors.nearBlack)
-                          .copyWith(fontWeight: FontWeight.w700),
+                      style: AppTextStyles.body(
+                        color: AppColors.nearBlack,
+                      ).copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(detail, style: AppTextStyles.caption()),
                   ],
                 ),
               ),
               if (htg != null)
-                DualPrice(htg: htg!, rate: rate, regularHtg: regularHtg, alignEnd: true),
+                DualPrice(
+                  htg: htg!,
+                  rate: rate,
+                  regularHtg: regularHtg,
+                  alignEnd: true,
+                ),
             ],
           ),
         ),

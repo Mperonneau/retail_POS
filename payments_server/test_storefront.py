@@ -297,6 +297,21 @@ def test_roll_and_case_are_priced_from_the_choice():
         raise AssertionError("accepted")
 
     assert fails([{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 8}]) == 400
+    assert fails([{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 61}]) == 400
+    try:
+        store.create_request(
+            "chez-marie",
+            {
+                "kind": "commande",
+                "customer": CUSTOMER,
+                "lines": [{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 90}],
+            },
+            OPEN,
+        )
+    except StorefrontError as exc:
+        assert "maximum" in exc.message and "60" in exc.message
+    else:
+        raise AssertionError("a cut longer than the roll was accepted")
     assert fails([{"product_id": "roll", "quantity": 1}]) == 400
     assert fails([{"product_id": "roll", "quantity": 4, "measure": "roll"}]) == 409
 
