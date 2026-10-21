@@ -6,7 +6,13 @@ import zipfile
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from catalog_import import CatalogImportError, _extract_json, _file_block, normalize_draft
+from catalog_import import (
+    CatalogImportError,
+    _extract_json,
+    _file_block,
+    _text_chunks,
+    normalize_draft,
+)
 
 
 def test_prices_and_missing_stock_stay_reviewable():
@@ -176,6 +182,35 @@ def test_truncated_json_is_closed():
     raw = '{"categories":[{"name":"Boissons","items":[{"name":"Eau","price_htg":40}]}]'
     data = _extract_json(raw)
     assert data["categories"][0]["items"][0]["name"] == "Eau"
+    assert data.get("_salvaged") is True
+
+
+def test_truncated_string_keeps_complete_products():
+    raw = (
+        '{"categories":[{"name":"Vis","items":['
+        '{"name":"Vis à bois","price_htg":25,"description":"acier"},'
+        '{"name":"Boulon","price_htg":15,"description":"zingu'
+    )
+    data = _extract_json(raw)
+    assert [item["name"] for item in data["categories"][0]["items"]] == ["Vis à bois"]
+
+
+def test_trailing_commas_and_fence_stay_readable():
+    raw = """```json
+{"categories":[{"name":"Quincaillerie","items":[{"name":"Clou","price_htg":5,},],},],}
+```"""
+    data = _extract_json(raw)
+    assert data["categories"][0]["items"][0]["name"] == "Clou"
+    assert "_salvaged" not in data
+
+
+def test_long_table_is_split_with_its_header():
+    rows = ["Désignation\tPrix"] + [f"Article {index}\t{index * 10}" for index in range(1, 70)]
+    chunks = _text_chunks("\n".join(rows), lines=30, chars=4500)
+    assert len(chunks) >= 3
+    assert all(chunk.startswith("Désignation\tPrix") for chunk in chunks)
+    assert "Article 69" in chunks[-1]
+    assert "Article 1" in chunks[0]
 
 
 def test_empty_upload_is_refused():
@@ -233,6 +268,9 @@ if __name__ == "__main__":
     test_prices_and_missing_stock_stay_reviewable()
     test_sale_mode_description_and_custom_category()
     test_truncated_json_is_closed()
+    test_truncated_string_keeps_complete_products()
+    test_trailing_commas_and_fence_stay_readable()
+    test_long_table_is_split_with_its_header()
     test_empty_upload_is_refused()
     test_excel_csv_and_word_become_text()
     print("ok")

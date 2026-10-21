@@ -72,7 +72,8 @@ Schéma exact :
 
 Règles :
 - Extrais TOUS les produits visibles. N'invente aucun article absent du document.
-- Remplis chaque champ que le document permet de lire. Laisse 0, "" ou null seulement quand l'information est absente.
+- Remplis chaque champ que le document permet de lire. Omets un champ quand le document ne le donne pas : pas de 0, pas de chaîne vide, pas de null, pas de option_groups vide.
+- JSON compact, sans retour à la ligne dans les chaînes.
 - price_htg, roll_price_htg, case_price_htg, price_delta_htg et cost_htg sont des montants en GOURDES entières.
 - Si un prix est en USD, convertis-le en HTG avec le taux fourni (arrondi à l'entier) et mets price_source à USD.
 - sale_mode "piece" : un seul prix pour une pièce. price_htg est ce prix. Les champs de longueur et de caisse restent à 0.
@@ -191,38 +192,212 @@ def _known_categories(raw: object) -> list[str]:
     return names
 
 
-def _extract_json(text: str) -> dict[str, Any]:
-    text = text.strip()
-    if text.startswith("```"):
+def _prepare_json_text(text: str) -> str:
+    text = text.replace("\ufeff", "").strip()
+    fenced = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if fenced:
+        text = fenced.group(1).strip()
+    elif text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text)
-        text = re.sub(r"\s*```$", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+    return (
+        text.replace("\u201c", '"')
+        .replace("\u201d", '"')
+        .replace("\u2018", "'")
+        .replace("\u2019", "'")
+    )
+
+
+def _strip_trailing_commas(text: str) -> str:
+    out: list[str] = []
+    in_string = False
+    escape = False
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if in_string:
+            out.append(char)
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            index += 1
+            continue
+        if char == '"':
+            in_string = True
+            out.append(char)
+            index += 1
+            continue
+        if char == ",":
+            look = index + 1
+            while look < len(text) and text[look] in " \n\r\t":
+                look += 1
+            if look < len(text) and text[look] in "}]":
+                index += 1
+                continue
+        out.append(char)
+        index += 1
+    return "".join(out)
+
+
+def _as_catalog(data: object) -> dict[str, Any] | None:
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        rows = [row for row in data if isinstance(row, dict)]
+        if rows:
+            return {"categories": rows}
+    return None
+
+
+def _parse_catalog(text: str) -> dict[str, Any] | None:
+    cleaned = _strip_trailing_commas(text.strip())
+    if not cleaned:
+        return None
     try:
-        data = json.loads(text)
-        if isinstance(data, dict):
-            return data
+        return _as_catalog(json.loads(cleaned))
     except json.JSONDecodeError:
         pass
-    match = re.search(r"\{[\s\S]*\}", text)
-    if match:
-        try:
-            data = json.loads(match.group(0))
-            if isinstance(data, dict):
-                return data
-        except json.JSONDecodeError:
-            pass
-    start = text.find("{")
+    start = cleaned.find("{")
+    if start < 0:
+        start = cleaned.find("[")
+    if start < 0:
+        return None
+    try:
+        data, _ = json.JSONDecoder().raw_decode(cleaned[start:])
+    except json.JSONDecodeError:
+        return None
+    return _as_catalog(data)
+
+
+def _safe_ends(text: str) -> list[int]:
+    """Indexes just after each complete object or array that is still nested."""
+    in_string = False
+    escape = False
+    stack: list[str] = []
+    ends: list[int] = []
+    for index, char in enumerate(text):
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+            continue
+        if char in "{[":
+            stack.append(char)
+            continue
+        if char == "}":
+            if not stack or stack[-1] != "{":
+                break
+            stack.pop()
+        elif char == "]":
+            if not stack or stack[-1] != "[":
+                break
+            stack.pop()
+        else:
+            continue
+        if stack:
+            ends.append(index + 1)
+    return ends
+
+
+def _close_json(text: str) -> str:
+    in_string = False
+    escape = False
+    stack: list[str] = []
+    for char in text:
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+            continue
+        if char in "{[":
+            stack.append(char)
+        elif char == "}" and stack and stack[-1] == "{":
+            stack.pop()
+        elif char == "]" and stack and stack[-1] == "[":
+            stack.pop()
+    if in_string:
+        text += '"'
+    text = text.rstrip().rstrip(",")
+    text += "".join("}" if bracket == "{" else "]" for bracket in reversed(stack))
+    return text
+
+
+def _extract_json(text: str) -> dict[str, Any]:
+    prepared = _prepare_json_text(text)
+    parsed = _parse_catalog(prepared)
+    if parsed is not None:
+        return parsed
+    start = prepared.find("{")
+    if start < 0:
+        start = prepared.find("[")
     if start < 0:
         raise CatalogImportError("La réponse de l'assistant n'est pas lisible.")
-    chunk = text[start:].rstrip().rstrip(",")
-    chunk += "]" * (chunk.count("[") - chunk.count("]"))
-    chunk += "}" * (chunk.count("{") - chunk.count("}"))
-    try:
-        data = json.loads(chunk)
-    except json.JSONDecodeError as exc:
-        raise CatalogImportError("La réponse de l'assistant n'est pas lisible.") from exc
-    if not isinstance(data, dict):
-        raise CatalogImportError("La réponse de l'assistant n'est pas lisible.")
-    return data
+    body = prepared[start:]
+    ends = _safe_ends(body)
+    # Prefer the longest closed prefix. Step back if that prefix is still invalid.
+    for end in reversed(ends[-40:]):
+        candidate = _parse_catalog(_close_json(body[:end]))
+        if candidate is not None and candidate.get("categories"):
+            candidate["_salvaged"] = True
+            return candidate
+    for end in reversed(ends[-40:]):
+        candidate = _parse_catalog(_close_json(body[:end]))
+        if candidate is not None:
+            candidate["_salvaged"] = True
+            return candidate
+    closed = _parse_catalog(_close_json(body))
+    if closed is not None:
+        closed["_salvaged"] = True
+        return closed
+    raise CatalogImportError("La réponse de l'assistant n'est pas lisible.")
+
+
+def _text_chunks(text: str, *, lines: int = 30, chars: int = 4500) -> list[str]:
+    """Split a table so each assistant call stays small enough to answer in full."""
+    rows = text.splitlines()
+    if len(rows) <= lines and len(text) <= chars:
+        return [text]
+    header = rows[0] if rows else ""
+    rest = rows[1:]
+    chunks: list[str] = []
+    bucket: list[str] = []
+    size = len(header) + 1
+
+    def flush() -> None:
+        nonlocal bucket, size
+        if not bucket and not header:
+            return
+        body = "\n".join(bucket)
+        chunks.append(f"{header}\n{body}".strip() if header else body)
+        bucket = []
+        size = len(header) + 1
+
+    for row in rest:
+        extra = len(row) + 1
+        if bucket and (len(bucket) >= lines or size + extra > chars):
+            flush()
+        bucket.append(row)
+        size += extra
+        if len(bucket) >= lines or size > chars:
+            flush()
+    if bucket or (header and not chunks):
+        flush()
+    return chunks or [text]
 
 
 def normalize_draft(
@@ -411,6 +586,15 @@ def normalize_draft(
     return {"categories": categories}, report
 
 
+def _cut_at_line(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    cut = text.rfind("\n", 0, limit)
+    if cut < limit // 2:
+        cut = limit
+    return text[:cut]
+
+
 def _suffix(name: str) -> str:
     base = name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
     if "." not in base:
@@ -490,7 +674,7 @@ def _xlsx_text(name: str, data: bytes) -> str:
     text = "\n\n".join(blocks).strip()
     if not text:
         raise CatalogImportError(f"« {name} » ne contient aucune ligne.")
-    return text[:40000]
+    return _cut_at_line(text, 120000)
 
 
 def _docx_text(name: str, data: bytes) -> str:
@@ -659,9 +843,18 @@ def _call_claude(content: list[dict[str, Any]]) -> dict[str, Any]:
         for block in (payload.get("content") or [])
         if isinstance(block, dict) and block.get("type") == "text"
     ]
-    if not "".join(parts).strip():
+    text = "\n".join(parts)
+    if not text.strip():
         raise CatalogImportError("L'assistant a renvoyé une réponse vide.")
-    return _extract_json("\n".join(parts))
+    try:
+        return _extract_json(text)
+    except CatalogImportError:
+        stop = payload.get("stop_reason") or ""
+        print(
+            f"catalog-import unreadable stop={stop} chars={len(text)}",
+            flush=True,
+        )
+        raise
 
 
 def _decode_files(raw_files: object) -> list[tuple[str, str, bytes]]:
@@ -704,6 +897,33 @@ def _known_line(known: list[str]) -> str:
     )
 
 
+def _content_parts(name: str, mime: str, data: bytes) -> list[dict[str, Any]]:
+    block = _file_block(name, mime, data)
+    if block.get("type") != "text":
+        return [block]
+    text = str(block.get("text") or "")
+    prefix = ""
+    body = text
+    if text.startswith("--- "):
+        prefix, _, body = text.partition("\n")
+        prefix = prefix + "\n"
+    chunks = _text_chunks(body)
+    if len(chunks) == 1:
+        return [block]
+    total = len(chunks)
+    return [
+        {
+            "type": "text",
+            "text": (
+                f"{prefix}{chunk}\n\n"
+                f"Partie {index}/{total} du document. "
+                "Extrais seulement les produits de cette partie."
+            ),
+        }
+        for index, chunk in enumerate(chunks, start=1)
+    ]
+
+
 def extract_catalog(
     files: list[tuple[str, str, bytes]],
     *,
@@ -711,6 +931,7 @@ def extract_catalog(
     currency_mode: str,
     usd_rate: int,
     known_categories: list[str] | None = None,
+    on_progress=None,
 ) -> tuple[dict, list]:
     known = [name for name in (known_categories or []) if str(name).strip()]
     categories: list[dict] = []
@@ -718,42 +939,78 @@ def extract_catalog(
     seen: set[tuple[str, str]] = set()
     for index, (name, mime, data) in enumerate(files, start=1):
         note = owner_note.strip()
-        intro = (
-            f"Document {index}/{len(files)} : {name}.\n"
-            f"Devise indiquée par le commerçant : {currency_mode}.\n"
-            f"Taux : 1 USD = {usd_rate or 0} HTG.\n"
-            f"{_known_line(known)}"
-        )
-        if note:
-            intro += f"Note du commerçant : {note}\n"
-        raw = _call_claude([
-            {"type": "text", "text": intro},
-            _file_block(name, mime, data),
-        ])
-        draft, part_report = normalize_draft(
-            raw,
-            usd_rate=usd_rate,
-            currency_mode=currency_mode,
-            known_categories=known,
-        )
-        count = sum(len(cat["items"]) for cat in draft["categories"])
-        report.append({
-            "severity": "info",
-            "message": f"Document « {name} » : {count} produit(s).",
-            "item_name": "",
-        })
-        report.extend(part_report)
-        for cat in draft["categories"]:
-            bucket = next((row for row in categories if _norm(row["name"]) == _norm(cat["name"])), None)
-            if bucket is None:
-                bucket = {"name": cat["name"], "items": []}
-                categories.append(bucket)
-            for item in cat["items"]:
-                key = (_norm(cat["name"]), _norm(item["name"]))
-                if key in seen:
-                    continue
-                seen.add(key)
-                bucket["items"].append(item)
+        parts = _content_parts(name, mime, data)
+        for part_index, block in enumerate(parts, start=1):
+            if on_progress is not None:
+                if len(parts) == 1:
+                    on_progress("Lecture du document…")
+                else:
+                    on_progress(f"Partie {part_index}/{len(parts)}…")
+            intro = (
+                f"Document {index}/{len(files)} : {name}.\n"
+                f"Devise indiquée par le commerçant : {currency_mode}.\n"
+                f"Taux : 1 USD = {usd_rate or 0} HTG.\n"
+                f"{_known_line(known)}"
+            )
+            if len(parts) > 1:
+                intro += f"Partie {part_index}/{len(parts)}.\n"
+            if note:
+                intro += f"Note du commerçant : {note}\n"
+            try:
+                raw = _call_claude([
+                    {"type": "text", "text": intro},
+                    block,
+                ])
+            except CatalogImportError:
+                if len(parts) == 1:
+                    raise
+                report.append({
+                    "severity": "warning",
+                    "message": (
+                        f"Partie {part_index}/{len(parts)} de « {name} » illisible. "
+                        "Les produits des autres parties sont gardés."
+                    ),
+                    "item_name": "",
+                })
+                continue
+            salvaged = bool(raw.pop("_salvaged", False)) if isinstance(raw, dict) else False
+            draft, part_report = normalize_draft(
+                raw,
+                usd_rate=usd_rate,
+                currency_mode=currency_mode,
+                known_categories=known,
+            )
+            if salvaged:
+                report.append({
+                    "severity": "info",
+                    "message": "La fin d'une réponse était incomplète. Les produits complets sont gardés.",
+                    "item_name": "",
+                })
+            count = sum(len(cat["items"]) for cat in draft["categories"])
+            if len(parts) == 1:
+                report.append({
+                    "severity": "info",
+                    "message": f"Document « {name} » : {count} produit(s).",
+                    "item_name": "",
+                })
+            report.extend(part_report)
+            for cat in draft["categories"]:
+                bucket = next((row for row in categories if _norm(row["name"]) == _norm(cat["name"])), None)
+                if bucket is None:
+                    bucket = {"name": cat["name"], "items": []}
+                    categories.append(bucket)
+                for item in cat["items"]:
+                    key = (_norm(cat["name"]), _norm(item["name"]))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    bucket["items"].append(item)
+        if len(parts) > 1:
+            report.append({
+                "severity": "info",
+                "message": f"Document « {name} » lu en {len(parts)} parties.",
+                "item_name": "",
+            })
     if not categories:
         report.append({
             "severity": "error",
@@ -818,6 +1075,12 @@ class CatalogJobs:
         rate: int,
         known: list[str],
     ) -> None:
+        def on_progress(message: str) -> None:
+            with self._lock:
+                job = self._jobs.get(job_id)
+                if job and job.get("status") == "running":
+                    job["progress"] = message
+
         try:
             draft, report = extract_catalog(
                 files,
@@ -825,11 +1088,14 @@ class CatalogJobs:
                 currency_mode=currency,
                 usd_rate=rate,
                 known_categories=known,
+                on_progress=on_progress,
             )
             self._finish(job_id, status="succeeded", draft=draft, report=report, progress="Terminé.")
         except CatalogImportError as exc:
             self._finish(job_id, status="failed", error=exc.message, progress="Échec.")
         except Exception:
+            import traceback
+            traceback.print_exc()
             self._finish(job_id, status="failed", error="L'analyse a échoué. Réessayez.", progress="Échec.")
 
     def _finish(self, job_id: str, **fields: object) -> None:
