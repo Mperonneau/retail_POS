@@ -100,7 +100,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     if (choice.rejectReason(
           mode: _p.saleMode,
           minWidth: _p.minWidth,
-          maxWidth: _p.rollWidth,
+          maxWidth: _p.lengthCap,
         ) !=
         null) {
       return null;
@@ -120,7 +120,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     if (choice.rejectReason(
           mode: _p.saleMode,
           minWidth: _p.minWidth,
-          maxWidth: _p.rollWidth,
+          maxWidth: _p.lengthCap,
         ) !=
         null) {
       return 0;
@@ -148,7 +148,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     if (choice.rejectReason(
           mode: _p.saleMode,
           minWidth: _p.minWidth,
-          maxWidth: _p.rollWidth,
+          maxWidth: _p.lengthCap,
         ) !=
         null) {
       return null;
@@ -161,8 +161,8 @@ class _ProductSheetState extends State<_ProductSheet> {
     if (width == null || width < 1) {
       return 'Le total est le prix par pouce × la longueur.';
     }
-    if (_p.rollWidth >= 1 && width > _p.rollWidth) {
-      return 'Le maximum est ${_p.rollWidth} po.';
+    if (_p.lengthCap >= 1 && width > _p.lengthCap) {
+      return 'Le maximum est ${_p.lengthCap} po.';
     }
     if (width < _p.minWidth) return 'Le minimum est ${_p.minWidth} po.';
     return '$width po × ${Money.htg(_p.priceHtg)} = ${Money.htg(_p.priceHtg * width)}';
@@ -195,7 +195,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     final reason = choice?.rejectReason(
       mode: _p.saleMode,
       minWidth: _p.minWidth,
-      maxWidth: _p.rollWidth,
+      maxWidth: _p.lengthCap,
     );
     if (choice == null || reason != null) {
       setState(() {
@@ -311,8 +311,8 @@ class _ProductSheetState extends State<_ProductSheet> {
                           _MeasureCard(
                             selected: _kind == MeasureKind.width,
                             title: 'Entrer une longueur',
-                            detail: _p.rollWidth >= 1
-                                ? '${Money.htg(_p.priceHtg)} par pouce · minimum ${_p.minWidth} po · maximum ${_p.rollWidth} po'
+                            detail: _p.lengthCap >= 1
+                                ? '${Money.htg(_p.priceHtg)} par pouce · minimum ${_p.minWidth} po · maximum ${_p.lengthCap} po'
                                 : '${Money.htg(_p.priceHtg)} par pouce · minimum ${_p.minWidth} po',
                             htg: _widthTotal,
                             rate: rate,
@@ -329,7 +329,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                               keyboardType: TextInputType.number,
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
-                                MaxInchesFormatter(_p.rollWidth),
+                                MaxInchesFormatter(_p.lengthCap),
                               ],
                               // iPhone zooms the page on a field under 16 px.
                               style: AppTextStyles.body(

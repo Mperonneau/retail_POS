@@ -106,7 +106,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
     if (choice.rejectReason(
           mode: _p.saleMode,
           minWidth: _p.minWidth,
-          maxWidth: _p.rollWidth,
+          maxWidth: _p.lengthCap,
         ) !=
         null) {
       return 0;
@@ -123,7 +123,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
     if (choice.rejectReason(
           mode: _p.saleMode,
           minWidth: _p.minWidth,
-          maxWidth: _p.rollWidth,
+          maxWidth: _p.lengthCap,
         ) !=
         null) {
       return null;
@@ -145,7 +145,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
     final reason = choice?.rejectReason(
       mode: _p.saleMode,
       minWidth: _p.minWidth,
-      maxWidth: _p.rollWidth,
+      maxWidth: _p.lengthCap,
     );
     if (choice == null || reason != null) {
       setState(() {
@@ -220,7 +220,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      MaxInchesFormatter(_p.rollWidth),
+                      MaxInchesFormatter(_p.lengthCap),
                     ],
                     decoration: const InputDecoration(
                       labelText: 'Longueur (pouces)',
@@ -347,7 +347,7 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
     if (choice.rejectReason(
           mode: _p.saleMode,
           minWidth: _p.minWidth,
-          maxWidth: _p.rollWidth,
+          maxWidth: _p.lengthCap,
         ) !=
         null) {
       return null;
@@ -357,8 +357,8 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
 
   String _lengthDetail(BuildContext context) {
     final price = CurrencyFormatter.local(context, _p.sellingPriceHtg);
-    if (_p.rollWidth >= 1) {
-      return '$price par pouce · minimum ${_p.minWidth} po · maximum ${_p.rollWidth} po';
+    if (_p.lengthCap >= 1) {
+      return '$price par pouce · minimum ${_p.minWidth} po · maximum ${_p.lengthCap} po';
     }
     return '$price par pouce · minimum ${_p.minWidth} po';
   }
@@ -367,8 +367,8 @@ class _SaleMeasurePickerState extends State<_SaleMeasurePicker> {
     final width = int.tryParse(_widthCtrl.text.trim());
     if (width == null || width < 1)
       return 'Le total est le prix par pouce × la longueur.';
-    if (_p.rollWidth >= 1 && width > _p.rollWidth) {
-      return 'Le maximum est ${_p.rollWidth} po.';
+    if (_p.lengthCap >= 1 && width > _p.lengthCap) {
+      return 'Le maximum est ${_p.lengthCap} po.';
     }
     if (width < _p.minWidth) return 'Le minimum est ${_p.minWidth} po.';
     final total = _p.sellingPriceHtg * width;

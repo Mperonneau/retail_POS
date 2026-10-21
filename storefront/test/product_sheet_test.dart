@@ -34,6 +34,7 @@ void main() {
       rollPriceHtg: 250,
       minWidth: 6,
       rollWidth: 36,
+      limitLength: true,
       trackStock: true,
       stock: 108,
     );
@@ -97,6 +98,89 @@ void main() {
 
     await tester.enterText(find.byType(TextField), '36');
     await tester.pump();
+    expect(find.textContaining('Ajouter'), findsOneWidget);
+  });
+
+  testWidgets('the vitrine accepts a length past the roll unless limited', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final product = Product(
+      id: 'ribbon',
+      name: 'Rouleau de ruban adhésif',
+      category: 'Quincaillerie',
+      description: 'Minimum 6 pouces.',
+      priceHtg: 8,
+      regularPriceHtg: 8,
+      photoUrl: '',
+      available: true,
+      maxQuantity: 20,
+      unit: 'po',
+      options: const [],
+      saleMode: SaleMode.roll,
+      rollPriceHtg: 250,
+      minWidth: 6,
+      rollWidth: 36,
+      trackStock: true,
+      stock: 500,
+    );
+    final shop = Shop(
+      slug: 'demo',
+      name: 'Demo',
+      phone: '',
+      address: '',
+      description: '',
+      pickupNote: '',
+      coverUrl: '',
+      usdRate: 135,
+      availability: const Availability(
+        isOpenNow: true,
+        paused: false,
+        acceptsOrders: true,
+        acceptsQuotes: true,
+        opensAtLabel: null,
+        openHour: 8,
+        closeHour: 18,
+        closedWeekdays: [],
+      ),
+      categories: const ['Quincaillerie'],
+      products: [product],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => showProductSheet(
+                context,
+                shop: shop,
+                product: product,
+                cart: Cart(),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('Entrer une longueur'));
+    await tester.pump();
+    expect(find.textContaining('maximum 36 po'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), '450');
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '450',
+    );
     expect(find.textContaining('Ajouter'), findsOneWidget);
   });
 }

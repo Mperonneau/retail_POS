@@ -61,7 +61,9 @@ class StorefrontApi {
     return CodeVerification(
       registered: registered,
       signupToken: body['signup_token']?.toString() ?? '',
-      account: registered ? CustomerAccount.fromBody(body, fallbackPhone: phone) : null,
+      account: registered
+          ? CustomerAccount.fromBody(body, fallbackPhone: phone)
+          : null,
     );
   }
 
@@ -212,9 +214,7 @@ class StorefrontApi {
     try {
       response = await call().timeout(const Duration(seconds: 45));
     } catch (_) {
-      throw ApiException(
-        'Impossible de joindre la boutique. Réessayez.',
-      );
+      throw ApiException('Impossible de joindre la boutique. Réessayez.');
     }
     Map<String, dynamic> body = const {};
     try {
@@ -329,6 +329,7 @@ class Product {
     this.regularRollPriceHtg = 0,
     this.minWidth = 0,
     this.rollWidth = 0,
+    this.limitLength = false,
     this.casePriceHtg = 0,
     this.regularCasePriceHtg = 0,
     this.unitsPerCase = 0,
@@ -352,11 +353,20 @@ class Product {
   final double regularRollPriceHtg;
   final int minWidth;
   final int rollWidth;
+
+  /// When true, a custom length cannot pass [rollWidth].
+  final bool limitLength;
   final double casePriceHtg;
   final double regularCasePriceHtg;
   final int unitsPerCase;
   final bool trackStock;
   final int stock;
+
+  /// Inches a custom length may not pass. Zero means a longer cut is allowed.
+  int get lengthCap =>
+      saleMode == SaleMode.roll && limitLength && rollWidth >= 1
+      ? rollWidth
+      : 0;
 
   String get saleHint => switch (saleMode) {
     SaleMode.piece => '',
@@ -382,6 +392,7 @@ class Product {
     regularRollPriceHtg: _double(json['regular_roll_price_htg']),
     minWidth: _int(json['min_width']),
     rollWidth: _int(json['roll_width']),
+    limitLength: json['limit_length'] == true,
     casePriceHtg: _double(json['case_price_htg']),
     regularCasePriceHtg: _double(json['regular_case_price_htg']),
     unitsPerCase: _int(json['units_per_case']),
@@ -423,7 +434,8 @@ class CustomerAccount {
     String fallbackToken = '',
     String fallbackPhone = '',
   }) {
-    final account = (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final account =
+        (body['account'] as Map?)?.cast<String, dynamic>() ?? const {};
     final token = body['token']?.toString() ?? '';
     final phone = account['phone']?.toString() ?? '';
     return CustomerAccount(

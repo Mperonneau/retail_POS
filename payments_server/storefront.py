@@ -648,6 +648,7 @@ class StorefrontStore:
                 "regular_roll_price_htg": regular_roll if regular_roll > roll_price else 0,
                 "roll_width": roll_width,
                 "min_width": min_width,
+                "limit_length": bool(item.get("limit_length")),
                 "case_price_htg": 0,
                 "regular_case_price_htg": 0,
                 "units_per_case": 0,
@@ -667,6 +668,7 @@ class StorefrontStore:
                 "regular_roll_price_htg": 0,
                 "roll_width": 0,
                 "min_width": 0,
+                "limit_length": False,
                 "case_price_htg": case_price,
                 "regular_case_price_htg": regular_case if regular_case > case_price else 0,
                 "units_per_case": units,
@@ -677,6 +679,7 @@ class StorefrontStore:
             "regular_roll_price_htg": 0,
             "roll_width": 0,
             "min_width": 0,
+            "limit_length": False,
             "case_price_htg": 0,
             "regular_case_price_htg": 0,
             "units_per_case": 0,
@@ -829,6 +832,7 @@ class StorefrontStore:
                 "regular_roll_price_htg": p.get("regular_roll_price_htg", 0),
                 "roll_width": p.get("roll_width", 0),
                 "min_width": p.get("min_width", 0),
+                "limit_length": bool(p.get("limit_length")),
                 "case_price_htg": p.get("case_price_htg", 0),
                 "regular_case_price_htg": p.get("regular_case_price_htg", 0),
                 "units_per_case": p.get("units_per_case", 0),
@@ -1136,11 +1140,12 @@ class StorefrontStore:
             if measure == "cut":
                 minimum = int(product["min_width"])
                 maximum = int(product.get("roll_width") or 0)
+                limited = bool(product.get("limit_length"))
                 if width < minimum:
                     raise StorefrontError(
                         400, f"La longueur minimum pour {name} est {minimum} po."
                     )
-                if maximum >= 1 and width > maximum:
+                if limited and maximum >= 1 and width > maximum:
                     raise StorefrontError(
                         400, f"La longueur maximum pour {name} est {maximum} po."
                     )

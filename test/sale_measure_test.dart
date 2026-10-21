@@ -110,7 +110,66 @@ void main() {
     expect(measureForMode(SaleMode.piece, '36 po').kind, MeasureKind.plain);
   });
 
-  testWidgets('the register length field stops at the whole roll', (
+  testWidgets(
+    'the register length field stops at the whole roll when limited',
+    (tester) async {
+      final product = MockProduct(
+        id: 37,
+        name: 'Rouleau de ruban adhésif',
+        category: 'Quincaillerie',
+        priceHtg: 8,
+        priceUsd: 0.08,
+        costHtg: 4,
+        stockQuantity: 108,
+        minStock: 36,
+        saleMode: SaleMode.roll,
+        rollPriceHtg: 250,
+        rollPriceUsd: 2.50,
+        minWidth: 6,
+        rollWidth: 36,
+        limitLength: true,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => showSaleMeasurePicker(
+                    context,
+                    product,
+                    roomFor: (_, __) => 10,
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Entrer une longueur'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('maximum 36 po'), findsWidgets);
+
+      await tester.enterText(find.byType(TextField), '450');
+      await tester.pump();
+      final typed = tester
+          .widget<TextField>(find.byType(TextField))
+          .controller!
+          .text;
+      expect(typed == '450', isFalse);
+      expect(typed.isEmpty || int.parse(typed) <= 36, isTrue);
+      expect(find.textContaining('Ajouter'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '36');
+      await tester.pump();
+      expect(find.textContaining('Ajouter'), findsOneWidget);
+    },
+  );
+
+  testWidgets('the register accepts a length past the roll unless limited', (
     tester,
   ) async {
     final product = MockProduct(
@@ -120,7 +179,7 @@ void main() {
       priceHtg: 8,
       priceUsd: 0.08,
       costHtg: 4,
-      stockQuantity: 108,
+      stockQuantity: 500,
       minStock: 36,
       saleMode: SaleMode.roll,
       rollPriceHtg: 250,
@@ -150,20 +209,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Entrer une longueur'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('maximum 36 po'), findsWidgets);
+    expect(find.textContaining('maximum 36 po'), findsNothing);
 
     await tester.enterText(find.byType(TextField), '450');
     await tester.pump();
-    final typed = tester
-        .widget<TextField>(find.byType(TextField))
-        .controller!
-        .text;
-    expect(typed == '450', isFalse);
-    expect(typed.isEmpty || int.parse(typed) <= 36, isTrue);
-    expect(find.textContaining('Ajouter'), findsNothing);
-
-    await tester.enterText(find.byType(TextField), '36');
-    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '450',
+    );
     expect(find.textContaining('Ajouter'), findsOneWidget);
   });
 }

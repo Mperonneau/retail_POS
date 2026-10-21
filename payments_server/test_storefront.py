@@ -246,6 +246,18 @@ def test_roll_and_case_are_priced_from_the_choice():
                 "track_stock": True,
             },
             {
+                "id": "roll-capped",
+                "name": "Ruban limité",
+                "price_htg": 8,
+                "sale_mode": "roll",
+                "roll_price_htg": 250,
+                "roll_width": 36,
+                "min_width": 6,
+                "limit_length": True,
+                "stock": 200,
+                "track_stock": True,
+            },
+            {
                 "id": "case",
                 "name": "Eau",
                 "price_htg": 40,
@@ -261,6 +273,9 @@ def test_roll_and_case_are_priced_from_the_choice():
     shop = store.public_shop("chez-marie", OPEN)
     roll = next(p for p in shop["products"] if p["id"] == "roll")
     assert roll["sale_mode"] == "roll" and roll["min_width"] == 12 and roll["stock"] == 180
+    assert roll["limit_length"] is False
+    capped = next(p for p in shop["products"] if p["id"] == "roll-capped")
+    assert capped["limit_length"] is True and capped["roll_width"] == 36
     request = store.create_request(
         "chez-marie",
         {
@@ -297,21 +312,30 @@ def test_roll_and_case_are_priced_from_the_choice():
         raise AssertionError("accepted")
 
     assert fails([{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 8}]) == 400
-    assert fails([{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 61}]) == 400
+    longer = store.create_request(
+        "chez-marie",
+        {
+            "kind": "commande",
+            "customer": CUSTOMER,
+            "lines": [{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 70}],
+        },
+        OPEN,
+    )
+    assert longer["lines"][0]["unit_htg"] == 1050
     try:
         store.create_request(
             "chez-marie",
             {
                 "kind": "commande",
                 "customer": CUSTOMER,
-                "lines": [{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 90}],
+                "lines": [{"product_id": "roll-capped", "quantity": 1, "measure": "cut", "width": 40}],
             },
             OPEN,
         )
     except StorefrontError as exc:
-        assert "maximum" in exc.message and "60" in exc.message
+        assert "maximum" in exc.message and "36" in exc.message
     else:
-        raise AssertionError("a cut longer than the roll was accepted")
+        raise AssertionError("a limited roll accepted a longer cut")
     assert fails([{"product_id": "roll", "quantity": 1}]) == 400
     assert fails([{"product_id": "roll", "quantity": 4, "measure": "roll"}]) == 409
 

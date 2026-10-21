@@ -69,7 +69,10 @@ class _CatalogImportBanner extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(message, style: AppTextStyles.caption(color: color)),
+                child: Text(
+                  message,
+                  style: AppTextStyles.caption(color: color),
+                ),
               ),
             ],
           ),
@@ -1333,6 +1336,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
   late bool _showOnStorefront;
   late bool _trackStock;
   late SaleMode _saleMode;
+  late bool _limitLength;
   late final TextEditingController _rollPriceCtrl;
   late final TextEditingController _rollWidthCtrl;
   late final TextEditingController _minWidthCtrl;
@@ -1378,6 +1382,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _showOnStorefront = e?.showOnStorefront ?? true;
     _trackStock = e?.trackStock ?? true;
     _saleMode = e?.saleMode ?? SaleMode.piece;
+    _limitLength = e?.limitLength ?? false;
     _rollPriceCtrl = TextEditingController();
     _rollWidthCtrl = TextEditingController(
       text: e != null && e.rollWidth > 0 ? '${e.rollWidth}' : '',
@@ -1577,16 +1582,21 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       rollWidth = int.tryParse(_rollWidthCtrl.text.trim()) ?? 0;
       minWidth = int.tryParse(_minWidthCtrl.text.trim()) ?? 0;
       if (rollParsed == null || rollParsed <= 0) {
-        setState(() => _errorMeasure = 'Indiquez le prix de la longueur entière.');
+        setState(
+          () => _errorMeasure = 'Indiquez le prix de la longueur entière.',
+        );
         return;
       }
       if (rollWidth < 1) {
-        setState(() => _errorMeasure = 'Indiquez la longueur entière en pouces.');
+        setState(
+          () => _errorMeasure = 'Indiquez la longueur entière en pouces.',
+        );
         return;
       }
       if (minWidth < 1 || minWidth > rollWidth) {
         setState(
-          () => _errorMeasure = 'Le minimum doit être entre 1 et $rollWidth po.',
+          () =>
+              _errorMeasure = 'Le minimum doit être entre 1 et $rollWidth po.',
         );
         return;
       }
@@ -1601,7 +1611,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         return;
       }
       if (unitsPerCase < 2) {
-        setState(() => _errorMeasure = 'Une caisse contient au moins 2 unités.');
+        setState(
+          () => _errorMeasure = 'Une caisse contient au moins 2 unités.',
+        );
         return;
       }
       final packed = CatalogPriceLogic.commitParsed(s, caseParsed);
@@ -1633,6 +1645,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         rollPriceUsd: rollPriceUsd,
         minWidth: minWidth,
         rollWidth: rollWidth,
+        limitLength: _saleMode == SaleMode.roll && _limitLength,
         casePriceHtg: casePriceHtg,
         casePriceUsd: casePriceUsd,
         unitsPerCase: unitsPerCase,
@@ -1754,9 +1767,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
           const SizedBox(height: AppConstants.spacing16),
           Text(
             'Comment ce produit se vend',
-            style: AppTextStyles.body(color: textPrimary).copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.body(
+              color: textPrimary,
+            ).copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -1791,7 +1804,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 prefixText: CatalogPriceLogic.priceFieldPrefix(s),
                 helperText: 'Prix quand le client prend toute la longueur.',
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: InputFormatters.decimalAmount,
             ),
             const SizedBox(height: AppConstants.spacing12),
@@ -1823,6 +1838,22 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 ),
               ],
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _limitLength,
+              activeThumbColor: AppColors.primaryBlue,
+              title: Text(
+                'Ne pas dépasser la longueur entière',
+                style: AppTextStyles.body(
+                  color: textPrimary,
+                ).copyWith(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                'Coché : une longueur saisie ne peut pas dépasser la longueur entière.',
+                style: helperStyle,
+              ),
+              onChanged: (value) => setState(() => _limitLength = value),
+            ),
           ],
           if (_saleMode == SaleMode.pack) ...[
             const SizedBox(height: AppConstants.spacing12),
@@ -1833,7 +1864,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 prefixText: CatalogPriceLogic.priceFieldPrefix(s),
                 helperText: 'Ce prix n\'est pas le prix unitaire multiplié.',
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: InputFormatters.decimalAmount,
             ),
             const SizedBox(height: AppConstants.spacing12),

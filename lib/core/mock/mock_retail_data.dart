@@ -20,23 +20,33 @@ class MockProduct {
   final String? barcode;
   final bool active;
   final String description;
+
   /// Data URL kept for the future storefront. Not shown at the register.
   final String? photoDataUrl;
+
   /// Percent off [priceHtg]. 0 means no product discount.
   final int discountPercent;
+
   /// When false, sales do not decrement [stockQuantity].
   final bool trackStock;
   final String stockUnit;
   final List<ProductOptionGroup> options;
+
   /// Listed on the online vitrine when the product is also [active].
   final bool showOnStorefront;
+
   /// [priceHtg] is the piece price, the price per inch, or the unit price.
   final SaleMode saleMode;
+
   /// Price of one full roll. Stock for a roll is kept in inches.
   final double rollPriceHtg;
   final double rollPriceUsd;
   final int minWidth;
   final int rollWidth;
+
+  /// When true, a custom length cannot pass [rollWidth].
+  final bool limitLength;
+
   /// Price of one case. Stock for a case product is kept in units.
   final double casePriceHtg;
   final double casePriceUsd;
@@ -65,6 +75,7 @@ class MockProduct {
     this.rollPriceUsd = 0,
     this.minWidth = 0,
     this.rollWidth = 0,
+    this.limitLength = false,
     this.casePriceHtg = 0,
     this.casePriceUsd = 0,
     this.unitsPerCase = 0,
@@ -101,10 +112,14 @@ class MockProduct {
     SaleMode.pack => ' / u.',
   };
 
-  int unitsEach(MeasureChoice choice) => choice.unitsEach(
-    rollWidth: rollWidth,
-    unitsPerCase: unitsPerCase,
-  );
+  /// Inches a custom length may not pass. Zero means a longer cut is allowed.
+  int get lengthCap =>
+      saleMode == SaleMode.roll && limitLength && rollWidth >= 1
+      ? rollWidth
+      : 0;
+
+  int unitsEach(MeasureChoice choice) =>
+      choice.unitsEach(rollWidth: rollWidth, unitsPerCase: unitsPerCase);
 
   double priceFor(MeasureChoice choice) => choice.baseHtg(
     priceHtg: sellingPriceHtg,
@@ -141,6 +156,7 @@ class MockProduct {
     double? rollPriceUsd,
     int? minWidth,
     int? rollWidth,
+    bool? limitLength,
     double? casePriceHtg,
     double? casePriceUsd,
     int? unitsPerCase,
@@ -157,8 +173,9 @@ class MockProduct {
       barcode: barcode == _sentinel ? this.barcode : barcode as String?,
       active: active ?? this.active,
       description: description ?? this.description,
-      photoDataUrl:
-          photoDataUrl == _sentinel ? this.photoDataUrl : photoDataUrl as String?,
+      photoDataUrl: photoDataUrl == _sentinel
+          ? this.photoDataUrl
+          : photoDataUrl as String?,
       discountPercent: discountPercent ?? this.discountPercent,
       trackStock: trackStock ?? this.trackStock,
       stockUnit: stockUnit ?? this.stockUnit,
@@ -169,6 +186,7 @@ class MockProduct {
       rollPriceUsd: rollPriceUsd ?? this.rollPriceUsd,
       minWidth: minWidth ?? this.minWidth,
       rollWidth: rollWidth ?? this.rollWidth,
+      limitLength: limitLength ?? this.limitLength,
       casePriceHtg: casePriceHtg ?? this.casePriceHtg,
       casePriceUsd: casePriceUsd ?? this.casePriceUsd,
       unitsPerCase: unitsPerCase ?? this.unitsPerCase,
@@ -221,7 +239,11 @@ class MockSaleItem {
   final int quantity;
   final double priceHtg;
 
-  const MockSaleItem({required this.name, required this.quantity, required this.priceHtg});
+  const MockSaleItem({
+    required this.name,
+    required this.quantity,
+    required this.priceHtg,
+  });
 }
 
 class MockSupplierContact {
@@ -303,41 +325,356 @@ class MockSupplier {
 // ──────────────── MOCK DATA ────────────────
 
 final _mockProductsSeed = [
-  MockProduct(id: 1, name: 'Riz Blanc 25kg', category: 'Alimentation', priceHtg: 3200, priceUsd: 32, costHtg: 2400, stockQuantity: 18, minStock: 5),
-  MockProduct(id: 2, name: 'Huile Végétale 1L', category: 'Alimentation', priceHtg: 600, priceUsd: 6, costHtg: 420, stockQuantity: 45, minStock: 20),
-  MockProduct(id: 3, name: 'Sucre 5kg', category: 'Alimentation', priceHtg: 800, priceUsd: 8, costHtg: 600, stockQuantity: 8, minStock: 10),
-  MockProduct(id: 4, name: 'Farine de Blé 5kg', category: 'Alimentation', priceHtg: 700, priceUsd: 7, costHtg: 520, stockQuantity: 12, minStock: 8),
-  MockProduct(id: 5, name: 'Prestige Beer 330ml', category: 'Boissons', priceHtg: 180, priceUsd: 1.80, costHtg: 110, stockQuantity: 144, minStock: 48),
-  MockProduct(id: 6, name: 'Coca-Cola 355ml', category: 'Boissons', priceHtg: 120, priceUsd: 1.20, costHtg: 75, stockQuantity: 3, minStock: 24),
-  MockProduct(id: 7, name: 'Eau Culligan 18L', category: 'Boissons', priceHtg: 280, priceUsd: 2.80, costHtg: 180, stockQuantity: 20, minStock: 10),
-  MockProduct(id: 8, name: 'Savon Dettol 100g', category: 'Ménage', priceHtg: 150, priceUsd: 1.50, costHtg: 90, stockQuantity: 60, minStock: 20),
-  MockProduct(id: 9, name: 'Lessive Ariel 1kg', category: 'Ménage', priceHtg: 450, priceUsd: 4.50, costHtg: 320, stockQuantity: 22, minStock: 10),
-  MockProduct(id: 10, name: 'Bougies (paquet 10)', category: 'Ménage', priceHtg: 200, priceUsd: 2, costHtg: 120, stockQuantity: 4, minStock: 15),
-  MockProduct(id: 11, name: 'Ampoule LED 9W', category: 'Électronique', priceHtg: 350, priceUsd: 3.50, costHtg: 200, stockQuantity: 30, minStock: 10),
-  MockProduct(id: 12, name: 'Chargeur USB-C', category: 'Électronique', priceHtg: 800, priceUsd: 8, costHtg: 500, stockQuantity: 15, minStock: 5),
-  MockProduct(id: 13, name: 'Shampoo Pantene 400ml', category: 'Hygiène', priceHtg: 600, priceUsd: 6, costHtg: 420, stockQuantity: 18, minStock: 8),
-  MockProduct(id: 14, name: 'Dentifrice Colgate 75ml', category: 'Hygiène', priceHtg: 180, priceUsd: 1.80, costHtg: 110, stockQuantity: 40, minStock: 15),
-  MockProduct(id: 15, name: 'Cahier 100 pages', category: 'Papeterie', priceHtg: 150, priceUsd: 1.50, costHtg: 90, stockQuantity: 50, minStock: 20),
-  MockProduct(id: 16, name: 'Allumettes (boîte)', category: 'Ménage', priceHtg: 35, priceUsd: 0.35, costHtg: 18, stockQuantity: 24, minStock: 12),
-  MockProduct(id: 17, name: 'Balai en plastique', category: 'Ménage', priceHtg: 220, priceUsd: 2.20, costHtg: 140, stockQuantity: 14, minStock: 6),
-  MockProduct(id: 18, name: 'Banane plantain (kg)', category: 'Alimentation', priceHtg: 95, priceUsd: 0.95, costHtg: 60, stockQuantity: 40, minStock: 15),
-  MockProduct(id: 19, name: 'Bouteille gaz 12kg', category: 'Ménage', priceHtg: 4500, priceUsd: 45, costHtg: 3200, stockQuantity: 6, minStock: 3),
-  MockProduct(id: 20, name: 'Brosse à dents', category: 'Hygiène', priceHtg: 85, priceUsd: 0.85, costHtg: 50, stockQuantity: 72, minStock: 24),
-  MockProduct(id: 21, name: 'Câble HDMI 2m', category: 'Électronique', priceHtg: 650, priceUsd: 6.50, costHtg: 400, stockQuantity: 11, minStock: 4),
-  MockProduct(id: 22, name: 'Cassonade 1kg', category: 'Alimentation', priceHtg: 320, priceUsd: 3.20, costHtg: 210, stockQuantity: 28, minStock: 10),
-  MockProduct(id: 23, name: 'Coton hydrophile', category: 'Hygiène', priceHtg: 120, priceUsd: 1.20, costHtg: 75, stockQuantity: 33, minStock: 12),
-  MockProduct(id: 24, name: 'Couche bébé (paquet)', category: 'Hygiène', priceHtg: 950, priceUsd: 9.50, costHtg: 700, stockQuantity: 9, minStock: 5),
-  MockProduct(id: 25, name: 'Crackers salés', category: 'Alimentation', priceHtg: 180, priceUsd: 1.80, costHtg: 110, stockQuantity: 52, minStock: 20),
-  MockProduct(id: 26, name: 'Détergent vaisselle 750ml', category: 'Ménage', priceHtg: 280, priceUsd: 2.80, costHtg: 180, stockQuantity: 20, minStock: 8),
-  MockProduct(id: 27, name: 'Enveloppes (paquet 50)', category: 'Papeterie', priceHtg: 200, priceUsd: 2, costHtg: 120, stockQuantity: 16, minStock: 6),
-  MockProduct(id: 28, name: 'Extension multiprise 6 prises', category: 'Électronique', priceHtg: 1200, priceUsd: 12, costHtg: 750, stockQuantity: 8, minStock: 3),
-  MockProduct(id: 29, name: 'Gel douche 1L', category: 'Hygiène', priceHtg: 420, priceUsd: 4.20, costHtg: 280, stockQuantity: 19, minStock: 8),
-  MockProduct(id: 30, name: 'Jus tropical 1L', category: 'Boissons', priceHtg: 150, priceUsd: 1.50, costHtg: 95, stockQuantity: 48, minStock: 18),
-  MockProduct(id: 31, name: 'Lait en poudre 400g', category: 'Alimentation', priceHtg: 480, priceUsd: 4.80, costHtg: 320, stockQuantity: 15, minStock: 6),
-  MockProduct(id: 32, name: 'Lait en poudre 800g', category: 'Alimentation', priceHtg: 880, priceUsd: 8.80, costHtg: 600, stockQuantity: 10, minStock: 4),
-  MockProduct(id: 33, name: 'Lampe torche LED', category: 'Électronique', priceHtg: 450, priceUsd: 4.50, costHtg: 280, stockQuantity: 13, minStock: 5),
-  MockProduct(id: 34, name: 'Règle 30cm', category: 'Papeterie', priceHtg: 75, priceUsd: 0.75, costHtg: 45, stockQuantity: 64, minStock: 20),
-  MockProduct(id: 35, name: 'Stylo bleu (boîte 12)', category: 'Papeterie', priceHtg: 240, priceUsd: 2.40, costHtg: 150, stockQuantity: 22, minStock: 10),
+  MockProduct(
+    id: 1,
+    name: 'Riz Blanc 25kg',
+    category: 'Alimentation',
+    priceHtg: 3200,
+    priceUsd: 32,
+    costHtg: 2400,
+    stockQuantity: 18,
+    minStock: 5,
+  ),
+  MockProduct(
+    id: 2,
+    name: 'Huile Végétale 1L',
+    category: 'Alimentation',
+    priceHtg: 600,
+    priceUsd: 6,
+    costHtg: 420,
+    stockQuantity: 45,
+    minStock: 20,
+  ),
+  MockProduct(
+    id: 3,
+    name: 'Sucre 5kg',
+    category: 'Alimentation',
+    priceHtg: 800,
+    priceUsd: 8,
+    costHtg: 600,
+    stockQuantity: 8,
+    minStock: 10,
+  ),
+  MockProduct(
+    id: 4,
+    name: 'Farine de Blé 5kg',
+    category: 'Alimentation',
+    priceHtg: 700,
+    priceUsd: 7,
+    costHtg: 520,
+    stockQuantity: 12,
+    minStock: 8,
+  ),
+  MockProduct(
+    id: 5,
+    name: 'Prestige Beer 330ml',
+    category: 'Boissons',
+    priceHtg: 180,
+    priceUsd: 1.80,
+    costHtg: 110,
+    stockQuantity: 144,
+    minStock: 48,
+  ),
+  MockProduct(
+    id: 6,
+    name: 'Coca-Cola 355ml',
+    category: 'Boissons',
+    priceHtg: 120,
+    priceUsd: 1.20,
+    costHtg: 75,
+    stockQuantity: 3,
+    minStock: 24,
+  ),
+  MockProduct(
+    id: 7,
+    name: 'Eau Culligan 18L',
+    category: 'Boissons',
+    priceHtg: 280,
+    priceUsd: 2.80,
+    costHtg: 180,
+    stockQuantity: 20,
+    minStock: 10,
+  ),
+  MockProduct(
+    id: 8,
+    name: 'Savon Dettol 100g',
+    category: 'Ménage',
+    priceHtg: 150,
+    priceUsd: 1.50,
+    costHtg: 90,
+    stockQuantity: 60,
+    minStock: 20,
+  ),
+  MockProduct(
+    id: 9,
+    name: 'Lessive Ariel 1kg',
+    category: 'Ménage',
+    priceHtg: 450,
+    priceUsd: 4.50,
+    costHtg: 320,
+    stockQuantity: 22,
+    minStock: 10,
+  ),
+  MockProduct(
+    id: 10,
+    name: 'Bougies (paquet 10)',
+    category: 'Ménage',
+    priceHtg: 200,
+    priceUsd: 2,
+    costHtg: 120,
+    stockQuantity: 4,
+    minStock: 15,
+  ),
+  MockProduct(
+    id: 11,
+    name: 'Ampoule LED 9W',
+    category: 'Électronique',
+    priceHtg: 350,
+    priceUsd: 3.50,
+    costHtg: 200,
+    stockQuantity: 30,
+    minStock: 10,
+  ),
+  MockProduct(
+    id: 12,
+    name: 'Chargeur USB-C',
+    category: 'Électronique',
+    priceHtg: 800,
+    priceUsd: 8,
+    costHtg: 500,
+    stockQuantity: 15,
+    minStock: 5,
+  ),
+  MockProduct(
+    id: 13,
+    name: 'Shampoo Pantene 400ml',
+    category: 'Hygiène',
+    priceHtg: 600,
+    priceUsd: 6,
+    costHtg: 420,
+    stockQuantity: 18,
+    minStock: 8,
+  ),
+  MockProduct(
+    id: 14,
+    name: 'Dentifrice Colgate 75ml',
+    category: 'Hygiène',
+    priceHtg: 180,
+    priceUsd: 1.80,
+    costHtg: 110,
+    stockQuantity: 40,
+    minStock: 15,
+  ),
+  MockProduct(
+    id: 15,
+    name: 'Cahier 100 pages',
+    category: 'Papeterie',
+    priceHtg: 150,
+    priceUsd: 1.50,
+    costHtg: 90,
+    stockQuantity: 50,
+    minStock: 20,
+  ),
+  MockProduct(
+    id: 16,
+    name: 'Allumettes (boîte)',
+    category: 'Ménage',
+    priceHtg: 35,
+    priceUsd: 0.35,
+    costHtg: 18,
+    stockQuantity: 24,
+    minStock: 12,
+  ),
+  MockProduct(
+    id: 17,
+    name: 'Balai en plastique',
+    category: 'Ménage',
+    priceHtg: 220,
+    priceUsd: 2.20,
+    costHtg: 140,
+    stockQuantity: 14,
+    minStock: 6,
+  ),
+  MockProduct(
+    id: 18,
+    name: 'Banane plantain (kg)',
+    category: 'Alimentation',
+    priceHtg: 95,
+    priceUsd: 0.95,
+    costHtg: 60,
+    stockQuantity: 40,
+    minStock: 15,
+  ),
+  MockProduct(
+    id: 19,
+    name: 'Bouteille gaz 12kg',
+    category: 'Ménage',
+    priceHtg: 4500,
+    priceUsd: 45,
+    costHtg: 3200,
+    stockQuantity: 6,
+    minStock: 3,
+  ),
+  MockProduct(
+    id: 20,
+    name: 'Brosse à dents',
+    category: 'Hygiène',
+    priceHtg: 85,
+    priceUsd: 0.85,
+    costHtg: 50,
+    stockQuantity: 72,
+    minStock: 24,
+  ),
+  MockProduct(
+    id: 21,
+    name: 'Câble HDMI 2m',
+    category: 'Électronique',
+    priceHtg: 650,
+    priceUsd: 6.50,
+    costHtg: 400,
+    stockQuantity: 11,
+    minStock: 4,
+  ),
+  MockProduct(
+    id: 22,
+    name: 'Cassonade 1kg',
+    category: 'Alimentation',
+    priceHtg: 320,
+    priceUsd: 3.20,
+    costHtg: 210,
+    stockQuantity: 28,
+    minStock: 10,
+  ),
+  MockProduct(
+    id: 23,
+    name: 'Coton hydrophile',
+    category: 'Hygiène',
+    priceHtg: 120,
+    priceUsd: 1.20,
+    costHtg: 75,
+    stockQuantity: 33,
+    minStock: 12,
+  ),
+  MockProduct(
+    id: 24,
+    name: 'Couche bébé (paquet)',
+    category: 'Hygiène',
+    priceHtg: 950,
+    priceUsd: 9.50,
+    costHtg: 700,
+    stockQuantity: 9,
+    minStock: 5,
+  ),
+  MockProduct(
+    id: 25,
+    name: 'Crackers salés',
+    category: 'Alimentation',
+    priceHtg: 180,
+    priceUsd: 1.80,
+    costHtg: 110,
+    stockQuantity: 52,
+    minStock: 20,
+  ),
+  MockProduct(
+    id: 26,
+    name: 'Détergent vaisselle 750ml',
+    category: 'Ménage',
+    priceHtg: 280,
+    priceUsd: 2.80,
+    costHtg: 180,
+    stockQuantity: 20,
+    minStock: 8,
+  ),
+  MockProduct(
+    id: 27,
+    name: 'Enveloppes (paquet 50)',
+    category: 'Papeterie',
+    priceHtg: 200,
+    priceUsd: 2,
+    costHtg: 120,
+    stockQuantity: 16,
+    minStock: 6,
+  ),
+  MockProduct(
+    id: 28,
+    name: 'Extension multiprise 6 prises',
+    category: 'Électronique',
+    priceHtg: 1200,
+    priceUsd: 12,
+    costHtg: 750,
+    stockQuantity: 8,
+    minStock: 3,
+  ),
+  MockProduct(
+    id: 29,
+    name: 'Gel douche 1L',
+    category: 'Hygiène',
+    priceHtg: 420,
+    priceUsd: 4.20,
+    costHtg: 280,
+    stockQuantity: 19,
+    minStock: 8,
+  ),
+  MockProduct(
+    id: 30,
+    name: 'Jus tropical 1L',
+    category: 'Boissons',
+    priceHtg: 150,
+    priceUsd: 1.50,
+    costHtg: 95,
+    stockQuantity: 48,
+    minStock: 18,
+  ),
+  MockProduct(
+    id: 31,
+    name: 'Lait en poudre 400g',
+    category: 'Alimentation',
+    priceHtg: 480,
+    priceUsd: 4.80,
+    costHtg: 320,
+    stockQuantity: 15,
+    minStock: 6,
+  ),
+  MockProduct(
+    id: 32,
+    name: 'Lait en poudre 800g',
+    category: 'Alimentation',
+    priceHtg: 880,
+    priceUsd: 8.80,
+    costHtg: 600,
+    stockQuantity: 10,
+    minStock: 4,
+  ),
+  MockProduct(
+    id: 33,
+    name: 'Lampe torche LED',
+    category: 'Électronique',
+    priceHtg: 450,
+    priceUsd: 4.50,
+    costHtg: 280,
+    stockQuantity: 13,
+    minStock: 5,
+  ),
+  MockProduct(
+    id: 34,
+    name: 'Règle 30cm',
+    category: 'Papeterie',
+    priceHtg: 75,
+    priceUsd: 0.75,
+    costHtg: 45,
+    stockQuantity: 64,
+    minStock: 20,
+  ),
+  MockProduct(
+    id: 35,
+    name: 'Stylo bleu (boîte 12)',
+    category: 'Papeterie',
+    priceHtg: 240,
+    priceUsd: 2.40,
+    costHtg: 150,
+    stockQuantity: 22,
+    minStock: 10,
+  ),
   // Roll: priceHtg is per inch. The full roll has its own price. Stock is inches.
   MockProduct(
     id: 36,
@@ -413,19 +750,107 @@ final _mockProductsSeed = [
 ];
 
 final mockCustomers = [
-  MockCustomer(id: 1, name: 'Boutique Madame Pierre', phone: '+509 3456-7890', creditLimit: 50000, outstandingBalance: 12500, totalPurchases: 45, totalSpentHtg: 380000),
-  MockCustomer(id: 2, name: 'Restaurant Ti Kay', phone: '+509 4123-5678', creditLimit: 30000, outstandingBalance: 8200, totalPurchases: 28, totalSpentHtg: 245000),
-  MockCustomer(id: 3, name: 'Jean-Baptiste Michel', phone: '+509 3789-0123', creditLimit: 15000, outstandingBalance: 0, totalPurchases: 12, totalSpentHtg: 45000),
-  MockCustomer(id: 4, name: 'École Nationale No.3', phone: '+509 2222-3333', creditLimit: 80000, outstandingBalance: 32000, totalPurchases: 60, totalSpentHtg: 720000),
-  MockCustomer(id: 5, name: 'Hôtel Roi Christophe', phone: '+509 3600-0000', creditLimit: 200000, outstandingBalance: 45000, totalPurchases: 150, totalSpentHtg: 2800000),
+  MockCustomer(
+    id: 1,
+    name: 'Boutique Madame Pierre',
+    phone: '+509 3456-7890',
+    creditLimit: 50000,
+    outstandingBalance: 12500,
+    totalPurchases: 45,
+    totalSpentHtg: 380000,
+  ),
+  MockCustomer(
+    id: 2,
+    name: 'Restaurant Ti Kay',
+    phone: '+509 4123-5678',
+    creditLimit: 30000,
+    outstandingBalance: 8200,
+    totalPurchases: 28,
+    totalSpentHtg: 245000,
+  ),
+  MockCustomer(
+    id: 3,
+    name: 'Jean-Baptiste Michel',
+    phone: '+509 3789-0123',
+    creditLimit: 15000,
+    outstandingBalance: 0,
+    totalPurchases: 12,
+    totalSpentHtg: 45000,
+  ),
+  MockCustomer(
+    id: 4,
+    name: 'École Nationale No.3',
+    phone: '+509 2222-3333',
+    creditLimit: 80000,
+    outstandingBalance: 32000,
+    totalPurchases: 60,
+    totalSpentHtg: 720000,
+  ),
+  MockCustomer(
+    id: 5,
+    name: 'Hôtel Roi Christophe',
+    phone: '+509 3600-0000',
+    creditLimit: 200000,
+    outstandingBalance: 45000,
+    totalPurchases: 150,
+    totalSpentHtg: 2800000,
+  ),
 ];
 
 final mockSales = [
-  MockSale(id: 1, date: DateTime.now().subtract(const Duration(minutes: 10)), cashier: 'Roseline', items: const [MockSaleItem(name: 'Riz Blanc 25kg', quantity: 2, priceHtg: 3200), MockSaleItem(name: 'Huile Végétale 1L', quantity: 3, priceHtg: 600)], paymentMethod: 'MonCash'),
-  MockSale(id: 2, date: DateTime.now().subtract(const Duration(minutes: 25)), cashier: 'Roseline', items: const [MockSaleItem(name: 'Prestige Beer 330ml', quantity: 12, priceHtg: 180), MockSaleItem(name: 'Coca-Cola 355ml', quantity: 6, priceHtg: 120)], paymentMethod: 'Espèces', customerName: 'Restaurant Ti Kay'),
-  MockSale(id: 3, date: DateTime.now().subtract(const Duration(hours: 1)), cashier: 'Marcel', items: const [MockSaleItem(name: 'Savon Dettol 100g', quantity: 5, priceHtg: 150), MockSaleItem(name: 'Dentifrice Colgate', quantity: 2, priceHtg: 180), MockSaleItem(name: 'Shampoo Pantene', quantity: 1, priceHtg: 600)], paymentMethod: 'Espèces'),
-  MockSale(id: 4, date: DateTime.now().subtract(const Duration(hours: 2)), cashier: 'Roseline', items: const [MockSaleItem(name: 'Ampoule LED 9W', quantity: 4, priceHtg: 350), MockSaleItem(name: 'Bougies (paquet 10)', quantity: 2, priceHtg: 200)], paymentMethod: 'Stripe'),
-  MockSale(id: 5, date: DateTime.now().subtract(const Duration(hours: 3)), cashier: 'Marcel', items: const [MockSaleItem(name: 'Farine de Blé 5kg', quantity: 1, priceHtg: 700), MockSaleItem(name: 'Sucre 5kg', quantity: 1, priceHtg: 800), MockSaleItem(name: 'Huile Végétale 1L', quantity: 2, priceHtg: 600)], paymentMethod: 'MonCash'),
+  MockSale(
+    id: 1,
+    date: DateTime.now().subtract(const Duration(minutes: 10)),
+    cashier: 'Roseline',
+    items: const [
+      MockSaleItem(name: 'Riz Blanc 25kg', quantity: 2, priceHtg: 3200),
+      MockSaleItem(name: 'Huile Végétale 1L', quantity: 3, priceHtg: 600),
+    ],
+    paymentMethod: 'MonCash',
+  ),
+  MockSale(
+    id: 2,
+    date: DateTime.now().subtract(const Duration(minutes: 25)),
+    cashier: 'Roseline',
+    items: const [
+      MockSaleItem(name: 'Prestige Beer 330ml', quantity: 12, priceHtg: 180),
+      MockSaleItem(name: 'Coca-Cola 355ml', quantity: 6, priceHtg: 120),
+    ],
+    paymentMethod: 'Espèces',
+    customerName: 'Restaurant Ti Kay',
+  ),
+  MockSale(
+    id: 3,
+    date: DateTime.now().subtract(const Duration(hours: 1)),
+    cashier: 'Marcel',
+    items: const [
+      MockSaleItem(name: 'Savon Dettol 100g', quantity: 5, priceHtg: 150),
+      MockSaleItem(name: 'Dentifrice Colgate', quantity: 2, priceHtg: 180),
+      MockSaleItem(name: 'Shampoo Pantene', quantity: 1, priceHtg: 600),
+    ],
+    paymentMethod: 'Espèces',
+  ),
+  MockSale(
+    id: 4,
+    date: DateTime.now().subtract(const Duration(hours: 2)),
+    cashier: 'Roseline',
+    items: const [
+      MockSaleItem(name: 'Ampoule LED 9W', quantity: 4, priceHtg: 350),
+      MockSaleItem(name: 'Bougies (paquet 10)', quantity: 2, priceHtg: 200),
+    ],
+    paymentMethod: 'Stripe',
+  ),
+  MockSale(
+    id: 5,
+    date: DateTime.now().subtract(const Duration(hours: 3)),
+    cashier: 'Marcel',
+    items: const [
+      MockSaleItem(name: 'Farine de Blé 5kg', quantity: 1, priceHtg: 700),
+      MockSaleItem(name: 'Sucre 5kg', quantity: 1, priceHtg: 800),
+      MockSaleItem(name: 'Huile Végétale 1L', quantity: 2, priceHtg: 600),
+    ],
+    paymentMethod: 'MonCash',
+  ),
 ];
 
 final _mockSuppliersSeed = [
@@ -435,11 +860,24 @@ final _mockSuppliersSeed = [
     phone: '+509 2940-0000',
     email: 'commandes@dinasa.ht',
     location: 'Zone Industrielle, Port-au-Prince',
-    note: 'Principal fournisseur de riz et farine. Livraison le mardi et vendredi. Minimum de commande 5 sacs.',
+    note:
+        'Principal fournisseur de riz et farine. Livraison le mardi et vendredi. Minimum de commande 5 sacs.',
     categories: ['Alimentation', 'Importation'],
     contacts: [
-      MockSupplierContact(id: 'c1_1', name: 'Paul Dominique', title: 'Représentant commercial', phone: '+509 2940-0000', email: 'paul.d@dinasa.ht'),
-      MockSupplierContact(id: 'c1_2', name: 'Marie Céline', title: 'Comptabilité', phone: '+509 2940-0001', email: 'mceline@dinasa.ht'),
+      MockSupplierContact(
+        id: 'c1_1',
+        name: 'Paul Dominique',
+        title: 'Représentant commercial',
+        phone: '+509 2940-0000',
+        email: 'paul.d@dinasa.ht',
+      ),
+      MockSupplierContact(
+        id: 'c1_2',
+        name: 'Marie Céline',
+        title: 'Comptabilité',
+        phone: '+509 2940-0001',
+        email: 'mceline@dinasa.ht',
+      ),
     ],
   ),
   MockSupplier(
@@ -451,8 +889,20 @@ final _mockSuppliersSeed = [
     note: 'Commandes minimum 24 bouteilles par référence. Paiement à 30 jours.',
     categories: ['Boissons'],
     contacts: [
-      MockSupplierContact(id: 'c2_1', name: 'Carole Simone', title: 'Directrice des ventes', phone: '+509 2940-1234', email: 'carole.s@brassnat.ht'),
-      MockSupplierContact(id: 'c2_2', name: 'Robert Estimé', title: 'Livreur', phone: '+509 3456-1111', email: ''),
+      MockSupplierContact(
+        id: 'c2_1',
+        name: 'Carole Simone',
+        title: 'Directrice des ventes',
+        phone: '+509 2940-1234',
+        email: 'carole.s@brassnat.ht',
+      ),
+      MockSupplierContact(
+        id: 'c2_2',
+        name: 'Robert Estimé',
+        title: 'Livreur',
+        phone: '+509 3456-1111',
+        email: '',
+      ),
     ],
   ),
   MockSupplier(
@@ -461,11 +911,24 @@ final _mockSuppliersSeed = [
     phone: '+509 2811-5678',
     email: 'import@importex.ht',
     location: 'Croix-des-Bouquets, Boulevard Toussaint Louverture',
-    note: 'Grossiste général. Délai de livraison 3-5 jours ouvrables. Catalogue sur demande.',
+    note:
+        'Grossiste général. Délai de livraison 3-5 jours ouvrables. Catalogue sur demande.',
     categories: ['Alimentation', 'Ménage', 'Hygiène'],
     contacts: [
-      MockSupplierContact(id: 'c3_1', name: 'Henri Rémy', title: 'Gérant', phone: '+509 2811-5678', email: 'hremy@importex.ht'),
-      MockSupplierContact(id: 'c3_2', name: 'Sandra Fils-Aimé', title: 'Logistique', phone: '+509 2811-5679', email: 'sfilsaime@importex.ht'),
+      MockSupplierContact(
+        id: 'c3_1',
+        name: 'Henri Rémy',
+        title: 'Gérant',
+        phone: '+509 2811-5678',
+        email: 'hremy@importex.ht',
+      ),
+      MockSupplierContact(
+        id: 'c3_2',
+        name: 'Sandra Fils-Aimé',
+        title: 'Logistique',
+        phone: '+509 2811-5679',
+        email: 'sfilsaime@importex.ht',
+      ),
     ],
   ),
   MockSupplier(
@@ -474,10 +937,17 @@ final _mockSuppliersSeed = [
     phone: '+509 3456-7890',
     email: 'info@caribelec.ht',
     location: 'Pétion-Ville, Rue Grégoire 45',
-    note: 'Ampoules, câbles et équipements électroniques. Garantie 3 mois sur produits défectueux.',
+    note:
+        'Ampoules, câbles et équipements électroniques. Garantie 3 mois sur produits défectueux.',
     categories: ['Électronique'],
     contacts: [
-      MockSupplierContact(id: 'c4_1', name: 'Jean-Pierre Lafleur', title: 'Propriétaire', phone: '+509 3456-7890', email: 'jplafleur@caribelec.ht'),
+      MockSupplierContact(
+        id: 'c4_1',
+        name: 'Jean-Pierre Lafleur',
+        title: 'Propriétaire',
+        phone: '+509 3456-7890',
+        email: 'jplafleur@caribelec.ht',
+      ),
     ],
   ),
   MockSupplier(
@@ -486,11 +956,24 @@ final _mockSuppliersSeed = [
     phone: '+509 2812-0000',
     email: 'commandes@pharmaht.ht',
     location: 'Turgeau, Rue Capois 12',
-    note: 'Hygiène et soins. Numéro de licence requis pour les commandes. Délai 48h.',
+    note:
+        'Hygiène et soins. Numéro de licence requis pour les commandes. Délai 48h.',
     categories: ['Hygiène', 'Santé'],
     contacts: [
-      MockSupplierContact(id: 'c5_1', name: 'Dr. Claudette Morin', title: 'Directrice', phone: '+509 2812-0000', email: 'cmorin@pharmaht.ht'),
-      MockSupplierContact(id: 'c5_2', name: 'Réginald Casimir', title: 'Représentant', phone: '+509 3900-1212', email: ''),
+      MockSupplierContact(
+        id: 'c5_1',
+        name: 'Dr. Claudette Morin',
+        title: 'Directrice',
+        phone: '+509 2812-0000',
+        email: 'cmorin@pharmaht.ht',
+      ),
+      MockSupplierContact(
+        id: 'c5_2',
+        name: 'Réginald Casimir',
+        title: 'Représentant',
+        phone: '+509 3900-1212',
+        email: '',
+      ),
     ],
   ),
   MockSupplier(
@@ -499,10 +982,17 @@ final _mockSuppliersSeed = [
     phone: '+509 2234-5678',
     email: 'lydie@papnat.ht',
     location: 'Port-au-Prince, Rue du Centre',
-    note: 'Fournitures de bureau et scolaires. Remise 10% sur commandes supérieures à 50 unités.',
+    note:
+        'Fournitures de bureau et scolaires. Remise 10% sur commandes supérieures à 50 unités.',
     categories: ['Papeterie', 'Fournitures'],
     contacts: [
-      MockSupplierContact(id: 'c6_1', name: 'Lydie Barthélemy', title: 'Responsable commerciale', phone: '+509 2234-5678', email: 'lydie@papnat.ht'),
+      MockSupplierContact(
+        id: 'c6_1',
+        name: 'Lydie Barthélemy',
+        title: 'Responsable commerciale',
+        phone: '+509 2234-5678',
+        email: 'lydie@papnat.ht',
+      ),
     ],
   ),
   MockSupplier(
@@ -511,11 +1001,24 @@ final _mockSuppliersSeed = [
     phone: '+509 3789-0000',
     email: 'frantz@agrihaiti.ht',
     location: 'Kenscoff, Route Nationale 6',
-    note: 'Produits frais et alimentaires locaux. Livraison matinale uniquement (avant 9h).',
+    note:
+        'Produits frais et alimentaires locaux. Livraison matinale uniquement (avant 9h).',
     categories: ['Alimentation', 'Produits locaux'],
     contacts: [
-      MockSupplierContact(id: 'c7_1', name: 'Frantz Augustin', title: 'Gérant', phone: '+509 3789-0000', email: 'frantz@agrihaiti.ht'),
-      MockSupplierContact(id: 'c7_2', name: 'Marjorie Cicéron', title: 'Livraison', phone: '+509 3789-0001', email: ''),
+      MockSupplierContact(
+        id: 'c7_1',
+        name: 'Frantz Augustin',
+        title: 'Gérant',
+        phone: '+509 3789-0000',
+        email: 'frantz@agrihaiti.ht',
+      ),
+      MockSupplierContact(
+        id: 'c7_2',
+        name: 'Marjorie Cicéron',
+        title: 'Livraison',
+        phone: '+509 3789-0001',
+        email: '',
+      ),
     ],
   ),
   MockSupplier(
@@ -524,10 +1027,17 @@ final _mockSuppliersSeed = [
     phone: '+509 3567-8901',
     email: 'gestion@menagereplus.ht',
     location: 'Delmas 19, Impasse Flamboyant',
-    note: 'Produits d\'entretien et ménage en gros. Commande minimum 10 000 HTG.',
+    note:
+        'Produits d\'entretien et ménage en gros. Commande minimum 10 000 HTG.',
     categories: ['Ménage', 'Entretien'],
     contacts: [
-      MockSupplierContact(id: 'c8_1', name: 'Ginette Lerebours', title: 'Propriétaire', phone: '+509 3567-8901', email: 'gestion@menagereplus.ht'),
+      MockSupplierContact(
+        id: 'c8_1',
+        name: 'Ginette Lerebours',
+        title: 'Propriétaire',
+        phone: '+509 3567-8901',
+        email: 'gestion@menagereplus.ht',
+      ),
     ],
   ),
   MockSupplier(
@@ -536,11 +1046,24 @@ final _mockSuppliersSeed = [
     phone: '+509 3999-0101',
     email: 'sales@techimport.ht',
     location: 'Port-au-Prince, Boulevard Harry Truman',
-    note: 'Accessoires électroniques et informatique. Importation directe des États-Unis.',
+    note:
+        'Accessoires électroniques et informatique. Importation directe des États-Unis.',
     categories: ['Électronique', 'Importation'],
     contacts: [
-      MockSupplierContact(id: 'c9_1', name: 'Christophe Duvivier', title: 'Directeur des ventes', phone: '+509 3999-0101', email: 'c.duvivier@techimport.ht'),
-      MockSupplierContact(id: 'c9_2', name: 'Nadia Pierre-Louis', title: 'Service client', phone: '+509 3999-0102', email: 'nadia@techimport.ht'),
+      MockSupplierContact(
+        id: 'c9_1',
+        name: 'Christophe Duvivier',
+        title: 'Directeur des ventes',
+        phone: '+509 3999-0101',
+        email: 'c.duvivier@techimport.ht',
+      ),
+      MockSupplierContact(
+        id: 'c9_2',
+        name: 'Nadia Pierre-Louis',
+        title: 'Service client',
+        phone: '+509 3999-0102',
+        email: 'nadia@techimport.ht',
+      ),
     ],
   ),
   MockSupplier(
@@ -549,10 +1072,17 @@ final _mockSuppliersSeed = [
     phone: '+509 2944-7777',
     email: 'orders@boissonstropic.ht',
     location: 'Tabarre 41, Zone Franche',
-    note: 'Jus tropicaux, eaux et sodas locaux. Livraison hebdomadaire le lundi.',
+    note:
+        'Jus tropicaux, eaux et sodas locaux. Livraison hebdomadaire le lundi.',
     categories: ['Boissons', 'Produits locaux'],
     contacts: [
-      MockSupplierContact(id: 'c10_1', name: 'Évelyne Saint-Fleur', title: 'Commerciale', phone: '+509 2944-7777', email: 'esaintfleur@boissonstropic.ht'),
+      MockSupplierContact(
+        id: 'c10_1',
+        name: 'Évelyne Saint-Fleur',
+        title: 'Commerciale',
+        phone: '+509 2944-7777',
+        email: 'esaintfleur@boissonstropic.ht',
+      ),
     ],
   ),
 ];
@@ -562,7 +1092,9 @@ final _mockSuppliersSeed = [
 class ProductsNotifier extends StateNotifier<List<MockProduct>> {
   ProductsNotifier({this.journal}) : super(_mockProductsSeed);
   final PendingJournal? journal;
-  int get _nextId => state.isEmpty ? 1 : state.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
+  int get _nextId => state.isEmpty
+      ? 1
+      : state.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
   void add(MockProduct p) {
     state = [...state, p.copyWith(id: _nextId)];
     journal?.call(PendingOperationKind.product, 'Produit ajouté · ${p.name}');
@@ -591,7 +1123,10 @@ class ProductsNotifier extends StateNotifier<List<MockProduct>> {
       for (final p in state)
         if (productIdToQty.containsKey(p.id) && p.trackStock)
           p.copyWith(
-            stockQuantity: (p.stockQuantity - productIdToQty[p.id]!).clamp(0, 1 << 30),
+            stockQuantity: (p.stockQuantity - productIdToQty[p.id]!).clamp(
+              0,
+              1 << 30,
+            ),
           )
         else
           p,
@@ -602,22 +1137,33 @@ class ProductsNotifier extends StateNotifier<List<MockProduct>> {
 class SuppliersNotifier extends StateNotifier<List<MockSupplier>> {
   SuppliersNotifier({this.journal}) : super(_mockSuppliersSeed);
   final PendingJournal? journal;
-  int get _nextId => state.isEmpty ? 1 : state.map((s) => s.id).reduce((a, b) => a > b ? a : b) + 1;
+  int get _nextId => state.isEmpty
+      ? 1
+      : state.map((s) => s.id).reduce((a, b) => a > b ? a : b) + 1;
   void add(MockSupplier s) {
     state = [...state, s.copyWith(id: _nextId)];
-    journal?.call(PendingOperationKind.supplier, 'Fournisseur ajouté · ${s.name}');
+    journal?.call(
+      PendingOperationKind.supplier,
+      'Fournisseur ajouté · ${s.name}',
+    );
   }
 
   void update(MockSupplier s) {
     state = [for (final r in state) r.id == s.id ? s : r];
-    journal?.call(PendingOperationKind.supplier, 'Fournisseur modifié · ${s.name}');
+    journal?.call(
+      PendingOperationKind.supplier,
+      'Fournisseur modifié · ${s.name}',
+    );
   }
 
   void remove(int id) {
     final name = state.where((s) => s.id == id).firstOrNull?.name;
     state = state.where((s) => s.id != id).toList();
     if (name != null) {
-      journal?.call(PendingOperationKind.supplier, 'Fournisseur supprimé · $name');
+      journal?.call(
+        PendingOperationKind.supplier,
+        'Fournisseur supprimé · $name',
+      );
     }
   }
 }
@@ -634,10 +1180,7 @@ class RetailSettings {
     this.deliveryEnabled = true,
   });
 
-  RetailSettings copyWith({
-    bool? pickupEnabled,
-    bool? deliveryEnabled,
-  }) {
+  RetailSettings copyWith({bool? pickupEnabled, bool? deliveryEnabled}) {
     return RetailSettings(
       pickupEnabled: pickupEnabled ?? this.pickupEnabled,
       deliveryEnabled: deliveryEnabled ?? this.deliveryEnabled,
@@ -647,10 +1190,7 @@ class RetailSettings {
 
 class RetailSettingsNotifier extends StateNotifier<RetailSettings> {
   RetailSettingsNotifier()
-      : super(const RetailSettings(
-          pickupEnabled: true,
-          deliveryEnabled: true,
-        ));
+    : super(const RetailSettings(pickupEnabled: true, deliveryEnabled: true));
 
   void setPickupEnabled(bool value) =>
       state = state.copyWith(pickupEnabled: value);
@@ -688,10 +1228,10 @@ extension MockRetailQuoteStatusX on MockRetailQuoteStatus {
 /// A line item in a quote. Prices are snapshotted at creation time so that
 /// later catalog price changes do not alter historical quotes.
 class MockQuoteLine {
-  final MockProduct product;    // kept for catalog reference / display
+  final MockProduct product; // kept for catalog reference / display
   final int quantity;
-  final double unitPriceHtg;   // snapshot — NOT the live product price
-  final double? unitPriceUsd;  // snapshot
+  final double unitPriceHtg; // snapshot — NOT the live product price
+  final double? unitPriceUsd; // snapshot
   final MeasureChoice measure;
 
   MockQuoteLine({
@@ -713,18 +1253,19 @@ class MockQuoteLine {
 
 class MockRetailQuote {
   final String id;
-  final String quoteNumber;    // e.g. QTE-2026-0001
+  final String quoteNumber; // e.g. QTE-2026-0001
   final String checkoutId;
   final List<MockQuoteLine> lines;
   final String? clientName;
   final String? clientPhone;
-  final String? clientEmail;   // required for quotes (with clientPhone)
+  final String? clientEmail; // required for quotes (with clientPhone)
   final RetailFulfillmentMode fulfillmentMode;
   final String? deliveryLocation;
   final String? deliveryPhone;
   final double discountPercent;
   final MockRetailQuoteStatus status;
   final bool paymentLinkSent;
+
   /// True when the quote total has been paid (e.g. via link); hides send/resend link.
   final bool isPaid;
   final DateTime createdAt;
@@ -747,8 +1288,7 @@ class MockRetailQuote {
     required this.createdAt,
   });
 
-  double subtotalHtg() =>
-      lines.fold(0.0, (s, l) => s + l.lineTotalHtg);
+  double subtotalHtg() => lines.fold(0.0, (s, l) => s + l.lineTotalHtg);
 
   double discountAmountHtg() => subtotalHtg() * (discountPercent / 100);
 
@@ -776,12 +1316,15 @@ class MockRetailQuote {
       quoteNumber: quoteNumber ?? this.quoteNumber,
       checkoutId: checkoutId ?? this.checkoutId,
       lines: lines ?? this.lines,
-      clientName:
-          clientName == _sentinel ? this.clientName : clientName as String?,
-      clientPhone:
-          clientPhone == _sentinel ? this.clientPhone : clientPhone as String?,
-      clientEmail:
-          clientEmail == _sentinel ? this.clientEmail : clientEmail as String?,
+      clientName: clientName == _sentinel
+          ? this.clientName
+          : clientName as String?,
+      clientPhone: clientPhone == _sentinel
+          ? this.clientPhone
+          : clientPhone as String?,
+      clientEmail: clientEmail == _sentinel
+          ? this.clientEmail
+          : clientEmail as String?,
       fulfillmentMode: fulfillmentMode ?? this.fulfillmentMode,
       deliveryLocation: deliveryLocation == _sentinel
           ? this.deliveryLocation
@@ -803,7 +1346,8 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
   final PendingJournal? journal;
 
   void _log(String id, String action) {
-    final number = state.where((q) => q.id == id).firstOrNull?.quoteNumber ?? 'Devis';
+    final number =
+        state.where((q) => q.id == id).firstOrNull?.quoteNumber ?? 'Devis';
     journal?.call(PendingOperationKind.quote, '$number · $action');
   }
 
@@ -877,10 +1421,7 @@ class QuotesNotifier extends StateNotifier<List<MockRetailQuote>> {
   void markPaymentLinkSent(String id) {
     state = [
       for (final q in state)
-        if (q.id == id)
-          q.copyWith(paymentLinkSent: true)
-        else
-          q,
+        if (q.id == id) q.copyWith(paymentLinkSent: true) else q,
     ];
     _log(id, 'lien de paiement envoyé');
   }
@@ -903,8 +1444,18 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0001',
     checkoutId: 'chk_seed_1',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[0], quantity: 2, unitPriceHtg: 3200, unitPriceUsd: 32),
-      MockQuoteLine(product: _mockProductsSeed[4], quantity: 24, unitPriceHtg: 180, unitPriceUsd: 1.80),
+      MockQuoteLine(
+        product: _mockProductsSeed[0],
+        quantity: 2,
+        unitPriceHtg: 3200,
+        unitPriceUsd: 32,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[4],
+        quantity: 24,
+        unitPriceHtg: 180,
+        unitPriceUsd: 1.80,
+      ),
     ],
     clientName: 'Restaurant Ti Kay',
     clientPhone: '+509 4123-5678',
@@ -922,8 +1473,18 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0002',
     checkoutId: 'chk_seed_2',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[12], quantity: 4, unitPriceHtg: 600, unitPriceUsd: 6),
-      MockQuoteLine(product: _mockProductsSeed[13], quantity: 6, unitPriceHtg: 180, unitPriceUsd: 1.80),
+      MockQuoteLine(
+        product: _mockProductsSeed[12],
+        quantity: 4,
+        unitPriceHtg: 600,
+        unitPriceUsd: 6,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[13],
+        quantity: 6,
+        unitPriceHtg: 180,
+        unitPriceUsd: 1.80,
+      ),
     ],
     clientName: 'Roseline Janvier',
     clientPhone: '+509 4567-8901',
@@ -938,8 +1499,18 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0003',
     checkoutId: 'chk_seed_3',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[10], quantity: 10, unitPriceHtg: 350, unitPriceUsd: 3.50),
-      MockQuoteLine(product: _mockProductsSeed[11], quantity: 3, unitPriceHtg: 800, unitPriceUsd: 8),
+      MockQuoteLine(
+        product: _mockProductsSeed[10],
+        quantity: 10,
+        unitPriceHtg: 350,
+        unitPriceUsd: 3.50,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[11],
+        quantity: 3,
+        unitPriceHtg: 800,
+        unitPriceUsd: 8,
+      ),
     ],
     clientName: 'Jean Michel',
     clientPhone: '+1 (786) 555-0123',
@@ -955,9 +1526,21 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0004',
     checkoutId: 'chk_seed_4',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[14], quantity: 30, unitPriceHtg: 150),
-      MockQuoteLine(product: _mockProductsSeed[7], quantity: 10, unitPriceHtg: 150),
-      MockQuoteLine(product: _mockProductsSeed[8], quantity: 5, unitPriceHtg: 450),
+      MockQuoteLine(
+        product: _mockProductsSeed[14],
+        quantity: 30,
+        unitPriceHtg: 150,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[7],
+        quantity: 10,
+        unitPriceHtg: 150,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[8],
+        quantity: 5,
+        unitPriceHtg: 450,
+      ),
     ],
     clientName: 'École Nationale No.3',
     clientPhone: '+509 2222-3333',
@@ -973,9 +1556,21 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0005',
     checkoutId: 'chk_seed_5',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[12], quantity: 2, unitPriceHtg: 600),
-      MockQuoteLine(product: _mockProductsSeed[13], quantity: 3, unitPriceHtg: 180),
-      MockQuoteLine(product: _mockProductsSeed[7], quantity: 4, unitPriceHtg: 150),
+      MockQuoteLine(
+        product: _mockProductsSeed[12],
+        quantity: 2,
+        unitPriceHtg: 600,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[13],
+        quantity: 3,
+        unitPriceHtg: 180,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[7],
+        quantity: 4,
+        unitPriceHtg: 150,
+      ),
     ],
     clientName: 'Marie-Claire Joseph',
     clientPhone: '+509 3789-0123',
@@ -989,9 +1584,21 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0006',
     checkoutId: 'chk_seed_6',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[4], quantity: 96, unitPriceHtg: 180),
-      MockQuoteLine(product: _mockProductsSeed[5], quantity: 48, unitPriceHtg: 120),
-      MockQuoteLine(product: _mockProductsSeed[6], quantity: 10, unitPriceHtg: 280),
+      MockQuoteLine(
+        product: _mockProductsSeed[4],
+        quantity: 96,
+        unitPriceHtg: 180,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[5],
+        quantity: 48,
+        unitPriceHtg: 120,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[6],
+        quantity: 10,
+        unitPriceHtg: 280,
+      ),
     ],
     clientName: 'Hôtel Roi Christophe',
     clientPhone: '+509 3600-0000',
@@ -1005,8 +1612,18 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0007',
     checkoutId: 'chk_seed_7',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[6], quantity: 5, unitPriceHtg: 280, unitPriceUsd: 2.80),
-      MockQuoteLine(product: _mockProductsSeed[8], quantity: 4, unitPriceHtg: 450, unitPriceUsd: 4.50),
+      MockQuoteLine(
+        product: _mockProductsSeed[6],
+        quantity: 5,
+        unitPriceHtg: 280,
+        unitPriceUsd: 2.80,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[8],
+        quantity: 4,
+        unitPriceHtg: 450,
+        unitPriceUsd: 4.50,
+      ),
     ],
     clientName: 'Philippe Moreau',
     clientPhone: '+1 (514) 555-9876',
@@ -1024,9 +1641,21 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0008',
     checkoutId: 'chk_seed_8',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[0], quantity: 1, unitPriceHtg: 3200),
-      MockQuoteLine(product: _mockProductsSeed[1], quantity: 2, unitPriceHtg: 600),
-      MockQuoteLine(product: _mockProductsSeed[3], quantity: 2, unitPriceHtg: 700),
+      MockQuoteLine(
+        product: _mockProductsSeed[0],
+        quantity: 1,
+        unitPriceHtg: 3200,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[1],
+        quantity: 2,
+        unitPriceHtg: 600,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[3],
+        quantity: 2,
+        unitPriceHtg: 700,
+      ),
     ],
     clientName: 'Client de passage',
     clientPhone: '+509 3000-0000',
@@ -1040,9 +1669,21 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0009',
     checkoutId: 'chk_seed_9',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[0], quantity: 3, unitPriceHtg: 3200),
-      MockQuoteLine(product: _mockProductsSeed[1], quantity: 10, unitPriceHtg: 600),
-      MockQuoteLine(product: _mockProductsSeed[2], quantity: 5, unitPriceHtg: 800),
+      MockQuoteLine(
+        product: _mockProductsSeed[0],
+        quantity: 3,
+        unitPriceHtg: 3200,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[1],
+        quantity: 10,
+        unitPriceHtg: 600,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[2],
+        quantity: 5,
+        unitPriceHtg: 800,
+      ),
     ],
     clientName: 'Restaurant Lakay',
     clientPhone: '+509 3444-5555',
@@ -1060,9 +1701,21 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0010',
     checkoutId: 'chk_seed_10',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[12], quantity: 3, unitPriceHtg: 600),
-      MockQuoteLine(product: _mockProductsSeed[13], quantity: 4, unitPriceHtg: 180),
-      MockQuoteLine(product: _mockProductsSeed[7], quantity: 6, unitPriceHtg: 150),
+      MockQuoteLine(
+        product: _mockProductsSeed[12],
+        quantity: 3,
+        unitPriceHtg: 600,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[13],
+        quantity: 4,
+        unitPriceHtg: 180,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[7],
+        quantity: 6,
+        unitPriceHtg: 150,
+      ),
     ],
     clientName: 'Sandra Pierre',
     clientPhone: '+509 3111-2222',
@@ -1077,8 +1730,16 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0011',
     checkoutId: 'chk_seed_11',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[4], quantity: 120, unitPriceHtg: 180),
-      MockQuoteLine(product: _mockProductsSeed[5], quantity: 60, unitPriceHtg: 120),
+      MockQuoteLine(
+        product: _mockProductsSeed[4],
+        quantity: 120,
+        unitPriceHtg: 180,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[5],
+        quantity: 60,
+        unitPriceHtg: 120,
+      ),
     ],
     clientName: 'Club Sportif Horizon',
     clientPhone: '+509 3888-0000',
@@ -1092,10 +1753,26 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0012',
     checkoutId: 'chk_seed_12',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[0], quantity: 4, unitPriceHtg: 3200),
-      MockQuoteLine(product: _mockProductsSeed[1], quantity: 8, unitPriceHtg: 600),
-      MockQuoteLine(product: _mockProductsSeed[3], quantity: 6, unitPriceHtg: 700),
-      MockQuoteLine(product: _mockProductsSeed[2], quantity: 4, unitPriceHtg: 800),
+      MockQuoteLine(
+        product: _mockProductsSeed[0],
+        quantity: 4,
+        unitPriceHtg: 3200,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[1],
+        quantity: 8,
+        unitPriceHtg: 600,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[3],
+        quantity: 6,
+        unitPriceHtg: 700,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[2],
+        quantity: 4,
+        unitPriceHtg: 800,
+      ),
     ],
     clientName: 'Magasin Bossou',
     clientPhone: '+509 3555-7890',
@@ -1111,8 +1788,16 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0013',
     checkoutId: 'chk_seed_13',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[10], quantity: 6, unitPriceHtg: 350),
-      MockQuoteLine(product: _mockProductsSeed[9], quantity: 3, unitPriceHtg: 200),
+      MockQuoteLine(
+        product: _mockProductsSeed[10],
+        quantity: 6,
+        unitPriceHtg: 350,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[9],
+        quantity: 3,
+        unitPriceHtg: 200,
+      ),
     ],
     clientName: 'Famille Desroches',
     clientPhone: '+509 3222-7777',
@@ -1127,8 +1812,16 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0014',
     checkoutId: 'chk_seed_14',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[14], quantity: 20, unitPriceHtg: 150),
-      MockQuoteLine(product: _mockProductsSeed[11], quantity: 5, unitPriceHtg: 800),
+      MockQuoteLine(
+        product: _mockProductsSeed[14],
+        quantity: 20,
+        unitPriceHtg: 150,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[11],
+        quantity: 5,
+        unitPriceHtg: 800,
+      ),
     ],
     clientName: 'Institut Culturel Français',
     clientPhone: '+509 2813-0000',
@@ -1142,9 +1835,24 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0015',
     checkoutId: 'chk_seed_15',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[7], quantity: 12, unitPriceHtg: 150, unitPriceUsd: 1.50),
-      MockQuoteLine(product: _mockProductsSeed[13], quantity: 10, unitPriceHtg: 180, unitPriceUsd: 1.80),
-      MockQuoteLine(product: _mockProductsSeed[12], quantity: 6, unitPriceHtg: 600, unitPriceUsd: 6),
+      MockQuoteLine(
+        product: _mockProductsSeed[7],
+        quantity: 12,
+        unitPriceHtg: 150,
+        unitPriceUsd: 1.50,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[13],
+        quantity: 10,
+        unitPriceHtg: 180,
+        unitPriceUsd: 1.80,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[12],
+        quantity: 6,
+        unitPriceHtg: 600,
+        unitPriceUsd: 6,
+      ),
     ],
     clientName: 'Nathalie Dupont',
     clientPhone: '+33 6 12 34 56 78',
@@ -1161,9 +1869,21 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0016',
     checkoutId: 'chk_seed_16',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[9], quantity: 10, unitPriceHtg: 200),
-      MockQuoteLine(product: _mockProductsSeed[10], quantity: 15, unitPriceHtg: 350),
-      MockQuoteLine(product: _mockProductsSeed[8], quantity: 8, unitPriceHtg: 450),
+      MockQuoteLine(
+        product: _mockProductsSeed[9],
+        quantity: 10,
+        unitPriceHtg: 200,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[10],
+        quantity: 15,
+        unitPriceHtg: 350,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[8],
+        quantity: 8,
+        unitPriceHtg: 450,
+      ),
     ],
     clientName: 'Clinique Dr. Pierre',
     clientPhone: '+509 3900-1111',
@@ -1177,8 +1897,16 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0017',
     checkoutId: 'chk_seed_17',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[2], quantity: 2, unitPriceHtg: 800),
-      MockQuoteLine(product: _mockProductsSeed[3], quantity: 4, unitPriceHtg: 700),
+      MockQuoteLine(
+        product: _mockProductsSeed[2],
+        quantity: 2,
+        unitPriceHtg: 800,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[3],
+        quantity: 4,
+        unitPriceHtg: 700,
+      ),
     ],
     clientName: 'Boutique Soleil',
     clientPhone: '+509 3777-8888',
@@ -1192,7 +1920,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0018',
     checkoutId: 'chk_seed_18',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[5], quantity: 24, unitPriceHtg: 120),
+      MockQuoteLine(
+        product: _mockProductsSeed[5],
+        quantity: 24,
+        unitPriceHtg: 120,
+      ),
     ],
     clientName: 'Kafé Twòp',
     clientPhone: '+509 3666-4444',
@@ -1207,8 +1939,16 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0019',
     checkoutId: 'chk_seed_19',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[11], quantity: 2, unitPriceHtg: 800),
-      MockQuoteLine(product: _mockProductsSeed[14], quantity: 40, unitPriceHtg: 150),
+      MockQuoteLine(
+        product: _mockProductsSeed[11],
+        quantity: 2,
+        unitPriceHtg: 800,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[14],
+        quantity: 40,
+        unitPriceHtg: 150,
+      ),
     ],
     clientName: 'Pharmacie Centrale',
     clientPhone: '+509 3456-0000',
@@ -1224,7 +1964,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0020',
     checkoutId: 'chk_seed_20',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[9], quantity: 5, unitPriceHtg: 200),
+      MockQuoteLine(
+        product: _mockProductsSeed[9],
+        quantity: 5,
+        unitPriceHtg: 200,
+      ),
     ],
     clientName: 'Client de passage',
     clientPhone: '+509 3000-1111',
@@ -1238,8 +1982,16 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0021',
     checkoutId: 'chk_seed_21',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[0], quantity: 1, unitPriceHtg: 3200),
-      MockQuoteLine(product: _mockProductsSeed[4], quantity: 48, unitPriceHtg: 180),
+      MockQuoteLine(
+        product: _mockProductsSeed[0],
+        quantity: 1,
+        unitPriceHtg: 3200,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[4],
+        quantity: 48,
+        unitPriceHtg: 180,
+      ),
     ],
     clientName: 'Hôpital Bernard Mevs',
     clientPhone: '+509 2812-3030',
@@ -1255,7 +2007,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0022',
     checkoutId: 'chk_seed_22',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[6], quantity: 8, unitPriceHtg: 280),
+      MockQuoteLine(
+        product: _mockProductsSeed[6],
+        quantity: 8,
+        unitPriceHtg: 280,
+      ),
     ],
     clientName: 'Marché de Fer',
     clientPhone: '+509 3999-1212',
@@ -1269,7 +2025,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0023',
     checkoutId: 'chk_seed_23',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[12], quantity: 10, unitPriceHtg: 600),
+      MockQuoteLine(
+        product: _mockProductsSeed[12],
+        quantity: 10,
+        unitPriceHtg: 600,
+      ),
     ],
     clientName: 'Épicerie Délivrance',
     clientPhone: '+509 3123-4545',
@@ -1283,8 +2043,16 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0024',
     checkoutId: 'chk_seed_24',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[8], quantity: 3, unitPriceHtg: 450),
-      MockQuoteLine(product: _mockProductsSeed[10], quantity: 8, unitPriceHtg: 350),
+      MockQuoteLine(
+        product: _mockProductsSeed[8],
+        quantity: 3,
+        unitPriceHtg: 450,
+      ),
+      MockQuoteLine(
+        product: _mockProductsSeed[10],
+        quantity: 8,
+        unitPriceHtg: 350,
+      ),
     ],
     clientName: 'Radio Caraïbes FM',
     clientPhone: '+509 2234-0000',
@@ -1299,7 +2067,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0025',
     checkoutId: 'chk_seed_25',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[1], quantity: 2, unitPriceHtg: 600),
+      MockQuoteLine(
+        product: _mockProductsSeed[1],
+        quantity: 2,
+        unitPriceHtg: 600,
+      ),
     ],
     clientName: 'Lycée Toussaint',
     clientPhone: '+509 2944-1000',
@@ -1313,7 +2085,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0026',
     checkoutId: 'chk_seed_26',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[13], quantity: 20, unitPriceHtg: 180),
+      MockQuoteLine(
+        product: _mockProductsSeed[13],
+        quantity: 20,
+        unitPriceHtg: 180,
+      ),
     ],
     clientName: 'Mme Bélizaire',
     clientPhone: '+509 3777-2000',
@@ -1327,7 +2103,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0027',
     checkoutId: 'chk_seed_27',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[6], quantity: 4, unitPriceHtg: 280),
+      MockQuoteLine(
+        product: _mockProductsSeed[6],
+        quantity: 4,
+        unitPriceHtg: 280,
+      ),
     ],
     clientName: 'Boulangerie Pétion',
     clientPhone: '+509 3611-9090',
@@ -1341,7 +2121,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0028',
     checkoutId: 'chk_seed_28',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[14], quantity: 15, unitPriceHtg: 150),
+      MockQuoteLine(
+        product: _mockProductsSeed[14],
+        quantity: 15,
+        unitPriceHtg: 150,
+      ),
     ],
     clientName: 'ONG Solidarité',
     clientPhone: '+509 3888-3030',
@@ -1357,7 +2141,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0029',
     checkoutId: 'chk_seed_29',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[3], quantity: 1, unitPriceHtg: 700),
+      MockQuoteLine(
+        product: _mockProductsSeed[3],
+        quantity: 1,
+        unitPriceHtg: 700,
+      ),
     ],
     clientName: 'Client de passage',
     clientPhone: '+509 3000-9999',
@@ -1371,7 +2159,11 @@ final _mockQuotesSeed = <MockRetailQuote>[
     quoteNumber: 'QTE-2026-0030',
     checkoutId: 'chk_seed_30',
     lines: [
-      MockQuoteLine(product: _mockProductsSeed[10], quantity: 12, unitPriceHtg: 350),
+      MockQuoteLine(
+        product: _mockProductsSeed[10],
+        quantity: 12,
+        unitPriceHtg: 350,
+      ),
     ],
     clientName: 'Garde-Manger SA',
     clientPhone: '+509 3450-7777',
@@ -1393,8 +2185,10 @@ class RetailStockMovement {
   final int productId;
   final RetailStockMovementKind kind;
   final int quantityDelta;
+
   /// Physical receipt / effective date (and time when known).
   final DateTime receivedAt;
+
   /// When the line was recorded in the system.
   final DateTime enteredAt;
   final String? supplierName;
@@ -1694,8 +2488,10 @@ List<RetailStockMovement> _seedRetailInventoryMovements() {
   return out;
 }
 
-class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMovement>> {
-  RetailInventoryLedgerNotifier(this._ref) : super(_seedRetailInventoryMovements());
+class RetailInventoryLedgerNotifier
+    extends StateNotifier<List<RetailStockMovement>> {
+  RetailInventoryLedgerNotifier(this._ref)
+    : super(_seedRetailInventoryMovements());
 
   final Ref _ref;
   int _seq = 0;
@@ -1715,9 +2511,9 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
     final idx = products.indexWhere((e) => e.id == productId);
     if (idx < 0) return;
     final p = products[idx];
-    _ref.read(mockProductsProvider.notifier).replaceQuietly(
-          p.copyWith(stockQuantity: p.stockQuantity + quantity),
-        );
+    _ref
+        .read(mockProductsProvider.notifier)
+        .replaceQuietly(p.copyWith(stockQuantity: p.stockQuantity + quantity));
     pendingJournal(_ref)(
       PendingOperationKind.stock,
       'Entrée de stock · ${p.name}',
@@ -1739,7 +2535,10 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
   }
 
   /// Call after [ProductsNotifier.applySale] so stock stays in sync.
-  void recordSalesFromCheckout(Map<int, int> productIdToQty, DateTime saleTime) {
+  void recordSalesFromCheckout(
+    Map<int, int> productIdToQty,
+    DateTime saleTime,
+  ) {
     final extra = <RetailStockMovement>[];
     for (final e in productIdToQty.entries) {
       if (e.value <= 0) continue;
@@ -1771,7 +2570,9 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
     if (idx < 0) return;
     final p = products[idx];
     final newQ = (p.stockQuantity + signedDelta).clamp(0, 1 << 30);
-    _ref.read(mockProductsProvider.notifier).replaceQuietly(p.copyWith(stockQuantity: newQ));
+    _ref
+        .read(mockProductsProvider.notifier)
+        .replaceQuietly(p.copyWith(stockQuantity: newQ));
     pendingJournal(_ref)(
       PendingOperationKind.stock,
       'Ajustement de stock · ${p.name}',
@@ -1788,7 +2589,9 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
         receivedAt: now,
         enteredAt: now,
         supplierName: null,
-        notes: notes?.trim().isNotEmpty == true ? notes!.trim() : 'Ajustement de solde',
+        notes: notes?.trim().isNotEmpty == true
+            ? notes!.trim()
+            : 'Ajustement de solde',
       ),
     ];
   }
@@ -1796,30 +2599,35 @@ class RetailInventoryLedgerNotifier extends StateNotifier<List<RetailStockMoveme
 
 // ──────────────── PROVIDERS ────────────────
 
-final mockProductsProvider = StateNotifierProvider<ProductsNotifier, List<MockProduct>>(
-  (ref) => ProductsNotifier(journal: pendingJournal(ref)),
-);
+final mockProductsProvider =
+    StateNotifierProvider<ProductsNotifier, List<MockProduct>>(
+      (ref) => ProductsNotifier(journal: pendingJournal(ref)),
+    );
 
 final retailInventoryLedgerProvider =
-    StateNotifierProvider<RetailInventoryLedgerNotifier, List<RetailStockMovement>>(
-  (ref) => RetailInventoryLedgerNotifier(ref),
-);
+    StateNotifierProvider<
+      RetailInventoryLedgerNotifier,
+      List<RetailStockMovement>
+    >((ref) => RetailInventoryLedgerNotifier(ref));
 
-final mockCustomersProvider = Provider<List<MockCustomer>>((ref) => mockCustomers);
+final mockCustomersProvider = Provider<List<MockCustomer>>(
+  (ref) => mockCustomers,
+);
 final mockSalesProvider = Provider<List<MockSale>>((ref) => mockSales);
 
-final mockSuppliersProvider = StateNotifierProvider<SuppliersNotifier, List<MockSupplier>>(
-  (ref) => SuppliersNotifier(journal: pendingJournal(ref)),
-);
+final mockSuppliersProvider =
+    StateNotifierProvider<SuppliersNotifier, List<MockSupplier>>(
+      (ref) => SuppliersNotifier(journal: pendingJournal(ref)),
+    );
 
 final retailSettingsProvider =
     StateNotifierProvider<RetailSettingsNotifier, RetailSettings>(
-  (ref) => RetailSettingsNotifier(),
-);
+      (ref) => RetailSettingsNotifier(),
+    );
 
 final quotesProvider =
     StateNotifierProvider<QuotesNotifier, List<MockRetailQuote>>(
-  (ref) => QuotesNotifier(journal: pendingJournal(ref)),
-);
+      (ref) => QuotesNotifier(journal: pendingJournal(ref)),
+    );
 
 const Object _sentinel = Object();

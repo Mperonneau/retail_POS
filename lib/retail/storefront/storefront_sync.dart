@@ -192,14 +192,23 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
             'stock': p.stockQuantity,
             'unit': p.stockUnit == 'u' ? '' : p.stockUnit,
             'sale_mode': p.saleMode.wire,
-            'roll_price_htg': double.parse(p.sellingRollPriceHtg.toStringAsFixed(2)),
+            'roll_price_htg': double.parse(
+              p.sellingRollPriceHtg.toStringAsFixed(2),
+            ),
             'regular_roll_price_htg':
-                p.discountPercent > 0 && p.saleMode == SaleMode.roll ? p.rollPriceHtg : 0,
+                p.discountPercent > 0 && p.saleMode == SaleMode.roll
+                ? p.rollPriceHtg
+                : 0,
             'min_width': p.minWidth,
             'roll_width': p.rollWidth,
-            'case_price_htg': double.parse(p.sellingCasePriceHtg.toStringAsFixed(2)),
+            'limit_length': p.limitLength,
+            'case_price_htg': double.parse(
+              p.sellingCasePriceHtg.toStringAsFixed(2),
+            ),
             'regular_case_price_htg':
-                p.discountPercent > 0 && p.saleMode == SaleMode.pack ? p.casePriceHtg : 0,
+                p.discountPercent > 0 && p.saleMode == SaleMode.pack
+                ? p.casePriceHtg
+                : 0,
             'units_per_case': p.unitsPerCase,
             'options': [
               for (final g in p.options)
@@ -296,7 +305,8 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
                 quantity: line.quantity,
                 unitPriceHtg: line.unitHtg,
                 measure: measureForMode(
-                  products[int.tryParse(line.productId)]?.saleMode ?? SaleMode.piece,
+                  products[int.tryParse(line.productId)]?.saleMode ??
+                      SaleMode.piece,
                   line.optionsLabel,
                 ),
               ),
