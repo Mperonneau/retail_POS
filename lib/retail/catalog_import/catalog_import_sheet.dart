@@ -133,20 +133,27 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
   bool get _needsRate => _currency == 'usd' || _currency == 'mixed';
 
   Future<void> _pick() async {
-    final picked = await pickCatalogFiles();
-    if (!mounted) return;
-    setState(() {
-      _formError = picked.error;
-      for (final file in picked.files) {
-        if (_files.length >= 6) break;
-        final same = _files.any(
-          (existing) =>
-              existing.name == file.name &&
-              existing.bytes.length == file.bytes.length,
-        );
-        if (!same) _files.add(file);
-      }
-    });
+    try {
+      final picked = await pickCatalogFiles();
+      if (!mounted) return;
+      setState(() {
+        _formError = picked.error;
+        for (final file in picked.files) {
+          if (_files.length >= 6) break;
+          final same = _files.any(
+            (existing) =>
+                existing.name == file.name &&
+                existing.bytes.length == file.bytes.length,
+          );
+          if (!same) _files.add(file);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _formError = 'Impossible d\'ajouter le document. Réessayez.',
+      );
+    }
   }
 
   Future<void> _start() async {
