@@ -9,6 +9,7 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_close_button.dart';
 import '../models/product_option.dart';
 import '../models/retail_cart_entry.dart';
+import '../models/sale_measure.dart';
 
 /// Register product page: description, price, stock, options, and add to cart.
 class PosProductDetail extends StatelessWidget {
@@ -82,11 +83,18 @@ class PosProductDetail extends StatelessWidget {
               ),
               children: [
                 Text(
-                  CurrencyFormatter.local(context, product.sellingPriceHtg),
+                  _priceHeadline(context, product),
                   style: AppTextStyles.h2(
                     color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                   ),
                 ),
+                if (product.saleMode != SaleMode.piece) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _saleExplanation(context, product),
+                    style: AppTextStyles.body(color: ink),
+                  ),
+                ],
                 if (product.discountPercent > 0) ...[
                   const SizedBox(height: 4),
                   Text.rich(
@@ -170,9 +178,7 @@ class PosProductDetail extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              line.options.isEmpty
-                                  ? 'Quantité'
-                                  : line.options.map((o) => o.name).join(', '),
+                              line.detailLabel.isEmpty ? 'Quantité' : line.detailLabel,
                               style: AppTextStyles.body(color: ink),
                             ),
                           ),
@@ -316,8 +322,29 @@ class _QtyButton extends StatelessWidget {
   }
 }
 
+String _priceHeadline(BuildContext context, MockProduct product) {
+  final money = CurrencyFormatter.local(context, product.sellingPriceHtg);
+  return switch (product.saleMode) {
+    SaleMode.piece => money,
+    SaleMode.roll => '$money par pouce',
+    SaleMode.pack => '$money l\'unité',
+  };
+}
+
+String _saleExplanation(BuildContext context, MockProduct product) {
+  if (product.saleMode == SaleMode.roll) {
+    final roll = CurrencyFormatter.local(context, product.sellingRollPriceHtg);
+    return 'Rouleau entier de ${product.rollWidth} po : $roll. '
+        'Ou une largeur, minimum ${product.minWidth} po.';
+  }
+  final pack = CurrencyFormatter.local(context, product.sellingCasePriceHtg);
+  return 'Caisse de ${product.unitsPerCase} : $pack. '
+      'Ou une seule unité au prix ci-dessus.';
+}
+
 String _stockLabel(MockProduct product) {
   if (!product.trackStock) return 'Stock non suivi';
+  if (product.saleMode == SaleMode.roll) return '${product.stockQuantity} po';
   final n = product.stockQuantity;
   final unit = switch (product.stockUnit) {
     'kg' => 'kg',

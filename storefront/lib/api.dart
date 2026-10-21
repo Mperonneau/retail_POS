@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:retail_pos/core/payments/card_charge_pricing.dart';
+import 'package:retail_pos/retail/models/sale_measure.dart';
 
 /// Vitrine API on the payments server. No secret ever reaches this app.
 class StorefrontApi {
@@ -323,6 +324,16 @@ class Product {
     required this.maxQuantity,
     required this.unit,
     required this.options,
+    this.saleMode = SaleMode.piece,
+    this.rollPriceHtg = 0,
+    this.regularRollPriceHtg = 0,
+    this.minWidth = 0,
+    this.rollWidth = 0,
+    this.casePriceHtg = 0,
+    this.regularCasePriceHtg = 0,
+    this.unitsPerCase = 0,
+    this.trackStock = false,
+    this.stock = 0,
   });
 
   final String id;
@@ -336,6 +347,22 @@ class Product {
   final int maxQuantity;
   final String unit;
   final List<OptionGroup> options;
+  final SaleMode saleMode;
+  final double rollPriceHtg;
+  final double regularRollPriceHtg;
+  final int minWidth;
+  final int rollWidth;
+  final double casePriceHtg;
+  final double regularCasePriceHtg;
+  final int unitsPerCase;
+  final bool trackStock;
+  final int stock;
+
+  String get saleHint => switch (saleMode) {
+    SaleMode.piece => '',
+    SaleMode.roll => 'Rouleau ou largeur',
+    SaleMode.pack => 'Caisse ou unité',
+  };
 
   bool get onSale => regularPriceHtg > priceHtg;
 
@@ -350,6 +377,16 @@ class Product {
     available: json['available'] == true,
     maxQuantity: _int(json['max_quantity']),
     unit: json['unit']?.toString() ?? '',
+    saleMode: saleModeFromWire(json['sale_mode']?.toString()),
+    rollPriceHtg: _double(json['roll_price_htg']),
+    regularRollPriceHtg: _double(json['regular_roll_price_htg']),
+    minWidth: _int(json['min_width']),
+    rollWidth: _int(json['roll_width']),
+    casePriceHtg: _double(json['case_price_htg']),
+    regularCasePriceHtg: _double(json['regular_case_price_htg']),
+    unitsPerCase: _int(json['units_per_case']),
+    trackStock: json['track_stock'] == true,
+    stock: _int(json['stock']),
     options: [
       for (final g in (json['options'] as List? ?? const []))
         if (g is Map)

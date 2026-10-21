@@ -6,6 +6,7 @@ import '../models/pending_operation.dart';
 import '../models/retail_fulfillment_mode.dart';
 import '../providers/device_session_provider.dart';
 import '../../retail/models/product_option.dart';
+import '../../retail/models/sale_measure.dart';
 
 class MockProduct {
   final int id;
@@ -29,6 +30,17 @@ class MockProduct {
   final List<ProductOptionGroup> options;
   /// Listed on the online vitrine when the product is also [active].
   final bool showOnStorefront;
+  /// [priceHtg] is the piece price, the price per inch, or the unit price.
+  final SaleMode saleMode;
+  /// Price of one full roll. Stock for a roll is kept in inches.
+  final double rollPriceHtg;
+  final double rollPriceUsd;
+  final int minWidth;
+  final int rollWidth;
+  /// Price of one case. Stock for a case product is kept in units.
+  final double casePriceHtg;
+  final double casePriceUsd;
+  final int unitsPerCase;
 
   const MockProduct({
     required this.id,
@@ -48,22 +60,60 @@ class MockProduct {
     this.stockUnit = 'u',
     this.options = const [],
     this.showOnStorefront = true,
+    this.saleMode = SaleMode.piece,
+    this.rollPriceHtg = 0,
+    this.rollPriceUsd = 0,
+    this.minWidth = 0,
+    this.rollWidth = 0,
+    this.casePriceHtg = 0,
+    this.casePriceUsd = 0,
+    this.unitsPerCase = 0,
   });
 
   bool get isLowStock => trackStock && stockQuantity <= minStock;
 
-  /// Catalog price after the product discount. Option extras are added later.
-  double get sellingPriceHtg {
+  double _discounted(double amount) {
     final pct = discountPercent.clamp(0, 100);
-    if (pct == 0) return priceHtg;
-    return priceHtg * (100 - pct) / 100;
+    if (pct == 0) return amount;
+    return amount * (100 - pct) / 100;
   }
 
-  double get sellingPriceUsd {
-    final pct = discountPercent.clamp(0, 100);
-    if (pct == 0) return priceUsd;
-    return priceUsd * (100 - pct) / 100;
-  }
+  /// Catalog price after the product discount. Option extras are added later.
+  double get sellingPriceHtg => _discounted(priceHtg);
+
+  double get sellingPriceUsd => _discounted(priceUsd);
+
+  double get sellingRollPriceHtg => _discounted(rollPriceHtg);
+
+  double get sellingCasePriceHtg => _discounted(casePriceHtg);
+
+  /// Short cue on a product card. Empty for a flat price.
+  String get saleHint => switch (saleMode) {
+    SaleMode.piece => '',
+    SaleMode.roll => 'Rouleau ou largeur',
+    SaleMode.pack => 'Caisse ou unité',
+  };
+
+  /// Appended to the catalogue amount: " / po" or " / u.".
+  String get priceUnitSuffix => switch (saleMode) {
+    SaleMode.piece => '',
+    SaleMode.roll => ' / po',
+    SaleMode.pack => ' / u.',
+  };
+
+  int unitsEach(MeasureChoice choice) => choice.unitsEach(
+    rollWidth: rollWidth,
+    unitsPerCase: unitsPerCase,
+  );
+
+  double priceFor(MeasureChoice choice) => choice.baseHtg(
+    priceHtg: sellingPriceHtg,
+    rollPriceHtg: sellingRollPriceHtg,
+    casePriceHtg: sellingCasePriceHtg,
+  );
+
+  String labelFor(MeasureChoice choice) =>
+      choice.label(unitsPerCase: unitsPerCase);
 
   double get margin =>
       priceHtg == 0 ? 0 : ((priceHtg - costHtg) / priceHtg) * 100;
@@ -86,6 +136,14 @@ class MockProduct {
     String? stockUnit,
     List<ProductOptionGroup>? options,
     bool? showOnStorefront,
+    SaleMode? saleMode,
+    double? rollPriceHtg,
+    double? rollPriceUsd,
+    int? minWidth,
+    int? rollWidth,
+    double? casePriceHtg,
+    double? casePriceUsd,
+    int? unitsPerCase,
   }) {
     return MockProduct(
       id: id ?? this.id,
@@ -106,6 +164,14 @@ class MockProduct {
       stockUnit: stockUnit ?? this.stockUnit,
       options: options ?? this.options,
       showOnStorefront: showOnStorefront ?? this.showOnStorefront,
+      saleMode: saleMode ?? this.saleMode,
+      rollPriceHtg: rollPriceHtg ?? this.rollPriceHtg,
+      rollPriceUsd: rollPriceUsd ?? this.rollPriceUsd,
+      minWidth: minWidth ?? this.minWidth,
+      rollWidth: rollWidth ?? this.rollWidth,
+      casePriceHtg: casePriceHtg ?? this.casePriceHtg,
+      casePriceUsd: casePriceUsd ?? this.casePriceUsd,
+      unitsPerCase: unitsPerCase ?? this.unitsPerCase,
     );
   }
 }
@@ -272,6 +338,77 @@ final _mockProductsSeed = [
   MockProduct(id: 33, name: 'Lampe torche LED', category: 'Électronique', priceHtg: 450, priceUsd: 4.50, costHtg: 280, stockQuantity: 13, minStock: 5),
   MockProduct(id: 34, name: 'Règle 30cm', category: 'Papeterie', priceHtg: 75, priceUsd: 0.75, costHtg: 45, stockQuantity: 64, minStock: 20),
   MockProduct(id: 35, name: 'Stylo bleu (boîte 12)', category: 'Papeterie', priceHtg: 240, priceUsd: 2.40, costHtg: 150, stockQuantity: 22, minStock: 10),
+  // Roll: priceHtg is per inch. The full roll has its own price. Stock is inches.
+  MockProduct(
+    id: 36,
+    name: 'Rouleau de tissu coton',
+    category: 'Quincaillerie',
+    priceHtg: 15,
+    priceUsd: 0.15,
+    costHtg: 8,
+    stockQuantity: 180,
+    minStock: 60,
+    description:
+        'Vendu au rouleau entier (60 po) ou à la largeur. Minimum 12 pouces. '
+        'Le rouleau entier a son propre prix.',
+    saleMode: SaleMode.roll,
+    rollPriceHtg: 750,
+    rollPriceUsd: 7.50,
+    minWidth: 12,
+    rollWidth: 60,
+  ),
+  MockProduct(
+    id: 37,
+    name: 'Rouleau de ruban adhésif',
+    category: 'Quincaillerie',
+    priceHtg: 8,
+    priceUsd: 0.08,
+    costHtg: 4,
+    stockQuantity: 108,
+    minStock: 36,
+    description:
+        'Vendu au rouleau entier (36 po) ou à la largeur. Minimum 6 pouces.',
+    saleMode: SaleMode.roll,
+    rollPriceHtg: 250,
+    rollPriceUsd: 2.50,
+    minWidth: 6,
+    rollWidth: 36,
+  ),
+  // Case: priceHtg is one unit. The case has its own price. Stock is units.
+  MockProduct(
+    id: 38,
+    name: "Caisse d'eau 500 ml",
+    category: 'Boissons',
+    priceHtg: 40,
+    priceUsd: 0.40,
+    costHtg: 25,
+    stockQuantity: 72,
+    minStock: 24,
+    description:
+        'Une caisse contient 24 bouteilles à un prix de caisse. '
+        "Une bouteille seule a son propre prix.",
+    saleMode: SaleMode.pack,
+    casePriceHtg: 800,
+    casePriceUsd: 8,
+    unitsPerCase: 24,
+  ),
+  MockProduct(
+    id: 39,
+    name: 'Caisse de savon 100 g',
+    category: 'Ménage',
+    priceHtg: 85,
+    priceUsd: 0.85,
+    costHtg: 50,
+    stockQuantity: 48,
+    minStock: 12,
+    description:
+        'Une caisse contient 12 savons à un prix de caisse. '
+        "Un savon seul a son propre prix.",
+    saleMode: SaleMode.pack,
+    casePriceHtg: 900,
+    casePriceUsd: 9,
+    unitsPerCase: 12,
+  ),
 ];
 
 final mockCustomers = [
@@ -554,15 +691,23 @@ class MockQuoteLine {
   final int quantity;
   final double unitPriceHtg;   // snapshot — NOT the live product price
   final double? unitPriceUsd;  // snapshot
+  final MeasureChoice measure;
 
   MockQuoteLine({
     required this.product,
     required this.quantity,
     double? unitPriceHtg,
     this.unitPriceUsd,
+    this.measure = const MeasureChoice.plain(),
   }) : unitPriceHtg = unitPriceHtg ?? product.sellingPriceHtg;
 
   double get lineTotalHtg => unitPriceHtg * quantity;
+
+  String get displayName {
+    final extra = measure.label(unitsPerCase: product.unitsPerCase);
+    if (extra.isEmpty || product.name.contains(extra)) return product.name;
+    return '${product.name} · $extra';
+  }
 }
 
 class MockRetailQuote {

@@ -12,6 +12,7 @@ import '../../core/models/retail_order.dart';
 import '../../core/providers/app_notification_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/currency_settings_provider.dart';
+import '../models/sale_measure.dart';
 import 'storefront_api.dart';
 import 'storefront_settings.dart';
 
@@ -190,6 +191,16 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
             'track_stock': p.trackStock,
             'stock': p.stockQuantity,
             'unit': p.stockUnit == 'u' ? '' : p.stockUnit,
+            'sale_mode': p.saleMode.wire,
+            'roll_price_htg': double.parse(p.sellingRollPriceHtg.toStringAsFixed(2)),
+            'regular_roll_price_htg':
+                p.discountPercent > 0 && p.saleMode == SaleMode.roll ? p.rollPriceHtg : 0,
+            'min_width': p.minWidth,
+            'roll_width': p.rollWidth,
+            'case_price_htg': double.parse(p.sellingCasePriceHtg.toStringAsFixed(2)),
+            'regular_case_price_htg':
+                p.discountPercent > 0 && p.saleMode == SaleMode.pack ? p.casePriceHtg : 0,
+            'units_per_case': p.unitsPerCase,
             'options': [
               for (final g in p.options)
                 {
@@ -284,6 +295,10 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
                 product: _productFor(line, products, rate),
                 quantity: line.quantity,
                 unitPriceHtg: line.unitHtg,
+                measure: measureForMode(
+                  products[int.tryParse(line.productId)]?.saleMode ?? SaleMode.piece,
+                  line.optionsLabel,
+                ),
               ),
           ],
           clientName: request.customerName,
@@ -353,7 +368,8 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
       for (final line in request.lines) {
         final id = int.tryParse(line.productId);
         if (id != null && products.containsKey(id)) {
-          sold[id] = (sold[id] ?? 0) + line.quantity;
+          final take = line.stockUnits > 0 ? line.stockUnits : line.quantity;
+          sold[id] = (sold[id] ?? 0) + take;
         }
       }
       if (sold.isNotEmpty) {
@@ -379,11 +395,7 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
     double rate,
   ) {
     final known = products[int.tryParse(line.productId)];
-    if (known != null) {
-      return line.optionsLabel.isEmpty
-          ? known
-          : known.copyWith(name: line.displayName);
-    }
+    if (known != null) return known;
     return MockProduct(
       id: int.tryParse(line.productId) ?? 0,
       name: line.displayName,
@@ -421,7 +433,7 @@ class StorefrontSyncNotifier extends StateNotifier<StorefrontSyncState> {
         for (final line in quote.lines)
           {
             'product_id': '${line.product.id}',
-            'name': line.product.name,
+            'name': line.displayName,
             'quantity': line.quantity,
             'unit_htg': double.parse(line.unitPriceHtg.toStringAsFixed(2)),
           },

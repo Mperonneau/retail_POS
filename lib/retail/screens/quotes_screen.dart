@@ -1311,9 +1311,15 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
   }
 
   void _convertToOrder(MockRetailQuote quote) {
-    final cart = quote.lines
-        .map((l) => RetailCartEntry(product: l.product, quantity: l.quantity))
-        .toList();
+    final products = ref.read(mockProductsProvider);
+    final cart = quote.lines.map((l) {
+      final live = products.where((p) => p.id == l.product.id).firstOrNull ?? l.product;
+      return RetailCartEntry(
+        product: live,
+        quantity: l.quantity,
+        measure: l.measure,
+      );
+    }).toList();
     showRetailCheckoutDialog(
       context,
       ref,
@@ -1668,7 +1674,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                       rows: quote.lines
                           .map((l) => (
                                 l.quantity,
-                                l.product.name,
+                                l.displayName,
                                 l.unitPriceHtg,
                                 l.lineTotalHtg,
                               ))

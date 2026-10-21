@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:retail_pos/core/theme/app_colors.dart';
 import 'package:retail_pos/core/theme/app_text_styles.dart';
 import 'package:retail_pos/core/utils/constants.dart';
+import 'package:retail_pos/retail/models/sale_measure.dart';
 import 'package:web/web.dart' as web;
 
 import '../api.dart';
@@ -76,7 +77,7 @@ class _ShopPageState extends State<ShopPage> {
   }
 
   void _quickAdd(Product product) {
-    if (product.options.isNotEmpty) {
+    if (product.options.isNotEmpty || product.saleMode != SaleMode.piece) {
       _openProduct(product);
       return;
     }
@@ -164,7 +165,7 @@ class _ShopPageState extends State<ShopPage> {
                       crossAxisCount: columns,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      mainAxisExtent: width < 400 ? 268 : 290,
+                      mainAxisExtent: width < 400 ? 286 : 308,
                     ),
                     itemCount: products.length,
                     itemBuilder: (context, i) => _ProductCard(
@@ -654,10 +655,24 @@ class _ProductCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
-                        child: DualPrice(
-                          htg: product.priceHtg,
-                          rate: rate,
-                          regularHtg: product.regularPriceHtg,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DualPrice(
+                              htg: product.priceHtg,
+                              rate: rate,
+                              regularHtg: product.regularPriceHtg,
+                            ),
+                            if (product.saleHint.isNotEmpty)
+                              Text(
+                                product.saleMode == SaleMode.roll
+                                    ? '${product.saleHint} · par pouce'
+                                    : product.saleHint,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.caption(color: AppColors.darkGray),
+                              ),
+                          ],
                         ),
                       ),
                       if (product.available && canBuy)

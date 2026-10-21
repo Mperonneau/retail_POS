@@ -229,6 +229,77 @@ def test_server_prices_order_with_options():
     assert request["status"] == "open" and request["number"].startswith("CMD-")
 
 
+def test_roll_and_case_are_priced_from_the_choice():
+    store = _store()
+    catalog = _catalog()
+    catalog["products"].extend(
+        [
+            {
+                "id": "roll",
+                "name": "Tissu",
+                "price_htg": 15,
+                "sale_mode": "roll",
+                "roll_price_htg": 750,
+                "roll_width": 60,
+                "min_width": 12,
+                "stock": 180,
+                "track_stock": True,
+            },
+            {
+                "id": "case",
+                "name": "Eau",
+                "price_htg": 40,
+                "sale_mode": "case",
+                "case_price_htg": 800,
+                "units_per_case": 24,
+                "stock": 72,
+                "track_stock": True,
+            },
+        ]
+    )
+    store.publish(KEY, catalog)
+    shop = store.public_shop("chez-marie", OPEN)
+    roll = next(p for p in shop["products"] if p["id"] == "roll")
+    assert roll["sale_mode"] == "roll" and roll["min_width"] == 12 and roll["stock"] == 180
+    request = store.create_request(
+        "chez-marie",
+        {
+            "kind": "commande",
+            "customer": CUSTOMER,
+            "lines": [
+                {"product_id": "roll", "quantity": 1, "measure": "cut", "width": 36},
+                {"product_id": "roll", "quantity": 1, "measure": "roll"},
+                {"product_id": "case", "quantity": 1, "measure": "case"},
+                {"product_id": "case", "quantity": 2, "measure": "unit"},
+            ],
+        },
+        OPEN,
+    )
+    assert request["lines"][0]["unit_htg"] == 540
+    assert request["lines"][0]["options_label"] == "36 po"
+    assert request["lines"][0]["stock_units"] == 36
+    assert request["lines"][1]["unit_htg"] == 750 and request["lines"][1]["stock_units"] == 60
+    assert request["lines"][2]["options_label"] == "Caisse de 24"
+    assert request["lines"][2]["stock_units"] == 24
+    assert request["lines"][3]["unit_htg"] == 40
+    assert request["total_htg"] == 540 + 750 + 800 + 80, request
+
+    def fails(lines):
+        try:
+            store.create_request(
+                "chez-marie",
+                {"kind": "commande", "customer": CUSTOMER, "lines": lines},
+                OPEN,
+            )
+        except StorefrontError as exc:
+            return exc.status
+        raise AssertionError("accepted")
+
+    assert fails([{"product_id": "roll", "quantity": 1, "measure": "cut", "width": 8}]) == 400
+    assert fails([{"product_id": "roll", "quantity": 1}]) == 400
+    assert fails([{"product_id": "roll", "quantity": 4, "measure": "roll"}]) == 409
+
+
 def test_order_rules():
     store = _store()
     store.publish(KEY, _catalog())

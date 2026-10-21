@@ -12,6 +12,7 @@ import '../../core/payments/stripe_card_field.dart';
 import '../../core/providers/currency_settings_provider.dart';
 import '../../core/widgets/card_fee_breakdown.dart';
 import '../../core/mock/mock_retail_data.dart';
+import '../models/sale_measure.dart';
 import '../../core/mock/mock_retail_orders.dart';
 import '../../core/models/customer.dart';
 import '../../core/models/order_history.dart';
@@ -341,12 +342,13 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
     final lines = widget.cart
         .map(
           (e) => MockQuoteLine(
-            product: e.options.isEmpty
+            product: e.detailLabel.isEmpty
                 ? e.product
                 : e.product.copyWith(name: e.lineLabel),
             quantity: e.quantity,
             unitPriceHtg: e.unitPriceHtg,
             unitPriceUsd: e.product.sellingPriceUsd,
+            measure: e.measure,
           ),
         )
         .toList();
@@ -431,13 +433,14 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
         continue;
       }
       if (!matches.first.trackStock) continue;
-      wanted[e.product.id] = (wanted[e.product.id] ?? 0) + e.quantity;
+      wanted[e.product.id] = (wanted[e.product.id] ?? 0) + e.stockUnits;
     }
     for (final entry in wanted.entries) {
       final live = products.firstWhere((p) => p.id == entry.key);
       if (entry.value > live.stockQuantity) {
+        final unit = live.saleMode == SaleMode.roll ? ' po' : '';
         failures.add(
-          '${live.name} — demandé ${entry.value}, disponible ${live.stockQuantity}',
+          '${live.name} — demandé ${entry.value}$unit, disponible ${live.stockQuantity}$unit',
         );
       }
     }
@@ -687,7 +690,10 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             return true;
           },
           onConfirm: (method) async {
-            final map = {for (final e in lines) e.product.id: e.quantity};
+            final map = <int, int>{};
+            for (final e in lines) {
+              map[e.product.id] = (map[e.product.id] ?? 0) + e.stockUnits;
+            }
             final now = DateTime.now();
             final saleNo = 100 + (now.millisecondsSinceEpoch % 8999);
             final clientName = _clientNameCtrl.text.trim();

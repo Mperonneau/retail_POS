@@ -20,10 +20,12 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/mock/mock_retail_orders.dart';
 import '../models/product_option.dart';
 import '../models/retail_cart_entry.dart';
+import '../models/sale_measure.dart';
 import '../storefront/receipt_scan.dart';
 import '../storefront/storefront_sync.dart';
 import '../widgets/pos_product_detail.dart';
 import '../widgets/product_option_picker.dart';
+import '../widgets/sale_measure_picker.dart';
 import 'checkout_wizard.dart';
 import '../../core/widgets/app_close_button.dart';
 
@@ -101,10 +103,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final q = widget.quoteToEdit;
     if (q != null) {
       _cart.clear();
+      final catalog = ref.read(mockProductsProvider);
       _cart.addAll(
-        q.lines.map(
-          (l) => RetailCartEntry(product: l.product, quantity: l.quantity),
-        ),
+        q.lines.map((l) {
+          final live = catalog.where((p) => p.id == l.product.id).firstOrNull ?? l.product;
+          return RetailCartEntry(
+            product: live,
+            quantity: l.quantity,
+            measure: l.measure,
+          );
+        }),
       );
       _discountPercent = q.discountPercent;
     }
@@ -128,6 +136,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   final _categories = [
     'Tous',
+    'Quincaillerie',
     'Alimentation',
     'Boissons',
     'Ménage',
@@ -140,28 +149,41 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       .where((e) => e.product.id == productId)
       .fold(0, (sum, e) => sum + e.quantity);
 
-  int _qtyForLine(MockProduct product, List<ProductOptionChoice> options) {
-    final key = RetailCartEntry.lineKeyFor(product.id, options);
+  int _qtyForLine(
+    MockProduct product,
+    List<ProductOptionChoice> options, [
+    MeasureChoice measure = const MeasureChoice.plain(),
+  ]) {
+    final key = RetailCartEntry.lineKeyFor(product.id, options, measure);
     final idx = _cart.indexWhere((e) => e.lineKey == key);
     return idx >= 0 ? _cart[idx].quantity : 0;
   }
 
-  int? _roomFor(MockProduct product, List<ProductOptionChoice> options) {
+  /// Absolute quantity this line can reach. Null when stock is not tracked.
+  int? _roomFor(
+    MockProduct product,
+    List<ProductOptionChoice> options, [
+    MeasureChoice measure = const MeasureChoice.plain(),
+  ]) {
     if (!product.trackStock) return null;
-    final key = RetailCartEntry.lineKeyFor(product.id, options);
+    final each = product.unitsEach(measure);
+    if (each < 1) return 0;
+    final key = RetailCartEntry.lineKeyFor(product.id, options, measure);
     final others = _cart
         .where((e) => e.product.id == product.id && e.lineKey != key)
-        .fold(0, (sum, e) => sum + e.quantity);
-    final room = product.stockQuantity - others;
-    return room < 0 ? 0 : room;
+        .fold(0, (sum, e) => sum + e.stockUnits);
+    final left = product.stockQuantity - others;
+    if (left <= 0) return 0;
+    return left ~/ each;
   }
 
   void _setCartQty(
     MockProduct product,
     int requestedQty, {
     List<ProductOptionChoice> options = const [],
+    MeasureChoice measure = const MeasureChoice.plain(),
   }) {
-    final key = RetailCartEntry.lineKeyFor(product.id, options);
+    final key = RetailCartEntry.lineKeyFor(product.id, options, measure);
     final idx = _cart.indexWhere((e) => e.lineKey == key);
     final room = _roomFor(product, options);
     final qty = room == null ? requestedQty : requestedQty.clamp(0, room).toInt();
@@ -180,6 +202,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       product: product,
       quantity: qty,
       options: options,
+      measure: measure,
     ));
   }
 
@@ -196,6 +219,33 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   Future<void> _addToCart(MockProduct p) async {
+    if (p.saleMode != SaleMode.piece) {
+      final picked = await showSaleMeasurePicker(
+        context,
+        p,
+        roomFor: (measure, options) {
+          final room = _roomFor(p, options, measure);
+          if (room == null) return null;
+          return room - _qtyForLine(p, options, measure);
+        },
+      );
+      if (picked == null || !mounted) return;
+      final room = _roomFor(p, picked.options, picked.measure);
+      final next = _qtyForLine(p, picked.options, picked.measure) + picked.quantity;
+      if (room != null && next > room) {
+        _showQtyWarning(p);
+        return;
+      }
+      setState(
+        () => _setCartQty(
+          p,
+          next,
+          options: picked.options,
+          measure: picked.measure,
+        ),
+      );
+      return;
+    }
     if (p.options.isNotEmpty) {
       final picked = await showProductOptionPicker(context, p);
       if (picked == null || !mounted) return;
@@ -219,7 +269,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     if (index < 0 || index >= _cart.length) return;
     setState(() {
       final entry = _cart[index];
-      _setCartQty(entry.product, qty, options: entry.options);
+      _setCartQty(
+        entry.product,
+        qty,
+        options: entry.options,
+        measure: entry.measure,
+      );
     });
   }
 
@@ -229,11 +284,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       return;
     }
     setState(() {
-      if (p.options.isNotEmpty) {
+      if (p.saleMode != SaleMode.piece || p.options.isNotEmpty) {
         final idx = _cart.lastIndexWhere((e) => e.product.id == p.id);
         if (idx < 0) return;
         final entry = _cart[idx];
-        _setCartQty(entry.product, entry.quantity - 1, options: entry.options);
+        _setCartQty(
+          entry.product,
+          entry.quantity - 1,
+          options: entry.options,
+          measure: entry.measure,
+        );
         return;
       }
       _setCartQty(p, _cartQtyFor(p.id) + delta);
@@ -280,7 +340,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   void _startEmbeddedCheckout() {
     final cartCopy = _cart
-        .map((e) => RetailCartEntry(product: e.product, quantity: e.quantity))
+        .map(
+          (e) => RetailCartEntry(
+            product: e.product,
+            quantity: e.quantity,
+            options: e.options,
+            measure: e.measure,
+          ),
+        )
         .toList();
     setState(() {
       _checkoutGeneration++;
@@ -439,7 +506,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final id = product.id;
     _warningTimers[id]?.cancel();
     setState(() {
-      _qtyWarnings[id] = 'Seulement ${product.stockQuantity} en stock';
+      final unit = product.saleMode == SaleMode.roll ? ' po' : '';
+      _qtyWarnings[id] = 'Seulement ${product.stockQuantity}$unit en stock';
     });
     _warningTimers[id] = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
@@ -449,13 +517,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     });
   }
 
-  void _removeLineFromCart(MockProduct product) {
-    final id = product.id;
+  void _removeLineAt(int index) {
+    if (index < 0 || index >= _cart.length) return;
+    final id = _cart[index].product.id;
     _warningTimers[id]?.cancel();
     _warningTimers.remove(id);
     setState(() {
       _qtyWarnings.remove(id);
-      _setCartQty(product, 0);
+      _cart.removeAt(index);
     });
   }
 
@@ -659,7 +728,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       onAdd: () => _addToCart(product),
       onDecrementLine: (line) {
         setState(() {
-          _setCartQty(line.product, line.quantity - 1, options: line.options);
+          _setCartQty(
+            line.product,
+            line.quantity - 1,
+            options: line.options,
+            measure: line.measure,
+          );
         });
       },
       onClose: _closeProductDetail,
@@ -670,9 +744,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final products = ref.watch(mockProductsProvider).where((p) {
       final matchCat = _category == 'Tous' || p.category == _category;
       final matchSearch = _search.isEmpty ||
-          p.name.toLowerCase().contains(_search.toLowerCase());
+          p.name.toLowerCase().contains(_search.toLowerCase()) ||
+          p.saleHint.toLowerCase().contains(_search.toLowerCase());
       return matchCat && matchSearch && p.active;
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        final aPiece = a.saleMode == SaleMode.piece ? 1 : 0;
+        final bPiece = b.saleMode == SaleMode.piece ? 1 : 0;
+        final byMode = aPiece.compareTo(bPiece);
+        if (byMode != 0) return byMode;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1064,7 +1146,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       key: ValueKey(entry.lineKey),
                                       product: entry.product,
                                       quantity: entry.quantity,
-                                      maxQty: _roomFor(entry.product, entry.options),
+                                      maxQty: _roomFor(
+                                        entry.product,
+                                        entry.options,
+                                        entry.measure,
+                                      ),
                                       onQtyCommitted: (q) => _setLineQty(i, q),
                                       onStockExceeded: () =>
                                           _showQtyWarning(entry.product),
@@ -1122,9 +1208,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         child: Tooltip(
                                           message: 'Retirer la ligne',
                                           child: GestureDetector(
-                                            onTap: () => _removeLineFromCart(
-                                              entry.product,
-                                            ),
+                                            onTap: () => _removeLineAt(i),
                                             child: Container(
                                               width: 20,
                                               height: 20,
@@ -1285,6 +1369,24 @@ class _ProductTile extends StatelessWidget {
     this.compact = false,
   });
 
+  String _cardPrice(BuildContext context) {
+    final money = CurrencyFormatter.local(context, product.sellingPriceHtg);
+    return '$money${product.priceUnitSuffix}';
+  }
+
+  String _cardStock() {
+    if (product.saleHint.isEmpty) {
+      return product.trackStock
+          ? 'Stock : ${product.stockQuantity}'
+          : 'Stock non suivi';
+    }
+    if (!product.trackStock) return product.saleHint;
+    final qty = product.saleMode == SaleMode.roll
+        ? '${product.stockQuantity} po'
+        : '${product.stockQuantity}';
+    return '$qty · ${product.saleHint}';
+  }
+
   Widget _stepButton({
     required IconData icon,
     required Color background,
@@ -1350,7 +1452,7 @@ class _ProductTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      CurrencyFormatter.local(context, product.sellingPriceHtg),
+                      _cardPrice(context),
                       style: AppTextStyles.caption(
                         color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       ).copyWith(fontWeight: FontWeight.w600),
@@ -1358,9 +1460,7 @@ class _ProductTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      product.trackStock
-                          ? 'Stock : ${product.stockQuantity}'
-                          : 'Stock non suivi',
+                      _cardStock(),
                       style: AppTextStyles.caption(
                         color: product.isLowStock ? AppColors.amber : AppColors.darkGray,
                       ).copyWith(fontSize: 11),
@@ -1484,7 +1584,7 @@ class _ProductTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      CurrencyFormatter.local(context, product.sellingPriceHtg),
+                      _cardPrice(context),
                       style: AppTextStyles.caption(
                         color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       ),
@@ -1492,9 +1592,7 @@ class _ProductTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      product.trackStock
-                          ? 'Stock : ${product.stockQuantity}'
-                          : 'Stock non suivi',
+                      _cardStock(),
                       style: AppTextStyles.caption(
                         color: product.isLowStock
                             ? AppColors.amber

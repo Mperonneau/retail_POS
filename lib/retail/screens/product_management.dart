@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/models/currency_settings.dart';
 import '../../core/providers/currency_settings_provider.dart';
 import '../../core/utils/catalog_price_helpers.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -24,11 +25,28 @@ import '../../core/widgets/form_field_error.dart';
 import '../../core/widgets/status_badge.dart';
 import '../catalog_import/catalog_import_sheet.dart';
 import '../models/product_option.dart';
+import '../models/sale_measure.dart';
 import '../widgets/product_category_field.dart';
 import '../widgets/product_options_editor.dart';
 import '../widgets/product_photo_pick.dart';
 
 const int _kProductPageSize = 15;
+
+String _productMeta(MockProduct product) {
+  if (product.saleHint.isEmpty) {
+    return '${product.category} · ${product.margin.toStringAsFixed(0)} % marge';
+  }
+  return '${product.category} · ${product.saleHint}';
+}
+
+String _listedPrice(BuildContext context, MockProduct product) {
+  return '${CurrencyFormatter.local(context, product.sellingPriceHtg)}${product.priceUnitSuffix}';
+}
+
+String _stockBadge(MockProduct product) {
+  if (product.saleMode == SaleMode.roll) return '${product.stockQuantity} po';
+  return '${product.stockQuantity} u.';
+}
 
 double _productGridAspectRatio(int crossAxisCount) {
   switch (crossAxisCount) {
@@ -78,9 +96,13 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
           return p.name.toLowerCase().contains(q) ||
               p.category.toLowerCase().contains(q) ||
               (p.barcode != null && p.barcode!.toLowerCase().contains(q));
-        }).toList()..sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
+        }).toList()..sort((a, b) {
+          final aPiece = a.saleMode == SaleMode.piece ? 1 : 0;
+          final bPiece = b.saleMode == SaleMode.piece ? 1 : 0;
+          final byMode = aPiece.compareTo(bPiece);
+          if (byMode != 0) return byMode;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
 
     final totalPages = max(
       1,
@@ -1019,10 +1041,7 @@ class _ProductGridTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          CurrencyFormatter.local(
-                            context,
-                            product.sellingPriceHtg,
-                          ),
+                          _listedPrice(context, product),
                           style: AppTextStyles.price(
                             color: textPrimary,
                           ).copyWith(fontSize: 11.5, height: 1.15),
@@ -1037,7 +1056,7 @@ class _ProductGridTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '${product.category} · ${product.margin.toStringAsFixed(0)} % marge',
+                            _productMeta(product),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.caption(
@@ -1081,7 +1100,7 @@ class _ProductGridTile extends StatelessWidget {
                               ? StatusType.active
                               : StatusType.inactive,
                           customLabel: product.trackStock
-                              ? '${product.stockQuantity} u.'
+                              ? _stockBadge(product)
                               : 'Non suivi',
                           compact: true,
                           micro: true,
@@ -1159,7 +1178,7 @@ class _ProductListTile extends StatelessWidget {
                       ).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                     ),
                     Text(
-                      '${product.category} · ${product.margin.toStringAsFixed(0)} % marge',
+                      _productMeta(product),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(
@@ -1174,7 +1193,7 @@ class _ProductListTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    CurrencyFormatter.local(context, product.sellingPriceHtg),
+                    _listedPrice(context, product),
                     style: AppTextStyles.price(
                       color: textPrimary,
                     ).copyWith(fontSize: 12),
@@ -1203,8 +1222,8 @@ class _ProductListTile extends StatelessWidget {
                     customLabel: !product.trackStock
                         ? 'Non suivi'
                         : product.isLowStock
-                        ? 'Bas ${product.stockQuantity}'
-                        : '${product.stockQuantity}',
+                        ? 'Bas ${_stockBadge(product)}'
+                        : _stockBadge(product),
                     compact: true,
                     micro: true,
                   ),
@@ -1255,6 +1274,12 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
   late bool _active;
   late bool _showOnStorefront;
   late bool _trackStock;
+  late SaleMode _saleMode;
+  late final TextEditingController _rollPriceCtrl;
+  late final TextEditingController _rollWidthCtrl;
+  late final TextEditingController _minWidthCtrl;
+  late final TextEditingController _casePriceCtrl;
+  late final TextEditingController _unitsPerCaseCtrl;
   String? _photoDataUrl;
   Uint8List? _photoBytes;
   String _photoMime = 'image/jpeg';
@@ -1268,6 +1293,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
   String? _errorDiscount;
   String? _errorPhoto;
   String? _errorOptions;
+  String? _errorMeasure;
 
   void _onPriceChanged() => setState(() {});
 
@@ -1293,6 +1319,18 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _active = e?.active ?? true;
     _showOnStorefront = e?.showOnStorefront ?? true;
     _trackStock = e?.trackStock ?? true;
+    _saleMode = e?.saleMode ?? SaleMode.piece;
+    _rollPriceCtrl = TextEditingController();
+    _rollWidthCtrl = TextEditingController(
+      text: e != null && e.rollWidth > 0 ? '${e.rollWidth}' : '',
+    );
+    _minWidthCtrl = TextEditingController(
+      text: e != null && e.minWidth > 0 ? '${e.minWidth}' : '',
+    );
+    _casePriceCtrl = TextEditingController();
+    _unitsPerCaseCtrl = TextEditingController(
+      text: e != null && e.unitsPerCase > 0 ? '${e.unitsPerCase}' : '',
+    );
     _photoDataUrl = e?.photoDataUrl;
     for (final group in e?.options ?? const <ProductOptionGroup>[]) {
       _optionDrafts.add(ProductOptionDraft.fromGroup(group));
@@ -1307,6 +1345,20 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
           ex.priceHtg,
           ex.priceUsd,
         );
+        if (ex.rollPriceHtg > 0 || ex.rollPriceUsd > 0) {
+          _rollPriceCtrl.text = CatalogPriceLogic.initialPriceFieldText(
+            s,
+            ex.rollPriceHtg,
+            ex.rollPriceUsd,
+          );
+        }
+        if (ex.casePriceHtg > 0 || ex.casePriceUsd > 0) {
+          _casePriceCtrl.text = CatalogPriceLogic.initialPriceFieldText(
+            s,
+            ex.casePriceHtg,
+            ex.casePriceUsd,
+          );
+        }
       }
     });
   }
@@ -1322,6 +1374,11 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _barcodeCtrl.dispose();
     _discountCtrl.dispose();
     _descCtrl.dispose();
+    _rollPriceCtrl.dispose();
+    _rollWidthCtrl.dispose();
+    _minWidthCtrl.dispose();
+    _casePriceCtrl.dispose();
+    _unitsPerCaseCtrl.dispose();
     for (final draft in _optionDrafts) {
       draft.dispose();
     }
@@ -1350,6 +1407,31 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     setState(() => _barcodeCtrl.text = code);
   }
 
+  String _priceLabel(CurrencySettings s) {
+    final code = CatalogPriceLogic.entryCurrencyIsUsd(s)
+        ? 'USD'
+        : s.localCurrencyCode;
+    return switch (_saleMode) {
+      SaleMode.piece => '${CatalogPriceLogic.priceFieldLabel(s)} *',
+      SaleMode.roll => 'Prix par pouce ($code) *',
+      SaleMode.pack => "Prix d'une unité ($code) *",
+    };
+  }
+
+  String get _saleHelp => switch (_saleMode) {
+    SaleMode.piece => 'Un seul prix pour une pièce.',
+    SaleMode.roll =>
+      "Le prix ci-dessus est le prix d'un pouce. À la vente, on choisit le rouleau entier ou on saisit une largeur.",
+    SaleMode.pack =>
+      "Le prix ci-dessus est le prix d'une unité. À la vente, on choisit la caisse ou une seule unité.",
+  };
+
+  String get _stockHelp => switch (_saleMode) {
+    SaleMode.roll => 'Stock en pouces. Un rouleau entier retire sa largeur.',
+    SaleMode.pack => 'Stock en unités. Une caisse retire toutes ses unités.',
+    SaleMode.piece => "Unités en stock au moment d'ajouter ce produit.",
+  };
+
   void _save() {
     setState(() {
       _errorName = null;
@@ -1358,6 +1440,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       _errorStockInitial = null;
       _errorDiscount = null;
       _errorOptions = null;
+      _errorMeasure = null;
     });
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -1424,6 +1507,49 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       photo = 'data:$_photoMime;base64,${base64Encode(_photoBytes!)}';
     }
     final p = CatalogPriceLogic.commitParsed(s, priceParsed);
+    var rollPriceHtg = 0.0;
+    var rollPriceUsd = 0.0;
+    var casePriceHtg = 0.0;
+    var casePriceUsd = 0.0;
+    var rollWidth = 0;
+    var minWidth = 0;
+    var unitsPerCase = 0;
+    if (_saleMode == SaleMode.roll) {
+      final rollParsed = double.tryParse(_rollPriceCtrl.text.trim());
+      rollWidth = int.tryParse(_rollWidthCtrl.text.trim()) ?? 0;
+      minWidth = int.tryParse(_minWidthCtrl.text.trim()) ?? 0;
+      if (rollParsed == null || rollParsed <= 0) {
+        setState(() => _errorMeasure = 'Indiquez le prix du rouleau entier.');
+        return;
+      }
+      if (rollWidth < 1) {
+        setState(() => _errorMeasure = 'Indiquez la largeur du rouleau en pouces.');
+        return;
+      }
+      if (minWidth < 1 || minWidth > rollWidth) {
+        setState(
+          () => _errorMeasure = 'Le minimum doit être entre 1 et $rollWidth po.',
+        );
+        return;
+      }
+      final rolled = CatalogPriceLogic.commitParsed(s, rollParsed);
+      rollPriceHtg = rolled.priceHtg;
+      rollPriceUsd = rolled.priceUsd;
+    } else if (_saleMode == SaleMode.pack) {
+      final caseParsed = double.tryParse(_casePriceCtrl.text.trim());
+      unitsPerCase = int.tryParse(_unitsPerCaseCtrl.text.trim()) ?? 0;
+      if (caseParsed == null || caseParsed <= 0) {
+        setState(() => _errorMeasure = 'Indiquez le prix de la caisse.');
+        return;
+      }
+      if (unitsPerCase < 2) {
+        setState(() => _errorMeasure = 'Une caisse contient au moins 2 unités.');
+        return;
+      }
+      final packed = CatalogPriceLogic.commitParsed(s, caseParsed);
+      casePriceHtg = packed.priceHtg;
+      casePriceUsd = packed.priceUsd;
+    }
     final barcode = _barcodeCtrl.text.trim();
     widget.onSave(
       MockProduct(
@@ -1444,6 +1570,14 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         stockUnit: _stockUnit,
         options: groups,
         showOnStorefront: _showOnStorefront,
+        saleMode: _saleMode,
+        rollPriceHtg: rollPriceHtg,
+        rollPriceUsd: rollPriceUsd,
+        minWidth: minWidth,
+        rollWidth: rollWidth,
+        casePriceHtg: casePriceHtg,
+        casePriceUsd: casePriceUsd,
+        unitsPerCase: unitsPerCase,
       ),
     );
     widget.onClose();
@@ -1519,7 +1653,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 child: TextField(
                   controller: _priceCtrl,
                   decoration: fieldDec(
-                    label: '${CatalogPriceLogic.priceFieldLabel(s)} *',
+                    label: _priceLabel(s),
                     prefixText: CatalogPriceLogic.priceFieldPrefix(s),
                     errorText: _errorPrice,
                   ),
@@ -1559,6 +1693,103 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 style: helperStyle,
               ),
             ),
+          const SizedBox(height: AppConstants.spacing16),
+          Text(
+            'Comment ce produit se vend',
+            style: AppTextStyles.body(color: textPrimary).copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Prix simple'),
+                selected: _saleMode == SaleMode.piece,
+                onSelected: (_) => setState(() => _saleMode = SaleMode.piece),
+              ),
+              ChoiceChip(
+                label: const Text('Au pouce'),
+                selected: _saleMode == SaleMode.roll,
+                onSelected: (_) => setState(() => _saleMode = SaleMode.roll),
+              ),
+              ChoiceChip(
+                label: const Text('Caisse'),
+                selected: _saleMode == SaleMode.pack,
+                onSelected: (_) => setState(() => _saleMode = SaleMode.pack),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(_saleHelp, style: helperStyle),
+          if (_saleMode == SaleMode.roll) ...[
+            const SizedBox(height: AppConstants.spacing12),
+            TextField(
+              controller: _rollPriceCtrl,
+              decoration: fieldDec(
+                label: 'Prix du rouleau entier *',
+                prefixText: CatalogPriceLogic.priceFieldPrefix(s),
+                helperText: 'Prix quand le client prend le rouleau complet.',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: InputFormatters.decimalAmount,
+            ),
+            const SizedBox(height: AppConstants.spacing12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _rollWidthCtrl,
+                    decoration: fieldDec(
+                      label: 'Largeur du rouleau (po) *',
+                      helperText: 'Pouces dans un rouleau entier.',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                  ),
+                ),
+                const SizedBox(width: AppConstants.spacing12),
+                Expanded(
+                  child: TextField(
+                    controller: _minWidthCtrl,
+                    decoration: fieldDec(
+                      label: 'Minimum (po) *',
+                      helperText: 'Largeur la plus petite acceptée.',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (_saleMode == SaleMode.pack) ...[
+            const SizedBox(height: AppConstants.spacing12),
+            TextField(
+              controller: _casePriceCtrl,
+              decoration: fieldDec(
+                label: 'Prix d\'une caisse *',
+                prefixText: CatalogPriceLogic.priceFieldPrefix(s),
+                helperText: 'Ce prix n\'est pas le prix unitaire multiplié.',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: InputFormatters.decimalAmount,
+            ),
+            const SizedBox(height: AppConstants.spacing12),
+            TextField(
+              controller: _unitsPerCaseCtrl,
+              decoration: fieldDec(
+                label: 'Unités dans la caisse *',
+                helperText: 'Une vente de caisse retire ce nombre du stock.',
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: InputFormatters.digitsOnly,
+            ),
+          ],
+          FormFieldError(text: _errorMeasure),
           const SizedBox(height: AppConstants.spacing16),
           TextField(
             controller: _discountCtrl,
@@ -1686,8 +1917,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                     controller: _stockCtrl,
                     decoration: fieldDec(
                       label: 'Stock initial *',
-                      helperText:
-                          'Unités en stock au moment d\'ajouter ce produit.',
+                      helperText: _stockHelp,
                       errorText: _errorStockInitial,
                     ),
                     keyboardType: TextInputType.number,

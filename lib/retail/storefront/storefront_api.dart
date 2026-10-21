@@ -32,6 +32,7 @@ class StorefrontInboxLine {
     required this.optionsLabel,
     required this.quantity,
     required this.unitHtg,
+    this.stockUnits = 0,
   });
 
   final String productId;
@@ -39,6 +40,7 @@ class StorefrontInboxLine {
   final String optionsLabel;
   final int quantity;
   final double unitHtg;
+  final int stockUnits;
 
   String get displayName =>
       optionsLabel.isEmpty ? name : '$name ($optionsLabel)';
@@ -120,6 +122,7 @@ class StorefrontInboxRequest {
               optionsLabel: raw['options_label']?.toString() ?? '',
               quantity: (raw['quantity'] as num?)?.toInt() ?? 1,
               unitHtg: (raw['unit_htg'] as num?)?.toDouble() ?? 0,
+              stockUnits: (raw['stock_units'] as num?)?.toInt() ?? 0,
             ),
       ],
       discountHtg: (json['discount_htg'] as num?)?.toDouble() ?? 0,

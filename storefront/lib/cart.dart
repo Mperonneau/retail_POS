@@ -1,21 +1,51 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:retail_pos/retail/models/sale_measure.dart';
+
 import 'api.dart';
 
 class CartLine {
-  CartLine({required this.product, required this.choices, required this.quantity});
+  CartLine({
+    required this.product,
+    required this.choices,
+    required this.quantity,
+    this.measure = const MeasureChoice.plain(),
+  });
 
   final Product product;
   final List<OptionChoice> choices;
+  final MeasureChoice measure;
   int quantity;
 
-  String get key => '${product.id}|${(choices.map((c) => c.id).toList()..sort()).join(',')}';
+  String get key =>
+      '${product.id}|${measure.key}|${(choices.map((c) => c.id).toList()..sort()).join(',')}';
 
-  double get unitHtg => product.priceHtg + choices.fold<double>(0, (s, c) => s + c.deltaHtg);
+  double get unitHtg {
+    final base = measure.baseHtg(
+      priceHtg: product.priceHtg,
+      rollPriceHtg: product.rollPriceHtg,
+      casePriceHtg: product.casePriceHtg,
+    );
+    return base + choices.fold<double>(0, (s, c) => s + c.deltaHtg);
+  }
 
   double get totalHtg => unitHtg * quantity;
 
-  String get optionsLabel => choices.map((c) => c.name).join(', ');
+  int get unitsEach => measure.unitsEach(
+    rollWidth: product.rollWidth,
+    unitsPerCase: product.unitsPerCase,
+  );
+
+  int get stockUnits => unitsEach * quantity;
+
+  String get optionsLabel {
+    final parts = <String>[
+      if (measure.label(unitsPerCase: product.unitsPerCase).isNotEmpty)
+        measure.label(unitsPerCase: product.unitsPerCase),
+      ...choices.map((c) => c.name),
+    ];
+    return parts.join(', ');
+  }
 }
 
 /// One shared cart. Totals are indicative; the server reprices.
@@ -44,10 +74,24 @@ class Cart extends ChangeNotifier {
   int quantityOf(String productId) =>
       lines.where((l) => l.product.id == productId).fold(0, (s, l) => s + l.quantity);
 
+  int stockUsed(String productId) => lines
+      .where((l) => l.product.id == productId)
+      .fold(0, (sum, line) => sum + line.stockUnits);
+
   /// False when the stock limit would be passed.
-  bool add(Product product, List<OptionChoice> choices, int quantity) {
-    if (quantityOf(product.id) + quantity > product.maxQuantity) return false;
-    final line = CartLine(product: product, choices: choices, quantity: quantity);
+  bool add(
+    Product product,
+    List<OptionChoice> choices,
+    int quantity, {
+    MeasureChoice measure = const MeasureChoice.plain(),
+  }) {
+    final line = CartLine(
+      product: product,
+      choices: choices,
+      quantity: quantity,
+      measure: measure,
+    );
+    if (!_fits(line)) return false;
     final existing = lines.where((l) => l.key == line.key).firstOrNull;
     if (existing != null) {
       existing.quantity += quantity;
@@ -58,8 +102,22 @@ class Cart extends ChangeNotifier {
     return true;
   }
 
+  bool _fits(CartLine incoming) {
+    if (!incoming.product.trackStock) {
+      return quantityOf(incoming.product.id) + incoming.quantity <=
+          incoming.product.maxQuantity;
+    }
+    return stockUsed(incoming.product.id) + incoming.stockUnits <= incoming.product.stock;
+  }
+
   bool increment(CartLine line) {
-    if (quantityOf(line.product.id) + 1 > line.product.maxQuantity) return false;
+    final probe = CartLine(
+      product: line.product,
+      choices: line.choices,
+      quantity: 1,
+      measure: line.measure,
+    );
+    if (!_fits(probe)) return false;
     line.quantity += 1;
     notifyListeners();
     return true;
@@ -87,6 +145,8 @@ class Cart extends ChangeNotifier {
             'product_id': l.product.id,
             'quantity': l.quantity,
             'choices': [for (final c in l.choices) c.id],
+            if (l.measure.wire.isNotEmpty) 'measure': l.measure.wire,
+            if (l.measure.kind == MeasureKind.width) 'width': l.measure.width,
           },
       ];
 }

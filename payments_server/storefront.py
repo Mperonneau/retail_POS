@@ -608,6 +608,9 @@ class StorefrontStore:
                         }
                     )
             regular = _money(item.get("regular_price_htg"))
+            sale = self._sale_fields(item)
+            if sale is None:
+                continue
             cleaned.append(
                 {
                     "id": pid,
@@ -621,9 +624,63 @@ class StorefrontStore:
                     "stock": max(0, stock),
                     "unit": _text(item.get("unit"), 12),
                     "options": groups,
+                    **sale,
                 }
             )
         return cleaned
+
+    def _sale_fields(self, item: dict) -> dict | None:
+        """None when a roll or a case is missing the numbers it needs to sell."""
+        mode = str(item.get("sale_mode") or "piece")
+        if mode == "roll":
+            roll_price = _money(item.get("roll_price_htg"))
+            try:
+                roll_width = int(item.get("roll_width") or 0)
+                min_width = int(item.get("min_width") or 0)
+            except (TypeError, ValueError):
+                return None
+            if roll_price <= 0 or roll_width < 1 or min_width < 1 or min_width > roll_width:
+                return None
+            regular_roll = _money(item.get("regular_roll_price_htg"))
+            return {
+                "sale_mode": "roll",
+                "roll_price_htg": roll_price,
+                "regular_roll_price_htg": regular_roll if regular_roll > roll_price else 0,
+                "roll_width": roll_width,
+                "min_width": min_width,
+                "case_price_htg": 0,
+                "regular_case_price_htg": 0,
+                "units_per_case": 0,
+            }
+        if mode == "case":
+            case_price = _money(item.get("case_price_htg"))
+            try:
+                units = int(item.get("units_per_case") or 0)
+            except (TypeError, ValueError):
+                return None
+            if case_price <= 0 or units < 2:
+                return None
+            regular_case = _money(item.get("regular_case_price_htg"))
+            return {
+                "sale_mode": "case",
+                "roll_price_htg": 0,
+                "regular_roll_price_htg": 0,
+                "roll_width": 0,
+                "min_width": 0,
+                "case_price_htg": case_price,
+                "regular_case_price_htg": regular_case if regular_case > case_price else 0,
+                "units_per_case": units,
+            }
+        return {
+            "sale_mode": "piece",
+            "roll_price_htg": 0,
+            "regular_roll_price_htg": 0,
+            "roll_width": 0,
+            "min_width": 0,
+            "case_price_htg": 0,
+            "regular_case_price_htg": 0,
+            "units_per_case": 0,
+        }
 
     def shop_for_key(self, shop_key: str) -> dict:
         owner = key_hash(shop_key)
@@ -765,6 +822,16 @@ class StorefrontStore:
                 "max_quantity": min(MAX_QTY, p["stock"]) if p["track_stock"] else MAX_QTY,
                 "unit": p.get("unit", ""),
                 "options": p["options"],
+                "track_stock": p.get("track_stock", True),
+                "stock": p.get("stock", 0),
+                "sale_mode": p.get("sale_mode", "piece"),
+                "roll_price_htg": p.get("roll_price_htg", 0),
+                "regular_roll_price_htg": p.get("regular_roll_price_htg", 0),
+                "roll_width": p.get("roll_width", 0),
+                "min_width": p.get("min_width", 0),
+                "case_price_htg": p.get("case_price_htg", 0),
+                "regular_case_price_htg": p.get("regular_case_price_htg", 0),
+                "units_per_case": p.get("units_per_case", 0),
             }
             for p in shop.get("products") or []
         ]
@@ -1005,10 +1072,21 @@ class StorefrontStore:
                 qty = 0
             if qty < 1 or qty > MAX_QTY:
                 raise StorefrontError(400, "Quantité invalide.")
-            wanted[product["id"]] = wanted.get(product["id"], 0) + qty
+            base, each, measure_label = self._measured_price(product, raw)
+            take = each * qty
+            wanted[product["id"]] = wanted.get(product["id"], 0) + take
             if product["track_stock"] and wanted[product["id"]] > product["stock"]:
                 if product["stock"] <= 0:
                     raise StorefrontError(409, f"{product['name']} est en rupture de stock.")
+                mode = product.get("sale_mode") or "piece"
+                if mode == "roll":
+                    raise StorefrontError(
+                        409, f"Il reste {product['stock']} po de {product['name']}."
+                    )
+                if mode == "case":
+                    raise StorefrontError(
+                        409, f"Il reste {product['stock']} unités de {product['name']}."
+                    )
                 raise StorefrontError(
                     409, f"Il reste {product['stock']} × {product['name']} en stock."
                 )
@@ -1024,21 +1102,57 @@ class StorefrontStore:
                 for choice in in_group:
                     chosen.append({"group": group["name"], "id": choice["id"], "name": choice["name"]})
                     extra += choice["delta_htg"]
-            unit = round(product["price_htg"] + extra, 2)
+            unit = round(base + extra, 2)
+            label_parts = [measure_label] if measure_label else []
+            label_parts.extend(c["name"] for c in chosen)
             lines.append(
                 {
                     "product_id": product["id"],
                     "name": product["name"],
                     "options": chosen,
-                    "options_label": ", ".join(c["name"] for c in chosen),
+                    "options_label": ", ".join(label_parts),
                     "quantity": qty,
                     "unit_htg": unit,
                     "total_htg": round(unit * qty, 2),
+                    "stock_units": take,
                 }
             )
         if not lines:
             raise StorefrontError(400, "Le panier est vide.")
         return lines
+
+    def _measured_price(self, product: dict, raw: dict) -> tuple[float, int, str]:
+        """Returns the unit price, the stock taken by one quantity, and the label."""
+        mode = product.get("sale_mode") or "piece"
+        measure = str(raw.get("measure") or "")
+        name = product["name"]
+        try:
+            width = int(float(raw.get("width") or 0))
+        except (TypeError, ValueError):
+            width = 0
+        if mode == "roll":
+            if measure == "roll":
+                return product["roll_price_htg"], int(product["roll_width"]), "Rouleau entier"
+            if measure == "cut":
+                minimum = int(product["min_width"])
+                if width < minimum:
+                    raise StorefrontError(
+                        400, f"La largeur minimum pour {name} est {minimum} po."
+                    )
+                if width > 10000:
+                    raise StorefrontError(400, "Cette largeur est trop grande.")
+                return round(product["price_htg"] * width, 2), width, f"{width} po"
+            raise StorefrontError(
+                400, f"Choisissez le rouleau entier ou une largeur pour {name}."
+            )
+        if mode == "case":
+            if measure == "case":
+                count = int(product["units_per_case"])
+                return product["case_price_htg"], count, f"Caisse de {count}"
+            if measure in ("", "unit"):
+                return product["price_htg"], 1, "À l'unité"
+            raise StorefrontError(400, f"Choisissez une caisse ou une unité pour {name}.")
+        return product["price_htg"], 1, ""
 
     def _new_request(
         self,
@@ -1177,6 +1291,7 @@ class StorefrontStore:
                     "quantity": l["quantity"],
                     "unit_htg": l["unit_htg"],
                     "total_htg": l["total_htg"],
+                    "stock_units": l.get("stock_units", l["quantity"]),
                 }
                 for l in request["lines"]
             ],
@@ -1209,6 +1324,7 @@ class StorefrontStore:
                 "quantity": l["quantity"],
                 "unit_htg": l["unit_htg"],
                 "total_htg": l["total_htg"],
+                "stock_units": l.get("stock_units", l["quantity"]),
             }
             for l in request["lines"]
         ]
