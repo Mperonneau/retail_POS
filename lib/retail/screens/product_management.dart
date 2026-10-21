@@ -24,6 +24,7 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/form_field_error.dart';
 import '../../core/widgets/status_badge.dart';
 import '../catalog_import/catalog_import_sheet.dart';
+import '../catalog_import/catalog_import_watch.dart';
 import '../models/product_option.dart';
 import '../models/sale_measure.dart';
 import '../widgets/product_category_field.dart';
@@ -31,6 +32,52 @@ import '../widgets/product_options_editor.dart';
 import '../widgets/product_photo_pick.dart';
 
 const int _kProductPageSize = 15;
+
+class _CatalogImportBanner extends StatelessWidget {
+  const _CatalogImportBanner({
+    required this.isDark,
+    required this.ready,
+    required this.onOpen,
+  });
+
+  final bool isDark;
+  final bool ready;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    final message = ready
+        ? 'L\'analyse de vos documents est prête. Touchez ici pour vérifier les produits.'
+        : 'Nous analysons vos documents. Vous pouvez continuer ici. Le résultat vous attend dans Importer avec l\'IA.';
+    return Material(
+      color: color.withValues(alpha: isDark ? 0.16 : 0.1),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(
+                ready
+                    ? Icons.check_circle_outline
+                    : Icons.auto_awesome_outlined,
+                size: 18,
+                color: color,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(message, style: AppTextStyles.caption(color: color)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 String _productMeta(MockProduct product) {
   if (product.saleHint.isEmpty) {
@@ -81,6 +128,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final importWatch = ref.watch(catalogImportWatchProvider);
     final allProducts = ref.watch(mockProductsProvider);
 
     final categoryNames = allProducts.map((p) => p.category).toSet().toList()
@@ -251,6 +299,15 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                 ],
               ),
               const SizedBox(height: AppConstants.spacing16),
+              if (importWatch.phase == CatalogImportPhase.running ||
+                  importWatch.phase == CatalogImportPhase.ready) ...[
+                _CatalogImportBanner(
+                  isDark: isDark,
+                  ready: importWatch.phase == CatalogImportPhase.ready,
+                  onOpen: _openCatalogImport,
+                ),
+                const SizedBox(height: AppConstants.spacing12),
+              ],
               _ProductFilterRow(
                 isDark: isDark,
                 narrow: narrow,

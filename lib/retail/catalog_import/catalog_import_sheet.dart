@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +13,7 @@ import '../models/sale_measure.dart';
 import 'catalog_file.dart';
 import 'catalog_files.dart';
 import 'catalog_import_client.dart';
+import 'catalog_import_watch.dart';
 
 /// Upload a price list, review the products Claude extracted, then add them.
 class CatalogImportSheet extends ConsumerStatefulWidget {
@@ -99,18 +98,15 @@ class _EditableCategory {
 }
 
 class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
-  final _client = CatalogImportClient();
   final _note = TextEditingController();
   final _rate = TextEditingController();
   final _files = <CatalogFile>[];
   var _currency = 'htg';
-  var _sending = false;
   String? _formError;
-  String _progress = '';
-  String? _failed;
   List<_EditableCategory> _categories = [];
   List<CatalogReportLine> _report = [];
-  Timer? _poll;
+  var _adoptScheduled = false;
+  var _abandoning = false;
 
   @override
   void initState() {
@@ -121,7 +117,6 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
 
   @override
   void dispose() {
-    _poll?.cancel();
     _note.dispose();
     _rate.dispose();
     for (final category in _categories) {
@@ -168,69 +163,24 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
       );
       return;
     }
-    setState(() {
-      _sending = true;
-      _formError = null;
-      _failed = null;
-      _progress = 'Envoi du document…';
-    });
-    try {
-      final known = <String>[];
-      for (final product in ref.read(mockProductsProvider)) {
-        final name = product.category.trim();
-        if (name.isNotEmpty && !known.contains(name)) known.add(name);
-      }
-      final id = await _client.start(
-        files: _files,
-        ownerNote: _note.text.trim(),
-        currencyMode: _currency,
-        usdRate: _needsRate ? rate : 0,
-        knownCategories: known,
-      );
-      _poll?.cancel();
-      _poll = Timer.periodic(const Duration(seconds: 2), (_) => _refresh(id));
-      await _refresh(id);
-    } on CatalogImportException catch (error) {
-      if (mounted) {
-        setState(() {
-          _sending = false;
-          _formError = error.message;
-        });
-      }
+    setState(() => _formError = null);
+    final known = <String>[];
+    for (final product in ref.read(mockProductsProvider)) {
+      final name = product.category.trim();
+      if (name.isNotEmpty && !known.contains(name)) known.add(name);
     }
+    await ref.read(catalogImportWatchProvider.notifier).begin(
+      files: List<CatalogFile>.of(_files),
+      ownerNote: _note.text.trim(),
+      currencyMode: _currency,
+      usdRate: _needsRate ? rate : 0,
+      knownCategories: known,
+    );
   }
 
-  Future<void> _refresh(String id) async {
-    try {
-      final job = await _client.fetch(id);
-      if (!mounted) return;
-      if (!job.isDone) {
-        setState(
-          () => _progress = job.progress.isEmpty
-              ? 'Lecture du document…'
-              : job.progress,
-        );
-        return;
-      }
-      _poll?.cancel();
-      if (job.status == 'failed') {
-        setState(() {
-          _sending = false;
-          _failed = job.error.isEmpty
-              ? 'L\'analyse a échoué. Réessayez.'
-              : job.error;
-        });
-        return;
-      }
-      _showDraft(job);
-    } on CatalogImportException catch (error) {
-      if (!mounted) return;
-      _poll?.cancel();
-      setState(() {
-        _sending = false;
-        _failed = error.message;
-      });
-    }
+  void _adopt(CatalogJob job) {
+    if (_categories.isNotEmpty) return;
+    _showDraft(job);
   }
 
   void _showDraft(CatalogJob job) {
@@ -242,7 +192,6 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
       category.dispose();
     }
     setState(() {
-      _sending = false;
       _report = job.report;
       _categories = [
         for (final category in job.categories)
@@ -266,7 +215,7 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
             .length;
   });
 
-  void _commit() {
+  Future<void> _commit() async {
     final settings = ref.read(currencySettingsProvider);
     final notifier = ref.read(mockProductsProvider.notifier);
     final pending = <MockProduct>[];
@@ -409,11 +358,41 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
     for (final product in pending) {
       notifier.add(product);
     }
+    await ref.read(catalogImportWatchProvider.notifier).dismiss();
     widget.onClose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final watch = ref.watch(catalogImportWatchProvider);
+    ref.listen(catalogImportWatchProvider, (previous, next) {
+      final job = next.job;
+      if (next.phase == CatalogImportPhase.ready &&
+          job != null &&
+          previous?.phase != CatalogImportPhase.ready) {
+        _adopt(job);
+      }
+    });
+    if (watch.phase == CatalogImportPhase.ready &&
+        watch.job != null &&
+        _categories.isEmpty &&
+        !_adoptScheduled) {
+      _adoptScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _adoptScheduled = false;
+        if (!mounted || _abandoning || _categories.isNotEmpty) return;
+        final current = ref.read(catalogImportWatchProvider);
+        if (current.phase == CatalogImportPhase.ready && current.job != null) {
+          _adopt(current.job!);
+        }
+      });
+    }
+    final analyzing =
+        watch.phase == CatalogImportPhase.running ||
+        (watch.phase == CatalogImportPhase.ready && _categories.isEmpty);
+    final failure = watch.phase == CatalogImportPhase.failed
+        ? watch.error
+        : null;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     return Column(
@@ -436,15 +415,15 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
         Expanded(
           child: _categories.isNotEmpty
               ? _review(isDark, ink)
-              : _sending
-              ? _working(ink)
-              : _form(isDark, ink),
+              : analyzing
+              ? _working(ink, watch.headline)
+              : _form(isDark, ink, failure),
         ),
       ],
     );
   }
 
-  Widget _form(bool isDark, Color ink) {
+  Widget _form(bool isDark, Color ink, String? failure) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       children: [
@@ -511,9 +490,9 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
             decoration: const InputDecoration(labelText: '1 USD en HTG'),
           ),
         ],
-        if (_failed != null) ...[
+        if (failure != null && failure.isNotEmpty) ...[
           const SizedBox(height: 12),
-          Text(_failed!, style: AppTextStyles.body(color: AppColors.boldRed)),
+          Text(failure, style: AppTextStyles.body(color: AppColors.boldRed)),
         ],
         if (_formError != null) ...[
           const SizedBox(height: 12),
@@ -532,22 +511,41 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
     );
   }
 
-  Widget _working(Color ink) {
+  Widget _working(Color ink, String headline) {
+    final muted = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.coolGray
+        : AppColors.darkGray;
     return Center(
-      child: Padding(
+      child: ListView(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              _progress,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.body(color: ink),
-            ),
-          ],
-        ),
+        children: [
+          const SizedBox(height: 48),
+          const Center(child: CircularProgressIndicator()),
+          const SizedBox(height: 20),
+          Text(
+            headline,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.h3(color: ink),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Cela peut prendre quelques minutes.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.body(color: muted),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Vous pouvez quitter cette page. L\'analyse continue, et le résultat vous attend ici.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.body(color: muted),
+          ),
+          const SizedBox(height: 24),
+          AppButton(
+            label: 'Quitter cette page',
+            variant: AppButtonVariant.secondary,
+            onPressed: widget.onClose,
+          ),
+        ],
       ),
     );
   }
@@ -707,11 +705,33 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-          child: AppButton(
-            label:
-                'Ajouter $_selectedCount produit${_selectedCount == 1 ? '' : 's'}',
-            icon: Icons.check_rounded,
-            onPressed: _selectedCount == 0 ? null : _commit,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppButton(
+                label:
+                    'Ajouter $_selectedCount produit${_selectedCount == 1 ? '' : 's'}',
+                icon: Icons.check_rounded,
+                onPressed: _selectedCount == 0 ? null : () => _commit(),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () async {
+                  _abandoning = true;
+                  await ref.read(catalogImportWatchProvider.notifier).dismiss();
+                  if (!mounted) return;
+                  for (final category in _categories) {
+                    category.dispose();
+                  }
+                  setState(() {
+                    _categories = [];
+                    _report = [];
+                    _abandoning = false;
+                  });
+                },
+                child: const Text('Abandonner cette analyse'),
+              ),
+            ],
           ),
         ),
       ],
