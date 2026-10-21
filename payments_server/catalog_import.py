@@ -1020,10 +1020,62 @@ def extract_catalog(
     return {"categories": categories}, report
 
 
+KEEP_RESULT_SECONDS = 2 * 60 * 60
+WAKE_EVERY_SECONDS = 4 * 60
+
+
+def _wake_url() -> str:
+    base = (os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("PUBLIC_BASE_URL") or "").strip()
+    return f"{base.rstrip('/')}/health" if base else ""
+
+
 class CatalogJobs:
     def __init__(self) -> None:
         self._jobs: dict[str, dict] = {}
         self._lock = threading.Lock()
+        self._waker: threading.Thread | None = None
+
+    def _needs_wake(self, now: float) -> bool:
+        with self._lock:
+            for job in self._jobs.values():
+                if job.get("status") == "running":
+                    return True
+                finished = float(job.get("finished_at") or 0)
+                if job.get("status") == "succeeded" and now - finished < KEEP_RESULT_SECONDS:
+                    return True
+        return False
+
+    def _keep_awake(self) -> None:
+        """The free host sleeps without visits and forgets every analysis.
+
+        Visit our own public address while an analysis runs, and while its
+        result waits for the owner to come back.
+        """
+        url = _wake_url()
+        while True:
+            time.sleep(WAKE_EVERY_SECONDS)
+            if not self._needs_wake(time.time()):
+                with self._lock:
+                    self._waker = None
+                return
+            if not url:
+                continue
+            try:
+                with urllib.request.urlopen(url, timeout=20) as response:
+                    response.read(64)
+            except (urllib.error.URLError, TimeoutError, OSError):
+                pass
+
+    def _ensure_waker(self) -> None:
+        with self._lock:
+            if self._waker is not None and self._waker.is_alive():
+                return
+            self._waker = threading.Thread(
+                target=self._keep_awake,
+                name="catalog-import-keep-awake",
+                daemon=True,
+            )
+            self._waker.start()
 
     def start(self, body: dict) -> dict:
         currency = str(body.get("currency_mode") or "htg").lower()
@@ -1057,13 +1109,17 @@ class CatalogJobs:
             name=f"catalog-import-{job_id}",
             daemon=True,
         ).start()
+        self._ensure_waker()
         return {"id": job_id, "status": "running"}
 
     def get(self, job_id: str) -> dict:
         with self._lock:
             job = self._jobs.get(job_id)
             if not job:
-                raise CatalogImportError("Cette analyse n'existe plus.", status=404)
+                raise CatalogImportError(
+                    "L'analyse a été interrompue par un redémarrage du serveur. Touchez Analyser pour recommencer.",
+                    status=404,
+                )
             return dict(job)
 
     def _run(
@@ -1104,6 +1160,7 @@ class CatalogJobs:
             if not job:
                 return
             job.update(fields)
+            job["finished_at"] = int(time.time())
 
     def _prune(self) -> None:
         if len(self._jobs) <= 40:

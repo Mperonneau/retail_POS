@@ -13,6 +13,10 @@ services:
       flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=PAYMENTS_API=https://retail-pos-payments.onrender.com --dart-define=STOREFRONT_URL=https://retail-pos-storefront.onrender.com &&
       python3 -c "import json,os; p='build/web/version.json'; d=json.load(open(p)); d['build_id']=os.environ.get('RENDER_GIT_COMMIT',''); json.dump(d, open(p,'w'))"
     staticPublishPath: build/web
+    buildFilter:
+      ignoredPaths:
+        - payments_server/**
+        - storefront/**
     pullRequestPreviewsEnabled: true
     routes:
       - type: rewrite
@@ -47,6 +51,9 @@ services:
       flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=STOREFRONT_API=https://retail-pos-payments.onrender.com &&
       python3 -c "import json,os; p='build/web/version.json'; d=json.load(open(p)); d['build_id']=os.environ.get('RENDER_GIT_COMMIT',''); json.dump(d, open(p,'w'))"
     staticPublishPath: storefront/build/web
+    buildFilter:
+      paths:
+        - storefront/**
     pullRequestPreviewsEnabled: true
     routes:
       - type: rewrite
@@ -74,6 +81,10 @@ services:
     branch: main
     buildCommand: "python3 -m compileall payments_server"
     startCommand: python3 payments_server/server.py
+    # A restart forgets running catalogue analyses and vitrine data.
+    buildFilter:
+      paths:
+        - payments_server/**
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8

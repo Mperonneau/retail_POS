@@ -10,6 +10,10 @@ const _jobKey = 'retail.catalog_import_job';
 
 const catalogAnalyzeHeadline = 'Nous analysons vos documents.';
 
+const _lostMessage =
+    'L\'analyse a été interrompue par un redémarrage du serveur. '
+    'Touchez Analyser pour recommencer.';
+
 enum CatalogImportPhase { idle, running, ready, failed }
 
 class CatalogImportWatchState {
@@ -28,12 +32,30 @@ class CatalogImportWatchState {
   final CatalogJob? job;
 }
 
+class _Request {
+  const _Request({
+    required this.files,
+    required this.ownerNote,
+    required this.currencyMode,
+    required this.usdRate,
+    required this.knownCategories,
+  });
+
+  final List<CatalogFile> files;
+  final String ownerNote;
+  final String currencyMode;
+  final int usdRate;
+  final List<String> knownCategories;
+}
+
 /// Follows one catalogue analysis after the import screen is closed.
 class CatalogImportWatch extends Notifier<CatalogImportWatchState> {
   final _client = CatalogImportClient();
   Timer? _poll;
   var _restored = false;
   var _disposed = false;
+  _Request? _last;
+  var _relaunched = false;
 
   bool get _alive => !_disposed;
 
@@ -68,19 +90,31 @@ class CatalogImportWatch extends Notifier<CatalogImportWatchState> {
     required int usdRate,
     required List<String> knownCategories,
   }) async {
+    _relaunched = false;
+    _last = _Request(
+      files: files,
+      ownerNote: ownerNote,
+      currencyMode: currencyMode,
+      usdRate: usdRate,
+      knownCategories: knownCategories,
+    );
+    await _send(_last!, headline: 'Envoi de vos documents…');
+  }
+
+  Future<void> _send(_Request request, {required String headline}) async {
     _restored = true;
     _poll?.cancel();
-    state = const CatalogImportWatchState(
+    state = CatalogImportWatchState(
       phase: CatalogImportPhase.running,
-      headline: 'Envoi de vos documents…',
+      headline: headline,
     );
     try {
       final id = await _client.start(
-        files: files,
-        ownerNote: ownerNote,
-        currencyMode: currencyMode,
-        usdRate: usdRate,
-        knownCategories: knownCategories,
+        files: request.files,
+        ownerNote: request.ownerNote,
+        currencyMode: request.currencyMode,
+        usdRate: request.usdRate,
+        knownCategories: request.knownCategories,
       );
       await LocalStore.instance.setString(_jobKey, id);
       if (!_alive) return;
@@ -146,19 +180,30 @@ class CatalogImportWatch extends Notifier<CatalogImportWatchState> {
       );
     } on CatalogImportException catch (error) {
       if (!_alive || state.jobId != id) return;
-      if (!error.message.contains("n'existe plus")) return;
+      // A network hiccup keeps polling. Only a lost analysis stops it.
+      if (!error.isLost) return;
       _poll?.cancel();
       await LocalStore.instance.remove(_jobKey);
       if (!_alive) return;
-      state = CatalogImportWatchState(
+      final last = _last;
+      if (last != null && !_relaunched) {
+        _relaunched = true;
+        await _send(
+          last,
+          headline: 'Le serveur a redémarré. Nous relançons l\'analyse.',
+        );
+        return;
+      }
+      state = const CatalogImportWatchState(
         phase: CatalogImportPhase.failed,
-        error: error.message,
+        error: _lostMessage,
       );
     }
   }
 
   Future<void> dismiss() async {
     _poll?.cancel();
+    _last = null;
     await LocalStore.instance.remove(_jobKey);
     if (!_alive) return;
     state = const CatalogImportWatchState();

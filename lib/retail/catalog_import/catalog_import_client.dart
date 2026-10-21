@@ -6,8 +6,12 @@ import '../../core/payments/payments_client.dart';
 import 'catalog_file.dart';
 
 class CatalogImportException implements Exception {
-  CatalogImportException(this.message);
+  CatalogImportException(this.message, {this.statusCode = 0});
   final String message;
+  final int statusCode;
+
+  /// The server no longer holds this analysis, usually after a restart.
+  bool get isLost => statusCode == 404;
 }
 
 class CatalogReportLine {
@@ -261,6 +265,7 @@ class CatalogImportClient {
         message.isEmpty
             ? 'L\'analyse a échoué (${response.statusCode}).'
             : message,
+        statusCode: response.statusCode,
       );
     }
     return body;
