@@ -11,6 +11,7 @@ import '../../core/utils/catalog_price_helpers.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_close_button.dart';
 import '../models/product_option.dart';
+import '../models/sale_measure.dart';
 import 'catalog_file.dart';
 import 'catalog_files.dart';
 import 'catalog_import_client.dart';
@@ -25,21 +26,61 @@ class CatalogImportSheet extends ConsumerStatefulWidget {
   ConsumerState<CatalogImportSheet> createState() => _CatalogImportSheetState();
 }
 
+String _caughtLine(CatalogDraftItem item) {
+  final parts = <String>[];
+  if (item.barcode.isNotEmpty) parts.add(item.barcode);
+  if (item.costHtg > 0) parts.add('Achat ${item.costHtg} HTG');
+  if (item.stock != null) parts.add('Stock ${item.stock} ${item.unit}');
+  if (item.discountPercent > 0) parts.add('Rabais ${item.discountPercent} %');
+  if (item.groups.isNotEmpty) {
+    parts.add(item.groups.map((group) => group.name).join(', '));
+  }
+  return parts.join(' · ');
+}
+
 class _EditableItem {
   _EditableItem(this.source, {required this.include})
     : name = TextEditingController(text: source.name),
       price = TextEditingController(
         text: source.priceHtg > 0 ? '${source.priceHtg}' : '',
+      ),
+      description = TextEditingController(text: source.description),
+      rollPrice = TextEditingController(
+        text: source.rollPriceHtg > 0 ? '${source.rollPriceHtg}' : '',
+      ),
+      rollWidth = TextEditingController(
+        text: source.rollWidth > 0 ? '${source.rollWidth}' : '',
+      ),
+      minWidth = TextEditingController(
+        text: source.minWidth > 0 ? '${source.minWidth}' : '',
+      ),
+      casePrice = TextEditingController(
+        text: source.casePriceHtg > 0 ? '${source.casePriceHtg}' : '',
+      ),
+      unitsPerCase = TextEditingController(
+        text: source.unitsPerCase > 0 ? '${source.unitsPerCase}' : '',
       );
 
   final CatalogDraftItem source;
   final TextEditingController name;
   final TextEditingController price;
+  final TextEditingController description;
+  final TextEditingController rollPrice;
+  final TextEditingController rollWidth;
+  final TextEditingController minWidth;
+  final TextEditingController casePrice;
+  final TextEditingController unitsPerCase;
   bool include;
 
   void dispose() {
     name.dispose();
     price.dispose();
+    description.dispose();
+    rollPrice.dispose();
+    rollWidth.dispose();
+    minWidth.dispose();
+    casePrice.dispose();
+    unitsPerCase.dispose();
   }
 }
 
@@ -127,11 +168,17 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
       _progress = 'Envoi du document…';
     });
     try {
+      final known = <String>[];
+      for (final product in ref.read(mockProductsProvider)) {
+        final name = product.category.trim();
+        if (name.isNotEmpty && !known.contains(name)) known.add(name);
+      }
       final id = await _client.start(
         files: _files,
         ownerNote: _note.text.trim(),
         currencyMode: _currency,
         usdRate: _needsRate ? rate : 0,
+        knownCategories: known,
       );
       _poll?.cancel();
       _poll = Timer.periodic(const Duration(seconds: 2), (_) => _refresh(id));
@@ -215,20 +262,85 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
   void _commit() {
     final settings = ref.read(currencySettingsProvider);
     final notifier = ref.read(mockProductsProvider.notifier);
-    var added = 0;
+    final pending = <MockProduct>[];
     for (final category in _categories) {
       final categoryName = category.name.text.trim().isEmpty
           ? 'Autre'
           : category.name.text.trim();
       for (final item in category.items) {
-        if (!item.include) continue;
         final name = item.name.text.trim();
+        if (!item.include || name.isEmpty) continue;
         final price = double.tryParse(
           item.price.text.replaceAll(',', '.').trim(),
         );
-        if (name.isEmpty || price == null || price < 0) continue;
+        if (price == null || price <= 0) {
+          setState(() => _formError = '« $name » : indiquez le prix.');
+          return;
+        }
+        final mode = saleModeFromWire(item.source.saleMode);
         final priced = CatalogPriceLogic.commitParsed(settings, price);
-        notifier.add(
+        var rollPriceHtg = 0.0;
+        var rollPriceUsd = 0.0;
+        var casePriceHtg = 0.0;
+        var casePriceUsd = 0.0;
+        var rollWidth = 0;
+        var minWidth = 0;
+        var unitsPerCase = 0;
+        if (mode == SaleMode.roll) {
+          final rollParsed = double.tryParse(
+            item.rollPrice.text.replaceAll(',', '.').trim(),
+          );
+          rollWidth = int.tryParse(item.rollWidth.text.trim()) ?? 0;
+          minWidth = int.tryParse(item.minWidth.text.trim()) ?? 0;
+          if (rollParsed == null || rollParsed <= 0) {
+            setState(
+              () => _formError =
+                  '« $name » : indiquez le prix de la longueur entière.',
+            );
+            return;
+          }
+          if (rollWidth < 1) {
+            setState(
+              () => _formError =
+                  '« $name » : indiquez la longueur entière en pouces.',
+            );
+            return;
+          }
+          if (minWidth < 1 || minWidth > rollWidth) {
+            setState(
+              () => _formError =
+                  '« $name » : le minimum doit être entre 1 et $rollWidth po.',
+            );
+            return;
+          }
+          final rolled = CatalogPriceLogic.commitParsed(settings, rollParsed);
+          rollPriceHtg = rolled.priceHtg;
+          rollPriceUsd = rolled.priceUsd;
+        } else if (mode == SaleMode.pack) {
+          final caseParsed = double.tryParse(
+            item.casePrice.text.replaceAll(',', '.').trim(),
+          );
+          unitsPerCase = int.tryParse(item.unitsPerCase.text.trim()) ?? 0;
+          if (caseParsed == null || caseParsed <= 0) {
+            setState(
+              () => _formError = '« $name » : indiquez le prix de la caisse.',
+            );
+            return;
+          }
+          if (unitsPerCase < 2) {
+            setState(
+              () => _formError =
+                  '« $name » : une caisse contient au moins 2 unités.',
+            );
+            return;
+          }
+          final packed = CatalogPriceLogic.commitParsed(settings, caseParsed);
+          casePriceHtg = packed.priceHtg;
+          casePriceUsd = packed.priceUsd;
+        }
+        final unit = item.source.unit;
+        final description = item.description.text.trim();
+        pending.add(
           MockProduct(
             id: 0,
             name: name,
@@ -239,9 +351,14 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
             stockQuantity: item.source.stock ?? 0,
             minStock: 0,
             barcode: item.source.barcode.isEmpty ? null : item.source.barcode,
-            description: item.source.description,
+            description: description.length > 600
+                ? description.substring(0, 600)
+                : description,
+            discountPercent: item.source.discountPercent,
             trackStock: item.source.stock != null,
-            stockUnit: item.source.unit.isEmpty ? 'u' : item.source.unit,
+            stockUnit: unit == 'kg' || unit == 'L' || unit == 'paquet'
+                ? unit
+                : 'u',
             options: [
               for (final group in item.source.groups)
                 if (group.choices.isNotEmpty)
@@ -266,14 +383,24 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
                     ],
                   ),
             ],
+            saleMode: mode,
+            rollPriceHtg: rollPriceHtg,
+            rollPriceUsd: rollPriceUsd,
+            minWidth: minWidth,
+            rollWidth: rollWidth,
+            casePriceHtg: casePriceHtg,
+            casePriceUsd: casePriceUsd,
+            unitsPerCase: unitsPerCase,
           ),
         );
-        added++;
       }
     }
-    if (added == 0) {
+    if (pending.isEmpty) {
       setState(() => _formError = 'Cochez au moins un produit avec un prix.');
       return;
+    }
+    for (final product in pending) {
+      notifier.add(product);
     }
     widget.onClose();
   }
@@ -315,7 +442,7 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       children: [
         Text(
-          'Photo, PDF, Excel, CSV ou Word. L\'assistant prépare le catalogue. Rien n\'est ajouté avant votre confirmation.',
+          'Photo, PDF, Excel, CSV ou Word. L\'assistant reprend le nom, le prix, le type de prix, la description et le rayon. Un rayon nouveau reste une catégorie de ce magasin. Rien n\'est ajouté avant votre confirmation.',
           style: AppTextStyles.body(
             color: isDark ? AppColors.coolGray : AppColors.darkGray,
           ),
@@ -418,6 +545,102 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
     );
   }
 
+  Widget _itemFields(_EditableItem item, Color muted) {
+    final mode = item.source.saleMode;
+    final caught = _caughtLine(item.source);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          switch (mode) {
+            'roll' => 'Au pouce',
+            'case' => 'Caisse',
+            _ => 'Prix simple',
+          },
+          style: AppTextStyles.caption(color: muted),
+        ),
+        TextField(
+          controller: item.name,
+          decoration: const InputDecoration(isDense: true, labelText: 'Produit'),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: item.price,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            isDense: true,
+            labelText: switch (mode) {
+              'roll' => 'Prix par pouce (HTG)',
+              'case' => 'Prix d\'une unité (HTG)',
+              _ => 'Prix HTG',
+            },
+          ),
+        ),
+        if (mode == 'roll') ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: item.rollPrice,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Prix de la longueur entière',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: item.rollWidth,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Longueur entière (po)',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: item.minWidth,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Minimum (po)',
+            ),
+          ),
+        ],
+        if (mode == 'case') ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: item.casePrice,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Prix d\'une caisse',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: item.unitsPerCase,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Unités dans la caisse',
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        TextField(
+          controller: item.description,
+          minLines: 1,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            isDense: true,
+            labelText: 'Description',
+          ),
+        ),
+        if (caught.isNotEmpty)
+          Text(caught, style: AppTextStyles.caption(color: muted)),
+      ],
+    );
+  }
+
   Widget _review(bool isDark, Color ink) {
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     return Column(
@@ -451,28 +674,18 @@ class _CatalogImportSheetState extends ConsumerState<CatalogImportSheet> {
                 ),
                 const SizedBox(height: 8),
                 for (final item in category.items)
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: item.include,
-                    onChanged: (value) =>
-                        setState(() => item.include = value ?? false),
-                    title: TextField(
-                      controller: item.name,
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        labelText: 'Produit',
-                      ),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: TextField(
-                        controller: item.price,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          labelText: 'Prix HTG',
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: item.include,
+                          onChanged: (value) =>
+                              setState(() => item.include = value ?? false),
                         ),
-                      ),
+                        Expanded(child: _itemFields(item, muted)),
+                      ],
                     ),
                   ),
                 const SizedBox(height: 16),

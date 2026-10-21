@@ -95,6 +95,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
           final q = _query.toLowerCase();
           return p.name.toLowerCase().contains(q) ||
               p.category.toLowerCase().contains(q) ||
+              p.description.toLowerCase().contains(q) ||
               (p.barcode != null && p.barcode!.toLowerCase().contains(q));
         }).toList()..sort((a, b) {
           final aPiece = a.saleMode == SaleMode.piece ? 1 : 0;

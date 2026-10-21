@@ -134,17 +134,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   /// Product open from a card tap. The plus button does not set this.
   int? _detailProductId;
 
-  final _categories = [
-    'Tous',
-    'Quincaillerie',
-    'Alimentation',
-    'Boissons',
-    'Ménage',
-    'Électronique',
-    'Hygiène',
-    'Papeterie'
-  ];
-
   int _cartQtyFor(int productId) => _cart
       .where((e) => e.product.id == productId)
       .fold(0, (sum, e) => sum + e.quantity);
@@ -741,11 +730,30 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   Widget _buildProductGrid(BuildContext context) {
-    final products = ref.watch(mockProductsProvider).where((p) {
+    final catalog = ref.watch(mockProductsProvider);
+    final categories = <String>[
+      'Tous',
+      'Quincaillerie',
+      'Alimentation',
+      'Boissons',
+      'Ménage',
+      'Électronique',
+      'Hygiène',
+      'Papeterie',
+    ];
+    for (final product in catalog) {
+      final name = product.category.trim();
+      if (name.isNotEmpty && !categories.contains(name)) categories.add(name);
+    }
+    final products = catalog.where((p) {
       final matchCat = _category == 'Tous' || p.category == _category;
-      final matchSearch = _search.isEmpty ||
-          p.name.toLowerCase().contains(_search.toLowerCase()) ||
-          p.saleHint.toLowerCase().contains(_search.toLowerCase());
+      final query = _search.trim().toLowerCase();
+      final matchSearch = query.isEmpty ||
+          p.name.toLowerCase().contains(query) ||
+          p.category.toLowerCase().contains(query) ||
+          p.description.toLowerCase().contains(query) ||
+          (p.barcode ?? '').toLowerCase().contains(query) ||
+          p.saleHint.toLowerCase().contains(query);
       return matchCat && matchSearch && p.active;
     }).toList()
       ..sort((a, b) {
@@ -844,7 +852,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             height: fieldMinHeight,
                             child: DropdownMenu<String>(
                               width: categoryWidth,
-                              initialSelection: _categories.contains(_category)
+                              initialSelection: categories.contains(_category)
                                   ? _category
                                   : 'Tous',
                               enableFilter: true,
@@ -890,7 +898,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                 if (v != null) setState(() => _category = v);
                               },
                               dropdownMenuEntries: [
-                                for (final c in _categories)
+                                for (final c in categories)
                                   DropdownMenuEntry<String>(value: c, label: c),
                               ],
                             ),

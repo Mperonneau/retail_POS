@@ -65,33 +65,61 @@ class CatalogDraftGroup {
 class CatalogDraftItem {
   const CatalogDraftItem({
     required this.name,
+    required this.saleMode,
     required this.priceHtg,
+    required this.rollPriceHtg,
+    required this.rollWidth,
+    required this.minWidth,
+    required this.casePriceHtg,
+    required this.unitsPerCase,
     required this.costHtg,
     required this.barcode,
     required this.unit,
     required this.stock,
+    required this.discountPercent,
     required this.description,
     required this.groups,
   });
 
   final String name;
+  /// piece, roll, or case. A roll is a price per inch. A case is a pack.
+  final String saleMode;
   final int priceHtg;
+  final int rollPriceHtg;
+  final int rollWidth;
+  final int minWidth;
+  final int casePriceHtg;
+  final int unitsPerCase;
   final int costHtg;
   final String barcode;
   final String unit;
   final int? stock;
+  final int discountPercent;
   final String description;
   final List<CatalogDraftGroup> groups;
 
   factory CatalogDraftItem.fromJson(Map<String, dynamic> json) {
     final stock = json['stock'];
+    final mode = json['sale_mode']?.toString();
+    final discount = _int(json['discount_percent']);
     return CatalogDraftItem(
       name: json['name']?.toString() ?? '',
+      saleMode: switch (mode) {
+        'roll' => 'roll',
+        'case' => 'case',
+        _ => 'piece',
+      },
       priceHtg: _int(json['price_htg']),
+      rollPriceHtg: _int(json['roll_price_htg']),
+      rollWidth: _int(json['roll_width']),
+      minWidth: _int(json['min_width']),
+      casePriceHtg: _int(json['case_price_htg']),
+      unitsPerCase: _int(json['units_per_case']),
       costHtg: _int(json['cost_htg']),
       barcode: json['barcode']?.toString() ?? '',
       unit: json['unit']?.toString() ?? 'u',
       stock: stock == null ? null : _int(stock),
+      discountPercent: discount.clamp(0, 100),
       description: json['description']?.toString() ?? '',
       groups: [
         for (final row in (json['option_groups'] as List? ?? const []))
@@ -175,6 +203,7 @@ class CatalogImportClient {
     required String ownerNote,
     required String currencyMode,
     required int usdRate,
+    List<String> knownCategories = const [],
   }) async {
     final body = await _send(
       () => _http.post(
@@ -184,6 +213,7 @@ class CatalogImportClient {
           'owner_note': ownerNote,
           'currency_mode': currencyMode,
           'usd_rate': usdRate,
+          'known_categories': knownCategories,
           'files': [
             for (final file in files)
               {

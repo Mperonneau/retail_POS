@@ -13,6 +13,7 @@ import re
 import secrets
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -37,12 +38,19 @@ Schéma exact :
       "items": [
         {
           "name": "string",
+          "sale_mode": "piece|roll|case",
           "price_htg": 0,
           "price_source": "HTG|USD",
+          "roll_price_htg": 0,
+          "roll_width": 0,
+          "min_width": 0,
+          "case_price_htg": 0,
+          "units_per_case": 0,
           "cost_htg": 0,
           "barcode": "",
           "unit": "u",
           "stock": null,
+          "discount_percent": 0,
           "description": "",
           "option_groups": [
             {
@@ -64,16 +72,24 @@ Schéma exact :
 
 Règles :
 - Extrais TOUS les produits visibles. N'invente aucun article absent du document.
-- price_htg et price_delta_htg et cost_htg sont des montants en GOURDES entières.
+- Remplis chaque champ que le document permet de lire. Laisse 0, "" ou null seulement quand l'information est absente.
+- price_htg, roll_price_htg, case_price_htg, price_delta_htg et cost_htg sont des montants en GOURDES entières.
 - Si un prix est en USD, convertis-le en HTG avec le taux fourni (arrondi à l'entier) et mets price_source à USD.
-- cost_htg reste 0 si le document ne donne pas de prix d'achat.
-- barcode reprend le code-barres ou la référence imprimée, sinon "".
-- unit : u, kg, L, paquet, ou l'unité écrite. Défaut u.
+- sale_mode "piece" : un seul prix pour une pièce. price_htg est ce prix. Les champs de longueur et de caisse restent à 0.
+- sale_mode "roll" : le document vend au pouce ou à la longueur. price_htg est le prix d'un pouce. roll_price_htg est le prix de la longueur entière. roll_width est cette longueur en pouces. min_width est la plus petite longueur acceptée, en pouces. Si le minimum n'est pas écrit, mets 1.
+- sale_mode "case" : le document donne un prix de caisse (ou carton) et un prix à l'unité. price_htg est le prix d'une unité. case_price_htg est le prix d'une caisse. units_per_case est le nombre d'unités dans la caisse. Le prix d'une unité n'est pas le prix de la caisse divisé par le nombre.
+- Un seul prix, sans mention de pouce ni de caisse, reste "piece". N'invente pas un mode.
+- Une taille, une couleur ou un supplément est une option, pas un sale_mode.
+- cost_htg reprend le prix d'achat ou le coût s'il est écrit, sinon 0.
+- barcode reprend le code-barres, le SKU ou la référence imprimée, sinon "".
+- unit est u, kg, L ou paquet. Défaut u. Le stock d'un produit au pouce est un nombre de pouces : laisse unit à u.
 - stock : quantité entière si le document la donne, sinon null. N'invente pas un stock.
-- Regroupe par rayon du magasin (Alimentation, Boissons, Ménage, Hygiène, Électronique, Papeterie, Autre).
+- discount_percent : le rabais en pourcentage s'il est écrit, sinon 0.
+- description : le texte descriptif écrit pour ce produit, jusqu'à 600 caractères. S'il n'y en a pas, "". N'invente pas de description.
+- name de la catégorie : le rayon écrit dans le document. Le message utilisateur liste les catégories déjà utilisées par ce magasin. Si le rayon correspond à l'une d'elles, reprends l'orthographe du magasin. Si ce rayon n'existe pas dans le magasin, garde le nom du document tel quel : il devient une catégorie de ce magasin seulement. Ne le remplace pas par un rayon proche. Utilise "Autre" seulement quand le document ne donne aucun rayon.
 - Tailles ou conditionnements → kind "size". Couleurs → "color". Suppléments payants → "extra". Le reste → "other".
 - Ignore adresse, téléphone, slogans, totaux de facture et lignes qui ne sont pas des produits.
-- Signale dans report : prix manquants, conversion USD, doublons, quantité illisible.
+- Signale dans report : prix manquants, longueur ou caisse incomplète, conversion USD, doublons, quantité illisible.
 - Si rien n'est lisible, categories=[] et un report de sévérité error.
 - Réponds en JSON compact uniquement.
 """
@@ -98,11 +114,81 @@ def _norm(value: str) -> str:
     return re.sub(r"\s+", " ", (value or "").strip().lower())
 
 
+def _fold(value: str) -> str:
+    text = unicodedata.normalize("NFKD", value or "")
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    return re.sub(r"\s+", " ", text.strip().lower())
+
+
 def _int_amount(value: object) -> int:
     try:
         return max(0, int(round(float(value or 0))))
     except (TypeError, ValueError):
         return 0
+
+
+def _whole(value: object) -> int | None:
+    if value in ("", None):
+        return None
+    try:
+        return int(round(float(value)))
+    except (TypeError, ValueError):
+        return None
+
+
+def _explicit_sale_mode(value: object) -> str | None:
+    folded = _fold(str(value or ""))
+    if not folded:
+        return None
+    if folded in {"roll", "pouce", "inch", "inches", "longueur", "au pouce", "par pouce"}:
+        return "roll"
+    if folded in {"case", "caisse", "carton", "pack"}:
+        return "case"
+    if folded in {"piece", "simple", "unite", "u"}:
+        return "piece"
+    return None
+
+
+def _category_name(raw: object, known: list[str]) -> str:
+    name = str(raw or "").strip()
+    if not name:
+        return "Autre"
+    folded = _fold(name)
+    for existing in known:
+        if existing and _fold(existing) == folded:
+            return existing[:80]
+    return name[:80]
+
+
+def _unit(value: object) -> str:
+    folded = _fold(str(value or ""))
+    if folded in {"kg", "kilo", "kilos", "kilogramme", "kilogrammes"}:
+        return "kg"
+    if folded in {"l", "litre", "litres"}:
+        return "L"
+    if folded in {"paquet", "paquets", "sachet", "sachets"}:
+        return "paquet"
+    return "u"
+
+
+def _discount(value: object) -> int | None:
+    if value in ("", None):
+        return 0
+    parsed = _whole(value)
+    if parsed is None:
+        return None
+    return min(100, max(0, parsed))
+
+
+def _known_categories(raw: object) -> list[str]:
+    if not isinstance(raw, list):
+        return []
+    names: list[str] = []
+    for row in raw[:40]:
+        text = str(row or "").strip()
+        if text and text not in names:
+            names.append(text[:80])
+    return names
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -139,8 +225,15 @@ def _extract_json(text: str) -> dict[str, Any]:
     return data
 
 
-def normalize_draft(raw: dict[str, Any], *, usd_rate: int, currency_mode: str) -> tuple[dict, list]:
+def normalize_draft(
+    raw: dict[str, Any],
+    *,
+    usd_rate: int,
+    currency_mode: str,
+    known_categories: list[str] | None = None,
+) -> tuple[dict, list]:
     """Turn the model JSON into products the register can review."""
+    known = [name for name in (known_categories or []) if str(name).strip()]
     report = [row for row in (raw.get("report") or []) if isinstance(row, dict)]
     if currency_mode == "usd" and usd_rate > 0:
         report.insert(0, {
@@ -153,7 +246,7 @@ def normalize_draft(raw: dict[str, Any], *, usd_rate: int, currency_mode: str) -
     for cat in raw.get("categories") or []:
         if not isinstance(cat, dict):
             continue
-        name = str(cat.get("name") or "").strip() or "Autre"
+        name = _category_name(cat.get("name"), known)
         items_out = []
         for item in cat.get("items") or []:
             if not isinstance(item, dict):
@@ -216,15 +309,95 @@ def normalize_draft(raw: dict[str, Any], *, usd_rate: int, currency_mode: str) -
                     "multiple": bool(group.get("multiple")),
                     "choices": choices[:20],
                 })
-            unit = str(item.get("unit") or "u").strip()[:12] or "u"
+            roll_price = _int_amount(item.get("roll_price_htg"))
+            roll_width = _whole(item.get("roll_width")) or 0
+            min_width = _whole(item.get("min_width"))
+            case_price = _int_amount(item.get("case_price_htg"))
+            units_per_case = _whole(item.get("units_per_case")) or 0
+            if roll_width < 0:
+                roll_width = 0
+            if units_per_case < 0:
+                units_per_case = 0
+            explicit = _explicit_sale_mode(item.get("sale_mode"))
+            rollish = roll_price > 0 and roll_width >= 1
+            caseish = case_price > 0 and units_per_case >= 2
+            if explicit in ("roll", "case"):
+                mode = explicit
+            elif rollish and not caseish:
+                mode = "roll"
+            elif caseish and not rollish:
+                mode = "case"
+            else:
+                mode = "piece"
+            if mode == "roll":
+                if min_width is None or min_width < 1:
+                    min_width = 1 if roll_width >= 1 else 0
+                elif roll_width >= 1 and min_width > roll_width:
+                    report.append({
+                        "severity": "warning",
+                        "message": f"Le minimum dépasse la longueur entière pour « {item_name} ».",
+                        "item_name": item_name,
+                    })
+                    min_width = roll_width
+                if roll_price <= 0:
+                    report.append({
+                        "severity": "warning",
+                        "message": f"Prix de la longueur entière manquant pour « {item_name} ».",
+                        "item_name": item_name,
+                    })
+                if roll_width < 1:
+                    report.append({
+                        "severity": "warning",
+                        "message": f"Longueur entière manquante pour « {item_name} ».",
+                        "item_name": item_name,
+                    })
+                case_price = 0
+                units_per_case = 0
+            elif mode == "case":
+                if case_price <= 0:
+                    report.append({
+                        "severity": "warning",
+                        "message": f"Prix de la caisse manquant pour « {item_name} ».",
+                        "item_name": item_name,
+                    })
+                if units_per_case < 2:
+                    report.append({
+                        "severity": "warning",
+                        "message": f"Unités dans la caisse manquantes pour « {item_name} ».",
+                        "item_name": item_name,
+                    })
+                roll_price = 0
+                roll_width = 0
+                min_width = 0
+            else:
+                roll_price = 0
+                roll_width = 0
+                min_width = 0
+                case_price = 0
+                units_per_case = 0
+            discount = _discount(item.get("discount_percent"))
+            if discount is None:
+                discount = 0
+                report.append({
+                    "severity": "warning",
+                    "message": f"Rabais illisible pour « {item_name} ».",
+                    "item_name": item_name,
+                })
             items_out.append({
                 "name": item_name[:120],
+                "sale_mode": mode,
                 "price_htg": price,
+                "roll_price_htg": roll_price,
+                "roll_width": roll_width,
+                "min_width": min_width or 0,
+                "case_price_htg": case_price,
+                "units_per_case": units_per_case,
                 "cost_htg": _int_amount(item.get("cost_htg")),
                 "barcode": re.sub(r"\s+", "", str(item.get("barcode") or ""))[:40],
-                "unit": unit,
+                "unit": _unit(item.get("unit")),
                 "stock": stock_out,
-                "description": str(item.get("description") or "").strip()[:300],
+                "discount_percent": discount,
+                "description": str(item.get("description") or "").strip()[:600],
                 "option_groups": groups[:6],
             })
         if items_out:
@@ -516,13 +689,30 @@ def _decode_files(raw_files: object) -> list[tuple[str, str, bytes]]:
     return files
 
 
+def _known_line(known: list[str]) -> str:
+    if not known:
+        return (
+            "Ce magasin n'a encore aucune catégorie. "
+            "Garde le rayon écrit dans le document. "
+            "S'il n'y en a pas, utilise Autre.\n"
+        )
+    shown = ", ".join(known[:40])
+    return (
+        f"Catégories déjà utilisées par ce magasin : {shown}.\n"
+        "Si le rayon du document correspond à l'une d'elles, reprends son orthographe. "
+        "Sinon garde le nom du document : il devient une catégorie de ce magasin seulement.\n"
+    )
+
+
 def extract_catalog(
     files: list[tuple[str, str, bytes]],
     *,
     owner_note: str,
     currency_mode: str,
     usd_rate: int,
+    known_categories: list[str] | None = None,
 ) -> tuple[dict, list]:
+    known = [name for name in (known_categories or []) if str(name).strip()]
     categories: list[dict] = []
     report: list[dict] = []
     seen: set[tuple[str, str]] = set()
@@ -532,6 +722,7 @@ def extract_catalog(
             f"Document {index}/{len(files)} : {name}.\n"
             f"Devise indiquée par le commerçant : {currency_mode}.\n"
             f"Taux : 1 USD = {usd_rate or 0} HTG.\n"
+            f"{_known_line(known)}"
         )
         if note:
             intro += f"Note du commerçant : {note}\n"
@@ -539,7 +730,12 @@ def extract_catalog(
             {"type": "text", "text": intro},
             _file_block(name, mime, data),
         ])
-        draft, part_report = normalize_draft(raw, usd_rate=usd_rate, currency_mode=currency_mode)
+        draft, part_report = normalize_draft(
+            raw,
+            usd_rate=usd_rate,
+            currency_mode=currency_mode,
+            known_categories=known,
+        )
         count = sum(len(cat["items"]) for cat in draft["categories"])
         report.append({
             "severity": "info",
@@ -584,6 +780,7 @@ class CatalogJobs:
             raise CatalogImportError("Indiquez combien de gourdes valent 1 dollar.")
         files = _decode_files(body.get("files"))
         note = str(body.get("owner_note") or "")[:2000]
+        known = _known_categories(body.get("known_categories"))
         job_id = secrets.token_urlsafe(12)
         job = {
             "id": job_id,
@@ -599,7 +796,7 @@ class CatalogJobs:
             self._prune()
         threading.Thread(
             target=self._run,
-            args=(job_id, files, note, currency, rate),
+            args=(job_id, files, note, currency, rate, known),
             name=f"catalog-import-{job_id}",
             daemon=True,
         ).start()
@@ -612,10 +809,22 @@ class CatalogJobs:
                 raise CatalogImportError("Cette analyse n'existe plus.", status=404)
             return dict(job)
 
-    def _run(self, job_id: str, files, note: str, currency: str, rate: int) -> None:
+    def _run(
+        self,
+        job_id: str,
+        files,
+        note: str,
+        currency: str,
+        rate: int,
+        known: list[str],
+    ) -> None:
         try:
             draft, report = extract_catalog(
-                files, owner_note=note, currency_mode=currency, usd_rate=rate,
+                files,
+                owner_note=note,
+                currency_mode=currency,
+                usd_rate=rate,
+                known_categories=known,
             )
             self._finish(job_id, status="succeeded", draft=draft, report=report, progress="Terminé.")
         except CatalogImportError as exc:
