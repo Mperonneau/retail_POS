@@ -1063,70 +1063,72 @@ class _PayLinkForm extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-          ],
-          TextField(
-            controller: docSearchCtrl,
-            onChanged: (_) => onDocumentQueryChanged(),
-            style: AppTextStyles.body(color: textColor).copyWith(fontSize: 16),
-            decoration: _dec(
-              'Rechercher un numéro *',
-              Icons.search_rounded,
-            ).copyWith(hintText: 'ORD-… ou QTE-…'),
-          ),
-          if (document == null && docSearchCtrl.text.trim().isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                'Choisissez une commande ou un devis. Un lien sans numéro ne peut pas être créé.',
-                style: AppTextStyles.caption(color: mutedColor),
-              ),
+          ] else ...[
+            TextField(
+              controller: docSearchCtrl,
+              onChanged: (_) => onDocumentQueryChanged(),
+              style: AppTextStyles.body(
+                color: textColor,
+              ).copyWith(fontSize: 16),
+              decoration: _dec(
+                'Rechercher un numéro *',
+                Icons.search_rounded,
+              ).copyWith(hintText: 'ORD-… ou QTE-…'),
             ),
-          if (suggestions.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Material(
-              color: isDark
-                  ? AppColors.darkBackground
-                  : const Color(0xFFF7F8FA),
-              borderRadius: BorderRadius.circular(10),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: suggestions.length,
-                separatorBuilder: (_, __) => Divider(
-                  height: 1,
-                  color: mutedColor.withValues(alpha: 0.15),
+            if (docSearchCtrl.text.trim().isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Choisissez une commande ou un devis. Un lien sans numéro ne peut pas être créé.',
+                  style: AppTextStyles.caption(color: mutedColor),
                 ),
-                itemBuilder: (_, index) {
-                  final item = suggestions[index];
-                  final who = (item.clientName ?? '').trim();
-                  return ListTile(
-                    dense: true,
-                    title: Text(
-                      '${item.kindLabel} ${item.number}',
-                      style: AppTextStyles.body(
-                        color: textColor,
-                      ).copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(
-                      who.isEmpty
-                          ? CurrencyFormatter.local(context, item.totalHtg)
-                          : '$who · ${CurrencyFormatter.local(context, item.totalHtg)}',
-                      style: AppTextStyles.caption(color: mutedColor),
-                    ),
-                    onTap: () => onSelectDocument(item),
-                  );
-                },
               ),
-            ),
-          ] else if (docSearchCtrl.text.trim().isNotEmpty && document == null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                'Aucun numéro ne correspond.',
-                style: AppTextStyles.caption(color: AppColors.boldRed),
+            if (suggestions.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Material(
+                color: isDark
+                    ? AppColors.darkBackground
+                    : const Color(0xFFF7F8FA),
+                borderRadius: BorderRadius.circular(10),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: suggestions.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    color: mutedColor.withValues(alpha: 0.15),
+                  ),
+                  itemBuilder: (_, index) {
+                    final item = suggestions[index];
+                    final who = (item.clientName ?? '').trim();
+                    return ListTile(
+                      dense: true,
+                      title: Text(
+                        '${item.kindLabel} ${item.number}',
+                        style: AppTextStyles.body(
+                          color: textColor,
+                        ).copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        who.isEmpty
+                            ? CurrencyFormatter.local(context, item.totalHtg)
+                            : '$who · ${CurrencyFormatter.local(context, item.totalHtg)}',
+                        style: AppTextStyles.caption(color: mutedColor),
+                      ),
+                      onTap: () => onSelectDocument(item),
+                    );
+                  },
+                ),
               ),
-            ),
+            ] else if (docSearchCtrl.text.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Aucun numéro ne correspond.',
+                  style: AppTextStyles.caption(color: AppColors.boldRed),
+                ),
+              ),
+          ],
           const SizedBox(height: 16),
           _SectionLabel(label: 'PAYEUR', mutedColor: mutedColor),
           const SizedBox(height: 6),

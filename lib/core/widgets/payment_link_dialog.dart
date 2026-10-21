@@ -42,6 +42,36 @@ String normalizePaymentLinkUrl(String pathOrUrl) {
   return 'https://$t';
 }
 
+/// Message for the share sheet. The checkout URL is included so the payer can
+/// open it, along with the commande or devis number and the client.
+String paymentLinkShareMessage({
+  required String url,
+  required String number,
+  String? kindLabel,
+  String? clientName,
+  String? amountLabel,
+  String? phone,
+}) {
+  final lines = <String>['Lien de paiement'];
+  final num = number.trim();
+  final kind = kindLabel?.trim() ?? '';
+  if (num.isNotEmpty) {
+    lines.add(kind.isEmpty ? 'Numéro : $num' : '$kind : $num');
+  }
+  final client = clientName?.trim() ?? '';
+  if (client.isNotEmpty) lines.add('Client : $client');
+  final amount = amountLabel?.trim() ?? '';
+  if (amount.isNotEmpty) lines.add('Montant : $amount');
+  final tel = phone?.trim() ?? '';
+  if (tel.isNotEmpty && tel != num) lines.add('Téléphone : $tel');
+  final link = url.trim();
+  if (link.isNotEmpty) {
+    lines.add('');
+    lines.add(link);
+  }
+  return lines.join('\n');
+}
+
 /// Shown after a payment link is **created and sent** (bill, quote, or paylink).
 Future<void> showPaymentLinkSuccessDialog(
   BuildContext context, {
@@ -50,8 +80,10 @@ Future<void> showPaymentLinkSuccessDialog(
   required String pathOrUrl,
   String? subtitle,
   String headline = 'Le lien a été envoyé',
+  String? shareText,
 }) {
   final fullUrl = normalizePaymentLinkUrl(pathOrUrl);
+  final shared = (shareText ?? '').trim().isEmpty ? fullUrl : shareText!.trim();
   return showDialog<void>(
     context: context,
     builder: (ctx) {
@@ -116,103 +148,63 @@ Future<void> showPaymentLinkSuccessDialog(
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkBackground
-                          : AppColors.lightBlue,
+                  Material(
+                    color: isDark
+                        ? AppColors.darkBackground
+                        : AppColors.lightBlue,
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.darkBorder
-                            : AppColors.primaryBlue.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.link,
-                          size: 14,
-                          color: isDark
-                              ? AppColors.skyBlue
-                              : AppColors.primaryBlue,
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: fullUrl));
+                        setModalState(() => linkCopied[0] = true);
+                        Future.delayed(const Duration(seconds: 2), () {
+                          if (context.mounted) {
+                            setModalState(() => linkCopied[0] = false);
+                          }
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: SelectableText(
-                            fullUrl,
-                            style:
-                                AppTextStyles.caption(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.primaryBlue.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              linkCopied[0]
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.copy_outlined,
+                              size: 18,
+                              color: linkCopied[0]
+                                  ? AppColors.deepGreen
+                                  : (isDark
+                                        ? AppColors.skyBlue
+                                        : AppColors.primaryBlue),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                linkCopied[0] ? 'Lien copié' : 'Copier le lien',
+                                style: AppTextStyles.body(
                                   color: isDark
                                       ? AppColors.skyBlue
                                       : AppColors.primaryBlue,
-                                ).copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: fullUrl));
-                              setModalState(() => linkCopied[0] = true);
-                              Future.delayed(const Duration(seconds: 2), () {
-                                if (context.mounted) {
-                                  setModalState(() => linkCopied[0] = false);
-                                }
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    (isDark
-                                            ? AppColors.darkSurface
-                                            : AppColors.white)
-                                        .withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color:
-                                      (isDark
-                                              ? AppColors.coolGray
-                                              : AppColors.primaryBlue)
-                                          .withValues(alpha: 0.35),
-                                ),
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: AppConstants.animFast,
-                                child: linkCopied[0]
-                                    ? const Icon(
-                                        Icons.check_circle_outline_rounded,
-                                        key: ValueKey('ok'),
-                                        size: 16,
-                                        color: AppColors.deepGreen,
-                                      )
-                                    : Icon(
-                                        Icons.copy_outlined,
-                                        key: const ValueKey('cp'),
-                                        size: 16,
-                                        color: isDark
-                                            ? AppColors.skyBlue
-                                            : AppColors.primaryBlue,
-                                      ),
+                                ).copyWith(fontWeight: FontWeight.w600),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -229,7 +221,7 @@ Future<void> showPaymentLinkSuccessDialog(
                 ),
               ),
               OutlinedButton.icon(
-                onPressed: () => Share.share(fullUrl, subject: title),
+                onPressed: () => Share.share(shared, subject: title),
                 icon: const Icon(Icons.share_rounded, size: 18),
                 label: const Text('Partager'),
                 style: OutlinedButton.styleFrom(

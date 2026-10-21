@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../mock/mock_retail_data.dart';
+import '../../mock/mock_retail_orders.dart';
 import '../../models/customer.dart';
 import '../../models/paylink.dart';
 import '../../theme/app_colors.dart';
@@ -80,6 +82,7 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
     final path = (created.paymentUrl != null && created.paymentUrl!.isNotEmpty)
         ? created.paymentUrl!
         : buildStandalonePaylinkPath(created.id);
+    final url = normalizePaymentLinkUrl(path);
     await showPaymentLinkSuccessDialog(
       context,
       isDark: isDark,
@@ -87,7 +90,27 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
       title: 'Le lien ${created.reference} est prêt.',
       pathOrUrl: path,
       subtitle: 'Copiez-le ou partagez-le avec le payeur.',
+      shareText: paymentLinkShareMessage(
+        url: url,
+        number: created.reference,
+        kindLabel: _documentKind(created),
+        clientName: created.customerName,
+        amountLabel: CurrencyFormatter.local(context, created.amountHtg),
+        phone: created.customerPhone,
+      ),
     );
+  }
+
+  String? _documentKind(PayLink link) {
+    final id = link.linkedOrderId;
+    if (id == null || id.isEmpty) return null;
+    if (ref.read(retailOrdersProvider).any((order) => order.id == id)) {
+      return 'Commande';
+    }
+    if (ref.read(quotesProvider).any((quote) => quote.id == id)) {
+      return 'Devis';
+    }
+    return null;
   }
 
   void _showResendSuccess(PayLink link) {
