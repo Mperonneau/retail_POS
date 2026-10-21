@@ -22,7 +22,10 @@ Future<T?> showStoreSheet<T>(BuildContext context, WidgetBuilder builder) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
     ),
-    builder: builder,
+    builder: (context) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: builder(context),
+    ),
   );
 }
 
@@ -188,9 +191,9 @@ class _ProductSheetState extends State<_ProductSheet> {
     final rate = widget.shop.usdRate;
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.86,
+      initialChildSize: 1,
       minChildSize: 0.5,
-      maxChildSize: 0.95,
+      maxChildSize: 1,
       builder: (context, scroll) => Column(
         children: [
           Expanded(
@@ -201,7 +204,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                 Stack(
                   children: [
                     AspectRatio(
-                      aspectRatio: 4 / 3,
+                      aspectRatio: _p.saleMode == SaleMode.piece ? 4 / 3 : 2,
                       child: ClipRRect(
                         borderRadius:
                             const BorderRadius.vertical(top: Radius.circular(22)),
@@ -279,6 +282,9 @@ class _ProductSheetState extends State<_ProductSheet> {
                               autofocus: true,
                               keyboardType: TextInputType.number,
                               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              // iPhone zooms the page on a field under 16 px.
+                              style: AppTextStyles.body(color: AppColors.nearBlack)
+                                  .copyWith(fontSize: 16),
                               decoration: const InputDecoration(
                                 labelText: 'Longueur (pouces)',
                                 border: OutlineInputBorder(),
