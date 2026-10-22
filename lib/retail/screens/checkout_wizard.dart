@@ -137,8 +137,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   final _clientEmailCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _deliveryLocationCtrl = TextEditingController();
-  final _deliveryPhoneCtrl = TextEditingController();
   final _deliveryFeeCtrl = TextEditingController();
+  final _clientPhoneCtrl = TextEditingController();
 
   RetailFulfillmentMode _fulfillment = RetailFulfillmentMode.inStore;
   double _deliveryFee = 0;
@@ -176,11 +176,19 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
       _searchQuery = '';
       _fulfillment = q.fulfillmentMode;
       _deliveryLocationCtrl.text = q.deliveryLocation ?? '';
-      _deliveryPhoneCtrl.text = q.deliveryPhone ?? '';
       final quoteName = (q.clientName ?? '').trim();
       final quotePhone = (q.clientPhone ?? '').trim();
       if (quoteName.isNotEmpty && quotePhone.isNotEmpty) {
         _directoryClientName = quoteName;
+      }
+      final deliveryPhone = (q.deliveryPhone ?? '').trim();
+      if (q.fulfillmentMode == RetailFulfillmentMode.delivery &&
+          deliveryPhone.isNotEmpty) {
+        _clientPhoneCtrl.text = deliveryPhone;
+      } else if (quotePhone.isNotEmpty) {
+        _clientPhoneCtrl.text = quotePhone;
+      } else {
+        _clientPhoneCtrl.text = deliveryPhone;
       }
     }
     _clientNameCtrl.addListener(_onSaleClientNameEdited);
@@ -196,7 +204,15 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
     if (_clientNameCtrl.text.trim() == picked) return;
     _directoryClientName = null;
     _linkedClientPhone = '';
+    _clientPhoneCtrl.clear();
     if (mounted) setState(() {});
+  }
+
+  /// Phone saved on the sale: the field on this step, or the directory number.
+  String get _contactPhone {
+    final typed = _clientPhoneCtrl.text.trim();
+    if (typed.isNotEmpty) return typed;
+    return _linkedClientPhone.trim();
   }
 
   bool get _clientFromDirectory {
@@ -213,8 +229,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
     _clientEmailCtrl.dispose();
     _searchCtrl.dispose();
     _deliveryLocationCtrl.dispose();
-    _deliveryPhoneCtrl.dispose();
     _deliveryFeeCtrl.dispose();
+    _clientPhoneCtrl.dispose();
     super.dispose();
   }
 
@@ -276,10 +292,10 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   void _onFulfillmentChanged(RetailFulfillmentMode mode) {
     setState(() {
       _fulfillment = mode;
-      if (_isDeliveryMode &&
-          _deliveryPhoneCtrl.text.trim().isEmpty &&
+      if (mode == RetailFulfillmentMode.delivery &&
+          _clientPhoneCtrl.text.trim().isEmpty &&
           _linkedClientPhone.trim().isNotEmpty) {
-        _deliveryPhoneCtrl.text = _linkedClientPhone;
+        _clientPhoneCtrl.text = _linkedClientPhone;
       }
     });
   }
@@ -289,11 +305,20 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
       _directoryClientName = c.name;
       _clientNameCtrl.text = c.name;
       _linkedClientPhone = c.phone;
+      _clientPhoneCtrl.text = c.phone;
       _searchCtrl.clear();
       _searchQuery = '';
-      if (_isDeliveryMode && _deliveryPhoneCtrl.text.trim().isEmpty) {
-        _deliveryPhoneCtrl.text = c.phone;
-      }
+    });
+  }
+
+  void _clearSelectedClient() {
+    setState(() {
+      _directoryClientName = null;
+      _linkedClientPhone = '';
+      _clientNameCtrl.clear();
+      _clientPhoneCtrl.clear();
+      _searchCtrl.clear();
+      _searchQuery = '';
     });
   }
 
@@ -333,7 +358,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
     if (!widget.isQuote) return true;
     final hasName = _clientNameCtrl.text.trim().isNotEmpty;
     final hasContact =
-        _linkedClientPhone.trim().isNotEmpty ||
+        _contactPhone.isNotEmpty ||
         _clientEmailCtrl.text.trim().isNotEmpty;
     return hasName && hasContact;
   }
@@ -341,7 +366,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   bool _validateDeliveryStep() {
     if (!_isDeliveryMode) return true;
     return _deliveryLocationCtrl.text.trim().isNotEmpty &&
-        _deliveryPhoneCtrl.text.trim().isNotEmpty;
+        _clientPhoneCtrl.text.trim().isNotEmpty;
   }
 
   void _next() {
@@ -409,9 +434,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               clientName: _clientNameCtrl.text.trim().isEmpty
                   ? null
                   : _clientNameCtrl.text.trim(),
-              clientPhone: _linkedClientPhone.trim().isEmpty
-                  ? null
-                  : _linkedClientPhone.trim(),
+              clientPhone: _contactPhone.isEmpty ? null : _contactPhone,
               clientEmail: _clientEmailCtrl.text.trim().isEmpty
                   ? null
                   : _clientEmailCtrl.text.trim(),
@@ -422,7 +445,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                   ? _deliveryLocationCtrl.text.trim()
                   : null,
               deliveryPhone: _isDeliveryMode
-                  ? _deliveryPhoneCtrl.text.trim()
+                  ? (_contactPhone.isEmpty ? null : _contactPhone)
                   : null,
               discountPercent: widget.discountPercent,
               paymentLinkSent: false,
@@ -440,9 +463,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               clientName: _clientNameCtrl.text.trim().isEmpty
                   ? null
                   : _clientNameCtrl.text.trim(),
-              clientPhone: _linkedClientPhone.trim().isEmpty
-                  ? null
-                  : _linkedClientPhone.trim(),
+              clientPhone: _contactPhone.isEmpty ? null : _contactPhone,
               clientEmail: _clientEmailCtrl.text.trim().isEmpty
                   ? null
                   : _clientEmailCtrl.text.trim(),
@@ -453,7 +474,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                   ? _deliveryLocationCtrl.text.trim()
                   : null,
               deliveryPhone: _isDeliveryMode
-                  ? _deliveryPhoneCtrl.text.trim()
+                  ? (_contactPhone.isEmpty ? null : _contactPhone)
                   : null,
               discountPercent: widget.discountPercent,
               status: MockRetailQuoteStatus.draft,
@@ -680,8 +701,14 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           fulfillment: _fulfillment,
           onFulfillmentChanged: _onFulfillmentChanged,
           onPickMockCustomer: _onPickMockCustomer,
+          selectedClientName: _clientFromDirectory
+              ? _clientNameCtrl.text.trim()
+              : null,
+          selectedClientPhone: _linkedClientPhone.trim(),
+          onClearSelectedClient: _clearSelectedClient,
+          clientPhoneCtrl: _clientPhoneCtrl,
+          phoneRequired: _isDeliveryMode,
           deliveryLocationCtrl: _deliveryLocationCtrl,
-          deliveryPhoneCtrl: _deliveryPhoneCtrl,
           deliveryFeeCtrl: _deliveryFeeCtrl,
           onDeliveryFeeChanged: (v) =>
               setState(() => _deliveryFee = double.tryParse(v) ?? 0),
@@ -702,13 +729,13 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           gratuity: grat,
           total: total,
           clientName: _clientNameCtrl.text.trim(),
-          linkedClientPhone: _linkedClientPhone,
+          linkedClientPhone: _contactPhone,
           fulfillment: _fulfillmentSectionVisible
               ? _fulfillment
               : RetailFulfillmentMode.inStore,
           showFulfillmentChip: _fulfillmentSectionVisible,
           deliveryLocation: _deliveryLocationCtrl.text.trim(),
-          deliveryPhone: _deliveryPhoneCtrl.text.trim(),
+          deliveryPhone: _isDeliveryMode ? _contactPhone : '',
           deliveryFee: deliveryFee,
           showDeliveryFeeRow: _isDeliveryMode,
           isDark: isDark,
@@ -726,7 +753,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           total: total,
           checkoutId: _checkoutId,
           knownClientName: _clientNameCtrl.text.trim(),
-          knownClientPhone: _linkedClientPhone.trim(),
+          knownClientPhone: _clientFromDirectory
+              ? _linkedClientPhone.trim()
+              : _clientPhoneCtrl.text.trim(),
           clientFromDirectory: _clientFromDirectory,
           submitting: _submitting,
           onValidateStock: () async {
@@ -773,9 +802,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                         : (clientName.isEmpty ? null : clientName),
                     clientPhone: creditPhone.isNotEmpty
                         ? creditPhone
-                        : (_linkedClientPhone.trim().isEmpty
-                            ? null
-                            : _linkedClientPhone.trim()),
+                        : (_contactPhone.isEmpty ? null : _contactPhone),
                     clientEmail: clientEmail.isEmpty ? null : clientEmail,
                     fulfillmentMode: _fulfillmentSectionVisible
                         ? _fulfillment
@@ -814,7 +841,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                         ? _deliveryLocationCtrl.text.trim()
                         : null,
                     deliveryPhone: _isDeliveryMode
-                        ? _deliveryPhoneCtrl.text.trim()
+                        ? (_contactPhone.isEmpty ? null : _contactPhone)
                         : null,
                     createdAt: now,
                     paidAt: now,
@@ -910,8 +937,12 @@ class _ClientStep extends ConsumerWidget {
   final RetailFulfillmentMode fulfillment;
   final ValueChanged<RetailFulfillmentMode> onFulfillmentChanged;
   final void Function(MockCustomer c) onPickMockCustomer;
+  final String? selectedClientName;
+  final String selectedClientPhone;
+  final VoidCallback onClearSelectedClient;
+  final TextEditingController clientPhoneCtrl;
+  final bool phoneRequired;
   final TextEditingController deliveryLocationCtrl;
-  final TextEditingController deliveryPhoneCtrl;
   final TextEditingController deliveryFeeCtrl;
   final ValueChanged<String> onDeliveryFeeChanged;
 
@@ -929,8 +960,12 @@ class _ClientStep extends ConsumerWidget {
     required this.fulfillment,
     required this.onFulfillmentChanged,
     required this.onPickMockCustomer,
+    required this.selectedClientName,
+    required this.selectedClientPhone,
+    required this.onClearSelectedClient,
+    required this.clientPhoneCtrl,
+    required this.phoneRequired,
     required this.deliveryLocationCtrl,
-    required this.deliveryPhoneCtrl,
     required this.deliveryFeeCtrl,
     required this.onDeliveryFeeChanged,
   });
@@ -939,7 +974,9 @@ class _ClientStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mockList = ref.watch(mockCustomersProvider);
-    final results = searchQuery.trim().isEmpty
+    final pickedName = selectedClientName?.trim() ?? '';
+    final clientSelected = pickedName.isNotEmpty;
+    final results = clientSelected || searchQuery.trim().isEmpty
         ? <MockCustomer>[]
         : mockList
               .where(
@@ -972,23 +1009,30 @@ class _ClientStep extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacing8),
-                TextField(
-                  key: const Key('checkout-client-name'),
-                  controller: clientNameCtrl,
-                  decoration: InputDecoration(
-                    labelText: isQuote
-                        ? 'Nom du client *'
-                        : 'Nom du client (facultatif)',
-                    prefixIcon: const Icon(Icons.person_outline, size: 18),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusInput,
+                if (clientSelected)
+                  _SelectedClientCard(
+                    name: pickedName,
+                    phone: selectedClientPhone,
+                    onClear: onClearSelectedClient,
+                  )
+                else
+                  TextField(
+                    key: const Key('checkout-client-name'),
+                    controller: clientNameCtrl,
+                    decoration: InputDecoration(
+                      labelText: isQuote
+                          ? 'Nom du client *'
+                          : 'Nom du client (facultatif)',
+                      prefixIcon: const Icon(Icons.person_outline, size: 18),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
                       ),
+                      isDense: true,
                     ),
-                    isDense: true,
+                    textCapitalization: TextCapitalization.words,
                   ),
-                  textCapitalization: TextCapitalization.words,
-                ),
                 if (isQuote) ...[
                   const SizedBox(height: AppConstants.spacing8),
                   TextField(
@@ -1028,22 +1072,24 @@ class _ClientStep extends ConsumerWidget {
                     ],
                   ),
                 ],
-                const SizedBox(height: AppConstants.spacing8),
-                TextField(
-                  key: const Key('checkout-client-search'),
-                  controller: searchCtrl,
-                  onChanged: onSearchChanged,
-                  decoration: InputDecoration(
-                    labelText: 'Rechercher un client',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusInput,
+                if (!clientSelected) ...[
+                  const SizedBox(height: AppConstants.spacing8),
+                  TextField(
+                    key: const Key('checkout-client-search'),
+                    controller: searchCtrl,
+                    onChanged: onSearchChanged,
+                    decoration: InputDecoration(
+                      labelText: 'Rechercher un client',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
                       ),
+                      isDense: true,
                     ),
-                    isDense: true,
                   ),
-                ),
+                ],
                 if (results.isNotEmpty) ...[
                   const SizedBox(height: AppConstants.spacing8),
                   ...results.map(
@@ -1059,6 +1105,14 @@ class _ClientStep extends ConsumerWidget {
                     ),
                   ),
                 ],
+                const SizedBox(height: AppConstants.spacing8),
+                PhoneField(
+                  key: const Key('checkout-client-phone'),
+                  controller: clientPhoneCtrl,
+                  label: phoneRequired
+                      ? 'Téléphone *'
+                      : 'Téléphone (facultatif)',
+                ),
                 if (showFulfillmentSection) ...[
                   const SizedBox(height: AppConstants.spacing16),
                   Text(
@@ -1122,17 +1176,10 @@ class _ClientStep extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 AppInput(
+                                  key: const Key('checkout-delivery-place'),
                                   label: 'Lieu *',
                                   controller: deliveryLocationCtrl,
                                   prefixIcon: Icons.place_outlined,
-                                ),
-                                const SizedBox(height: AppConstants.spacing8),
-                                AppInput(
-                                  label: 'Téléphone *',
-                                  controller: deliveryPhoneCtrl,
-                                  keyboardType: TextInputType.phone,
-                                  inputFormatters: InputFormatters.phone,
-                                  prefixIcon: Icons.phone_outlined,
                                 ),
                                 const SizedBox(height: AppConstants.spacing8),
                                 AppInput(
@@ -1168,6 +1215,64 @@ class _ClientStep extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SelectedClientCard extends StatelessWidget {
+  final String name;
+  final String phone;
+  final VoidCallback onClear;
+
+  const _SelectedClientCard({
+    required this.name,
+    required this.phone,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
+    return Container(
+      key: const Key('checkout-selected-client'),
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.white,
+        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : const Color(0xFFE4E0D8),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.person_outline, size: 22, color: AppColors.primaryBlue),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: AppTextStyles.body(color: ink).copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (phone.isNotEmpty)
+                  Text(phone, style: AppTextStyles.caption(color: muted)),
+              ],
+            ),
+          ),
+          IconButton(
+            key: const Key('checkout-client-clear'),
+            tooltip: 'Retirer le client',
+            onPressed: onClear,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1695,7 +1800,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         return true;
       }
       if (_isPhoneOnlyClient) {
-        return _balancePhoneCtrl.text.trim().isNotEmpty;
+        return widget.knownClientPhone.trim().isNotEmpty ||
+            _balancePhoneCtrl.text.trim().isNotEmpty;
       }
       final customer = _selectedCustomer;
       if (customer == null || customer.isCreditBlocked) return false;
@@ -1872,7 +1978,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       return created;
     }
     if (_isPhoneOnlyClient) {
-      final phone = _balancePhoneCtrl.text.trim();
+      final known = widget.knownClientPhone.trim();
+      final phone = known.isNotEmpty ? known : _balancePhoneCtrl.text.trim();
       if (phone.isEmpty) return null;
       final created = Customer(
         id: 'cust_${DateTime.now().millisecondsSinceEpoch}',
@@ -3269,11 +3376,14 @@ class _RCashContent extends StatelessWidget {
                       .copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
-                PhoneField(
-                  key: const Key('cash-balance-phone'),
-                  controller: balancePhoneCtrl,
-                  label: 'Téléphone *',
-                ),
+                if (knownClientPhone.trim().isNotEmpty)
+                  Text(knownClientPhone, style: AppTextStyles.caption())
+                else
+                  PhoneField(
+                    key: const Key('cash-balance-phone'),
+                    controller: balancePhoneCtrl,
+                    label: 'Téléphone *',
+                  ),
               ] else
                 _CashCreditPicker(
                   isDark: isDark,

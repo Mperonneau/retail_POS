@@ -496,4 +496,171 @@ void main() {
     expect(find.text('Marquer prêt'), findsNothing);
     expect(find.text('Marquer terminé'), findsOneWidget);
   });
+
+  Future<void> enterCheckoutPhone(WidgetTester tester, String digits) async {
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const Key('checkout-client-phone')),
+        matching: find.byType(EditableText),
+      ),
+      digits,
+    );
+    await tester.pump();
+  }
+
+  testWidgets('a searched client becomes a card until it is removed', (
+    tester,
+  ) async {
+    await openRegister(tester, initialStepIndex: 0);
+    expect(find.text('Téléphone (facultatif)'), findsOneWidget);
+    expect(find.byKey(const Key('checkout-client-name')), findsOneWidget);
+    expect(find.byKey(const Key('checkout-client-search')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('checkout-client-search')),
+      'Madame Pierre',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Boutique Madame Pierre'));
+    await tester.pump();
+
+    expect(find.byKey(const Key('checkout-selected-client')), findsOneWidget);
+    expect(find.text('Boutique Madame Pierre'), findsOneWidget);
+    expect(find.text('+509 3456-7890'), findsOneWidget);
+    expect(find.byKey(const Key('checkout-client-name')), findsNothing);
+    expect(find.byKey(const Key('checkout-client-search')), findsNothing);
+    expect(find.text('Téléphone (facultatif)'), findsOneWidget);
+    final phone = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const Key('checkout-client-phone')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(phone.controller.text, contains('34567890'));
+
+    await tester.tap(find.byKey(const Key('checkout-client-clear')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('checkout-selected-client')), findsNothing);
+    expect(find.byKey(const Key('checkout-client-name')), findsOneWidget);
+    expect(find.byKey(const Key('checkout-client-search')), findsOneWidget);
+    expect(find.text('+509 3456-7890'), findsNothing);
+    expect(find.text('Téléphone (facultatif)'), findsOneWidget);
+    final cleared = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const Key('checkout-client-phone')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(cleared.controller.text, isEmpty);
+  });
+
+  testWidgets('a typed name keeps the fields and an optional phone', (
+    tester,
+  ) async {
+    await openRegister(tester, initialStepIndex: 0);
+    await tester.enterText(
+      find.byKey(const Key('checkout-client-name')),
+      'Claire Denis',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Retrait'));
+    await tester.pump();
+
+    expect(find.byKey(const Key('checkout-client-name')), findsOneWidget);
+    expect(find.byKey(const Key('checkout-client-search')), findsOneWidget);
+    expect(find.byKey(const Key('checkout-selected-client')), findsNothing);
+    expect(find.text('Téléphone (facultatif)'), findsOneWidget);
+    expect(find.text('Téléphone *'), findsNothing);
+
+    await tester.tap(find.text('Suivant'));
+    await tester.pump();
+    expect(find.text('Récapitulatif'), findsOneWidget);
+  });
+
+  testWidgets('delivery requires the phone and does not ask for it twice', (
+    tester,
+  ) async {
+    await openRegister(tester, initialStepIndex: 0);
+    await tester.tap(find.text('Livraison'));
+    await tester.pump();
+
+    expect(find.text('Téléphone *'), findsOneWidget);
+    expect(find.text('Téléphone (facultatif)'), findsNothing);
+    expect(find.text('Lieu *'), findsOneWidget);
+
+    await tester.tap(find.text('Suivant'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      find.text(
+        'L\'adresse et le téléphone sont obligatoires pour la livraison.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Client et livraison'), findsOneWidget);
+
+    await enterCheckoutPhone(tester, '34567890');
+    ScaffoldMessenger.of(
+      tester.element(find.text('Client et livraison')),
+    ).hideCurrentSnackBar();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Suivant'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Récapitulatif'), findsNothing);
+    expect(find.text('Client et livraison'), findsOneWidget);
+
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const Key('checkout-delivery-place')),
+        matching: find.byType(EditableText),
+      ),
+      'Pétion-Ville',
+    );
+    await tester.pump();
+    ScaffoldMessenger.of(
+      tester.element(find.text('Client et livraison')),
+    ).hideCurrentSnackBar();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Suivant'));
+    await tester.pump();
+    expect(find.text('Récapitulatif'), findsOneWidget);
+    expect(find.textContaining('34567890'), findsWidgets);
+  });
+
+  testWidgets('a phone typed with the name is reused for the balance', (
+    tester,
+  ) async {
+    final container = await openRegister(tester, initialStepIndex: 0);
+    await tester.enterText(
+      find.byKey(const Key('checkout-client-name')),
+      'Claire Denis',
+    );
+    await enterCheckoutPhone(tester, '37001234');
+    await tester.tap(find.text('Suivant'));
+    await tester.pump();
+    await tester.tap(find.text('Payer'));
+    await tester.pump();
+    await enterCash(tester, '100');
+
+    expect(find.text('Claire Denis'), findsWidgets);
+    expect(find.byKey(const Key('cash-balance-phone')), findsNothing);
+    expect(find.byKey(const Key('cash-credit-search')), findsNothing);
+    expect(confirmButton(tester).onPressed, isNotNull);
+
+    await confirm(tester);
+
+    final sale = latestSale(container);
+    expect(sale.clientName, 'Claire Denis');
+    expect(sale.clientPhone, contains('37001234'));
+    expect(sale.status, RetailOrderStatus.partiallyPaid);
+    final customer = container
+        .read(customerProvider)
+        .customers
+        .firstWhere((row) => row.name == 'Claire Denis');
+    expect(customer.phone, contains('37001234'));
+  });
 }
