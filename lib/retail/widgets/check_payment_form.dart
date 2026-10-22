@@ -22,8 +22,10 @@ class CheckPaymentForm extends StatelessWidget {
   final Uint8List? photo;
   final String? photoError;
   final bool picking;
+  final bool clearNow;
   final ValueChanged<String> onChanged;
   final ValueChanged<DateTime> onDate;
+  final ValueChanged<bool> onClearNow;
   final VoidCallback onPickPhoto;
 
   const CheckPaymentForm({
@@ -37,8 +39,10 @@ class CheckPaymentForm extends StatelessWidget {
     required this.photo,
     required this.photoError,
     required this.picking,
+    required this.clearNow,
     required this.onChanged,
     required this.onDate,
+    required this.onClearNow,
     required this.onPickPhoto,
   });
 
@@ -212,6 +216,21 @@ class CheckPaymentForm extends StatelessWidget {
                 style: AppTextStyles.caption(color: AppColors.boldRed),
               ),
             ],
+            const SizedBox(height: 4),
+            SwitchListTile(
+              key: const Key('clear-check-now'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'Compenser le chèque maintenant',
+                style: AppTextStyles.body(color: ink),
+              ),
+              subtitle: Text(
+                'Sinon la commande reste en attente jusqu\'à compensation.',
+                style: AppTextStyles.caption(color: muted),
+              ),
+              value: clearNow,
+              onChanged: onClearNow,
+            ),
           ],
         ),
       ),

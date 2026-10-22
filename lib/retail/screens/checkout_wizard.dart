@@ -143,6 +143,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   /// Shown on success screen (mock sale #).
   int _completedSaleNumber = 0;
 
+  /// Check was recorded and still has to clear.
+  bool _awaitingCheckClearance = false;
+
   @override
   void initState() {
     super.initState();
@@ -700,6 +703,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             final now = DateTime.now();
             final saleNo = 100 + (now.millisecondsSinceEpoch % 8999);
             final clientName = _clientNameCtrl.text.trim();
+            final awaitingCheck = method == PaymentMethodType.check &&
+                !(check?.cleared ?? false);
             ref
                 .read(retailOrdersProvider.notifier)
                 .add(
@@ -714,7 +719,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                     fulfillmentMode: _fulfillmentSectionVisible
                         ? _fulfillment
                         : RetailFulfillmentMode.inStore,
-                    status: RetailOrderStatus.paid,
+                    status: awaitingCheck
+                        ? RetailOrderStatus.checkPending
+                        : RetailOrderStatus.paid,
                     paymentSource: RetailPaymentSource.pos,
                     paymentMethod: method,
                     checkPayment: method == PaymentMethodType.check
@@ -761,6 +768,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             setState(() {
               _submitting = false;
               _completedSaleNumber = saleNo;
+              _awaitingCheckClearance = awaitingCheck;
               _step = _successStepIndex;
             });
           },
@@ -775,7 +783,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           amountHtg: total,
           showHeader: true,
           contextSubtitle: _successContextSubtitle(),
-          statusLine: 'Vente n°$_completedSaleNumber payée',
+          statusLine: _awaitingCheckClearance
+              ? 'Vente n°$_completedSaleNumber — chèque en attente'
+              : 'Vente n°$_completedSaleNumber payée',
           receiptDetailLine: name.isNotEmpty ? 'Reçu pour : $name' : null,
           printReceiptName: name.isNotEmpty ? name : null,
           onDone: _finishPaymentSuccess,
@@ -1514,6 +1524,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   String _checkMime = 'image/jpeg';
   String? _checkPhotoError;
   bool _checkPhotoBusy = false;
+  bool _clearCheckNow = false;
 
   @override
   void dispose() {
@@ -1566,6 +1577,11 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     }
     if (_method == _RPayMethod.moncash && !_moncashPaid) {
       return 'Payer ${CurrencyFormatter.local(context, widget.total)}';
+    }
+    if (_method == _RPayMethod.check) {
+      return _clearCheckNow
+          ? 'Compenser le chèque'
+          : 'Enregistrer le chèque';
     }
     return 'Confirmer le paiement';
   }
@@ -1630,6 +1646,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       date: _checkDate,
       photo: _checkPhoto,
       mime: _checkMime,
+      cleared: _clearCheckNow,
+      clearedAt: _clearCheckNow ? DateTime.now() : null,
     );
   }
 
@@ -2172,8 +2190,10 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
           photo: _checkPhoto,
           photoError: _checkPhotoError,
           picking: _checkPhotoBusy,
+          clearNow: _clearCheckNow,
           onChanged: (_) => setState(() {}),
           onDate: (value) => setState(() => _checkDate = value),
+          onClearNow: (value) => setState(() => _clearCheckNow = value),
           onPickPhoto: _pickCheckPhoto,
         );
     }

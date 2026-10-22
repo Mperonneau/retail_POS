@@ -4,15 +4,17 @@ import 'retail_fulfillment_mode.dart';
 
 /// Lifecycle status for an active / completed retail order.
 enum RetailOrderStatus {
-  paid,       // Just paid (all sources) — initial state
-  ready,      // Prepared and ready for pickup / delivery
-  pickedUp,   // Customer picked up (pickup mode)
-  delivered,  // Delivered to customer (delivery mode)
-  completed,  // Closed / finalised (in-store or explicit manager action)
+  checkPending, // Check received, waiting until it clears
+  paid,         // Just paid (all sources) — initial state
+  ready,        // Prepared and ready for pickup / delivery
+  pickedUp,     // Customer picked up (pickup mode)
+  delivered,    // Delivered to customer (delivery mode)
+  completed,    // Closed / finalised (in-store or explicit manager action)
 }
 
 extension RetailOrderStatusExt on RetailOrderStatus {
   String get label => switch (this) {
+        RetailOrderStatus.checkPending => 'Chèque en attente',
         RetailOrderStatus.paid => 'Payé',
         RetailOrderStatus.ready => 'Prêt',
         RetailOrderStatus.pickedUp => 'Retiré',

@@ -11,13 +11,36 @@ class RetailCheckPayment {
   /// `data:image/...;base64,...` photo of the check.
   final String imageDataUrl;
 
+  /// True once the bank has cleared the check, or the clerk cleared it at the register.
+  final bool cleared;
+
+  /// When [cleared] became true.
+  final DateTime? clearedAt;
+
   const RetailCheckPayment({
     required this.number,
     required this.bank,
     required this.payerName,
     required this.date,
     required this.imageDataUrl,
+    this.cleared = false,
+    this.clearedAt,
   });
+
+  RetailCheckPayment copyWith({
+    bool? cleared,
+    DateTime? clearedAt,
+  }) {
+    return RetailCheckPayment(
+      number: number,
+      bank: bank,
+      payerName: payerName,
+      date: date,
+      imageDataUrl: imageDataUrl,
+      cleared: cleared ?? this.cleared,
+      clearedAt: clearedAt ?? this.clearedAt,
+    );
+  }
 
   bool get isComplete =>
       number.trim().isNotEmpty &&
@@ -52,6 +75,8 @@ class RetailCheckPayment {
     required DateTime date,
     required Uint8List? photo,
     required String mime,
+    bool cleared = false,
+    DateTime? clearedAt,
   }) {
     final n = number.trim();
     final b = bank.trim();
@@ -69,6 +94,8 @@ class RetailCheckPayment {
       payerName: payer,
       date: DateTime(date.year, date.month, date.day),
       imageDataUrl: dataUrlFor(photo, mime),
+      cleared: cleared,
+      clearedAt: cleared ? (clearedAt ?? DateTime.now()) : null,
     );
   }
 
@@ -78,6 +105,8 @@ class RetailCheckPayment {
     'payerName': payerName,
     'date': DateTime(date.year, date.month, date.day).toIso8601String(),
     'imageDataUrl': imageDataUrl,
+    'cleared': cleared,
+    'clearedAt': clearedAt?.toIso8601String(),
   };
 
   static RetailCheckPayment? fromJson(Object? raw) {
@@ -93,12 +122,18 @@ class RetailCheckPayment {
         imageDataUrl.trim().isEmpty) {
       return null;
     }
+    // Checks saved before clearance existed were already treated as paid.
+    final cleared = json.containsKey('cleared')
+        ? json['cleared'] == true
+        : true;
     return RetailCheckPayment(
       number: number,
       bank: bank,
       payerName: payerName,
       date: DateTime.tryParse('${json['date']}') ?? DateTime.now(),
       imageDataUrl: imageDataUrl,
+      cleared: cleared,
+      clearedAt: DateTime.tryParse('${json['clearedAt']}'),
     );
   }
 }

@@ -140,8 +140,14 @@ void main() {
     expect(restored.checkPayment!.payerName, 'Marie Joseph');
     expect(restored.checkPayment!.date, DateTime(2026, 10, 22));
     expect(restored.checkPayment!.imageBytes, _tinyPng);
+    expect(restored.checkPayment!.cleared, isFalse);
     expect(restored.appliesElectronicServiceFee, isFalse);
     expect(restored.serviceChargeAmountHtg, 0);
+
+    final legacy = order.toJson();
+    (legacy['checkPayment'] as Map).remove('cleared');
+    (legacy['checkPayment'] as Map).remove('clearedAt');
+    expect(RetailOrder.fromJson(legacy)!.checkPayment!.cleared, isTrue);
 
     final json = order.toJson();
     json['paymentMethod'] = 'wire';
@@ -195,12 +201,13 @@ void main() {
 
     expect(find.text('Numéro du chèque'), findsOneWidget);
     expect(find.text('Ajouter la photo'), findsOneWidget);
-    expect(_confirm(tester).onPressed, isNull);
+    expect(find.text('Enregistrer le chèque'), findsOneWidget);
+    expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNull);
 
     await _fill(tester, const Key('check-number'), '104582');
     await _fill(tester, const Key('check-bank'), 'Sogebank');
     await _fill(tester, const Key('check-payer'), 'Marie Joseph');
-    expect(_confirm(tester).onPressed, isNull);
+    expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNull);
 
     checkPhotoPicker = () async =>
         const PickedProductPhoto(error: 'La photo doit faire moins de 1,5 Mo.');
@@ -209,7 +216,7 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.text('La photo doit faire moins de 1,5 Mo.'), findsOneWidget);
-    expect(_confirm(tester).onPressed, isNull);
+    expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNull);
 
     checkPhotoPicker = () async =>
         PickedProductPhoto(bytes: _tinyPng, mime: 'image/png');
@@ -220,17 +227,26 @@ void main() {
 
     expect(find.byKey(const Key('check-photo-preview')), findsOneWidget);
     expect(find.text('Remplacer la photo'), findsOneWidget);
-    expect(_confirm(tester).onPressed, isNotNull);
+    expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNotNull);
 
-    await tester.tap(find.text('Confirmer le paiement'));
+    await tester.ensureVisible(find.byKey(const Key('clear-check-now')));
+    await tester.tap(find.byKey(const Key('clear-check-now')));
+    await tester.pump();
+    expect(find.text('Compenser le chèque'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('clear-check-now')));
+    await tester.pump();
+
+    await tester.tap(find.text('Enregistrer le chèque'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.textContaining('payée'), findsOneWidget);
+    expect(find.textContaining('chèque en attente'), findsOneWidget);
     final sale = container
         .read(retailOrdersProvider)
         .firstWhere((order) => order.id.startsWith('pos-'));
     expect(sale.paymentMethod, PaymentMethodType.check);
+    expect(sale.status, RetailOrderStatus.checkPending);
+    expect(sale.checkPayment!.cleared, isFalse);
     expect(sale.checkPayment!.number, '104582');
     expect(sale.checkPayment!.bank, 'Sogebank');
     expect(sale.checkPayment!.payerName, 'Marie Joseph');
@@ -239,7 +255,64 @@ void main() {
     expect(sale.lines.single.productName, product.name);
   });
 
-  testWidgets('the paid order shows the check details and the photo', (
+  testWidgets('the clerk can clear the check while recording it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final product = container.read(mockProductsProvider).first;
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: RetailCheckoutWizard(
+              cart: [RetailCartEntry(product: product)],
+              discountPercent: 0,
+              initialStepIndex: 2,
+              onSuccess: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Chèque'));
+    await tester.pump();
+    await _fill(tester, const Key('check-number'), '220011');
+    await _fill(tester, const Key('check-bank'), 'Unibank');
+    await _fill(tester, const Key('check-payer'), 'Paul Louis');
+    checkPhotoPicker = () async =>
+        PickedProductPhoto(bytes: _tinyPng, mime: 'image/png');
+    await tester.ensureVisible(find.byKey(const Key('check-photo')));
+    await tester.tap(find.byKey(const Key('check-photo')));
+    await tester.pump();
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('clear-check-now')));
+    await tester.tap(find.byKey(const Key('clear-check-now')));
+    await tester.pump();
+    await tester.tap(find.text('Compenser le chèque'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.textContaining('payée'), findsOneWidget);
+    final sale = container
+        .read(retailOrdersProvider)
+        .firstWhere((order) => order.id.startsWith('pos-'));
+    expect(sale.status, RetailOrderStatus.paid);
+    expect(sale.checkPayment!.cleared, isTrue);
+    expect(sale.checkPayment!.clearedAt, isNotNull);
+    expect(sale.checkPayment!.number, '220011');
+  });
+
+  testWidgets('approving a pending check marks the order paid', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(900, 1200);
@@ -251,7 +324,7 @@ void main() {
       id: 'pos-check',
       orderNumber: 'ORD-2026-0091',
       clientName: 'Marie Joseph',
-      status: RetailOrderStatus.paid,
+      status: RetailOrderStatus.checkPending,
       paymentSource: RetailPaymentSource.pos,
       paymentMethod: PaymentMethodType.check,
       checkPayment: RetailCheckPayment(
@@ -296,13 +369,30 @@ void main() {
     expect(find.text('Jean Pierre'), findsOneWidget);
     expect(find.text('22/10/2026'), findsOneWidget);
     expect(find.byKey(const Key('check-payment-photo')), findsOneWidget);
+    expect(find.text('En attente de compensation'), findsOneWidget);
+    expect(find.text('Approuver le chèque'), findsOneWidget);
+    expect(find.text('Marquer terminé'), findsNothing);
     expect(find.text('Commande introuvable'), findsNothing);
+
+    await tester.tap(find.text('Approuver le chèque'));
+    await tester.pump();
+    await tester.pump();
+
+    final saved = container
+        .read(retailOrdersProvider)
+        .firstWhere((row) => row.id == order.id);
+    expect(saved.status, RetailOrderStatus.paid);
+    expect(saved.checkPayment!.cleared, isTrue);
+    expect(find.text('Chèque compensé'), findsOneWidget);
+    expect(find.text('Approuver le chèque'), findsNothing);
+    expect(find.text('Payé'), findsOneWidget);
+    expect(find.text('Marquer terminé'), findsOneWidget);
   });
 }
 
-ElevatedButton _confirm(WidgetTester tester) {
+ElevatedButton _confirm(WidgetTester tester, String label) {
   return tester.widget<ElevatedButton>(
-    find.widgetWithText(ElevatedButton, 'Confirmer le paiement'),
+    find.widgetWithText(ElevatedButton, label),
   );
 }
 

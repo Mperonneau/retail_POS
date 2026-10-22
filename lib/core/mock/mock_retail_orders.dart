@@ -447,6 +447,35 @@ class RetailOrdersNotifier extends StateNotifier<List<RetailOrder>> {
     state = [...extras, ...state];
   }
 
+  /// Marks the check cleared and, while it was waiting, marks the order paid.
+  void clearCheck(String id) {
+    final now = DateTime.now();
+    RetailOrder? updated;
+    state = [
+      for (final order in state)
+        if (order.id != id ||
+            order.checkPayment == null ||
+            order.checkPayment!.cleared)
+          order
+        else
+          updated = order.copyWith(
+            status: order.status == RetailOrderStatus.checkPending
+                ? RetailOrderStatus.paid
+                : order.status,
+            paidAt: now,
+            checkPayment: order.checkPayment!.copyWith(
+              cleared: true,
+              clearedAt: now,
+            ),
+          ),
+    ];
+    if (updated != null) {
+      _ref
+          .read(deviceSessionProvider.notifier)
+          .captureOrder(updated, statusChange: true);
+    }
+  }
+
   void updateStatus(String id, RetailOrderStatus status) {
     state = [
       for (final o in state)

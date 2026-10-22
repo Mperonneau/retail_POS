@@ -1625,6 +1625,7 @@ class _ActiveOrderCard extends StatelessWidget {
   Color get _statusColor {
     final d = isDark;
     return switch (order.status) {
+      RetailOrderStatus.checkPending => AppColors.amber,
       RetailOrderStatus.paid => d ? AppColors.skyBlue : AppColors.primaryBlue,
       RetailOrderStatus.ready => AppColors.amber,
       _ => d ? AppColors.mediumGreen : AppColors.deepGreen,
@@ -2295,7 +2296,9 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Payé le ${_formatDate(current.paidAt, withTime: true)}',
+                    current.status == RetailOrderStatus.checkPending
+                        ? 'Chèque reçu le ${_formatDate(current.createdAt, withTime: true)}'
+                        : 'Payé le ${_formatDate(current.paidAt, withTime: true)}',
                     style: AppTextStyles.caption(
                         color:
                             isDark ? AppColors.coolGray : AppColors.darkGray),
@@ -2315,6 +2318,27 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (current.status == RetailOrderStatus.checkPending)
+                  ElevatedButton.icon(
+                    key: const Key('approve-check'),
+                    onPressed: () {
+                      ref
+                          .read(retailOrdersProvider.notifier)
+                          .clearCheck(current.id);
+                    },
+                    icon: const Icon(Icons.verified_outlined, size: 16),
+                    label: const Text('Approuver le chèque'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.amber,
+                      foregroundColor: AppColors.nearBlack,
+                      elevation: 0,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              AppConstants.radiusButton)),
+                    ),
+                  )
+                else ...[
                 if (nextStatus != null && nextLabel != null)
                   ElevatedButton.icon(
                     onPressed: () {
@@ -2357,6 +2381,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                             AppConstants.radiusButton)),
                   ),
                 ),
+                ],
               ],
             ),
           ),
@@ -2614,6 +2639,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (order.status) {
+      RetailOrderStatus.checkPending => AppColors.amber,
       RetailOrderStatus.paid =>
         isDark ? AppColors.skyBlue : AppColors.primaryBlue,
       RetailOrderStatus.ready => AppColors.amber,

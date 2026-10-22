@@ -156,6 +156,13 @@ class CheckPaymentSummary extends StatelessWidget {
           ink,
           muted,
         ),
+        Text(
+          check.cleared ? 'Chèque compensé' : 'En attente de compensation',
+          key: Key(check.cleared ? 'check-cleared' : 'check-awaiting'),
+          style: AppTextStyles.caption(
+            color: check.cleared ? AppColors.deepGreen : AppColors.amber,
+          ).copyWith(fontWeight: FontWeight.w700),
+        ),
         if (photo != null) ...[
           const SizedBox(height: 8),
           ClipRRect(
