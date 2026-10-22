@@ -16,6 +16,9 @@ enum PermissionId {
 
   /// Cash drawer, reconciliation, payment-heavy screens.
   financialCash,
+
+  /// Put a sale balance on a client's credit account.
+  clientCreditGrant,
 }
 
 String permissionLabel(PermissionId id, {ActiveModule? module}) {
@@ -35,5 +38,7 @@ String permissionLabel(PermissionId id, {ActiveModule? module}) {
           : 'Encaisser (commandes, salle, chambres)';
     case PermissionId.financialCash:
       return 'Caisse et paiements';
+    case PermissionId.clientCreditGrant:
+      return 'Accorder un crédit à un client';
   }
 }

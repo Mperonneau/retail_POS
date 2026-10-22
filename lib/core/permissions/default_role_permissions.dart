@@ -38,6 +38,7 @@ Map<PermissionId, bool> _sellerDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: false,
+        PermissionId.clientCreditGrant: false,
       };
   }
 }
@@ -53,6 +54,7 @@ Map<PermissionId, bool> _receptionDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
     case ActiveModule.retail:
       return {
@@ -61,6 +63,7 @@ Map<PermissionId, bool> _receptionDefaults(ActiveModule module) {
         PermissionId.catalogManage: true,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
   }
 }
@@ -74,6 +77,7 @@ Map<PermissionId, bool> _cashierDefaults(ActiveModule module) {
         PermissionId.catalogManage: true,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
     case ActiveModule.restaurant:
     case ActiveModule.hotel:
@@ -83,6 +87,7 @@ Map<PermissionId, bool> _cashierDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
   }
 }
@@ -97,6 +102,7 @@ Map<PermissionId, bool> _waiterDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: false,
+        PermissionId.clientCreditGrant: false,
       };
     case ActiveModule.retail:
       return {
@@ -105,6 +111,7 @@ Map<PermissionId, bool> _waiterDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: false,
+        PermissionId.clientCreditGrant: false,
       };
   }
 }
@@ -117,5 +124,6 @@ Map<PermissionId, bool> _kitchenDefaults(ActiveModule module) {
     PermissionId.catalogManage: false,
     PermissionId.transactionsOperate: true,
     PermissionId.financialCash: false,
+    PermissionId.clientCreditGrant: false,
   };
 }
