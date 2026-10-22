@@ -10,6 +10,7 @@ import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_input.dart';
+import '../../core/widgets/check_photo_viewer.dart';
 
 /// Check number, bank, drawer, date, and photo collected at the register.
 class CheckPaymentForm extends StatelessWidget {
@@ -174,29 +175,12 @@ class CheckPaymentForm extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (photo != null) ...[
-              ClipRRect(
-                key: const Key('check-photo-preview'),
-                borderRadius: BorderRadius.circular(8),
-                child: ColoredBox(
-                  color: isDark
-                      ? AppColors.darkBackground
-                      : const Color(0xFFF4F4F4),
-                  child: Image.memory(
-                    photo!,
-                    height: 140,
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => SizedBox(
-                      height: 140,
-                      child: Center(
-                        child: Text(
-                          'Photo enregistrée',
-                          style: AppTextStyles.caption(color: muted),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              CheckPhotoThumb(
+                bytes: photo!,
+                height: 140,
+                isDark: isDark,
+                photoKey: const Key('check-photo-preview'),
+                fallbackLabel: 'Photo enregistrée',
               ),
               const SizedBox(height: 8),
             ],

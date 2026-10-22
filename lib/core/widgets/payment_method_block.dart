@@ -4,6 +4,7 @@ import '../models/order_history.dart';
 import '../models/retail_check_payment.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import 'check_photo_viewer.dart';
 
 /// Last 4 digits for card / MonCash phone / credit account (digits only or any string — non-digits stripped).
 String? formatPaymentMaskedSuffix(PaymentMethodType method, String? raw) {
@@ -165,29 +166,11 @@ class CheckPaymentSummary extends StatelessWidget {
         ),
         if (photo != null) ...[
           const SizedBox(height: 8),
-          ClipRRect(
-            key: const Key('check-payment-photo'),
-            borderRadius: BorderRadius.circular(8),
-            child: ColoredBox(
-              color: isDark
-                  ? AppColors.darkBackground
-                  : const Color(0xFFF4F4F4),
-              child: Image.memory(
-                photo,
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => SizedBox(
-                  height: 160,
-                  child: Center(
-                    child: Text(
-                      'Photo du chèque enregistrée',
-                      style: AppTextStyles.caption(color: muted),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          CheckPhotoThumb(
+            bytes: photo,
+            height: 160,
+            isDark: isDark,
+            photoKey: const Key('check-payment-photo'),
           ),
         ],
       ],

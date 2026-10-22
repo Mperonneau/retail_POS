@@ -229,6 +229,19 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('check-photo-preview')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('check-photo-preview')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('check-photo-viewer')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('check-photo-zoom-in')));
+    await tester.pump();
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('check-photo-close')),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('check-photo-viewer')), findsNothing);
     expect(find.text('Remplacer la photo'), findsOneWidget);
     expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNotNull);
 
@@ -388,6 +401,20 @@ void main() {
     expect(find.text('Jean Pierre'), findsOneWidget);
     expect(find.text('22/10/2026'), findsOneWidget);
     expect(find.byKey(const Key('check-payment-photo')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('check-payment-photo')));
+    await tester.tap(find.byKey(const Key('check-payment-photo')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('check-photo-viewer')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('check-photo-zoom-in')));
+    await tester.pump();
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('check-photo-close')),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('check-photo-viewer')), findsNothing);
     expect(find.text('En attente de compensation'), findsOneWidget);
     expect(find.text('Approuver le chèque'), findsOneWidget);
     expect(find.text('Marquer terminé'), findsNothing);
