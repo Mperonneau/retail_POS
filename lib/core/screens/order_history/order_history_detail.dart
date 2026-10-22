@@ -30,118 +30,13 @@ class OrderHistoryDetailPage extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
-      appBar: AppBar(
-        title: Text(record.receiptNumber, style: AppTextStyles.h3()),
-        leading: AppCloseButton(onPressed: () => Navigator.of(context).pop()),
-        actions: [
-          _ActionBtn(
-            icon: Icons.share_outlined,
-            label: 'Partager',
-            onTap: () => _showWhatsAppDialog(context),
-          ),
-          _ActionBtn(
-            icon: Icons.email_outlined,
-            label: 'E-mail',
-            onTap: () => _showEmailDialog(context),
-          ),
-          _ActionBtn(
-            icon: Icons.print_outlined,
-            label: 'Imprimer',
-            onTap: () => _showPrintDialog(context, record),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.spacing16),
-        child: _DetailBody(record: record, isDark: isDark),
-      ),
-    );
-  }
-
-  void _showWhatsAppDialog(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) {
-          String? err;
-          return AlertDialog(
-            title: const Text('Envoyer par WhatsApp'),
-            content: StatefulBuilder(
-              builder: (ctx2, setD2) => PhoneField(
-                controller: ctrl,
-                label: 'Numéro de téléphone',
-                errorText: err,
-                onChanged: (_) => setD2(() => err = null),
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
-              FilledButton(
-                onPressed: () {
-                  if (ctrl.text.trim().isEmpty) {
-                    setD(() => err = 'Veuillez saisir un numéro de téléphone.');
-                    return;
-                  }
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Reçu envoyé par WhatsApp'), behavior: SnackBarBehavior.floating),
-                  );
-                },
-                child: const Text('Envoyer'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showEmailDialog(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) {
-          String? err;
-          return AlertDialog(
-            title: const Text('Envoyer le reçu par e-mail'),
-            content: StatefulBuilder(
-              builder: (ctx2, setD2) => TextField(
-                controller: ctrl,
-                onChanged: (_) => setD2(() => err = null),
-                decoration: InputDecoration(
-                  labelText: 'Adresse e-mail',
-                  hintText: 'email@example.com',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  errorText: err,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                inputFormatters: InputFormatters.email,
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
-              FilledButton(
-                onPressed: () {
-                  final email = ctrl.text.trim();
-                  if (email.isEmpty || !email.contains('@')) {
-                    setD(() => err = 'Veuillez saisir une adresse e-mail valide.');
-                    return;
-                  }
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Reçu envoyé par e-mail'), behavior: SnackBarBehavior.floating),
-                  );
-                },
-                child: const Text('Envoyer'),
-              ),
-            ],
-          );
-        },
+        child: _DetailBody(
+          record: record,
+          isDark: isDark,
+          onClose: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
@@ -314,9 +209,14 @@ class OrderHistoryDetailContent extends StatelessWidget {
         children: [
         // Header
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 4, 8),
+          padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (onClose != null) ...[
+                AppCloseButton(onPressed: onClose),
+                const SizedBox(width: 8),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,8 +256,6 @@ class OrderHistoryDetailContent extends StatelessWidget {
                     color: isDark ? AppColors.coolGray : AppColors.darkGray),
                 tooltip: 'Imprimer',
               ),
-              if (onClose != null)
-                AppCloseButton(onPressed: onClose),
             ],
           ),
         ),
@@ -500,12 +398,21 @@ class OrderHistoryDetailContent extends StatelessWidget {
 class _DetailBody extends StatelessWidget {
   final OrderHistoryRecord record;
   final bool isDark;
+  final VoidCallback? onClose;
 
-  const _DetailBody({required this.record, required this.isDark});
+  const _DetailBody({
+    required this.record,
+    required this.isDark,
+    this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return OrderHistoryDetailContent(record: record, isDark: isDark);
+    return OrderHistoryDetailContent(
+      record: record,
+      isDark: isDark,
+      onClose: onClose,
+    );
   }
 }
 
@@ -565,23 +472,6 @@ class _ModuleChip extends StatelessWidget {
       child: Text(label,
           style: AppTextStyles.caption(color: color)
               .copyWith(fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-class _ActionBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionBtn({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 16),
-      label: Text(label),
     );
   }
 }
