@@ -99,7 +99,12 @@ Future<_CheckSource?> _openCheckSource(web.File file) async {
         .toDart
         .timeout(const Duration(seconds: 15));
     if (bitmap.width > 0 && bitmap.height > 0) {
-      return _CheckSource(bitmap, bitmap.width, bitmap.height, bitmap.close);
+      return _CheckSource(
+        bitmap,
+        bitmap.width,
+        bitmap.height,
+        () => bitmap.close(),
+      );
     }
     bitmap.close();
   } catch (_) {
