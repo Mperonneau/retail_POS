@@ -96,8 +96,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         fullscreenDialog: true,
         pageBuilder: (ctx, animation, secondary) {
           return Scaffold(
-            backgroundColor:
-                isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+            backgroundColor: isDark
+                ? AppColors.darkBackground
+                : AppColors.warmOffWhite,
             body: SafeArea(
               child: _SupplierDetailPanel(
                 supplierId: supplier.id,
@@ -133,8 +134,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         fullscreenDialog: true,
         pageBuilder: (ctx, animation, secondary) {
           return Scaffold(
-            backgroundColor:
-                isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+            backgroundColor: isDark
+                ? AppColors.darkBackground
+                : AppColors.warmOffWhite,
             body: SafeArea(
               child: _AddEditSupplierForm(
                 existing: null,
@@ -175,20 +177,23 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     final categories = allCategories.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-    final filtered = suppliers.where((s) {
-      if (_categoryFilter != null && !s.categories.contains(_categoryFilter)) {
-        return false;
-      }
-      if (_query.trim().isEmpty) return true;
-      final q = _query.toLowerCase();
-      return s.name.toLowerCase().contains(q) ||
-          s.phone.toLowerCase().contains(q) ||
-          s.email.toLowerCase().contains(q) ||
-          s.location.toLowerCase().contains(q) ||
-          s.categories.any((c) => c.toLowerCase().contains(q)) ||
-          s.contacts.any((c) => c.name.toLowerCase().contains(q));
-    }).toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final filtered =
+        suppliers.where((s) {
+          if (_categoryFilter != null &&
+              !s.categories.contains(_categoryFilter)) {
+            return false;
+          }
+          if (_query.trim().isEmpty) return true;
+          final q = _query.toLowerCase();
+          return s.name.toLowerCase().contains(q) ||
+              s.phone.toLowerCase().contains(q) ||
+              s.email.toLowerCase().contains(q) ||
+              s.location.toLowerCase().contains(q) ||
+              s.categories.any((c) => c.toLowerCase().contains(q)) ||
+              s.contacts.any((c) => c.name.toLowerCase().contains(q));
+        }).toList()..sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
 
     final totalPages = max(
       1,
@@ -202,8 +207,10 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
       });
     }
     final pageStart = (safePage - 1) * _kSupplierPageSize;
-    final pageItems =
-        filtered.skip(pageStart).take(_kSupplierPageSize).toList();
+    final pageItems = filtered
+        .skip(pageStart)
+        .take(_kSupplierPageSize)
+        .toList();
 
     MockSupplier? selected;
     if (_selectedSupplierId != null) {
@@ -227,8 +234,18 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                 : AppConstants.spacing24,
             vertical: AppConstants.spacing24,
           );
-          final panelW =
-              AppConstants.retailDetailSidePanelWidth(constraints.maxWidth);
+          final panelW = AppConstants.retailDetailSidePanelWidth(
+            constraints.maxWidth,
+          );
+
+          final phone = constraints.maxWidth < AppConstants.mobileBreakpoint;
+          // Phones and iPads, including a 12.9-inch iPad in landscape.
+          final compactHeader = constraints.maxWidth < 1440;
+          final countLabel =
+              '${suppliers.length} fournisseur${suppliers.length == 1 ? '' : 's'}';
+          final countStyle = AppTextStyles.caption(
+            color: isDark ? AppColors.coolGray : AppColors.darkGray,
+          ).copyWith(fontWeight: FontWeight.w500);
 
           final listSection = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,60 +255,92 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Fournisseurs',
-                            style: AppTextStyles.h1(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.primaryBlue,
-                            ),
+                    child: compactHeader
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Fournisseurs',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.h1(
+                                  color: isDark
+                                      ? AppColors.warmWhite
+                                      : AppColors.primaryBlue,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                countLabel,
+                                key: const Key('supplier-count'),
+                                style: countStyle,
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Fournisseurs',
+                                  style: AppTextStyles.h1(
+                                    color: isDark
+                                        ? AppColors.warmWhite
+                                        : AppColors.primaryBlue,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppConstants.spacing12),
+                              Container(
+                                key: const Key('supplier-count-chip'),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.primaryBlue.withValues(
+                                          alpha: 0.25,
+                                        )
+                                      : AppColors.lightBlue.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.skyBlue.withValues(
+                                            alpha: 0.35,
+                                          )
+                                        : AppColors.primaryBlue.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                  ),
+                                ),
+                                child: Text(
+                                  countLabel,
+                                  style: AppTextStyles.caption(
+                                    color: isDark
+                                        ? AppColors.skyBlue
+                                        : AppColors.primaryBlue,
+                                  ).copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: AppConstants.spacing12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.primaryBlue.withValues(alpha: 0.25)
-                                : AppColors.lightBlue.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.skyBlue.withValues(alpha: 0.35)
-                                  : AppColors.primaryBlue
-                                      .withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Text(
-                            '${suppliers.length} fournisseur${suppliers.length == 1 ? '' : 's'}',
-                            style: AppTextStyles.caption(
-                              color: isDark
-                                  ? AppColors.skyBlue
-                                  : AppColors.primaryBlue,
-                            ).copyWith(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
+                  const SizedBox(width: 8),
                   AppButton(
-                    label: 'Ajouter un fournisseur',
+                    label: phone ? 'Fournisseur' : 'Ajouter un fournisseur',
                     onPressed: () => useSideDrawer
                         ? _openAddDrawer()
                         : _openMobileAddPanel(),
                     icon: Icons.add,
                     fullWidth: false,
                     compact: true,
-                    width: 148,
+                    width: phone ? 150 : 236,
                   ),
                   if (filtered.isNotEmpty &&
-                      constraints.maxWidth >= AppConstants.mobileBreakpoint) ...[
+                      constraints.maxWidth >=
+                          AppConstants.mobileBreakpoint) ...[
                     const SizedBox(width: AppConstants.spacing8),
                     _SupplierTopPagination(
                       isDark: isDark,
@@ -369,7 +418,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                     _SupplierListTile(
                                       supplier: s,
                                       isDark: isDark,
-                                      selected: s.id == _selectedSupplierId &&
+                                      selected:
+                                          s.id == _selectedSupplierId &&
                                           _drawerOpen,
                                       onTap: () => useSideDrawer
                                           ? _openDrawer(s)
@@ -388,26 +438,29 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                           }
 
                           return Padding(
-                            padding:
-                                const EdgeInsets.all(AppConstants.spacing12),
+                            padding: const EdgeInsets.all(
+                              AppConstants.spacing12,
+                            ),
                             child: GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: AppConstants.spacing12,
-                                mainAxisSpacing: AppConstants.spacing12,
-                                childAspectRatio:
-                                    _supplierGridAspectRatio(crossAxisCount),
-                              ),
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: AppConstants.spacing12,
+                                    mainAxisSpacing: AppConstants.spacing12,
+                                    childAspectRatio: _supplierGridAspectRatio(
+                                      crossAxisCount,
+                                    ),
+                                  ),
                               itemCount: pageItems.length,
                               itemBuilder: (context, i) {
                                 final s = pageItems[i];
                                 return _SupplierGridTile(
                                   supplier: s,
                                   isDark: isDark,
-                                  selected: s.id == _selectedSupplierId &&
+                                  selected:
+                                      s.id == _selectedSupplierId &&
                                       _drawerOpen,
                                   onTap: () => useSideDrawer
                                       ? _openDrawer(s)
@@ -649,6 +702,7 @@ class _SupplierFilterRow extends StatelessWidget {
       fill: fill,
       borderColor: borderColor,
       active: active,
+      expand: narrow,
       label: categoryFilter ?? 'Toutes les catégories',
       categories: categories,
       onChanged: onCategoryChanged,
@@ -676,12 +730,15 @@ class _SupplierFilterRow extends StatelessWidget {
   }
 }
 
+const _kAllCategories = '__all_categories__';
+
 class _CategoryFilterButton extends StatelessWidget {
   const _CategoryFilterButton({
     required this.isDark,
     required this.fill,
     required this.borderColor,
     required this.active,
+    required this.expand,
     required this.label,
     required this.categories,
     required this.onChanged,
@@ -691,6 +748,7 @@ class _CategoryFilterButton extends StatelessWidget {
   final Color fill;
   final Color borderColor;
   final bool active;
+  final bool expand;
   final String label;
   final List<String> categories;
   final ValueChanged<String?> onChanged;
@@ -698,8 +756,9 @@ class _CategoryFilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const activeColor = AppColors.primaryBlue;
-    final bg =
-        active ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08) : fill;
+    final bg = active
+        ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08)
+        : fill;
     final border = active
         ? activeColor.withValues(alpha: isDark ? 0.55 : 0.4)
         : borderColor;
@@ -707,39 +766,94 @@ class _CategoryFilterButton extends StatelessWidget {
         ? (isDark ? AppColors.skyBlue : activeColor)
         : (isDark ? AppColors.coolGray : AppColors.darkGray);
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: () => _openMenu(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.category_outlined, size: 16, color: textColor),
-            const SizedBox(width: 6),
-            Text(
+    final labelStyle = AppTextStyles.caption(
+      color: textColor,
+    ).copyWith(fontWeight: active ? FontWeight.w600 : FontWeight.w500);
+    final field = Row(
+      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      children: [
+        Icon(Icons.category_outlined, size: 16, color: textColor),
+        const SizedBox(width: 6),
+        if (expand)
+          Expanded(
+            child: Text(
               label,
-              style: AppTextStyles.caption(color: textColor).copyWith(
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          )
+        else
+          Text(label, style: labelStyle),
+        const SizedBox(width: 4),
+        Icon(Icons.expand_more_rounded, size: 16, color: textColor),
+      ],
+    );
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: EdgeInsets.fromLTRB(14, 6, active ? 6 : 14, 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          if (expand)
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () => _openMenu(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: field,
+                ),
+              ),
+            )
+          else
+            InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => _openMenu(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: field,
               ),
             ),
-            const SizedBox(width: 4),
-            Icon(Icons.expand_more_rounded, size: 16, color: textColor),
-            if (active) ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => onChanged(null),
-                child: Icon(Icons.close_rounded, size: 14, color: textColor),
+          if (active) ...[
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Effacer la catégorie',
+              child: Material(
+                color: isDark ? AppColors.darkBackground : AppColors.white,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => onChanged(null),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color:
+                            (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
+                                .withValues(alpha: 0.55),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                    ),
+                  ),
+                ),
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -747,7 +861,7 @@ class _CategoryFilterButton extends StatelessWidget {
   void _openMenu(BuildContext context) {
     final items = <PopupMenuEntry<String?>>[
       PopupMenuItem<String?>(
-        value: null,
+        value: _kAllCategories,
         child: Row(
           children: [
             Icon(
@@ -756,10 +870,14 @@ class _CategoryFilterButton extends StatelessWidget {
               color: isDark ? AppColors.coolGray : AppColors.darkGray,
             ),
             const SizedBox(width: 8),
-            Text(
-              'Toutes les catégories',
-              style: AppTextStyles.body(
-                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+            Expanded(
+              child: Text(
+                'Toutes les catégories',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.body(
+                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                ),
               ),
             ),
           ],
@@ -781,14 +899,25 @@ class _CategoryFilterButton extends StatelessWidget {
                     : (isDark ? AppColors.coolGray : AppColors.darkGray),
               ),
               const SizedBox(width: 8),
-              Text(
-                c,
-                style: AppTextStyles.body(
-                  color: c == label && active
-                      ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                      : (isDark ? AppColors.warmWhite : AppColors.nearBlack),
-                ).copyWith(
-                  fontWeight: c == label && active ? FontWeight.w600 : null,
+              Expanded(
+                child: Text(
+                  c,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      AppTextStyles.body(
+                        color: c == label && active
+                            ? (isDark
+                                  ? AppColors.skyBlue
+                                  : AppColors.primaryBlue)
+                            : (isDark
+                                  ? AppColors.warmWhite
+                                  : AppColors.nearBlack),
+                      ).copyWith(
+                        fontWeight: c == label && active
+                            ? FontWeight.w600
+                            : null,
+                      ),
                 ),
               ),
             ],
@@ -822,7 +951,10 @@ class _CategoryFilterButton extends StatelessWidget {
       ),
       items: items,
     ).then((val) {
-      if (val != null || val == null) onChanged(val);
+      // A dismissed menu also returns null. Only the "all categories" row
+      // uses this sentinel, so closing the menu does not clear the filter.
+      if (val == null) return;
+      onChanged(val == _kAllCategories ? null : val);
     });
   }
 }
@@ -883,8 +1015,9 @@ class _SupplierGridTile extends StatelessWidget {
                           ? supplier.name.substring(0, 1).toUpperCase()
                           : '?',
                       style: AppTextStyles.h3(
-                        color:
-                            isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                        color: isDark
+                            ? AppColors.skyBlue
+                            : AppColors.primaryBlue,
                       ),
                     ),
                   ),
@@ -1000,27 +1133,23 @@ class _SupplierListTile extends StatelessWidget {
                     Text(
                       supplier.name,
                       style: AppTextStyles.body(
-                        color:
-                            isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                        color: isDark
+                            ? AppColors.warmWhite
+                            : AppColors.nearBlack,
                       ).copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       categoriesText,
                       style: AppTextStyles.caption(
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray,
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (supplier.phone.isNotEmpty) ...[
                       const SizedBox(height: 1),
-                      Text(
-                        supplier.phone,
-                        style: AppTextStyles.caption(),
-                      ),
+                      Text(supplier.phone, style: AppTextStyles.caption()),
                     ],
                   ],
                 ),
@@ -1072,8 +1201,11 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
     );
   }
 
-  void _openEditContact(BuildContext context, MockSupplier supplier,
-      MockSupplierContact contact) {
+  void _openEditContact(
+    BuildContext context,
+    MockSupplier supplier,
+    MockSupplierContact contact,
+  ) {
     showAppBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1133,10 +1265,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    s.name,
-                    style: AppTextStyles.h2(color: textPrimary),
-                  ),
+                  Text(s.name, style: AppTextStyles.h2(color: textPrimary)),
                   if (s.categories.isNotEmpty) ...[
                     const SizedBox(height: AppConstants.spacing8),
                     Text(
@@ -1150,7 +1279,9 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
                       children: s.categories.map((cat) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.primaryBlue.withValues(alpha: 0.2)
@@ -1159,8 +1290,9 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
                             border: Border.all(
                               color: isDark
                                   ? AppColors.skyBlue.withValues(alpha: 0.3)
-                                  : AppColors.primaryBlue
-                                      .withValues(alpha: 0.2),
+                                  : AppColors.primaryBlue.withValues(
+                                      alpha: 0.2,
+                                    ),
                             ),
                           ),
                           child: Text(
@@ -1211,8 +1343,9 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
               ),
             if (s.phone.isEmpty && s.email.isEmpty && s.location.isEmpty)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: AppConstants.spacing8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppConstants.spacing8,
+                ),
                 child: Text(
                   'Aucune coordonnée ajoutée.',
                   style: AppTextStyles.caption(color: textSecondary),
@@ -1226,10 +1359,7 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
             title: 'Note',
             isDark: isDark,
             children: [
-              Text(
-                s.note,
-                style: AppTextStyles.body(color: textPrimary),
-              ),
+              Text(s.note, style: AppTextStyles.body(color: textPrimary)),
             ],
           ),
         ],
@@ -1242,8 +1372,9 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
             icon: const Icon(Icons.add, size: 16),
             label: const Text('Ajouter'),
             style: TextButton.styleFrom(
-              foregroundColor:
-                  isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+              foregroundColor: isDark
+                  ? AppColors.skyBlue
+                  : AppColors.primaryBlue,
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             ),
@@ -1253,7 +1384,8 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
               ? [
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: AppConstants.spacing8),
+                      vertical: AppConstants.spacing8,
+                    ),
                     child: Text(
                       'Aucun contact pour le moment.',
                       style: AppTextStyles.caption(color: textSecondary),
@@ -1261,18 +1393,18 @@ class _SupplierDetailPanelState extends ConsumerState<_SupplierDetailPanel> {
                   ),
                 ]
               : s.contacts
-                  .asMap()
-                  .entries
-                  .map(
-                    (e) => _ContactRow(
-                      contact: e.value,
-                      isDark: isDark,
-                      showDivider: e.key < s.contacts.length - 1,
-                      onEdit: () => _openEditContact(context, s, e.value),
-                      onDelete: () => _deleteContact(ref, s, e.value.id),
-                    ),
-                  )
-                  .toList(),
+                    .asMap()
+                    .entries
+                    .map(
+                      (e) => _ContactRow(
+                        contact: e.value,
+                        isDark: isDark,
+                        showDivider: e.key < s.contacts.length - 1,
+                        onEdit: () => _openEditContact(context, s, e.value),
+                        onDelete: () => _deleteContact(ref, s, e.value.id),
+                      ),
+                    )
+                    .toList(),
         ),
         const SizedBox(height: AppConstants.spacing16),
       ],
@@ -1473,8 +1605,9 @@ class _ContactRow extends StatelessWidget {
                   children: [
                     Text(
                       contact.name,
-                      style: AppTextStyles.body(color: textPrimary)
-                          .copyWith(fontWeight: FontWeight.w600),
+                      style: AppTextStyles.body(
+                        color: textPrimary,
+                      ).copyWith(fontWeight: FontWeight.w600),
                     ),
                     if (contact.title.isNotEmpty)
                       Text(
@@ -1483,35 +1616,45 @@ class _ContactRow extends StatelessWidget {
                       ),
                     if (contact.phone.isNotEmpty)
                       Padding(
-                        padding:
-                            const EdgeInsets.only(top: AppConstants.spacing4),
+                        padding: const EdgeInsets.only(
+                          top: AppConstants.spacing4,
+                        ),
                         child: Row(
                           children: [
-                            Icon(Icons.phone_outlined,
-                                size: 12, color: textSecondary),
+                            Icon(
+                              Icons.phone_outlined,
+                              size: 12,
+                              color: textSecondary,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               contact.phone,
-                              style:
-                                  AppTextStyles.caption(color: textSecondary),
+                              style: AppTextStyles.caption(
+                                color: textSecondary,
+                              ),
                             ),
                           ],
                         ),
                       ),
                     if (contact.email.isNotEmpty)
                       Padding(
-                        padding:
-                            const EdgeInsets.only(top: AppConstants.spacing4),
+                        padding: const EdgeInsets.only(
+                          top: AppConstants.spacing4,
+                        ),
                         child: Row(
                           children: [
-                            Icon(Icons.email_outlined,
-                                size: 12, color: textSecondary),
+                            Icon(
+                              Icons.email_outlined,
+                              size: 12,
+                              color: textSecondary,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 contact.email,
-                                style:
-                                    AppTextStyles.caption(color: textSecondary),
+                                style: AppTextStyles.caption(
+                                  color: textSecondary,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -1527,11 +1670,7 @@ class _ContactRow extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                icon: Icon(
-                  Icons.edit_outlined,
-                  size: 16,
-                  color: textSecondary,
-                ),
+                icon: Icon(Icons.edit_outlined, size: 16, color: textSecondary),
               ),
               IconButton(
                 tooltip: 'Retirer le contact',
@@ -1670,24 +1809,28 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
     final notifier = ref.read(mockSuppliersProvider.notifier);
     final e = widget.existing;
     if (e == null) {
-      notifier.add(MockSupplier(
-        id: 0,
-        name: _nameCtrl.text.trim(),
-        phone: _phoneCtrl.text.trim(),
-        email: _emailCtrl.text.trim(),
-        location: _locationCtrl.text.trim(),
-        note: _noteCtrl.text.trim(),
-        categories: List.from(_categories),
-      ));
+      notifier.add(
+        MockSupplier(
+          id: 0,
+          name: _nameCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim(),
+          email: _emailCtrl.text.trim(),
+          location: _locationCtrl.text.trim(),
+          note: _noteCtrl.text.trim(),
+          categories: List.from(_categories),
+        ),
+      );
     } else {
-      notifier.update(e.copyWith(
-        name: _nameCtrl.text.trim(),
-        phone: _phoneCtrl.text.trim(),
-        email: _emailCtrl.text.trim(),
-        location: _locationCtrl.text.trim(),
-        note: _noteCtrl.text.trim(),
-        categories: List.from(_categories),
-      ));
+      notifier.update(
+        e.copyWith(
+          name: _nameCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim(),
+          email: _emailCtrl.text.trim(),
+          location: _locationCtrl.text.trim(),
+          note: _noteCtrl.text.trim(),
+          categories: List.from(_categories),
+        ),
+      );
     }
     widget.onSuccess();
   }
@@ -1703,11 +1846,11 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
     final textPrimary = isDark ? AppColors.warmWhite : AppColors.nearBlack;
 
     InputDecoration dec(String label) => InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: fill,
-          border: borderDecoration,
-        );
+      labelText: label,
+      filled: true,
+      fillColor: fill,
+      border: borderDecoration,
+    );
 
     final scrollableFields = <Widget>[
       if (!widget.embedded) ...[
@@ -1723,10 +1866,7 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
         textCapitalization: TextCapitalization.words,
       ),
       const SizedBox(height: AppConstants.spacing12),
-      PhoneField(
-        controller: _phoneCtrl,
-        label: 'Téléphone',
-      ),
+      PhoneField(controller: _phoneCtrl, label: 'Téléphone'),
       const SizedBox(height: AppConstants.spacing12),
       TextField(
         controller: _emailCtrl,
@@ -1734,10 +1874,7 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
         keyboardType: TextInputType.emailAddress,
       ),
       const SizedBox(height: AppConstants.spacing12),
-      TextField(
-        controller: _locationCtrl,
-        decoration: dec('Lieu / adresse'),
-      ),
+      TextField(controller: _locationCtrl, decoration: dec('Lieu / adresse')),
       const SizedBox(height: AppConstants.spacing12),
       TextField(
         controller: _noteCtrl,
@@ -1815,7 +1952,9 @@ class _AddEditSupplierFormState extends ConsumerState<_AddEditSupplierForm> {
                   children: [
                     Expanded(
                       child: Text(
-                        isEdit ? 'Modifier le fournisseur' : 'Nouveau fournisseur',
+                        isEdit
+                            ? 'Modifier le fournisseur'
+                            : 'Nouveau fournisseur',
                         style: AppTextStyles.h2(color: textPrimary),
                       ),
                     ),
@@ -1934,9 +2073,9 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
             for (final c in widget.supplier.contacts)
               c.id == contact.id ? contact : c,
           ];
-    ref.read(mockSuppliersProvider.notifier).update(
-          widget.supplier.copyWith(contacts: updatedContacts),
-        );
+    ref
+        .read(mockSuppliersProvider.notifier)
+        .update(widget.supplier.copyWith(contacts: updatedContacts));
     Navigator.pop(context);
   }
 
@@ -1950,11 +2089,11 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
     );
 
     InputDecoration dec(String label) => InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: fill,
-          border: borderDecoration,
-        );
+      labelText: label,
+      filled: true,
+      fillColor: fill,
+      border: borderDecoration,
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -1975,10 +2114,7 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
             ),
           ),
           const SizedBox(height: AppConstants.spacing4),
-          Text(
-            widget.supplier.name,
-            style: AppTextStyles.caption(),
-          ),
+          Text(widget.supplier.name, style: AppTextStyles.caption()),
           const SizedBox(height: AppConstants.spacing20),
           TextField(
             controller: _nameCtrl,
@@ -1992,10 +2128,7 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
             textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: AppConstants.spacing12),
-          PhoneField(
-            controller: _phoneCtrl,
-            label: 'Téléphone',
-          ),
+          PhoneField(controller: _phoneCtrl, label: 'Téléphone'),
           const SizedBox(height: AppConstants.spacing12),
           TextField(
             controller: _emailCtrl,
@@ -2010,7 +2143,8 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                        vertical: AppConstants.buttonHeight / 2),
+                      vertical: AppConstants.buttonHeight / 2,
+                    ),
                   ),
                   child: const Text('Annuler'),
                 ),
@@ -2019,9 +2153,12 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
               Expanded(
                 flex: 2,
                 child: AppButton(
-                  label: isEdit ? 'Enregistrer le contact' : 'Ajouter un contact',
-                  icon:
-                      isEdit ? Icons.save_outlined : Icons.person_add_outlined,
+                  label: isEdit
+                      ? 'Enregistrer le contact'
+                      : 'Ajouter un contact',
+                  icon: isEdit
+                      ? Icons.save_outlined
+                      : Icons.person_add_outlined,
                   onPressed: _save,
                   fullWidth: true,
                 ),
