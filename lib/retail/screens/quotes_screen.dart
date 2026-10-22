@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/mock/mock_retail_data.dart';
+import '../../core/printing/shop_pdf.dart';
 import '../../core/models/retail_fulfillment_mode.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/providers/app_notification_provider.dart';
@@ -1223,22 +1224,49 @@ void _showActiveQuoteEmailDialog(
   );
 }
 
-void _showActiveQuotePrintDialog(BuildContext context, MockRetailQuote quote) {
-  final name = quote.clientName?.trim();
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Imprimer'),
-      content: Text(
-        name == null || name.isEmpty
-            ? 'Devis ${quote.quoteNumber} envoyé à l\'imprimante.'
-            : 'Devis ${quote.quoteNumber} pour $name envoyé à l\'imprimante.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('OK'),
-        ),
+Future<void> _showActiveQuotePrintDialog(
+  BuildContext context,
+  MockRetailQuote quote,
+) {
+  String money(double amount) => localMoney(context, amount);
+  final safe = quote.quoteNumber.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '');
+  return printShopPdf(
+    context,
+    filename: 'devis-${safe.isEmpty ? 'document' : safe}.pdf',
+    document: ShopPdf(
+      shopName: shopNameFrom(context),
+      title: 'DEVIS',
+      headline: 'Proforma',
+      number: quote.quoteNumber,
+      when: formatPdfStamp(quote.createdAt),
+      fields: [
+        if ((quote.clientName ?? '').trim().isNotEmpty)
+          PdfField('Client', quote.clientName!.trim()),
+        if ((quote.clientPhone ?? '').trim().isNotEmpty)
+          PdfField('Téléphone', quote.clientPhone!.trim()),
+        if ((quote.clientEmail ?? '').trim().isNotEmpty)
+          PdfField('E-mail', quote.clientEmail!.trim()),
+        PdfField('Remise', quote.fulfillmentMode.label),
+        if ((quote.deliveryLocation ?? '').trim().isNotEmpty)
+          PdfField('Lieu', quote.deliveryLocation!.trim()),
+      ],
+      lines: [
+        for (final line in quote.lines)
+          PdfDocLine(
+            name: line.displayName,
+            quantity: '${line.quantity}',
+            unit: money(line.unitPriceHtg),
+            total: money(line.lineTotalHtg),
+          ),
+      ],
+      totals: [
+        PdfTotalLine('Sous-total', money(quote.subtotalHtg())),
+        if (quote.discountPercent > 0)
+          PdfTotalLine(
+            'Remise (${quote.discountPercent.toStringAsFixed(0)} %)',
+            money(-quote.discountAmountHtg()),
+          ),
+        PdfTotalLine('Total', money(quote.totalBeforeTaxHtg()), strong: true),
       ],
     ),
   );

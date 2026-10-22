@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../core/models/cash_control.dart';
+import '../../core/printing/pdf_theme.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Print or download a cash PDF. Currencies are printed as stored:
@@ -259,20 +260,34 @@ Future<Uint8List> _document({
   required String shopName,
   required List<pw.Widget> blocks,
 }) async {
-  final regular = await PdfGoogleFonts.notoSansRegular();
-  final bold = await PdfGoogleFonts.notoSansBold();
+  final theme = await shopPdfTheme();
   final doc = pw.Document();
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
-      theme: pw.ThemeData.withFont(base: regular, bold: bold),
+      theme: theme,
       margin: const pw.EdgeInsets.fromLTRB(36, 36, 36, 40),
       build: (context) => [
-        pw.Text(shopName, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+        pw.Text(
+          shopName,
+          style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Text(
+          title.toUpperCase(),
+          style: pw.TextStyle(
+            fontSize: 13,
+            fontWeight: pw.FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
         pw.SizedBox(height: 8),
-        pw.Text(title, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 4),
-        pw.Text(subtitle, style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+        pw.Container(height: 1, color: PdfColors.grey600),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          subtitle,
+          style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+        ),
         pw.SizedBox(height: 16),
         ...blocks,
       ],
@@ -288,6 +303,8 @@ pw.Widget _section(String title, List<pw.Widget> rows) {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(title, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 3),
+        pw.Container(height: 0.6, color: PdfColors.grey400),
         pw.SizedBox(height: 6),
         ...rows,
       ],
@@ -303,7 +320,10 @@ pw.Widget _kv(String label, String value) {
       children: [
         pw.Expanded(child: pw.Text(label, style: const pw.TextStyle(fontSize: 10))),
         pw.SizedBox(width: 12),
-        pw.Text(value, style: const pw.TextStyle(fontSize: 10)),
+        pw.Text(
+          value,
+          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+        ),
       ],
     ),
   );

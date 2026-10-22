@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/printing/shop_pdf.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
@@ -363,17 +364,20 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
     );
   }
 
-  void _showPrintDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Imprimer le reçu'),
-        content: const Text('Reçu envoyé à l\'imprimante.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
+  Future<void> _showPrintDialog(BuildContext context) {
+    return printShopPdf(
+      context,
+      filename: 'recu.pdf',
+      document: ShopPdf(
+        shopName: shopNameFrom(context),
+        title: 'REÇU',
+        headline: 'Paiement confirmé',
+        when: formatPdfStamp(DateTime.now()),
+        fields: [
+          PdfField('Paiement', _method),
+        ],
+        totals: [
+          PdfTotalLine('Total', localMoney(context, _total), strong: true),
         ],
       ),
     );

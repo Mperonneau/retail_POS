@@ -1,26 +1,14 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/models/order_history.dart';
 import '../../core/models/retail_fulfillment_mode.dart';
 import '../../core/models/retail_order.dart';
+import '../../core/printing/pdf_theme.dart';
 import 'sale_receipt_text.dart';
-
-pw.Font? _regular;
-pw.Font? _bold;
-
-Future<pw.ThemeData> _receiptTheme() async {
-  _regular ??= pw.Font.ttf(
-    await rootBundle.load('assets/fonts/LiberationSans-Regular.ttf'),
-  );
-  _bold ??= pw.Font.ttf(
-    await rootBundle.load('assets/fonts/LiberationSans-Bold.ttf'),
-  );
-  return pw.ThemeData.withFont(base: _regular, bold: _bold);
-}
 
 /// Thermal rolls and other narrow stock. Wider paper keeps the full table.
 bool receiptPdfIsNarrow(PdfPageFormat format) =>
@@ -62,7 +50,7 @@ Future<Uint8List> buildSaleReceiptPdf({
   required String Function(double amount) money,
   String? usdTotal,
 }) async {
-  final theme = await _receiptTheme();
+  final theme = await shopPdfTheme();
   final width = format.width.isFinite && format.width > 40 * PdfPageFormat.mm
       ? format.width
       : PdfPageFormat.a4.width;

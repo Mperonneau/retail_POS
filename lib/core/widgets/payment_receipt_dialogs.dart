@@ -1,33 +1,31 @@
 import 'package:flutter/material.dart';
 
+import '../printing/shop_pdf.dart';
 import '../utils/input_formatters.dart';
 import 'phone_field.dart';
 
-/// Shared receipt actions (Restaurant, Retail, Hotel) — mock send/print.
+/// Shared receipt actions (Restaurant, Retail, Hotel).
 class PaymentReceiptDialogs {
   PaymentReceiptDialogs._();
 
   static Future<void> showPrint(
     BuildContext context, {
     String? receiptName,
+    ShopPdf? document,
+    String filename = 'recu.pdf',
   }) {
-    return showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Imprimer le reçu'),
-        content: Text(
-          receiptName == null || receiptName.trim().isEmpty
-              ? 'Reçu envoyé à l\'imprimante.'
-              : 'Reçu pour ${receiptName.trim()} envoyé à l\'imprimante.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+    final named = receiptName?.trim() ?? '';
+    final doc = document ??
+        ShopPdf(
+          shopName: shopNameFrom(context),
+          title: 'REÇU',
+          headline: 'Paiement',
+          when: formatPdfStamp(DateTime.now()),
+          fields: [
+            if (named.isNotEmpty) PdfField('Client', named),
+          ],
+        );
+    return printShopPdf(context, filename: filename, document: doc);
   }
 
   static Future<void> showWhatsApp(BuildContext context) {

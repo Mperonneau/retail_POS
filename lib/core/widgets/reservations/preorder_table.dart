@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../mock/mock_reservation_data.dart';
+import '../../printing/pdf_theme.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
@@ -494,8 +495,9 @@ Future<void> printReservationPreOrderSlip(
   BuildContext context, {
   required MockDiningReservation reservation,
 }) async {
+  final theme = await shopPdfTheme();
   final fmt = NumberFormat.currency(
-    locale: 'en_HT',
+    locale: 'fr_HT',
     symbol: 'HTG ',
     decimalDigits: 2,
   );
@@ -555,15 +557,22 @@ Future<void> printReservationPreOrderSlip(
   final doc = pw.Document();
   doc.addPage(
     pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
+      pageTheme: pw.PageTheme(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        theme: theme,
+      ),
       build: (ctx) => pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text('Bon de précommande',
+          pw.Text('BON DE PRÉCOMMANDE',
               style: pw.TextStyle(
-                  fontSize: 18, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 6),
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  letterSpacing: 1.1)),
+          pw.SizedBox(height: 8),
+          pw.Container(height: 1, color: PdfColors.grey600),
+          pw.SizedBox(height: 8),
           pw.Text('Client : ${reservation.guestName}'),
           pw.Text('Téléphone : ${reservation.phone}'),
           pw.Text(
@@ -610,7 +619,7 @@ Future<void> printReservationPreOrderSlip(
           ...reservation.preOrderItems.map(lineRow),
           pw.Spacer(),
           pw.Text(
-            'Printed ${DateFormat.yMMMd().add_jm().format(DateTime.now())}',
+            'Imprimé le ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
             style: const pw.TextStyle(
                 fontSize: 9, color: PdfColors.grey700),
           ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/customer.dart';
+import '../../printing/shop_pdf.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
@@ -517,6 +518,35 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                       onTap: () => PaymentReceiptDialogs.showPrint(
                         context,
                         receiptName: widget.customer.name,
+                        filename: 'recu-${r.receiptNumber}.pdf',
+                        document: ShopPdf(
+                          shopName: shopNameFrom(context),
+                          title: 'REÇU',
+                          headline: 'Paiement de compte',
+                          number: r.receiptNumber,
+                          when: formatPdfStamp(r.paidAt),
+                          fields: [
+                            PdfField('Client', widget.customer.name),
+                            PdfField('Paiement', r.method.label),
+                            if ((r.methodDetail ?? '').trim().isNotEmpty)
+                              PdfField('Détail', r.methodDetail!.trim()),
+                          ],
+                          totals: [
+                            PdfTotalLine(
+                              'Solde précédent',
+                              localMoney(context, r.previousBalance),
+                            ),
+                            PdfTotalLine(
+                              'Payé',
+                              localMoney(context, r.amountPaid),
+                              strong: true,
+                            ),
+                            PdfTotalLine(
+                              'Solde restant',
+                              localMoney(context, r.remainingBalance),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

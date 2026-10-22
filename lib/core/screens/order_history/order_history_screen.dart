@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 
 import '../../mock/mock_order_history.dart';
 import '../../mock/mock_retail_orders.dart';
@@ -11,7 +12,10 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
+import '../../../retail/receipt/sale_receipt_pdf.dart';
+import '../../../retail/receipt/sale_receipt_text.dart';
 import '../../../retail/storefront/receipt_scan.dart';
+import '../../printing/shop_pdf.dart';
 import '../../widgets/phone_field.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/list_page_nav.dart';
@@ -2018,23 +2022,27 @@ void _showActiveOrderEmailDialog(BuildContext context, RetailOrder order) {
   );
 }
 
-void _showActiveOrderPrintDialog(BuildContext context, RetailOrder order) {
-  final name = order.clientName?.trim();
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Imprimer'),
-      content: Text(
-        name == null || name.isEmpty
-            ? 'Commande ${order.orderNumber} envoyée à l\'imprimante.'
-            : 'Commande ${order.orderNumber} pour $name envoyée à l\'imprimante.',
+Future<void> _showActiveOrderPrintDialog(
+  BuildContext context,
+  RetailOrder order,
+) async {
+  try {
+    await Printing.layoutPdf(
+      name: saleReceiptFilename(order),
+      onLayout: (format) => buildSaleReceiptPdf(
+        format: format,
+        order: order,
+        figures: SaleReceiptFigures.fromOrder(order),
+        shopName: shopNameFrom(context),
+        money: (amount) => localMoney(context, amount),
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-      ],
-    ),
-  );
+    );
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(content: Text('Le reçu n\'a pas pu être préparé.')),
+    );
+  }
 }
 
 // ── Active order detail panel ─────────────────────────────────────────────────

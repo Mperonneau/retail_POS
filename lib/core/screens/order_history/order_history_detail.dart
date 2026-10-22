@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/order_history.dart';
+import '../../printing/shop_pdf.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
@@ -42,19 +43,15 @@ class OrderHistoryDetailPage extends StatelessWidget {
   }
 }
 
-void _showPrintDialog(BuildContext context, OrderHistoryRecord record) {
-  final name = record.receiptName?.trim();
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Imprimer le reçu'),
-      content: Text(name == null || name.isEmpty
-          ? 'Reçu ${record.receiptNumber} envoyé à l\'imprimante.'
-          : 'Reçu pour $name envoyé à l\'imprimante.'),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-      ],
+Future<void> _showPrintDialog(BuildContext context, OrderHistoryRecord record) {
+  final safe = record.receiptNumber.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '');
+  return printShopPdf(
+    context,
+    filename: 'recu-${safe.isEmpty ? 'vente' : safe}.pdf',
+    document: shopPdfFromHistory(
+      record: record,
+      shopName: shopNameFrom(context),
+      money: (amount) => localMoney(context, amount),
     ),
   );
 }
