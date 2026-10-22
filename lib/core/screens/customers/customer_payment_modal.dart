@@ -661,35 +661,39 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
       children: [
         // ── Header ─────────────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 12, 14),
-          child: Row(children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: AppColors.amber.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+          padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: AppColors.amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.payments_outlined,
+                    size: 16, color: AppColors.amber),
               ),
-              child: const Icon(Icons.payments_outlined,
-                  size: 16, color: AppColors.amber),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Paiement de compte',
-                      style: AppTextStyles.body(color: textColor)
-                          .copyWith(
-                              fontWeight: FontWeight.w700, fontSize: 14)),
-                  Text(widget.customer.name,
-                      style: AppTextStyles.caption(),
-                      overflow: TextOverflow.ellipsis),
-                ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Paiement de compte',
+                        style: AppTextStyles.body(color: textColor)
+                            .copyWith(
+                                fontWeight: FontWeight.w700, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    Text(widget.customer.name,
+                        style: AppTextStyles.caption(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ],
+                ),
               ),
-            ),
-            Flexible(
-              child: Container(
+              const SizedBox(width: 8),
+              Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.boldRed.withValues(alpha: 0.08),
@@ -706,10 +710,9 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                       .copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-            ),
-            const SizedBox(width: 6),
-            AppCloseButton(onPressed: () => Navigator.pop(context)),
-          ]),
+              AppCloseButton(onPressed: () => Navigator.pop(context)),
+            ],
+          ),
         ),
         Divider(height: 1, color: dividerColor),
 
@@ -805,22 +808,20 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                   style: AppTextStyles.caption()
                       .copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: CustomerPayMethod.values.map((m) {
-                    final selected = _method == m;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+              Row(
+                children: [
+                  for (var i = 0; i < CustomerPayMethod.values.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(
                       child: _MethodChip(
-                        method: m,
-                        selected: selected,
+                        method: CustomerPayMethod.values[i],
+                        selected: _method == CustomerPayMethod.values[i],
                         isDark: isDark,
-                        onTap: () => _selectMethod(m),
+                        onTap: () => _selectMethod(CustomerPayMethod.values[i]),
                       ),
-                    );
-                  }).toList(),
-                ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 16),
 
@@ -995,25 +996,44 @@ class _MethodChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        width: double.infinity,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppConstants.radiusButton),
           border: Border.all(color: border, width: 1.5),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(method.icon, size: 14, color: selected ? c : AppColors.darkGray),
-          const SizedBox(width: 5),
-          Text(
-            method.label,
-            style: AppTextStyles.caption().copyWith(
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? c : AppColors.darkGray,
-            ),
-          ),
-        ]),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(method.icon,
+                    size: 16, color: selected ? c : AppColors.darkGray),
+                const SizedBox(width: 6),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: (constraints.maxWidth - 24).clamp(0, 400),
+                  ),
+                  child: Text(
+                    method.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption().copyWith(
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? c : AppColors.darkGray,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -1560,7 +1580,7 @@ class _AccountReceiptView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
           child: Row(
             children: [
               const Icon(Icons.check_circle_outline, color: Color(0xFF059669)),

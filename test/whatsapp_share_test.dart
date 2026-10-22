@@ -229,6 +229,39 @@ void main() {
     );
     expect(panel.left, 0);
     expect(panel.width, 390);
+
+    final especes = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Espèces'),
+            matching: find.byType(AnimatedContainer),
+          )
+          .first,
+    );
+    final moncash = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('MonCash'),
+            matching: find.byType(AnimatedContainer),
+          )
+          .first,
+    );
+    final carte = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Carte'),
+            matching: find.byType(AnimatedContainer),
+          )
+          .first,
+    );
+    expect(especes.width, greaterThan(90));
+    expect((especes.width - moncash.width).abs(), lessThan(2));
+    expect((moncash.width - carte.width).abs(), lessThan(2));
+    expect(carte.right - especes.left, greaterThan(320));
+
+    final close = tester.getRect(find.byIcon(Icons.close_rounded));
+    expect(panel.right - close.right, lessThan(20));
+    expect(close.left, greaterThan(especes.left));
     expect(tester.takeException(), isNull);
   });
 }
