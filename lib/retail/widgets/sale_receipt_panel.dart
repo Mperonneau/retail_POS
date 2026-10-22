@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -77,22 +80,30 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
     );
   }
 
-  Future<void> _print(String shopName) async {
-    final bytes = await buildSaleReceiptPdf(
-      title: saleReceiptHeadline(widget.order),
-      text: _text(shopName),
+  Future<Uint8List> _pdf(String shopName, PdfPageFormat format) {
+    final usd = CurrencyFormatter.usdEquivalentOrNull(
+      context,
+      widget.figures.total,
     );
-    await Printing.layoutPdf(
-      onLayout: (_) async => bytes,
+    return buildSaleReceiptPdf(
+      format: format,
+      order: widget.order,
+      figures: widget.figures,
+      shopName: shopName,
+      money: _money,
+      usdTotal: usd,
+    );
+  }
+
+  Future<void> _print(String shopName) {
+    return Printing.layoutPdf(
+      onLayout: (format) => _pdf(shopName, format),
       name: saleReceiptFilename(widget.order),
     );
   }
 
   Future<void> _download(String shopName) async {
-    final bytes = await buildSaleReceiptPdf(
-      title: saleReceiptHeadline(widget.order),
-      text: _text(shopName),
-    );
+    final bytes = await _pdf(shopName, PdfPageFormat.a4);
     await Printing.sharePdf(
       bytes: bytes,
       filename: saleReceiptFilename(widget.order),

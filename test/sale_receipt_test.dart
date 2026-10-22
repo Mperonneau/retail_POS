@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
 import 'package:retail_pos/core/models/order_history.dart';
 import 'package:retail_pos/core/models/retail_check_payment.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
@@ -112,12 +115,84 @@ void main() {
     expect(mail, contains('body='));
   });
 
-  test('the receipt PDF is a real document', () async {
-    final bytes = await buildSaleReceiptPdf(
-      title: 'Chèque en attente',
-      text: 'Reçu ORD-2026-4596',
-    );
-    expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+  test('the receipt PDF fits a page and a thermal roll', () async {
+    Future<Uint8List> build(PdfPageFormat format) {
+      return buildSaleReceiptPdf(
+        format: format,
+        order: sample(cleared: true, clearedBy: 'Nadia Pierre'),
+        figures: figures,
+        shopName: 'Boutique Soleil',
+        money: money,
+      );
+    }
+
+    final page = await build(PdfPageFormat.a4);
+    final letter = await build(PdfPageFormat.letter);
+    final roll = await build(PdfPageFormat.roll80);
+    expect(String.fromCharCodes(page.take(5)), '%PDF-');
+    expect(String.fromCharCodes(letter.take(5)), '%PDF-');
+    expect(String.fromCharCodes(roll.take(5)), '%PDF-');
+    expect(receiptPdfIsNarrow(PdfPageFormat.roll80), isTrue);
+    expect(receiptPdfIsNarrow(PdfPageFormat.roll57), isTrue);
+    expect(receiptPdfIsNarrow(PdfPageFormat.a4), isFalse);
+    expect(receiptPdfIsNarrow(PdfPageFormat.letter), isFalse);
+    expect(receiptPdfIsRoll(PdfPageFormat.roll80), isTrue);
+    expect(receiptPdfIsRoll(PdfPageFormat.a4), isFalse);
+    // A roll is cut to the receipt, not a fixed sheet of blank paper.
+    final rollBox = _mediaBox(roll);
+    expect(rollBox, isNotNull);
+    expect(rollBox!.$1, closeTo(80 * PdfPageFormat.mm, 1));
+    expect(rollBox.$2, greaterThan(40 * PdfPageFormat.mm));
+    expect(rollBox.$2, lessThan(180 * PdfPageFormat.mm));
+    final a4Box = _mediaBox(page);
+    expect(a4Box, isNotNull);
+    expect(a4Box!.$1, closeTo(PdfPageFormat.a4.width, 1));
+    expect(a4Box.$2, closeTo(PdfPageFormat.a4.height, 1));
     expect(saleReceiptFilename(sample()), 'recu-ORD-2026-4596.pdf');
   });
+
+  test('a long receipt continues on the next sheet', () async {
+    final order = RetailOrder(
+      id: 'pos-long',
+      orderNumber: 'ORD-2026-9000',
+      status: RetailOrderStatus.paid,
+      paymentSource: RetailPaymentSource.pos,
+      paymentMethod: PaymentMethodType.cash,
+      lines: [
+        for (var i = 0; i < 48; i++)
+          RetailOrderLine(
+            productName: 'Article ${i + 1}',
+            productId: i,
+            quantity: 1,
+            unitPriceHtg: 25,
+          ),
+      ],
+      createdAt: DateTime(2026, 10, 22, 9),
+      paidAt: DateTime(2026, 10, 22, 9),
+    );
+    final bytes = await buildSaleReceiptPdf(
+      format: PdfPageFormat.a4,
+      order: order,
+      figures: figures,
+      shopName: 'Boutique Soleil',
+      money: money,
+    );
+    expect(_mediaBoxCount(bytes), greaterThan(1));
+  });
+}
+
+/// First page size in points, read from the PDF page dictionary.
+(double, double)? _mediaBox(Uint8List bytes) {
+  final text = String.fromCharCodes(bytes);
+  final match = RegExp(
+    r'/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\]',
+  ).firstMatch(text);
+  if (match == null) return null;
+  final width = double.parse(match.group(3)!) - double.parse(match.group(1)!);
+  final height = double.parse(match.group(4)!) - double.parse(match.group(2)!);
+  return (width, height);
+}
+
+int _mediaBoxCount(Uint8List bytes) {
+  return RegExp(r'/MediaBox').allMatches(String.fromCharCodes(bytes)).length;
 }
