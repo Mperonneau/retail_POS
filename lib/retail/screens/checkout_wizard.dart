@@ -1009,6 +1009,42 @@ class _ClientStep extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacing8),
+                if (!clientSelected) ...[
+                  TextField(
+                    key: const Key('checkout-client-search'),
+                    controller: searchCtrl,
+                    onChanged: onSearchChanged,
+                    decoration: InputDecoration(
+                      labelText: 'Rechercher un client',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
+                      ),
+                      isDense: true,
+                    ),
+                  ),
+                  if (results.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacing8),
+                    ...results.map(
+                      (c) => Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(c.name, style: AppTextStyles.body()),
+                          subtitle: Text(
+                            c.phone,
+                            style: AppTextStyles.caption(),
+                          ),
+                          onTap: () => onPickMockCustomer(c),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppConstants.spacing8),
+                ],
                 if (clientSelected)
                   _SelectedClientCard(
                     name: pickedName,
@@ -1074,45 +1110,14 @@ class _ClientStep extends ConsumerWidget {
                 ],
                 if (!clientSelected) ...[
                   const SizedBox(height: AppConstants.spacing8),
-                  TextField(
-                    key: const Key('checkout-client-search'),
-                    controller: searchCtrl,
-                    onChanged: onSearchChanged,
-                    decoration: InputDecoration(
-                      labelText: 'Rechercher un client',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.radiusInput,
-                        ),
-                      ),
-                      isDense: true,
-                    ),
+                  PhoneField(
+                    key: const Key('checkout-client-phone'),
+                    controller: clientPhoneCtrl,
+                    label: phoneRequired
+                        ? 'Téléphone *'
+                        : 'Téléphone (facultatif)',
                   ),
                 ],
-                if (results.isNotEmpty) ...[
-                  const SizedBox(height: AppConstants.spacing8),
-                  ...results.map(
-                    (c) => Material(
-                      color: Colors.transparent,
-                      child: ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(c.name, style: AppTextStyles.body()),
-                        subtitle: Text(c.phone, style: AppTextStyles.caption()),
-                        onTap: () => onPickMockCustomer(c),
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: AppConstants.spacing8),
-                PhoneField(
-                  key: const Key('checkout-client-phone'),
-                  controller: clientPhoneCtrl,
-                  label: phoneRequired
-                      ? 'Téléphone *'
-                      : 'Téléphone (facultatif)',
-                ),
                 if (showFulfillmentSection) ...[
                   const SizedBox(height: AppConstants.spacing16),
                   Text(

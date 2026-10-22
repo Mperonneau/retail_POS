@@ -515,6 +515,18 @@ void main() {
     expect(find.text('Téléphone (facultatif)'), findsOneWidget);
     expect(find.byKey(const Key('checkout-client-name')), findsOneWidget);
     expect(find.byKey(const Key('checkout-client-search')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('checkout-client-search'))).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const Key('checkout-client-name'))).dy,
+      ),
+    );
+    expect(
+      tester.getTopLeft(find.byKey(const Key('checkout-client-name'))).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const Key('checkout-client-phone'))).dy,
+      ),
+    );
 
     await tester.enterText(
       find.byKey(const Key('checkout-client-search')),
@@ -529,15 +541,16 @@ void main() {
     expect(find.text('+509 3456-7890'), findsOneWidget);
     expect(find.byKey(const Key('checkout-client-name')), findsNothing);
     expect(find.byKey(const Key('checkout-client-search')), findsNothing);
-    expect(find.text('Téléphone (facultatif)'), findsOneWidget);
-    final phone = tester.widget<EditableText>(
-      find.descendant(
-        of: find.byKey(const Key('checkout-client-phone')),
-        matching: find.byType(EditableText),
-      ),
-    );
-    expect(phone.controller.text, contains('34567890'));
+    expect(find.byKey(const Key('checkout-client-phone')), findsNothing);
+    expect(find.text('Téléphone (facultatif)'), findsNothing);
 
+    await tester.tap(find.text('Livraison'));
+    await tester.pump();
+    expect(find.byKey(const Key('checkout-client-phone')), findsNothing);
+    expect(find.text('Téléphone *'), findsNothing);
+
+    await tester.tap(find.text('En magasin'));
+    await tester.pump();
     await tester.tap(find.byKey(const Key('checkout-client-clear')));
     await tester.pump();
 
