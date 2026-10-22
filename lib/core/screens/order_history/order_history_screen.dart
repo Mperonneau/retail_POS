@@ -1208,6 +1208,7 @@ class _PaymentBadge extends StatelessWidget {
       PaymentMethodType.cash => ('Espèces', AppColors.deepGreen),
       PaymentMethodType.credit => ('Crédit', AppColors.boldRed),
       PaymentMethodType.paymentLink => ('Lien', const Color(0xFF7C3AED)),
+      PaymentMethodType.check => ('Chèque', const Color(0xFF0F766E)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -2288,6 +2289,9 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                     isDark: isDark,
                     paymentMethod: current.paymentMethod,
                     paymentLastFour: current.paymentLastFour,
+                    check: current.paymentMethod == PaymentMethodType.check
+                        ? current.checkPayment
+                        : null,
                   ),
                   const SizedBox(height: 8),
                   Text(

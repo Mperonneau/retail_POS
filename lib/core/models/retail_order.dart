@@ -1,4 +1,5 @@
 import 'order_history.dart';
+import 'retail_check_payment.dart';
 import 'retail_fulfillment_mode.dart';
 
 /// Lifecycle status for an active / completed retail order.
@@ -101,6 +102,9 @@ class RetailOrder {
   /// Card last 4, MonCash phone last 4, or credit account last 4 (mock / gateway).
   final String? paymentLastFour;
 
+  /// Present when the sale was paid by check.
+  final RetailCheckPayment? checkPayment;
+
   const RetailOrder({
     required this.id,
     required this.orderNumber,
@@ -122,12 +126,14 @@ class RetailOrder {
     required this.createdAt,
     required this.paidAt,
     this.paymentLastFour,
+    this.checkPayment,
   });
 
   double get subtotalHtg => lines.fold(0, (s, l) => s + l.lineTotalHtg);
   double get discountAmountHtg => subtotalHtg * (discountPercent / 100);
 
-  /// Service charge applies for payment link, MonCash, and card (not cash / store credit).
+  /// Service charge applies for a payment link, MonCash, and card.
+  /// Cash, check, and store credit do not add it.
   bool get appliesElectronicServiceFee =>
       paymentSource == RetailPaymentSource.paymentLink ||
       paymentMethod == PaymentMethodType.moncash ||
@@ -169,6 +175,7 @@ class RetailOrder {
     DateTime? createdAt,
     DateTime? paidAt,
     Object? paymentLastFour = _sentinel,
+    Object? checkPayment = _sentinel,
   }) {
     return RetailOrder(
       id: id ?? this.id,
@@ -202,6 +209,9 @@ class RetailOrder {
       paymentLastFour: paymentLastFour == _sentinel
           ? this.paymentLastFour
           : paymentLastFour as String?,
+      checkPayment: checkPayment == _sentinel
+          ? this.checkPayment
+          : checkPayment as RetailCheckPayment?,
     );
   }
 
@@ -226,6 +236,7 @@ class RetailOrder {
         'createdAt': createdAt.toIso8601String(),
         'paidAt': paidAt.toIso8601String(),
         'paymentLastFour': paymentLastFour,
+        'checkPayment': checkPayment?.toJson(),
       };
 
   static RetailOrder? fromJson(Map<String, dynamic> json) {
@@ -284,6 +295,7 @@ class RetailOrder {
       createdAt: DateTime.tryParse('${json['createdAt']}') ?? now,
       paidAt: DateTime.tryParse('${json['paidAt']}') ?? now,
       paymentLastFour: json['paymentLastFour']?.toString(),
+      checkPayment: RetailCheckPayment.fromJson(json['checkPayment']),
     );
   }
 }

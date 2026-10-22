@@ -16,6 +16,7 @@ import '../models/sale_measure.dart';
 import '../../core/mock/mock_retail_orders.dart';
 import '../../core/models/customer.dart';
 import '../../core/models/order_history.dart';
+import '../../core/models/retail_check_payment.dart';
 import '../../core/models/retail_fulfillment_mode.dart';
 import '../../core/models/retail_order.dart';
 import '../../core/providers/tax_settings_provider.dart';
@@ -30,6 +31,8 @@ import '../../core/widgets/app_input.dart';
 import '../../core/widgets/phone_field.dart';
 import '../../core/widgets/payment_success_panel.dart';
 import '../models/retail_cart_entry.dart';
+import '../widgets/check_payment_form.dart';
+import '../widgets/check_photo_pick.dart';
 import '../../core/widgets/app_close_button.dart';
 
 /// Opens the retail checkout slide-over (desktop) / near-full-width (narrow).
@@ -689,7 +692,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             }
             return true;
           },
-          onConfirm: (method) async {
+          onConfirm: (method, {RetailCheckPayment? check}) async {
             final map = <int, int>{};
             for (final e in lines) {
               map[e.product.id] = (map[e.product.id] ?? 0) + e.stockUnits;
@@ -714,6 +717,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                     status: RetailOrderStatus.paid,
                     paymentSource: RetailPaymentSource.pos,
                     paymentMethod: method,
+                    checkPayment: method == PaymentMethodType.check
+                        ? check
+                        : null,
                     lines: [
                       for (final e in lines)
                         RetailOrderLine(
@@ -1445,7 +1451,10 @@ class _RetailPaymentPanel extends ConsumerStatefulWidget {
   final String checkoutId;
   final bool submitting;
   final Future<bool> Function() onValidateStock;
-  final Future<void> Function(PaymentMethodType method) onConfirm;
+  final Future<void> Function(
+    PaymentMethodType method, {
+    RetailCheckPayment? check,
+  }) onConfirm;
 
   const _RetailPaymentPanel({
     required this.total,
@@ -1496,6 +1505,16 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   final _newPhoneCtrl = TextEditingController();
   final _partialCtrl = TextEditingController();
 
+  // Check
+  final _checkNumberCtrl = TextEditingController();
+  final _checkBankCtrl = TextEditingController();
+  final _checkPayerCtrl = TextEditingController();
+  DateTime _checkDate = DateTime.now();
+  Uint8List? _checkPhoto;
+  String _checkMime = 'image/jpeg';
+  String? _checkPhotoError;
+  bool _checkPhotoBusy = false;
+
   @override
   void dispose() {
     _poll?.cancel();
@@ -1507,6 +1526,9 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     _partialCtrl.dispose();
     _payerNameCtrl.dispose();
     _payerContactCtrl.dispose();
+    _checkNumberCtrl.dispose();
+    _checkBankCtrl.dispose();
+    _checkPayerCtrl.dispose();
     super.dispose();
   }
 
@@ -1525,6 +1547,9 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       if (_shareUrl != null) return false;
       return _payerNameCtrl.text.trim().isNotEmpty &&
           _payerContactCtrl.text.trim().isNotEmpty;
+    }
+    if (_method == _RPayMethod.check) {
+      return _builtCheck() != null;
     }
     return true;
   }
@@ -1565,6 +1590,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       return;
     }
     if (!await widget.onValidateStock()) return;
+    final check = _method == _RPayMethod.check ? _builtCheck() : null;
+    if (_method == _RPayMethod.check && check == null) return;
     if (_method == _RPayMethod.credit && _selectedCustomer != null) {
       final creditAmount = widget.total - _creditPartialPaid;
       if (creditAmount > 0) {
@@ -1583,19 +1610,62 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             );
       }
     }
-    await _finishSale(switch (_method) {
-      _RPayMethod.moncash => PaymentMethodType.moncash,
-      _RPayMethod.card => PaymentMethodType.card,
-      _RPayMethod.cash => PaymentMethodType.cash,
-      _RPayMethod.credit => PaymentMethodType.credit,
+    await _finishSale(
+      switch (_method) {
+        _RPayMethod.moncash => PaymentMethodType.moncash,
+        _RPayMethod.card => PaymentMethodType.card,
+        _RPayMethod.cash => PaymentMethodType.cash,
+        _RPayMethod.credit => PaymentMethodType.credit,
+        _RPayMethod.check => PaymentMethodType.check,
+      },
+      check: check,
+    );
+  }
+
+  RetailCheckPayment? _builtCheck() {
+    return RetailCheckPayment.compose(
+      number: _checkNumberCtrl.text,
+      bank: _checkBankCtrl.text,
+      payerName: _checkPayerCtrl.text,
+      date: _checkDate,
+      photo: _checkPhoto,
+      mime: _checkMime,
+    );
+  }
+
+  Future<void> _pickCheckPhoto() async {
+    setState(() {
+      _checkPhotoBusy = true;
+      _checkPhotoError = null;
+    });
+    final picked = await checkPhotoPicker();
+    if (!mounted) return;
+    setState(() {
+      _checkPhotoBusy = false;
+      if (picked == null) return;
+      if (picked.error != null && picked.error!.isNotEmpty) {
+        _checkPhotoError = picked.error;
+        return;
+      }
+      final bytes = picked.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        _checkPhotoError = 'La photo du chèque est illisible.';
+        return;
+      }
+      _checkPhoto = bytes;
+      _checkMime = picked.mime;
+      _checkPhotoError = null;
     });
   }
 
-  Future<void> _finishSale(PaymentMethodType method) async {
+  Future<void> _finishSale(
+    PaymentMethodType method, {
+    RetailCheckPayment? check,
+  }) async {
     if (_saleCompleted) return;
     _saleCompleted = true;
     _poll?.cancel();
-    await widget.onConfirm(method);
+    await widget.onConfirm(method, check: check);
   }
 
   CardChargePricing? _cardPricing() {
@@ -1944,6 +2014,12 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
                 onTap: () => _selectMethod(_RPayMethod.cash),
               ),
               _RetailMethodTab(
+                label: 'Chèque',
+                icon: Icons.account_balance_outlined,
+                selected: _method == _RPayMethod.check,
+                onTap: () => _selectMethod(_RPayMethod.check),
+              ),
+              _RetailMethodTab(
                 label: 'MonCash',
                 icon: Icons.phone_android_outlined,
                 selected: _method == _RPayMethod.moncash,
@@ -2085,13 +2161,28 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             });
           },
         );
+      case _RPayMethod.check:
+        return CheckPaymentForm(
+          totalHtg: widget.total,
+          isDark: isDark,
+          numberCtrl: _checkNumberCtrl,
+          bankCtrl: _checkBankCtrl,
+          payerCtrl: _checkPayerCtrl,
+          date: _checkDate,
+          photo: _checkPhoto,
+          photoError: _checkPhotoError,
+          picking: _checkPhotoBusy,
+          onChanged: (_) => setState(() {}),
+          onDate: (value) => setState(() => _checkDate = value),
+          onPickPhoto: _pickCheckPhoto,
+        );
     }
   }
 }
 
 // ─── Payment method enum ──────────────────────────────────────────────────────
 
-enum _RPayMethod { moncash, card, cash, credit }
+enum _RPayMethod { moncash, card, cash, credit, check }
 
 enum _CardEntry { form, link }
 
