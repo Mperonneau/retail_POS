@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/pdf.dart';
 
+import '../../../retail/receipt/share_receipt_file.dart';
 import '../../models/customer.dart';
 import '../../printing/shop_pdf.dart';
 import '../../theme/app_colors.dart';
@@ -128,6 +130,62 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
   }
 
   void _onAmountChanged(String v) => setState(() {});
+
+  ShopPdf _accountReceipt(BuildContext context, _PaymentResult r) {
+    return ShopPdf(
+      shopName: shopNameFrom(context),
+      title: 'REÇU',
+      headline: 'Paiement de compte',
+      number: r.receiptNumber,
+      when: formatPdfStamp(r.paidAt),
+      fields: [
+        PdfField('Client', widget.customer.name),
+        PdfField('Paiement', r.method.label),
+        if ((r.methodDetail ?? '').trim().isNotEmpty)
+          PdfField('Détail', r.methodDetail!.trim()),
+      ],
+      totals: [
+        PdfTotalLine(
+          'Solde précédent',
+          localMoney(context, r.previousBalance),
+        ),
+        PdfTotalLine(
+          'Payé',
+          localMoney(context, r.amountPaid),
+          strong: true,
+        ),
+        PdfTotalLine(
+          'Solde restant',
+          localMoney(context, r.remainingBalance),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _shareAccountReceipt(
+    BuildContext context,
+    _PaymentResult r,
+  ) async {
+    try {
+      final bytes = await buildShopPdf(
+        format: PdfPageFormat.a4,
+        document: _accountReceipt(context, r),
+      );
+      if (!context.mounted) return;
+      await shareReceiptFile(
+        bytes: bytes,
+        filename: 'recu-${r.receiptNumber}.pdf',
+        subject: 'Reçu ${r.receiptNumber}',
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Le document n\'a pas pu être préparé.'),
+        ),
+      );
+    }
+  }
 
   void _confirm() {
     final amount = _enteredAmount;
@@ -519,38 +577,19 @@ class _CustomerPaymentModalState extends ConsumerState<CustomerPaymentModal> {
                         context,
                         receiptName: widget.customer.name,
                         filename: 'recu-${r.receiptNumber}.pdf',
-                        document: ShopPdf(
-                          shopName: shopNameFrom(context),
-                          title: 'REÇU',
-                          headline: 'Paiement de compte',
-                          number: r.receiptNumber,
-                          when: formatPdfStamp(r.paidAt),
-                          fields: [
-                            PdfField('Client', widget.customer.name),
-                            PdfField('Paiement', r.method.label),
-                            if ((r.methodDetail ?? '').trim().isNotEmpty)
-                              PdfField('Détail', r.methodDetail!.trim()),
-                          ],
-                          totals: [
-                            PdfTotalLine(
-                              'Solde précédent',
-                              localMoney(context, r.previousBalance),
-                            ),
-                            PdfTotalLine(
-                              'Payé',
-                              localMoney(context, r.amountPaid),
-                              strong: true,
-                            ),
-                            PdfTotalLine(
-                              'Solde restant',
-                              localMoney(context, r.remainingBalance),
-                            ),
-                          ],
-                        ),
+                        document: _accountReceipt(context, r),
                       ),
                     ),
                   ),
                 ]),
+                const SizedBox(height: 8),
+                _ShareButton(
+                  key: const Key('account-receipt-share'),
+                  icon: Icons.share_outlined,
+                  label: 'Partager',
+                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                  onTap: () => _shareAccountReceipt(context, r),
+                ),
                 const SizedBox(height: 16),
 
                 // ── Done button ──────────────────────────────────────────
@@ -1147,6 +1186,7 @@ class _ShareButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ShareButton({
+    super.key,
     required this.icon,
     required this.label,
     required this.color,
@@ -1158,6 +1198,7 @@ class _ShareButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
         padding: const EdgeInsets.symmetric(vertical: 9),
         side: BorderSide(color: color.withValues(alpha: 0.5)),
         shape: RoundedRectangleBorder(

@@ -266,6 +266,7 @@ class _PhoneFieldState extends State<PhoneField> {
     final textColor = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null && widget.label!.isNotEmpty) ...[
