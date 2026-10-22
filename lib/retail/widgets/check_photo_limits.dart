@@ -21,10 +21,9 @@ class CheckPhotoPass {
   final double quality;
 }
 
-/// First pass keeps the check number readable. Later passes shrink further
-/// when the JPEG is still heavy.
+/// First pass keeps the check number readable without a long encode.
+/// A later pass shrinks further when the JPEG is still heavy.
 const List<CheckPhotoPass> checkPhotoPasses = [
-  CheckPhotoPass(2000, 0.85),
   CheckPhotoPass(1600, 0.72),
   CheckPhotoPass(1200, 0.6),
 ];

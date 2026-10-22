@@ -37,6 +37,7 @@ import '../receipt/sale_receipt_text.dart';
 import '../widgets/sale_receipt_panel.dart';
 import '../widgets/check_payment_form.dart';
 import '../widgets/check_photo_pick.dart';
+import '../widgets/product_photo_pick.dart';
 import '../../core/widgets/app_close_button.dart';
 
 /// Opens the retail checkout slide-over (desktop) / near-full-width (narrow).
@@ -1688,10 +1689,20 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       _checkPhotoBusy = true;
       _checkPhotoError = null;
     });
-    final picked = await checkPhotoPicker();
+    PickedProductPhoto? picked;
+    var failed = false;
+    try {
+      picked = await checkPhotoPicker();
+    } catch (_) {
+      failed = true;
+    }
     if (!mounted) return;
     setState(() {
       _checkPhotoBusy = false;
+      if (failed) {
+        _checkPhotoError = 'La photo n\'a pas pu être ajoutée. Réessayez.';
+        return;
+      }
       if (picked == null) return;
       if (picked.error != null && picked.error!.isNotEmpty) {
         _checkPhotoError = picked.error;
