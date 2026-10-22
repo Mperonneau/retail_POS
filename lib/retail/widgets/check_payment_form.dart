@@ -169,7 +169,7 @@ class CheckPaymentForm extends StatelessWidget {
             ),
             const SizedBox(height: AppConstants.spacing4),
             Text(
-              'Photographiez le recto, lisible. Moins de 1,5 Mo.',
+              'Photographiez le recto, lisible.',
               style: AppTextStyles.caption(color: muted),
             ),
             const SizedBox(height: 8),

@@ -16,6 +16,7 @@ import 'package:retail_pos/core/services/local_store.dart';
 import 'package:retail_pos/core/theme/app_theme.dart';
 import 'package:retail_pos/retail/models/retail_cart_entry.dart';
 import 'package:retail_pos/retail/screens/checkout_wizard.dart';
+import 'package:retail_pos/retail/widgets/check_photo_limits.dart';
 import 'package:retail_pos/retail/widgets/check_photo_pick.dart';
 import 'package:retail_pos/retail/widgets/product_photo_pick.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,7 +104,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     LocalStore.instance.debugReset();
-    checkPhotoPicker = pickProductPhoto;
+    checkPhotoPicker = pickCheckPhoto;
   });
 
   test('check details survive on the order and skip the service fee', () {
@@ -200,6 +201,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Numéro du chèque'), findsOneWidget);
+    expect(find.text('Photographiez le recto, lisible.'), findsOneWidget);
+    expect(find.textContaining('1,5 Mo'), findsNothing);
     expect(find.text('Ajouter la photo'), findsOneWidget);
     expect(find.text('Enregistrer le chèque'), findsOneWidget);
     expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNull);
@@ -210,12 +213,12 @@ void main() {
     expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNull);
 
     checkPhotoPicker = () async =>
-        const PickedProductPhoto(error: 'La photo doit faire moins de 1,5 Mo.');
+        const PickedProductPhoto(error: checkPhotoTooHeavyError);
     await tester.ensureVisible(find.byKey(const Key('check-photo')));
     await tester.tap(find.byKey(const Key('check-photo')));
     await tester.pump();
     await tester.pump();
-    expect(find.text('La photo doit faire moins de 1,5 Mo.'), findsOneWidget);
+    expect(find.text(checkPhotoTooHeavyError), findsOneWidget);
     expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNull);
 
     checkPhotoPicker = () async =>
@@ -312,9 +315,7 @@ void main() {
     expect(sale.checkPayment!.number, '220011');
   });
 
-  testWidgets('approving a pending check marks the order paid', (
-    tester,
-  ) async {
+  testWidgets('approving a pending check marks the order paid', (tester) async {
     tester.view.physicalSize = const Size(900, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
