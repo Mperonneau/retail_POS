@@ -19,7 +19,10 @@ import '../../core/models/order_history.dart';
 import '../../core/models/retail_check_payment.dart';
 import '../../core/models/retail_fulfillment_mode.dart';
 import '../../core/models/retail_order.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/providers/staff_session_provider.dart';
 import '../../core/providers/tax_settings_provider.dart';
+import '../../core/utils/operator_name.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
@@ -1665,6 +1668,14 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       mime: _checkMime,
       cleared: _clearCheckNow,
       clearedAt: _clearCheckNow ? DateTime.now() : null,
+      clearedBy: _clearCheckNow ? _operatorName() : null,
+    );
+  }
+
+  String _operatorName() {
+    return currentOperatorName(
+      staffName: ref.read(staffSessionProvider)?.employeeName,
+      accountName: ref.read(authProvider).userName,
     );
   }
 

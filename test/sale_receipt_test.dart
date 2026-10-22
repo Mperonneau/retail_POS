@@ -14,7 +14,7 @@ void main() {
     await initializeDateFormatting('fr');
   });
 
-  RetailOrder sample({bool cleared = false}) {
+  RetailOrder sample({bool cleared = false, String? clearedBy}) {
     return RetailOrder(
       id: 'pos-1',
       orderNumber: 'ORD-2026-4596',
@@ -30,6 +30,7 @@ void main() {
         date: DateTime(2026, 10, 22),
         imageDataUrl: 'data:image/png;base64,aGk=',
         cleared: cleared,
+        clearedBy: cleared ? clearedBy : null,
       ),
       lines: const [
         RetailOrderLine(
@@ -80,14 +81,15 @@ void main() {
   });
 
   test('a cleared check is a confirmed payment', () {
-    expect(saleReceiptHeadline(sample(cleared: true)), 'Paiement confirmé !');
+    final order = sample(cleared: true, clearedBy: 'Nadia Pierre');
+    expect(saleReceiptHeadline(order), 'Paiement confirmé !');
     final text = saleReceiptText(
-      order: sample(cleared: true),
+      order: order,
       figures: figures,
       shopName: 'Boutique Soleil',
       money: money,
     );
-    expect(text, contains('Chèque compensé'));
+    expect(text, contains('Chèque compensé par : Nadia Pierre'));
   });
 
   test('WhatsApp and e-mail links carry the receipt', () {

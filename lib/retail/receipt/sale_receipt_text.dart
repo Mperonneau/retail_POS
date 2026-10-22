@@ -184,7 +184,7 @@ List<String> _checkLines(RetailCheckPayment check) {
     'Banque : ${check.bank}',
     'Tireur : ${check.payerName}',
     'Date du chèque : ${DateFormatter.shortDate(check.date)}',
-    check.cleared ? 'Chèque compensé' : 'En attente de compensation',
+    check.clearanceLabel,
     if (check.imageBytes != null) 'Photo du chèque enregistrée.',
   ];
 }

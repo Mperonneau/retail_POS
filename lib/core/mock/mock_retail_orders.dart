@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/auth_provider.dart';
 import '../providers/device_session_provider.dart';
+import '../providers/staff_session_provider.dart';
+import '../utils/operator_name.dart';
 import '../services/local_store.dart';
 
 import '../models/order_history.dart';
@@ -466,6 +469,10 @@ class RetailOrdersNotifier extends StateNotifier<List<RetailOrder>> {
             checkPayment: order.checkPayment!.copyWith(
               cleared: true,
               clearedAt: now,
+              clearedBy: currentOperatorName(
+                staffName: _ref.read(staffSessionProvider)?.employeeName,
+                accountName: _ref.read(authProvider).userName,
+              ),
             ),
           ),
     ];

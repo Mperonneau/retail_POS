@@ -158,7 +158,7 @@ class CheckPaymentSummary extends StatelessWidget {
           muted,
         ),
         Text(
-          check.cleared ? 'Chèque compensé' : 'En attente de compensation',
+          check.clearanceLabel,
           key: Key(check.cleared ? 'check-cleared' : 'check-awaiting'),
           style: AppTextStyles.caption(
             color: check.cleared ? AppColors.deepGreen : AppColors.amber,

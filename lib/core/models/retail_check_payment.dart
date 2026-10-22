@@ -17,6 +17,9 @@ class RetailCheckPayment {
   /// When [cleared] became true.
   final DateTime? clearedAt;
 
+  /// Person who compensated the check.
+  final String? clearedBy;
+
   const RetailCheckPayment({
     required this.number,
     required this.bank,
@@ -25,11 +28,21 @@ class RetailCheckPayment {
     required this.imageDataUrl,
     this.cleared = false,
     this.clearedAt,
+    this.clearedBy,
   });
+
+  /// Status line, including who compensated the check when that name is known.
+  String get clearanceLabel {
+    if (!cleared) return 'En attente de compensation';
+    final name = clearedBy?.trim() ?? '';
+    if (name.isEmpty) return 'Chèque compensé';
+    return 'Chèque compensé par : $name';
+  }
 
   RetailCheckPayment copyWith({
     bool? cleared,
     DateTime? clearedAt,
+    String? clearedBy,
   }) {
     return RetailCheckPayment(
       number: number,
@@ -39,6 +52,7 @@ class RetailCheckPayment {
       imageDataUrl: imageDataUrl,
       cleared: cleared ?? this.cleared,
       clearedAt: clearedAt ?? this.clearedAt,
+      clearedBy: clearedBy ?? this.clearedBy,
     );
   }
 
@@ -77,6 +91,7 @@ class RetailCheckPayment {
     required String mime,
     bool cleared = false,
     DateTime? clearedAt,
+    String? clearedBy,
   }) {
     final n = number.trim();
     final b = bank.trim();
@@ -96,7 +111,13 @@ class RetailCheckPayment {
       imageDataUrl: dataUrlFor(photo, mime),
       cleared: cleared,
       clearedAt: cleared ? (clearedAt ?? DateTime.now()) : null,
+      clearedBy: cleared ? _cleanName(clearedBy) : null,
     );
+  }
+
+  static String? _cleanName(String? raw) {
+    final name = raw?.trim() ?? '';
+    return name.isEmpty ? null : name;
   }
 
   Map<String, dynamic> toJson() => {
@@ -107,6 +128,7 @@ class RetailCheckPayment {
     'imageDataUrl': imageDataUrl,
     'cleared': cleared,
     'clearedAt': clearedAt?.toIso8601String(),
+    'clearedBy': clearedBy,
   };
 
   static RetailCheckPayment? fromJson(Object? raw) {
@@ -134,6 +156,7 @@ class RetailCheckPayment {
       imageDataUrl: imageDataUrl,
       cleared: cleared,
       clearedAt: DateTime.tryParse('${json['clearedAt']}'),
+      clearedBy: _cleanName(json['clearedBy']?.toString()),
     );
   }
 }

@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:retail_pos/core/mock/mock_retail_data.dart';
 import 'package:retail_pos/core/mock/mock_retail_orders.dart';
 import 'package:retail_pos/core/models/order_history.dart';
+import 'package:retail_pos/core/providers/auth_provider.dart';
+import 'package:retail_pos/core/utils/operator_name.dart';
 import 'package:retail_pos/core/models/retail_check_payment.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
 import 'package:retail_pos/core/screens/order_history/order_history_screen.dart';
@@ -164,6 +166,41 @@ void main() {
       ),
       isNull,
     );
+
+    final named = RetailCheckPayment.compose(
+      number: '104582',
+      bank: 'Sogebank',
+      payerName: 'Marie',
+      date: DateTime(2026, 10, 22),
+      photo: _tinyPng,
+      mime: 'image/png',
+      cleared: true,
+      clearedBy: ' Nadia Pierre ',
+    )!;
+    expect(named.clearedBy, 'Nadia Pierre');
+    expect(named.clearanceLabel, 'Chèque compensé par : Nadia Pierre');
+    expect(
+      RetailCheckPayment.fromJson(named.toJson())!.clearedBy,
+      'Nadia Pierre',
+    );
+    expect(
+      RetailCheckPayment.compose(
+        number: '104582',
+        bank: 'Sogebank',
+        payerName: 'Marie',
+        date: DateTime(2026, 10, 22),
+        photo: _tinyPng,
+        mime: 'image/png',
+        clearedBy: 'Nadia Pierre',
+      )!.clearedBy,
+      isNull,
+    );
+    expect(
+      currentOperatorName(staffName: 'Alice', accountName: 'Bob'),
+      'Alice',
+    );
+    expect(currentOperatorName(accountName: 'Bob'), 'Bob');
+    expect(currentOperatorName(), 'Gérant');
   });
 
   testWidgets('Chèque stays blocked until the details and the photo exist', (
@@ -294,6 +331,13 @@ void main() {
 
     final container = ProviderContainer();
     addTearDown(container.dispose);
+    container
+        .read(authProvider.notifier)
+        .login(
+          userName: 'Nadia Pierre',
+          businessName: 'Boutique Soleil',
+          module: ActiveModule.retail,
+        );
     final product = container.read(mockProductsProvider).first;
 
     await tester.pumpWidget(
@@ -334,7 +378,7 @@ void main() {
     expect(find.text('Paiement confirmé !'), findsOneWidget);
     expect(find.text('Chèque en attente'), findsNothing);
     expect(find.textContaining('payée'), findsOneWidget);
-    expect(find.text('Chèque compensé'), findsOneWidget);
+    expect(find.text('Chèque compensé par : Nadia Pierre'), findsOneWidget);
     expect(find.text('Imprimer le reçu'), findsOneWidget);
     expect(find.text('Partager le reçu'), findsOneWidget);
     final sale = container
@@ -343,6 +387,7 @@ void main() {
     expect(sale.status, RetailOrderStatus.paid);
     expect(sale.checkPayment!.cleared, isTrue);
     expect(sale.checkPayment!.clearedAt, isNotNull);
+    expect(sale.checkPayment!.clearedBy, 'Nadia Pierre');
     expect(sale.checkPayment!.number, '220011');
   });
 
@@ -380,6 +425,13 @@ void main() {
 
     final container = ProviderContainer();
     addTearDown(container.dispose);
+    container
+        .read(authProvider.notifier)
+        .login(
+          userName: 'Marc Joseph',
+          businessName: 'Boutique Soleil',
+          module: ActiveModule.retail,
+        );
     container.read(retailOrdersProvider.notifier).add(order);
 
     await tester.pumpWidget(
@@ -429,7 +481,8 @@ void main() {
         .firstWhere((row) => row.id == order.id);
     expect(saved.status, RetailOrderStatus.paid);
     expect(saved.checkPayment!.cleared, isTrue);
-    expect(find.text('Chèque compensé'), findsOneWidget);
+    expect(saved.checkPayment!.clearedBy, 'Marc Joseph');
+    expect(find.text('Chèque compensé par : Marc Joseph'), findsOneWidget);
     expect(find.text('Approuver le chèque'), findsNothing);
     expect(find.text('Payé'), findsOneWidget);
     expect(find.text('Marquer terminé'), findsOneWidget);
