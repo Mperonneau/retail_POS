@@ -1,0 +1,1 @@
+void openReceiptUrl(String url) {}

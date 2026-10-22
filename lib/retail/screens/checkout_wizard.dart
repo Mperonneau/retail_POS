@@ -29,8 +29,9 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_input.dart';
 import '../../core/widgets/phone_field.dart';
-import '../../core/widgets/payment_success_panel.dart';
 import '../models/retail_cart_entry.dart';
+import '../receipt/sale_receipt_text.dart';
+import '../widgets/sale_receipt_panel.dart';
 import '../widgets/check_payment_form.dart';
 import '../widgets/check_photo_pick.dart';
 import '../../core/widgets/app_close_button.dart';
@@ -145,6 +146,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
 
   /// Check was recorded and still has to clear.
   bool _awaitingCheckClearance = false;
+
+  /// Sale recorded by the last successful payment. The receipt reads this.
+  RetailOrder? _completedOrder;
 
   @override
   void initState() {
@@ -703,12 +707,10 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             final now = DateTime.now();
             final saleNo = 100 + (now.millisecondsSinceEpoch % 8999);
             final clientName = _clientNameCtrl.text.trim();
+            final clientEmail = _clientEmailCtrl.text.trim();
             final awaitingCheck = method == PaymentMethodType.check &&
                 !(check?.cleared ?? false);
-            ref
-                .read(retailOrdersProvider.notifier)
-                .add(
-                  RetailOrder(
+            final sale = RetailOrder(
                     id: 'pos-$_checkoutId',
                     orderNumber: 'ORD-${now.year}-$saleNo',
                     fromQuoteId: widget.existingQuote?.id,
@@ -716,6 +718,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                     clientPhone: _linkedClientPhone.trim().isEmpty
                         ? null
                         : _linkedClientPhone.trim(),
+                    clientEmail: clientEmail.isEmpty ? null : clientEmail,
                     fulfillmentMode: _fulfillmentSectionVisible
                         ? _fulfillment
                         : RetailFulfillmentMode.inStore,
@@ -753,8 +756,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                         : null,
                     createdAt: now,
                     paidAt: now,
-                  ),
-                );
+                  );
+            ref.read(retailOrdersProvider.notifier).add(sale);
             ref.read(mockProductsProvider.notifier).applySale(map);
             ref
                 .read(retailInventoryLedgerProvider.notifier)
@@ -768,6 +771,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             setState(() {
               _submitting = false;
               _completedSaleNumber = saleNo;
+              _completedOrder = sale;
               _awaitingCheckClearance = awaitingCheck;
               _step = _successStepIndex;
             });
@@ -776,21 +780,34 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
       );
     }
     if (_step == _successStepIndex) {
-      final name = _clientNameCtrl.text.trim();
+      final sale = _completedOrder;
+      if (sale == null) {
+        return KeyedSubtree(key: key, child: const SizedBox.shrink());
+      }
       return KeyedSubtree(
         key: key,
-        child: PaymentSuccessPanel(
-          amountHtg: total,
-          showHeader: true,
+        child: SaleReceiptPanel(
+          order: sale,
+          figures: SaleReceiptFigures(
+            subtotal: sub,
+            discountPercent: widget.discountPercent,
+            discountAmount: disc,
+            taxPercent: ref.watch(taxEnabledProvider)
+                ? ref.watch(taxPercentProvider)
+                : 0,
+            taxAmount: tax,
+            servicePercent: ref.watch(gratuityEnabledProvider)
+                ? ref.watch(gratuityPercentProvider)
+                : 0,
+            serviceAmount: grat,
+            deliveryFee: deliveryFee,
+            total: total,
+          ),
           contextSubtitle: _successContextSubtitle(),
           statusLine: _awaitingCheckClearance
               ? 'Vente n°$_completedSaleNumber — chèque en attente'
               : 'Vente n°$_completedSaleNumber payée',
-          receiptDetailLine: name.isNotEmpty ? 'Reçu pour : $name' : null,
-          printReceiptName: name.isNotEmpty ? name : null,
           onDone: _finishPaymentSuccess,
-          onHeaderBack: _finishPaymentSuccess,
-          onHeaderClose: _finishPaymentSuccess,
         ),
       );
     }

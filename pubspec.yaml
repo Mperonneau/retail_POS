@@ -76,6 +76,8 @@ flutter:
 
   assets:
     - assets/fonts/material_icons_full.otf
+    - assets/fonts/LiberationSans-Regular.ttf
+    - assets/fonts/LiberationSans-Bold.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

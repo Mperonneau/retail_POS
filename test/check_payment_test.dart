@@ -243,7 +243,20 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.textContaining('chèque en attente'), findsOneWidget);
+    expect(find.text('Paiement confirmé !'), findsNothing);
+    expect(find.text('Chèque en attente'), findsOneWidget);
+    expect(find.textContaining('chèque en attente'), findsWidgets);
+    expect(find.text(product.name), findsOneWidget);
+    expect(find.text('Sous-total'), findsOneWidget);
+    expect(find.text('TOTAL'), findsOneWidget);
+    expect(find.text('104582'), findsOneWidget);
+    expect(find.text('Sogebank'), findsOneWidget);
+    expect(find.text('En attente de compensation'), findsOneWidget);
+    expect(find.text('Imprimer le reçu'), findsOneWidget);
+    expect(find.text('Télécharger le reçu'), findsOneWidget);
+    expect(find.text('Envoyer le reçu par WhatsApp'), findsOneWidget);
+    expect(find.text('Envoyer le reçu par e-mail'), findsOneWidget);
+    expect(find.text('Partager le reçu'), findsOneWidget);
     final sale = container
         .read(retailOrdersProvider)
         .firstWhere((order) => order.id.startsWith('pos-'));
@@ -305,7 +318,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
+    expect(find.text('Paiement confirmé !'), findsOneWidget);
+    expect(find.text('Chèque en attente'), findsNothing);
     expect(find.textContaining('payée'), findsOneWidget);
+    expect(find.text('Chèque compensé'), findsOneWidget);
+    expect(find.text('Imprimer le reçu'), findsOneWidget);
+    expect(find.text('Partager le reçu'), findsOneWidget);
     final sale = container
         .read(retailOrdersProvider)
         .firstWhere((order) => order.id.startsWith('pos-'));
