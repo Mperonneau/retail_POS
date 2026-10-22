@@ -1752,6 +1752,44 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   void initState() {
     super.initState();
     _balancePhoneCtrl.addListener(_onBalancePhone);
+    if (_isDirectoryClient) {
+      _selectedCustomer = _clientAsCreditCustomer();
+    }
+  }
+
+  Customer _clientAsCreditCustomer() {
+    final name = widget.knownClientName.trim();
+    final phone = widget.knownClientPhone.trim();
+    final match = _directoryMatch;
+    if (match == null) {
+      return Customer(
+        id: 'known_${phone.replaceAll(RegExp(r'\D'), '')}',
+        name: name,
+        phone: phone,
+        createdAt: DateTime.now(),
+      );
+    }
+    return Customer(
+      id: match.id,
+      name: name,
+      phone: phone,
+      isCreditBlocked: match.isCreditBlocked,
+      blockedReason: match.blockedReason,
+      blockedBy: match.blockedBy,
+      blockedAt: match.blockedAt,
+      creditLimitHtg: match.creditLimitHtg,
+      creditLimitUsd: match.creditLimitUsd,
+      createdAt: match.createdAt,
+      isActive: match.isActive,
+    );
+  }
+
+  Customer _resolveCreditCustomer(Customer customer) {
+    final customers = ref.read(customerProvider).customers;
+    for (final existing in customers) {
+      if (existing.id == customer.id) return existing;
+    }
+    return _creditCustomerByPhone(customers, customer.phone) ?? customer;
   }
 
   void _onBalancePhone() {
@@ -1899,8 +1937,11 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     if (_method == _RPayMethod.check && check == null) return;
     final partialCash =
         _method == _RPayMethod.cash && _cashBalanceDue > 0.009;
-    final creditCustomerSelected =
-        _method == _RPayMethod.credit ? _selectedCustomer : null;
+    final creditCustomerSelected = _method == _RPayMethod.credit
+        ? (_selectedCustomer == null
+            ? null
+            : _resolveCreditCustomer(_selectedCustomer!))
+        : null;
     final creditAmount = creditCustomerSelected == null
         ? 0.0
         : widget.total - _creditPartialPaid;
@@ -1920,6 +1961,13 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       final note = authorizedBy == null
           ? 'Vente au détail'
           : 'Vente au détail · Autorisé par $authorizedBy';
+      final alreadyKnown = ref
+          .read(customerProvider)
+          .customers
+          .any((customer) => customer.id == creditCustomerSelected.id);
+      if (!alreadyKnown) {
+        ref.read(customerProvider.notifier).addCustomer(creditCustomerSelected);
+      }
       ref.read(customerProvider.notifier).postCharge(
             customerId: creditCustomerSelected.id,
             amountHtg: widget.total,
@@ -2596,7 +2644,11 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             _selectedCustomer = c;
             _creditSearch = '';
           }),
-          onCustomerCleared: () => setState(() => _selectedCustomer = null),
+          onCustomerCleared: () => setState(() {
+            _selectedCustomer = null;
+            _creditSearch = '';
+            _showNewCustomer = false;
+          }),
           onPartialChanged: (v) =>
               setState(() => _creditPartialPaid = double.tryParse(v) ?? 0),
           onToggleNewForm: () =>
@@ -3731,6 +3783,7 @@ class _RCreditContent extends StatelessWidget {
             const SizedBox(height: AppConstants.spacing12),
             if (selectedCustomer == null) ...[
               TextField(
+                key: const Key('credit-client-search'),
                 onChanged: onSearchChanged,
                 decoration: InputDecoration(
                   labelText: 'Rechercher un client par nom ou téléphone',
@@ -3857,6 +3910,7 @@ class _RCreditContent extends StatelessWidget {
             ] else ...[
               if (selectedCustomer!.isCreditBlocked)
                 Container(
+                  key: const Key('credit-selected-client'),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.boldRed.withValues(alpha: 0.08),
@@ -3874,18 +3928,43 @@ class _RCreditContent extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          '${selectedCustomer!.name} est BLOQUÉ',
-                          style: AppTextStyles.body(
-                            color: AppColors.boldRed,
-                          ).copyWith(fontWeight: FontWeight.w700),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              selectedCustomer!.name,
+                              style: AppTextStyles.body(
+                                color: AppColors.boldRed,
+                              ).copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            if (selectedCustomer!.phone.trim().isNotEmpty)
+                              Text(
+                                selectedCustomer!.phone,
+                                style: AppTextStyles.caption(
+                                  color: AppColors.boldRed,
+                                ),
+                              ),
+                            Text(
+                              '${selectedCustomer!.name} est bloqué.',
+                              style: AppTextStyles.caption(
+                                color: AppColors.boldRed,
+                              ).copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ],
                         ),
+                      ),
+                      IconButton(
+                        key: const Key('credit-client-clear'),
+                        tooltip: 'Retirer le client',
+                        onPressed: onCustomerCleared,
+                        icon: const Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 )
               else ...[
                 Container(
+                  key: const Key('credit-selected-client'),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isDark
@@ -3922,6 +4001,11 @@ class _RCreditContent extends StatelessWidget {
                                     : AppColors.nearBlack,
                               ),
                             ),
+                            if (selectedCustomer!.phone.trim().isNotEmpty)
+                              Text(
+                                selectedCustomer!.phone,
+                                style: AppTextStyles.caption(),
+                              ),
                             Builder(
                               builder: (ctx) {
                                 final bal = customerState.balanceFor(
@@ -3939,9 +4023,11 @@ class _RCreditContent extends StatelessWidget {
                           ],
                         ),
                       ),
-                      TextButton(
+                      IconButton(
+                        key: const Key('credit-client-clear'),
+                        tooltip: 'Retirer le client',
                         onPressed: onCustomerCleared,
-                        child: const Text('Monnaie'),
+                        icon: const Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
