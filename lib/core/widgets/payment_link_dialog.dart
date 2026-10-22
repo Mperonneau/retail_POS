@@ -44,13 +44,16 @@ String normalizePaymentLinkUrl(String pathOrUrl) {
 
 /// Message for the share sheet. The checkout URL is included so the payer can
 /// open it, along with the commande or devis number and the client.
+///
+/// The amount is the dollar charge, with the gourde amount in parentheses.
+/// The payer's phone is never included.
 String paymentLinkShareMessage({
   required String url,
   required String number,
   String? kindLabel,
   String? clientName,
-  String? amountLabel,
-  String? phone,
+  String? usdLabel,
+  String? htgLabel,
 }) {
   final lines = <String>['Lien de paiement'];
   final num = number.trim();
@@ -60,13 +63,19 @@ String paymentLinkShareMessage({
   }
   final client = clientName?.trim() ?? '';
   if (client.isNotEmpty) lines.add('Client : $client');
-  final amount = amountLabel?.trim() ?? '';
-  if (amount.isNotEmpty) lines.add('Montant : $amount');
-  final tel = phone?.trim() ?? '';
-  if (tel.isNotEmpty && tel != num) lines.add('Téléphone : $tel');
+  final usd = usdLabel?.trim() ?? '';
+  final htg = htgLabel?.trim() ?? '';
+  if (usd.isNotEmpty && htg.isNotEmpty) {
+    lines.add('Montant : $usd ($htg)');
+  } else if (usd.isNotEmpty) {
+    lines.add('Montant : $usd');
+  } else if (htg.isNotEmpty) {
+    lines.add('Montant : $htg');
+  }
   final link = url.trim();
   if (link.isNotEmpty) {
     lines.add('');
+    lines.add('Cliquez sur le lien ci-dessous pour effectuer le paiement.');
     lines.add(link);
   }
   return lines.join('\n');

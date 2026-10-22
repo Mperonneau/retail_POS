@@ -144,23 +144,19 @@ void main() {
       number: 'QTE-2026-0001',
       kindLabel: 'Commande',
       clientName: 'Restaurant Ti Kay',
-      amountLabel: '12 292,00 HTG',
-      phone: '+509 41235678',
+      usdLabel: r'$96.52',
+      htgLabel: '12 292,00 HTG',
     );
     expect(message, contains('Commande : QTE-2026-0001'));
     expect(message, contains('Client : Restaurant Ti Kay'));
-    expect(message, contains('Montant : 12 292,00 HTG'));
-    expect(message, contains('Téléphone : +509 41235678'));
-    expect(message, contains('https://checkout.stripe.com/c/pay/cs_test_abc'));
+    expect(message, contains(r'Montant : $96.52 (12 292,00 HTG)'));
+    expect(message, isNot(contains('Téléphone')));
+    expect(message, isNot(contains('+509')));
     expect(
-      paymentLinkShareMessage(
-        url: 'https://checkout.stripe.com/c/pay/cs_test_abc',
-        number: 'ORD-2026-0045',
-        clientName: 'Moliere',
-        phone: 'ORD-2026-0045',
-      ),
-      isNot(contains('Téléphone')),
+      message,
+      contains('Cliquez sur le lien ci-dessous pour effectuer le paiement.'),
     );
+    expect(message, endsWith('https://checkout.stripe.com/c/pay/cs_test_abc'));
   });
 
   testWidgets('the copy screen does not show the full link', (tester) async {
@@ -180,7 +176,8 @@ void main() {
                 number: 'QTE-2026-0001',
                 kindLabel: 'Commande',
                 clientName: 'Restaurant Ti Kay',
-                amountLabel: '12 292,00 HTG',
+                usdLabel: r'$96.52',
+                htgLabel: '12 292,00 HTG',
               ),
             ),
             child: const Text('open'),

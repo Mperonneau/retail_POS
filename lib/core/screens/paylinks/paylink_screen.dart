@@ -95,10 +95,21 @@ class _PayLinkScreenState extends ConsumerState<PayLinkScreen> {
         number: created.reference,
         kindLabel: _documentKind(created),
         clientName: created.customerName,
-        amountLabel: CurrencyFormatter.local(context, created.amountHtg),
-        phone: created.customerPhone,
+        usdLabel: _shareUsdLabel(created),
+        htgLabel: CurrencyFormatter.local(context, created.amountHtg),
       ),
     );
+  }
+
+  String? _shareUsdLabel(PayLink link) {
+    final cents = link.payerTotalUsdCents;
+    if (cents != null && cents > 0) {
+      return CurrencyFormatter.usd(cents / 100);
+    }
+    final hint = CurrencyFormatter.usdEquivalent(context, link.amountHtg);
+    if (hint.startsWith('≈ ')) return hint.substring(2).trim();
+    final plain = hint.trim();
+    return plain.isEmpty ? null : plain;
   }
 
   String? _documentKind(PayLink link) {
