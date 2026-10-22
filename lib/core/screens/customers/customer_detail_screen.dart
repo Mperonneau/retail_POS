@@ -202,13 +202,11 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
   }
 
   void _showPaymentModal(BuildContext context, Customer c, double balance) {
-    showDialog(
-      context: context,
-      builder: (_) => CustomerPaymentModal(
-        customer: c,
-        balance: balance,
-        isDark: widget.isDark,
-      ),
+    showCustomerAccountPayment(
+      context,
+      customer: c,
+      balance: balance,
+      isDark: widget.isDark,
     );
   }
 

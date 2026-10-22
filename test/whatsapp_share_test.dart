@@ -107,13 +107,11 @@ void main() {
             builder: (context) => Scaffold(
               body: TextButton(
                 onPressed: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) => CustomerPaymentModal(
-                      customer: customer,
-                      balance: 2400,
-                      isDark: false,
-                    ),
+                  showCustomerAccountPayment(
+                    context,
+                    customer: customer,
+                    balance: 2400,
+                    isDark: false,
                   );
                 },
                 child: const Text('Payer'),
@@ -127,14 +125,38 @@ void main() {
     await tester.tap(find.text('Payer'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(AlertDialog), findsNothing);
+    final paymentPanel = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Paiement de compte'),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(paymentPanel.right, 800);
+    expect(paymentPanel.width, 480);
+
     await tester.enterText(find.byType(TextField), '100');
     await tester.pump();
     await tester.ensureVisible(find.text('Confirmer le paiement'));
     await tester.tap(find.text('Confirmer le paiement'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Paiement de compte'), findsNothing);
     expect(find.text('Paiement confirmé'), findsOneWidget);
     expect(find.text('Partager'), findsOneWidget);
+    final receiptPanel = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Paiement confirmé'),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(receiptPanel.right, 800);
+    expect(receiptPanel.width, 480);
 
     final share = tester.getSize(find.byKey(const Key('account-receipt-share')));
     expect(share.width, greaterThan(200));
@@ -149,5 +171,64 @@ void main() {
     expect(shared.single.filename, endsWith('.pdf'));
     expect(shared.single.subject, startsWith('Reçu PAY-'));
     expect(find.text('Le document n\'a pas pu être préparé.'), findsNothing);
+  });
+
+  testWidgets('account payment fills the phone screen from the right', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final customer = Customer(
+      id: 'marie',
+      name: 'Marie-Josée Beaumont',
+      phone: '+509 3789-5678',
+      createdAt: DateTime(2026, 10, 22),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () {
+                  showCustomerAccountPayment(
+                    context,
+                    customer: customer,
+                    balance: 4668,
+                    isDark: false,
+                  );
+                },
+                child: const Text('Payer'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Payer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paiement de compte'), findsOneWidget);
+    expect(find.text('MonCash'), findsOneWidget);
+    expect(find.text('Carte'), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
+
+    final panel = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Paiement de compte'),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(panel.left, 0);
+    expect(panel.width, 390);
+    expect(tester.takeException(), isNull);
   });
 }
