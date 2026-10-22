@@ -17,6 +17,9 @@ class SaleReceiptFigures {
   final double deliveryFee;
   final double total;
 
+  /// Remainder still owed. Zero means the sale was paid in full.
+  final double balanceDue;
+
   const SaleReceiptFigures({
     required this.subtotal,
     required this.discountPercent,
@@ -27,7 +30,16 @@ class SaleReceiptFigures {
     required this.serviceAmount,
     required this.deliveryFee,
     required this.total,
+    this.balanceDue = 0,
   });
+
+  double get amountPaid {
+    final paid = total - balanceDue;
+    if (paid <= 0) return 0;
+    return paid;
+  }
+
+  bool get hasBalanceDue => balanceDue > 0.009;
 
   factory SaleReceiptFigures.fromOrder(RetailOrder order) {
     return SaleReceiptFigures(
@@ -40,6 +52,7 @@ class SaleReceiptFigures {
       serviceAmount: order.serviceChargeAmountHtg,
       deliveryFee: order.deliveryFee,
       total: order.totalHtg,
+      balanceDue: order.unpaidBalanceHtg,
     );
   }
 }
@@ -54,6 +67,10 @@ bool saleReceiptCheckPending(RetailOrder order) {
 
 String saleReceiptHeadline(RetailOrder order) {
   if (saleReceiptCheckPending(order)) return 'Chèque en attente';
+  if (order.status == RetailOrderStatus.partiallyPaid ||
+      order.unpaidBalanceHtg > 0.009) {
+    return 'Paiement partiel';
+  }
   return 'Paiement confirmé !';
 }
 
@@ -171,6 +188,10 @@ String saleReceiptText({
   lines.add(
     _moneyLine('TOTAL', usdTotal == null ? total : '$total ($usdTotal)'),
   );
+  if (figures.hasBalanceDue) {
+    lines.add(_moneyLine('Payé', money(figures.amountPaid)));
+    lines.add(_moneyLine('SOLDE IMPAYÉ', money(figures.balanceDue)));
+  }
   lines.add('');
   lines.add('Paiement : ${order.paymentMethod.label}');
   final check = order.checkPayment;

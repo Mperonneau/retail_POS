@@ -1626,6 +1626,7 @@ class _ActiveOrderCard extends StatelessWidget {
     final d = isDark;
     return switch (order.status) {
       RetailOrderStatus.checkPending => AppColors.amber,
+      RetailOrderStatus.partiallyPaid => AppColors.boldRed,
       RetailOrderStatus.paid => d ? AppColors.skyBlue : AppColors.primaryBlue,
       RetailOrderStatus.ready => AppColors.amber,
       _ => d ? AppColors.mediumGreen : AppColors.deepGreen,
@@ -2278,6 +2279,52 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                     context: context,
                     isBold: true,
                   ),
+                  if (current.unpaidBalanceHtg > 0.009) ...[
+                    const SizedBox(height: 4),
+                    _TotalRowSimple(
+                      label: 'Payé',
+                      amount: current.amountPaidHtg ?? 0,
+                      isDark: isDark,
+                      context: context,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      key: const Key('order-balance-due'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.boldRed.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.boldRed, width: 1.5),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppColors.boldRed,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Solde impayé',
+                              style: AppTextStyles.body(color: AppColors.boldRed)
+                                  .copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          Text(
+                            CurrencyFormatter.local(
+                              context,
+                              current.unpaidBalanceHtg,
+                            ),
+                            style: AppTextStyles.price(color: AppColors.boldRed),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Divider(
                       color: isDark
@@ -2298,7 +2345,9 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   Text(
                     current.status == RetailOrderStatus.checkPending
                         ? 'Chèque reçu le ${_formatDate(current.createdAt, withTime: true)}'
-                        : 'Payé le ${_formatDate(current.paidAt, withTime: true)}',
+                        : current.status == RetailOrderStatus.partiallyPaid
+                            ? 'Encaissé le ${_formatDate(current.paidAt, withTime: true)}'
+                            : 'Payé le ${_formatDate(current.paidAt, withTime: true)}',
                     style: AppTextStyles.caption(
                         color:
                             isDark ? AppColors.coolGray : AppColors.darkGray),
@@ -2640,6 +2689,7 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = switch (order.status) {
       RetailOrderStatus.checkPending => AppColors.amber,
+      RetailOrderStatus.partiallyPaid => AppColors.boldRed,
       RetailOrderStatus.paid =>
         isDark ? AppColors.skyBlue : AppColors.primaryBlue,
       RetailOrderStatus.ready => AppColors.amber,

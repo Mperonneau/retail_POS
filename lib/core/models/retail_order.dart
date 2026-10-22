@@ -6,6 +6,7 @@ import 'retail_fulfillment_mode.dart';
 enum RetailOrderStatus {
   checkPending, // Check received, waiting until it clears
   paid,         // Just paid (all sources) — initial state
+  partiallyPaid, // Cash received is less than the sale total
   ready,        // Prepared and ready for pickup / delivery
   pickedUp,     // Customer picked up (pickup mode)
   delivered,    // Delivered to customer (delivery mode)
@@ -16,6 +17,7 @@ extension RetailOrderStatusExt on RetailOrderStatus {
   String get label => switch (this) {
         RetailOrderStatus.checkPending => 'Chèque en attente',
         RetailOrderStatus.paid => 'Payé',
+        RetailOrderStatus.partiallyPaid => 'Partiellement payée',
         RetailOrderStatus.ready => 'Prêt',
         RetailOrderStatus.pickedUp => 'Retiré',
         RetailOrderStatus.delivered => 'Livré',
@@ -104,6 +106,14 @@ class RetailOrder {
   /// Clerk or account that recorded the sale. Older sales have none.
   final String? recordedBy;
 
+  /// Cash applied to this sale. Null means the sale was paid in full
+  /// (including every sale recorded before partial payments existed).
+  final double? amountPaidHtg;
+
+  /// Remainder the cashier left unpaid, using the total confirmed at
+  /// checkout. Null means nothing is owed.
+  final double? balanceDueHtg;
+
   /// Card last 4, MonCash phone last 4, or credit account last 4 (mock / gateway).
   final String? paymentLastFour;
 
@@ -131,9 +141,21 @@ class RetailOrder {
     required this.createdAt,
     required this.paidAt,
     this.recordedBy,
+    this.amountPaidHtg,
+    this.balanceDueHtg,
     this.paymentLastFour,
     this.checkPayment,
   });
+
+  /// Unpaid remainder. Older sales, and any sale without a stored balance, owe nothing.
+  double get unpaidBalanceHtg {
+    final stored = balanceDueHtg;
+    if (stored != null) return stored > 0.009 ? stored : 0;
+    final paid = amountPaidHtg;
+    if (paid == null) return 0;
+    final due = totalHtg - paid;
+    return due > 0.009 ? due : 0;
+  }
 
   double get subtotalHtg => lines.fold(0, (s, l) => s + l.lineTotalHtg);
   double get discountAmountHtg => subtotalHtg * (discountPercent / 100);
@@ -181,6 +203,8 @@ class RetailOrder {
     DateTime? createdAt,
     DateTime? paidAt,
     Object? recordedBy = _sentinel,
+    Object? amountPaidHtg = _sentinel,
+    Object? balanceDueHtg = _sentinel,
     Object? paymentLastFour = _sentinel,
     Object? checkPayment = _sentinel,
   }) {
@@ -216,6 +240,12 @@ class RetailOrder {
       recordedBy: recordedBy == _sentinel
           ? this.recordedBy
           : recordedBy as String?,
+      amountPaidHtg: amountPaidHtg == _sentinel
+          ? this.amountPaidHtg
+          : amountPaidHtg as double?,
+      balanceDueHtg: balanceDueHtg == _sentinel
+          ? this.balanceDueHtg
+          : balanceDueHtg as double?,
       paymentLastFour: paymentLastFour == _sentinel
           ? this.paymentLastFour
           : paymentLastFour as String?,
@@ -246,6 +276,8 @@ class RetailOrder {
         'createdAt': createdAt.toIso8601String(),
         'paidAt': paidAt.toIso8601String(),
         'recordedBy': recordedBy,
+        'amountPaidHtg': amountPaidHtg,
+        'balanceDueHtg': balanceDueHtg,
         'paymentLastFour': paymentLastFour,
         'checkPayment': checkPayment?.toJson(),
       };
@@ -306,6 +338,8 @@ class RetailOrder {
       createdAt: DateTime.tryParse('${json['createdAt']}') ?? now,
       paidAt: DateTime.tryParse('${json['paidAt']}') ?? now,
       recordedBy: _recordedBy(json['recordedBy']),
+      amountPaidHtg: (json['amountPaidHtg'] as num?)?.toDouble(),
+      balanceDueHtg: (json['balanceDueHtg'] as num?)?.toDouble(),
       paymentLastFour: json['paymentLastFour']?.toString(),
       checkPayment: RetailCheckPayment.fromJson(json['checkPayment']),
     );

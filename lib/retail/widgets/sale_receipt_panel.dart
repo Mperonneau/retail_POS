@@ -143,6 +143,19 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
     final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     final pending = saleReceiptCheckPending(widget.order);
+    final partial = !pending &&
+        (widget.order.status == RetailOrderStatus.partiallyPaid ||
+            widget.figures.hasBalanceDue);
+    final markColor = pending
+        ? AppColors.amber
+        : partial
+            ? AppColors.boldRed
+            : AppColors.deepGreen;
+    final markIcon = pending
+        ? Icons.account_balance_outlined
+        : partial
+            ? Icons.warning_amber_rounded
+            : Icons.check_circle_rounded;
     final shop = ref.watch(authProvider).businessName?.trim() ?? '';
     final order = widget.order;
     final figures = widget.figures;
@@ -201,15 +214,12 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: (pending ? AppColors.amber : AppColors.deepGreen)
-                          .withValues(alpha: 0.12),
+                      color: markColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      pending
-                          ? Icons.account_balance_outlined
-                          : Icons.check_circle_rounded,
-                      color: pending ? AppColors.amber : AppColors.deepGreen,
+                      markIcon,
+                      color: markColor,
                       size: 40,
                     ),
                   ),
@@ -218,7 +228,9 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                 Text(
                   saleReceiptHeadline(order),
                   key: const Key('receipt-headline'),
-                  style: AppTextStyles.h1(color: ink),
+                  style: AppTextStyles.h1(
+                    color: partial ? AppColors.boldRed : ink,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
@@ -376,6 +388,55 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                         ink,
                         bold: true,
                       ),
+                      if (figures.hasBalanceDue) ...[
+                        const SizedBox(height: 6),
+                        _amountRow(
+                          'Payé',
+                          _money(figures.amountPaid),
+                          muted,
+                          ink,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          key: const Key('receipt-balance-due'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.boldRed.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.boldRed,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: AppColors.boldRed,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Solde impayé',
+                                  style: AppTextStyles.body(
+                                    color: AppColors.boldRed,
+                                  ).copyWith(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                              Text(
+                                _money(figures.balanceDue),
+                                style: AppTextStyles.price(
+                                  color: AppColors.boldRed,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const Divider(height: 20),
                       Text(
                         'Paiement',

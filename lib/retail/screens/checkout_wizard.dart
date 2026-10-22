@@ -151,6 +151,9 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
   /// Check was recorded and still has to clear.
   bool _awaitingCheckClearance = false;
 
+  /// Unpaid remainder from the payment the cashier just confirmed.
+  double _receiptBalanceDue = 0;
+
   /// Sale recorded by the last successful payment. The receipt reads this.
   RetailOrder? _completedOrder;
 
@@ -703,7 +706,13 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             }
             return true;
           },
-          onConfirm: (method, {RetailCheckPayment? check}) async {
+          onConfirm: (
+            method, {
+            RetailCheckPayment? check,
+            double? amountPaidHtg,
+            double balanceDueHtg = 0,
+            Customer? creditCustomer,
+          }) async {
             final map = <int, int>{};
             for (final e in lines) {
               map[e.product.id] = (map[e.product.id] ?? 0) + e.stockUnits;
@@ -714,21 +723,36 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             final clientEmail = _clientEmailCtrl.text.trim();
             final awaitingCheck = method == PaymentMethodType.check &&
                 !(check?.cleared ?? false);
+            final partial = !awaitingCheck && balanceDueHtg > 0.009;
+            final creditName = creditCustomer?.name.trim() ?? '';
+            final creditPhone = creditCustomer?.phone.trim() ?? '';
+            final operator = currentOperatorName(
+              staffName: ref.read(staffSessionProvider)?.employeeName,
+              accountName: ref.read(authProvider).userName,
+            );
             final sale = RetailOrder(
                     id: 'pos-$_checkoutId',
                     orderNumber: 'ORD-${now.year}-$saleNo',
                     fromQuoteId: widget.existingQuote?.id,
-                    clientName: clientName.isEmpty ? null : clientName,
-                    clientPhone: _linkedClientPhone.trim().isEmpty
-                        ? null
-                        : _linkedClientPhone.trim(),
+                    clientName: creditName.isNotEmpty
+                        ? creditName
+                        : (clientName.isEmpty ? null : clientName),
+                    clientPhone: creditPhone.isNotEmpty
+                        ? creditPhone
+                        : (_linkedClientPhone.trim().isEmpty
+                            ? null
+                            : _linkedClientPhone.trim()),
                     clientEmail: clientEmail.isEmpty ? null : clientEmail,
                     fulfillmentMode: _fulfillmentSectionVisible
                         ? _fulfillment
                         : RetailFulfillmentMode.inStore,
                     status: awaitingCheck
                         ? RetailOrderStatus.checkPending
-                        : RetailOrderStatus.paid,
+                        : partial
+                            ? RetailOrderStatus.partiallyPaid
+                            : RetailOrderStatus.paid,
+                    amountPaidHtg: partial ? (amountPaidHtg ?? 0) : null,
+                    balanceDueHtg: partial ? balanceDueHtg : null,
                     paymentSource: RetailPaymentSource.pos,
                     paymentMethod: method,
                     checkPayment: method == PaymentMethodType.check
@@ -760,11 +784,18 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                         : null,
                     createdAt: now,
                     paidAt: now,
-                    recordedBy: currentOperatorName(
-                      staffName: ref.read(staffSessionProvider)?.employeeName,
-                      accountName: ref.read(authProvider).userName,
-                    ),
+                    recordedBy: operator,
                   );
+            if (partial && creditCustomer != null) {
+              ref.read(customerProvider.notifier).postCharge(
+                    customerId: creditCustomer.id,
+                    amountHtg: total,
+                    paidAmountHtg: amountPaidHtg ?? 0,
+                    linkedOrderId: sale.id,
+                    cashierName: operator,
+                    description: 'Solde de la commande ${sale.orderNumber}',
+                  );
+            }
             ref.read(retailOrdersProvider.notifier).add(sale);
             ref.read(mockProductsProvider.notifier).applySale(map);
             ref
@@ -781,6 +812,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               _completedSaleNumber = saleNo;
               _completedOrder = sale;
               _awaitingCheckClearance = awaitingCheck;
+              _receiptBalanceDue = partial ? balanceDueHtg : 0;
               _step = _successStepIndex;
             });
           },
@@ -810,11 +842,14 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             serviceAmount: grat,
             deliveryFee: deliveryFee,
             total: total,
+            balanceDue: _receiptBalanceDue,
           ),
           contextSubtitle: _successContextSubtitle(),
           statusLine: _awaitingCheckClearance
               ? 'Vente n°$_completedSaleNumber — chèque en attente'
-              : 'Vente n°$_completedSaleNumber payée',
+              : _receiptBalanceDue > 0.009
+                  ? 'Vente n°$_completedSaleNumber partiellement payée'
+                  : 'Vente n°$_completedSaleNumber payée',
           onDone: _finishPaymentSuccess,
         ),
       );
@@ -1489,6 +1524,9 @@ class _RetailPaymentPanel extends ConsumerStatefulWidget {
   final Future<void> Function(
     PaymentMethodType method, {
     RetailCheckPayment? check,
+    double? amountPaidHtg,
+    double balanceDueHtg,
+    Customer? creditCustomer,
   }) onConfirm;
 
   const _RetailPaymentPanel({
@@ -1530,6 +1568,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   // Cash
   double _cashReceived = 0;
   final _cashCtrl = TextEditingController();
+  bool _saveBalanceAsCredit = false;
 
   // Credit
   Customer? _selectedCustomer;
@@ -1587,7 +1626,37 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     if (_method == _RPayMethod.check) {
       return _builtCheck() != null;
     }
+    if (_method == _RPayMethod.cash &&
+        _cashBalanceDue > 0.009 &&
+        _saveBalanceAsCredit) {
+      final customer = _selectedCustomer;
+      if (customer == null || customer.isCreditBlocked) return false;
+      if (_creditWouldExceed(customer, _cashBalanceDue)) return false;
+    }
     return true;
+  }
+
+  bool get _cashAmountEntered => _cashCtrl.text.trim().isNotEmpty;
+
+  /// Empty tender is still a full cash payment. A typed amount below the
+  /// total is the only partial payment.
+  double get _cashBalanceDue {
+    if (!_cashAmountEntered) return 0;
+    final due = widget.total - _cashReceived;
+    return due > 0.009 ? due : 0;
+  }
+
+  double get _cashApplied {
+    if (_cashBalanceDue <= 0.009) return widget.total;
+    final received = _cashReceived;
+    return received < 0 ? 0 : received;
+  }
+
+  bool _creditWouldExceed(Customer customer, double amount) {
+    final limit = customer.creditLimitHtg;
+    if (limit == null) return false;
+    final balance = ref.read(customerProvider).balanceFor(customer.id);
+    return balance + amount > limit + 0.009;
   }
 
   String get _confirmLabel {
@@ -1651,6 +1720,8 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             );
       }
     }
+    final partialCash =
+        _method == _RPayMethod.cash && _cashBalanceDue > 0.009;
     await _finishSale(
       switch (_method) {
         _RPayMethod.moncash => PaymentMethodType.moncash,
@@ -1660,6 +1731,11 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         _RPayMethod.check => PaymentMethodType.check,
       },
       check: check,
+      amountPaidHtg: partialCash ? _cashApplied : null,
+      balanceDueHtg: partialCash ? _cashBalanceDue : 0,
+      creditCustomer: partialCash && _saveBalanceAsCredit
+          ? _selectedCustomer
+          : null,
     );
   }
 
@@ -1722,11 +1798,20 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   Future<void> _finishSale(
     PaymentMethodType method, {
     RetailCheckPayment? check,
+    double? amountPaidHtg,
+    double balanceDueHtg = 0,
+    Customer? creditCustomer,
   }) async {
     if (_saleCompleted) return;
     _saleCompleted = true;
     _poll?.cancel();
-    await widget.onConfirm(method, check: check);
+    await widget.onConfirm(
+      method,
+      check: check,
+      amountPaidHtg: amountPaidHtg,
+      balanceDueHtg: balanceDueHtg,
+      creditCustomer: creditCustomer,
+    );
   }
 
   CardChargePricing? _cardPricing() {
@@ -2180,18 +2265,52 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
           onShareLink: _shareLink,
         );
       case _RPayMethod.cash:
+        {
+        final balanceCustomer = _selectedCustomer;
+        final balanceExceeds = balanceCustomer != null &&
+            _creditWouldExceed(balanceCustomer, _cashBalanceDue);
         return _RCashContent(
           totalHtg: widget.total,
           cashReceived: _cashReceived,
+          balanceDue: _cashBalanceDue,
           cashCtrl: _cashCtrl,
           isDark: isDark,
+          saveBalanceAsCredit: _saveBalanceAsCredit,
           onCashChanged: (v) =>
               setState(() => _cashReceived = double.tryParse(v) ?? 0),
           onQuickCash: (amt) {
             _cashCtrl.text = amt.toStringAsFixed(0);
             setState(() => _cashReceived = amt);
           },
+          onSaveBalanceChanged: (value) =>
+              setState(() => _saveBalanceAsCredit = value),
+          selectedCustomer: _selectedCustomer,
+          creditSearch: _creditSearch,
+          showNewCustomer: _showNewCustomer,
+          newNameCtrl: _newNameCtrl,
+          newPhoneCtrl: _newPhoneCtrl,
+          customerState: customerState,
+          balanceExceedsLimit: balanceExceeds,
+          onSearchChanged: (v) => setState(() => _creditSearch = v),
+          onCustomerSelected: (c) => setState(() {
+            _selectedCustomer = c;
+            _creditSearch = '';
+          }),
+          onCustomerCleared: () => setState(() => _selectedCustomer = null),
+          onToggleNewForm: () =>
+              setState(() => _showNewCustomer = !_showNewCustomer),
+          onCustomerCreated: (c) {
+            ref.read(customerProvider.notifier).addCustomer(c);
+            _newNameCtrl.clear();
+            _newPhoneCtrl.clear();
+            setState(() {
+              _selectedCustomer = c;
+              _showNewCustomer = false;
+              _creditSearch = '';
+            });
+          },
         );
+        }
       case _RPayMethod.credit:
         return _RCreditContent(
           totalHtg: widget.total,
@@ -2815,23 +2934,56 @@ class _RemoteStatus extends StatelessWidget {
 class _RCashContent extends StatelessWidget {
   final double totalHtg;
   final double cashReceived;
+  final double balanceDue;
   final TextEditingController cashCtrl;
   final bool isDark;
+  final bool saveBalanceAsCredit;
   final ValueChanged<String> onCashChanged;
   final ValueChanged<double> onQuickCash;
+  final ValueChanged<bool> onSaveBalanceChanged;
+  final Customer? selectedCustomer;
+  final String creditSearch;
+  final bool showNewCustomer;
+  final TextEditingController newNameCtrl;
+  final TextEditingController newPhoneCtrl;
+  final CustomerState customerState;
+  final bool balanceExceedsLimit;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<Customer> onCustomerSelected;
+  final VoidCallback onCustomerCleared;
+  final VoidCallback onToggleNewForm;
+  final ValueChanged<Customer> onCustomerCreated;
 
   const _RCashContent({
     required this.totalHtg,
     required this.cashReceived,
+    required this.balanceDue,
     required this.cashCtrl,
     required this.isDark,
+    required this.saveBalanceAsCredit,
     required this.onCashChanged,
     required this.onQuickCash,
+    required this.onSaveBalanceChanged,
+    required this.selectedCustomer,
+    required this.creditSearch,
+    required this.showNewCustomer,
+    required this.newNameCtrl,
+    required this.newPhoneCtrl,
+    required this.customerState,
+    required this.balanceExceedsLimit,
+    required this.onSearchChanged,
+    required this.onCustomerSelected,
+    required this.onCustomerCleared,
+    required this.onToggleNewForm,
+    required this.onCustomerCreated,
   });
 
   @override
   Widget build(BuildContext context) {
     final change = cashReceived - totalHtg;
+    final short = balanceDue > 0.009;
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     return AppCard(
       child: SingleChildScrollView(
         child: Column(
@@ -2861,6 +3013,7 @@ class _RCashContent extends StatelessWidget {
             ),
             const SizedBox(height: AppConstants.spacing12),
             TextField(
+              key: const Key('cash-received'),
               controller: cashCtrl,
               onChanged: onCashChanged,
               decoration: InputDecoration(
@@ -2889,7 +3042,7 @@ class _RCashContent extends StatelessWidget {
                   )
                   .toList(),
             ),
-            if (change >= 0) ...[
+            if (!short && change >= 0) ...[
               const Divider(height: AppConstants.spacing16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2902,9 +3055,256 @@ class _RCashContent extends StatelessWidget {
                 ],
               ),
             ],
+            if (short) ...[
+              const SizedBox(height: AppConstants.spacing12),
+              Container(
+                key: const Key('cash-balance-warning'),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.boldRed.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.boldRed.withValues(alpha: 0.45),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.boldRed,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Le client ne paie pas tout. Il restera ${CurrencyFormatter.local(context, balanceDue)} impayé. La commande sera marquée partiellement payée.',
+                        style: AppTextStyles.body(color: AppColors.boldRed)
+                            .copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SwitchListTile(
+                key: const Key('save-balance-as-credit'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  'Enregistrer le solde comme crédit',
+                  style: AppTextStyles.body(color: ink),
+                ),
+                subtitle: Text(
+                  'Cherchez le client, ou créez-le. Le solde sera ajouté à son compte.',
+                  style: AppTextStyles.caption(color: muted),
+                ),
+                value: saveBalanceAsCredit,
+                onChanged: onSaveBalanceChanged,
+              ),
+              if (saveBalanceAsCredit)
+                _CashCreditPicker(
+                  isDark: isDark,
+                  balanceDue: balanceDue,
+                  selectedCustomer: selectedCustomer,
+                  creditSearch: creditSearch,
+                  showNewCustomer: showNewCustomer,
+                  newNameCtrl: newNameCtrl,
+                  newPhoneCtrl: newPhoneCtrl,
+                  customerState: customerState,
+                  balanceExceedsLimit: balanceExceedsLimit,
+                  onSearchChanged: onSearchChanged,
+                  onCustomerSelected: onCustomerSelected,
+                  onCustomerCleared: onCustomerCleared,
+                  onToggleNewForm: onToggleNewForm,
+                  onCustomerCreated: onCustomerCreated,
+                ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CashCreditPicker extends StatelessWidget {
+  final bool isDark;
+  final double balanceDue;
+  final Customer? selectedCustomer;
+  final String creditSearch;
+  final bool showNewCustomer;
+  final TextEditingController newNameCtrl;
+  final TextEditingController newPhoneCtrl;
+  final CustomerState customerState;
+  final bool balanceExceedsLimit;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<Customer> onCustomerSelected;
+  final VoidCallback onCustomerCleared;
+  final VoidCallback onToggleNewForm;
+  final ValueChanged<Customer> onCustomerCreated;
+
+  const _CashCreditPicker({
+    required this.isDark,
+    required this.balanceDue,
+    required this.selectedCustomer,
+    required this.creditSearch,
+    required this.showNewCustomer,
+    required this.newNameCtrl,
+    required this.newPhoneCtrl,
+    required this.customerState,
+    required this.balanceExceedsLimit,
+    required this.onSearchChanged,
+    required this.onCustomerSelected,
+    required this.onCustomerCleared,
+    required this.onToggleNewForm,
+    required this.onCustomerCreated,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final results = creditSearch.trim().isEmpty
+        ? <Customer>[]
+        : customerState.customers
+            .where(
+              (c) =>
+                  c.isActive &&
+                  (c.name.toLowerCase().contains(creditSearch.toLowerCase()) ||
+                      c.phone.contains(creditSearch)),
+            )
+            .toList();
+    final customer = selectedCustomer;
+
+    if (customer != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.primaryBlue.withValues(alpha: 0.2)
+                  : AppColors.lightBlue,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(customer.name, style: AppTextStyles.body()),
+                ),
+                TextButton(
+                  onPressed: onCustomerCleared,
+                  child: const Text('Retirer'),
+                ),
+              ],
+            ),
+          ),
+          if (customer.isCreditBlocked || balanceExceedsLimit)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                customer.isCreditBlocked
+                    ? '${customer.name} est bloqué.'
+                    : 'La limite de crédit sera dépassée.',
+                key: const Key('cash-credit-limit'),
+                style: AppTextStyles.body(color: AppColors.boldRed)
+                    .copyWith(fontWeight: FontWeight.w700),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Solde à porter au compte : ${CurrencyFormatter.local(context, balanceDue)}',
+                style: AppTextStyles.caption(color: AppColors.boldRed),
+              ),
+            ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: const Key('cash-credit-search'),
+          onChanged: onSearchChanged,
+          decoration: InputDecoration(
+            labelText: 'Rechercher un client par nom ou téléphone',
+            prefixIcon: const Icon(Icons.search, size: 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+            ),
+          ),
+        ),
+        if (results.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          ...results.map((c) {
+            return ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(c.name, style: AppTextStyles.body()),
+              subtitle: Text(
+                c.isCreditBlocked ? '${c.phone} · BLOQUÉ' : c.phone,
+                style: AppTextStyles.caption(
+                  color: c.isCreditBlocked ? AppColors.boldRed : null,
+                ),
+              ),
+              onTap: () {
+                if (!c.isCreditBlocked) onCustomerSelected(c);
+              },
+            );
+          }),
+        ],
+        TextButton.icon(
+          key: const Key('cash-credit-new'),
+          onPressed: onToggleNewForm,
+          icon: Icon(
+            showNewCustomer ? Icons.close : Icons.person_add_outlined,
+            size: 16,
+          ),
+          label: Text(showNewCustomer ? 'Annuler' : 'Nouveau client'),
+          style: TextButton.styleFrom(foregroundColor: AppColors.amber),
+        ),
+        if (showNewCustomer) ...[
+          TextField(
+            key: const Key('cash-credit-name'),
+            controller: newNameCtrl,
+            decoration: InputDecoration(
+              labelText: 'Nom complet *',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          PhoneField(
+            key: const Key('cash-credit-phone'),
+            controller: newPhoneCtrl,
+            label: 'Téléphone *',
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            key: const Key('cash-credit-create'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(40),
+            ),
+            onPressed: () {
+              final name = newNameCtrl.text.trim();
+              final phone = newPhoneCtrl.text.trim();
+              if (name.isEmpty || phone.isEmpty) return;
+              onCustomerCreated(
+                Customer(
+                  id: 'cust_${DateTime.now().millisecondsSinceEpoch}',
+                  name: name,
+                  phone: phone,
+                  createdAt: DateTime.now(),
+                ),
+              );
+            },
+            child: const Text('Créer et choisir'),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -407,6 +407,39 @@ pw.Widget _totals(
         : pw.CrossAxisAlignment.end,
     children: [
       for (final row in rows) line(row.$1, row.$2, bold: row.$3),
+      if (figures.hasBalanceDue) ...[
+        pw.SizedBox(height: 4),
+        line('Payé', money(figures.amountPaid), bold: false),
+        pw.SizedBox(height: 4),
+        pw.Container(
+          width: narrow ? double.infinity : 220,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(width: 1.6),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              pw.Text(
+                'Solde impayé',
+                style: pw.TextStyle(
+                  fontSize: body + 1,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                money(figures.balanceDue),
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  fontSize: body + (narrow ? 3 : 4),
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
       if (usdTotal != null && usdTotal.trim().isNotEmpty)
         pw.Text(
           usdTotal.trim(),

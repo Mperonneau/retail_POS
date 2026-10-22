@@ -219,6 +219,108 @@ void main() {
     expect(_mediaBoxCount(bytes), greaterThan(1));
   });
 
+  test('a short payment shows the unpaid balance and stays partial', () async {
+    final order = RetailOrder(
+      id: 'pos-partial',
+      orderNumber: 'ORD-2026-4610',
+      clientName: 'Sophie Laurent',
+      status: RetailOrderStatus.partiallyPaid,
+      paymentSource: RetailPaymentSource.pos,
+      paymentMethod: PaymentMethodType.cash,
+      amountPaidHtg: 100,
+      balanceDueHtg: 400,
+      lines: const [
+        RetailOrderLine(
+          productName: 'Riz',
+          productId: 1,
+          quantity: 1,
+          unitPriceHtg: 500,
+        ),
+      ],
+      createdAt: DateTime(2026, 10, 22, 9, 15),
+      paidAt: DateTime(2026, 10, 22, 9, 15),
+      recordedBy: 'Nadia Pierre',
+    );
+    const partialFigures = SaleReceiptFigures(
+      subtotal: 500,
+      discountPercent: 0,
+      discountAmount: 0,
+      taxPercent: 0,
+      taxAmount: 0,
+      servicePercent: 0,
+      serviceAmount: 0,
+      deliveryFee: 0,
+      total: 500,
+      balanceDue: 400,
+    );
+
+    expect(order.status.label, 'Partiellement payée');
+    expect(saleReceiptHeadline(order), 'Paiement partiel');
+    expect(order.unpaidBalanceHtg, 400);
+    expect(SaleReceiptFigures.fromOrder(order).balanceDue, 400);
+    final text = saleReceiptText(
+      order: order,
+      figures: partialFigures,
+      shopName: 'Boutique Soleil',
+      money: money,
+    );
+    expect(text, contains('Paiement partiel'));
+    expect(text, isNot(contains('Paiement confirmé')));
+    expect(text, contains('Payé : 100.00 HTG'));
+    expect(text, contains('SOLDE IMPAYÉ : 400.00 HTG'));
+
+    final restored = RetailOrder.fromJson(order.toJson());
+    expect(restored?.status, RetailOrderStatus.partiallyPaid);
+    expect(restored?.amountPaidHtg, 100);
+    expect(restored?.balanceDueHtg, 400);
+
+    final legacy = order.toJson()
+      ..remove('amountPaidHtg')
+      ..remove('balanceDueHtg')
+      ..['status'] = 'paid';
+    final older = RetailOrder.fromJson(legacy);
+    expect(older?.amountPaidHtg, isNull);
+    expect(older?.unpaidBalanceHtg, 0);
+    expect(saleReceiptHeadline(older!), 'Paiement confirmé !');
+
+    final derived = RetailOrder(
+      id: 'pos-derived',
+      orderNumber: 'ORD-2026-4611',
+      status: RetailOrderStatus.partiallyPaid,
+      paymentSource: RetailPaymentSource.pos,
+      paymentMethod: PaymentMethodType.cash,
+      amountPaidHtg: 100,
+      lines: const [
+        RetailOrderLine(
+          productName: 'Riz',
+          productId: 1,
+          quantity: 1,
+          unitPriceHtg: 500,
+        ),
+      ],
+      createdAt: DateTime(2026, 10, 22, 9),
+      paidAt: DateTime(2026, 10, 22, 9),
+    );
+    expect(derived.unpaidBalanceHtg, 400);
+
+    final bytes = await buildSaleReceiptPdf(
+      format: PdfPageFormat.a4,
+      order: order,
+      figures: partialFigures,
+      shopName: 'Boutique Soleil',
+      money: money,
+    );
+    final roll = await buildSaleReceiptPdf(
+      format: PdfPageFormat.roll80,
+      order: order,
+      figures: partialFigures,
+      shopName: 'Boutique Soleil',
+      money: money,
+    );
+    expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    expect(String.fromCharCodes(roll.take(5)), '%PDF-');
+  });
+
   testWidgets('WhatsApp, e-mail, and share send the PDF receipt', (
     tester,
   ) async {
