@@ -12,6 +12,7 @@ import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/phone_field.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
+import '../widgets/category_filter_button.dart';
 import '../widgets/supplier_category_field.dart';
 import '../../core/widgets/app_close_button.dart';
 
@@ -664,7 +665,6 @@ class _SupplierFilterRow extends StatelessWidget {
         ? AppColors.darkBorder
         : AppColors.darkGray.withValues(alpha: 0.25);
     final fill = isDark ? AppColors.darkSurface : AppColors.white;
-    final active = categoryFilter != null;
 
     final searchField = TextField(
       controller: searchController,
@@ -697,13 +697,13 @@ class _SupplierFilterRow extends StatelessWidget {
       ),
     );
 
-    final catChip = _CategoryFilterButton(
+    final catChip = CategoryFilterButton(
       isDark: isDark,
       fill: fill,
       borderColor: borderColor,
-      active: active,
       expand: narrow,
       label: categoryFilter ?? 'Toutes les catégories',
+      selected: categoryFilter,
       categories: categories,
       onChanged: onCategoryChanged,
     );
@@ -727,235 +727,6 @@ class _SupplierFilterRow extends StatelessWidget {
         Expanded(child: searchField),
       ],
     );
-  }
-}
-
-const _kAllCategories = '__all_categories__';
-
-class _CategoryFilterButton extends StatelessWidget {
-  const _CategoryFilterButton({
-    required this.isDark,
-    required this.fill,
-    required this.borderColor,
-    required this.active,
-    required this.expand,
-    required this.label,
-    required this.categories,
-    required this.onChanged,
-  });
-
-  final bool isDark;
-  final Color fill;
-  final Color borderColor;
-  final bool active;
-  final bool expand;
-  final String label;
-  final List<String> categories;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    const activeColor = AppColors.primaryBlue;
-    final bg = active
-        ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08)
-        : fill;
-    final border = active
-        ? activeColor.withValues(alpha: isDark ? 0.55 : 0.4)
-        : borderColor;
-    final textColor = active
-        ? (isDark ? AppColors.skyBlue : activeColor)
-        : (isDark ? AppColors.coolGray : AppColors.darkGray);
-
-    final labelStyle = AppTextStyles.caption(
-      color: textColor,
-    ).copyWith(fontWeight: active ? FontWeight.w600 : FontWeight.w500);
-    final field = Row(
-      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-      children: [
-        Icon(Icons.category_outlined, size: 16, color: textColor),
-        const SizedBox(width: 6),
-        if (expand)
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: labelStyle,
-            ),
-          )
-        else
-          Text(label, style: labelStyle),
-        const SizedBox(width: 4),
-        Icon(Icons.expand_more_rounded, size: 16, color: textColor),
-      ],
-    );
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      padding: EdgeInsets.fromLTRB(14, 6, active ? 6 : 14, 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-        children: [
-          if (expand)
-            Expanded(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(999),
-                onTap: () => _openMenu(context),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: field,
-                ),
-              ),
-            )
-          else
-            InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () => _openMenu(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: field,
-              ),
-            ),
-          if (active) ...[
-            const SizedBox(width: 8),
-            Tooltip(
-              message: 'Effacer la catégorie',
-              child: Material(
-                color: isDark ? AppColors.darkBackground : AppColors.white,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => onChanged(null),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color:
-                            (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                                .withValues(alpha: 0.55),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _openMenu(BuildContext context) {
-    final items = <PopupMenuEntry<String?>>[
-      PopupMenuItem<String?>(
-        value: _kAllCategories,
-        child: Row(
-          children: [
-            Icon(
-              Icons.select_all_rounded,
-              size: 16,
-              color: isDark ? AppColors.coolGray : AppColors.darkGray,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Toutes les catégories',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.body(
-                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(height: 4),
-      ...categories.map(
-        (c) => PopupMenuItem<String?>(
-          value: c,
-          child: Row(
-            children: [
-              Icon(
-                c == label && active
-                    ? Icons.check_rounded
-                    : Icons.category_outlined,
-                size: 16,
-                color: c == label && active
-                    ? AppColors.primaryBlue
-                    : (isDark ? AppColors.coolGray : AppColors.darkGray),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  c,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                      AppTextStyles.body(
-                        color: c == label && active
-                            ? (isDark
-                                  ? AppColors.skyBlue
-                                  : AppColors.primaryBlue)
-                            : (isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.nearBlack),
-                      ).copyWith(
-                        fontWeight: c == label && active
-                            ? FontWeight.w600
-                            : null,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ];
-
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    showMenu<String?>(
-      context: context,
-      color: isDark ? AppColors.darkSurface : AppColors.white,
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        side: BorderSide(
-          color: isDark
-              ? AppColors.darkBorder
-              : AppColors.darkGray.withValues(alpha: 0.15),
-        ),
-      ),
-      position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy + size.height + 4,
-        offset.dx + size.width,
-        0,
-      ),
-      items: items,
-    ).then((val) {
-      // A dismissed menu also returns null. Only the "all categories" row
-      // uses this sentinel, so closing the menu does not clear the filter.
-      if (val == null) return;
-      onChanged(val == _kAllCategories ? null : val);
-    });
   }
 }
 
@@ -2141,11 +1912,6 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppConstants.buttonHeight / 2,
-                    ),
-                  ),
                   child: const Text('Annuler'),
                 ),
               ),

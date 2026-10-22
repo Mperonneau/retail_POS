@@ -27,6 +27,7 @@ import '../catalog_import/catalog_import_sheet.dart';
 import '../catalog_import/catalog_import_watch.dart';
 import '../models/product_option.dart';
 import '../models/sale_measure.dart';
+import '../widgets/category_filter_button.dart';
 import '../widgets/product_category_field.dart';
 import '../widgets/product_options_editor.dart';
 import '../widgets/product_photo_pick.dart';
@@ -759,7 +760,6 @@ class _ProductFilterRow extends StatelessWidget {
         ? AppColors.darkBorder
         : AppColors.darkGray.withValues(alpha: 0.25);
     final fill = isDark ? AppColors.darkSurface : AppColors.white;
-    final active = categoryFilter != null;
 
     final clearIconColor = isDark ? AppColors.coolGray : AppColors.darkGray;
     final searchField = TextField(
@@ -827,15 +827,14 @@ class _ProductFilterRow extends StatelessWidget {
       ),
     );
 
-    final catChip = _ProductCategoryFilterButton(
+    final catChip = CategoryFilterButton(
       isDark: isDark,
       fill: fill,
       borderColor: borderColor,
-      active: active,
+      expand: narrow,
       label:
           categoryFilter ?? (narrow ? 'Catégories' : 'Toutes les catégories'),
-      compact: narrow,
-      categoryFilter: categoryFilter,
+      selected: categoryFilter,
       categories: categories,
       onChanged: onCategoryChanged,
     );
@@ -861,181 +860,6 @@ class _ProductFilterRow extends StatelessWidget {
         Expanded(child: searchField),
       ],
     );
-  }
-}
-
-class _ProductCategoryFilterButton extends StatelessWidget {
-  const _ProductCategoryFilterButton({
-    required this.isDark,
-    required this.fill,
-    required this.borderColor,
-    required this.active,
-    required this.label,
-    this.compact = false,
-    required this.categoryFilter,
-    required this.categories,
-    required this.onChanged,
-  });
-
-  final bool isDark;
-  final Color fill;
-  final Color borderColor;
-  final bool active;
-  final String label;
-  final bool compact;
-  final String? categoryFilter;
-  final List<String> categories;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    const activeColor = AppColors.primaryBlue;
-    final bg = active
-        ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08)
-        : fill;
-    final border = active
-        ? activeColor.withValues(alpha: isDark ? 0.55 : 0.4)
-        : borderColor;
-    final textColor = active
-        ? (isDark ? AppColors.skyBlue : activeColor)
-        : (isDark ? AppColors.coolGray : AppColors.darkGray);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: () => _openMenu(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 10 : 14,
-          vertical: compact ? 6 : 9,
-        ),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
-          children: [
-            Icon(Icons.category_outlined, size: 16, color: textColor),
-            const SizedBox(width: 6),
-            if (compact)
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.caption(color: textColor).copyWith(
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-              )
-            else
-              Text(
-                label,
-                style: AppTextStyles.caption(color: textColor).copyWith(
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            const SizedBox(width: 4),
-            Icon(Icons.expand_more_rounded, size: 16, color: textColor),
-            if (active) ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => onChanged(null),
-                child: Icon(Icons.close_rounded, size: 14, color: textColor),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openMenu(BuildContext context) {
-    final items = <PopupMenuEntry<String?>>[
-      PopupMenuItem<String?>(
-        value: null,
-        child: Row(
-          children: [
-            Icon(
-              Icons.select_all_rounded,
-              size: 16,
-              color: isDark ? AppColors.coolGray : AppColors.darkGray,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Toutes les catégories',
-              style: AppTextStyles.body(
-                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(height: 4),
-      ...categories.map(
-        (c) => PopupMenuItem<String?>(
-          value: c,
-          child: Row(
-            children: [
-              Icon(
-                categoryFilter == c
-                    ? Icons.check_rounded
-                    : Icons.category_outlined,
-                size: 16,
-                color: categoryFilter == c
-                    ? AppColors.primaryBlue
-                    : (isDark ? AppColors.coolGray : AppColors.darkGray),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                c,
-                style:
-                    AppTextStyles.body(
-                      color: categoryFilter == c
-                          ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                          : (isDark
-                                ? AppColors.warmWhite
-                                : AppColors.nearBlack),
-                    ).copyWith(
-                      fontWeight: categoryFilter == c ? FontWeight.w600 : null,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ];
-
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    showMenu<String?>(
-      context: context,
-      color: isDark ? AppColors.darkSurface : AppColors.white,
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        side: BorderSide(
-          color: isDark
-              ? AppColors.darkBorder
-              : AppColors.darkGray.withValues(alpha: 0.15),
-        ),
-      ),
-      position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy + size.height + 4,
-        offset.dx + size.width,
-        0,
-      ),
-      items: items,
-    ).then((val) {
-      if (!context.mounted) return;
-      onChanged(val);
-    });
   }
 }
 

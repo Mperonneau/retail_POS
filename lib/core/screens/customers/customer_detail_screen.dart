@@ -71,9 +71,7 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
     return Container(
       decoration: BoxDecoration(
         color: bg,
-        border: Border(
-          left: BorderSide(color: border, width: 1.5),
-        ),
+        border: Border(left: BorderSide(color: border, width: 1.5)),
       ),
       child: Column(
         children: [
@@ -98,17 +96,14 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
-                  AppConstants.spacing16,
-                  AppConstants.spacing12,
-                  AppConstants.spacing16,
-                  AppConstants.spacing24),
+                AppConstants.spacing16,
+                AppConstants.spacing12,
+                AppConstants.spacing16,
+                AppConstants.spacing24,
+              ),
               children: [
                 // Stats row
-                _StatsRow(
-                  balance: balance,
-                  customer: customer,
-                  isDark: isDark,
-                ),
+                _StatsRow(balance: balance, customer: customer, isDark: isDark),
 
                 const SizedBox(height: AppConstants.spacing12),
                 _StoreCreditSection(
@@ -116,8 +111,8 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
                   storeCreditBalance: storeCreditBal,
                   history: state.storeCreditHistoryFor(customer.id),
                   shown: _storeCreditShown,
-                  onShowMore: () => setState(
-                      () => _storeCreditShown += _initialCreditCount),
+                  onShowMore: () =>
+                      setState(() => _storeCreditShown += _initialCreditCount),
                   isDark: isDark,
                 ),
 
@@ -138,8 +133,8 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
                       _showPaymentModal(context, customer, balance),
                   onToggleBlock: () => customer.isCreditBlocked
                       ? ref
-                          .read(customerProvider.notifier)
-                          .unblockCustomer(customer.id)
+                            .read(customerProvider.notifier)
+                            .unblockCustomer(customer.id)
                       : _showBlockModal(context, customer),
                   onAdjustment: () =>
                       _showAdjustmentModal(context, customer, balance),
@@ -161,21 +156,23 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
                 if (transactions.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: AppConstants.spacing12),
-                    child: Text('Aucune transaction pour le moment.',
-                        style: AppTextStyles.caption(
-                            color: isDark
-                                ? AppColors.coolGray
-                                : AppColors.darkGray)),
+                      vertical: AppConstants.spacing12,
+                    ),
+                    child: Text(
+                      'Aucune transaction pour le moment.',
+                      style: AppTextStyles.caption(
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
+                    ),
                   )
                 else ...[
                   for (final tx in transactions) ...[
                     _CompactTxRow(tx: tx, isDark: isDark),
                     Divider(
-                        height: 1,
-                        color:
-                            (isDark ? AppColors.coolGray : AppColors.darkGray)
-                                .withValues(alpha: 0.15)),
+                      height: 1,
+                      color: (isDark ? AppColors.coolGray : AppColors.darkGray)
+                          .withValues(alpha: 0.15),
+                    ),
                   ],
                   if (hasMoreTx)
                     TextButton(
@@ -186,11 +183,14 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: Text('Charger plus',
-                          style: AppTextStyles.caption(
-                              color: isDark
-                                  ? AppColors.skyBlue
-                                  : AppColors.primaryBlue)),
+                      child: Text(
+                        'Charger plus',
+                        style: AppTextStyles.caption(
+                          color: isDark
+                              ? AppColors.skyBlue
+                              : AppColors.primaryBlue,
+                        ),
+                      ),
                     ),
                 ],
               ],
@@ -218,12 +218,9 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
       builder: (_) => _BlockDialog(
         customer: c,
         isDark: widget.isDark,
-        onConfirm: (reason) =>
-            ref.read(customerProvider.notifier).blockCustomer(
-                  c.id,
-                  reason: reason,
-                  blockedBy: 'Gérant',
-                ),
+        onConfirm: (reason) => ref
+            .read(customerProvider.notifier)
+            .blockCustomer(c.id, reason: reason, blockedBy: 'Gérant'),
       ),
     );
   }
@@ -235,13 +232,14 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
         customer: c,
         balance: balance,
         isDark: widget.isDark,
-        onConfirm: (amount, description) =>
-            ref.read(customerProvider.notifier).postAdjustment(
-                  customerId: c.id,
-                  amountHtg: amount,
-                  cashierName: 'Gérant',
-                  description: description,
-                ),
+        onConfirm: (amount, description) => ref
+            .read(customerProvider.notifier)
+            .postAdjustment(
+              customerId: c.id,
+              amountHtg: amount,
+              cashierName: 'Gérant',
+              description: description,
+            ),
       ),
     );
   }
@@ -295,26 +293,30 @@ class _AppModal extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 15, color: accent),
                   ),
-                  child: Icon(icon, size: 15, color: accent),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTextStyles.body(
-                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                    ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: AppTextStyles.body(
+                        color: isDark
+                            ? AppColors.warmWhite
+                            : AppColors.nearBlack,
+                      ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
                   ),
-                ),
-                AppCloseButton(onPressed: () => Navigator.pop(context)),
-              ]),
+                  AppCloseButton(onPressed: () => Navigator.pop(context)),
+                ],
+              ),
               const SizedBox(height: 12),
               Divider(
                 height: 1,
@@ -372,8 +374,10 @@ class _DenseField extends StatelessWidget {
         isDense: true,
         filled: true,
         fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.radiusInput),
           borderSide: BorderSide(
@@ -418,58 +422,70 @@ class _ModalActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final btnColor = confirmColor ?? AppColors.amber;
-    final fgColor = (confirmColor != null &&
+    final fgColor =
+        (confirmColor != null &&
             confirmColor != AppColors.amber &&
             confirmColor != const Color(0xFFFFB300))
         ? AppColors.white
         : AppColors.nearBlack;
-    return Row(children: [
-      Expanded(
-        child: OutlinedButton(
-          onPressed: onCancel,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            side: BorderSide(
-              color: (isDark ? AppColors.coolGray : AppColors.darkGray)
-                  .withValues(alpha: 0.5),
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: onCancel,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              side: BorderSide(
+                color: (isDark ? AppColors.coolGray : AppColors.darkGray)
+                    .withValues(alpha: 0.5),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+              ),
             ),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.radiusButton)),
+            child: Text(
+              'Annuler',
+              style: AppTextStyles.caption().copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-          child: Text('Annuler',
-              style: AppTextStyles.caption()
-                  .copyWith(fontWeight: FontWeight.w600)),
         ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        flex: 2,
-        child: ElevatedButton(
-          onPressed: onConfirm,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: btnColor,
-            foregroundColor: fgColor,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.radiusButton)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (confirmIcon != null) ...[
-                Icon(confirmIcon, size: 14),
-                const SizedBox(width: 6),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: ElevatedButton(
+            onPressed: onConfirm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: btnColor,
+              foregroundColor: fgColor,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (confirmIcon != null) ...[
+                  Icon(confirmIcon, size: 14),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  confirmLabel,
+                  style: AppTextStyles.caption().copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: fgColor,
+                  ),
+                ),
               ],
-              Text(confirmLabel,
-                  style: AppTextStyles.caption()
-                      .copyWith(fontWeight: FontWeight.w700, color: fgColor)),
-            ],
+            ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -517,22 +533,30 @@ class _BlockDialogState extends State<_BlockDialog> {
             decoration: BoxDecoration(
               color: AppColors.boldRed.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-              border:
-                  Border.all(color: AppColors.boldRed.withValues(alpha: 0.18)),
-            ),
-            child: Row(children: [
-              const Icon(Icons.person_off_outlined,
-                  color: AppColors.boldRed, size: 15),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.customer.name,
-                  style: AppTextStyles.body()
-                      .copyWith(fontWeight: FontWeight.w600, fontSize: 13),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              border: Border.all(
+                color: AppColors.boldRed.withValues(alpha: 0.18),
               ),
-            ]),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.person_off_outlined,
+                  color: AppColors.boldRed,
+                  size: 15,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.customer.name,
+                    style: AppTextStyles.body().copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
           _DenseField(
@@ -606,30 +630,34 @@ class _AdjustmentDialogState extends State<_AdjustmentDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Choisissez d\'ajouter ou de retirer un montant du solde.',
-              style: AppTextStyles.caption()),
+          Text(
+            'Choisissez d\'ajouter ou de retirer un montant du solde.',
+            style: AppTextStyles.caption(),
+          ),
           const SizedBox(height: 14),
-          Row(children: [
-            Expanded(
-              child: _AdjustmentOptionChip(
-                label: 'Ajouter',
-                icon: Icons.add_circle_outline,
-                isSelected: _isAdd,
-                isDark: isDark,
-                onTap: () => setState(() => _isAdd = true),
+          Row(
+            children: [
+              Expanded(
+                child: _AdjustmentOptionChip(
+                  label: 'Ajouter',
+                  icon: Icons.add_circle_outline,
+                  isSelected: _isAdd,
+                  isDark: isDark,
+                  onTap: () => setState(() => _isAdd = true),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _AdjustmentOptionChip(
-                label: 'Retirer',
-                icon: Icons.remove_circle_outline,
-                isSelected: !_isAdd,
-                isDark: isDark,
-                onTap: () => setState(() => _isAdd = false),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _AdjustmentOptionChip(
+                  label: 'Retirer',
+                  icon: Icons.remove_circle_outline,
+                  isSelected: !_isAdd,
+                  isDark: isDark,
+                  onTap: () => setState(() => _isAdd = false),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
           const SizedBox(height: 12),
           _DenseField(
             controller: _amtCtrl,
@@ -739,9 +767,12 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(n.text,
-                                style: AppTextStyles.body()
-                                    .copyWith(fontSize: 13)),
+                            Text(
+                              n.text,
+                              style: AppTextStyles.body().copyWith(
+                                fontSize: 13,
+                              ),
+                            ),
                             const SizedBox(height: 3),
                             Text(
                               '${n.createdAt.day}/${n.createdAt.month}/${n.createdAt.year} · ${n.createdBy}',
@@ -757,14 +788,18 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: dividerColor))),
+                border: Border(top: BorderSide(color: dividerColor)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Ajouter une note',
-                      style: AppTextStyles.caption()
-                          .copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    'Ajouter une note',
+                    style: AppTextStyles.caption().copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   _DenseField(
                     controller: _textCtrl,
@@ -781,7 +816,9 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
                         onPressed: () {
                           final text = _textCtrl.text.trim();
                           if (text.isEmpty) return;
-                          ref.read(customerProvider.notifier).addNote(
+                          ref
+                              .read(customerProvider.notifier)
+                              .addNote(
                                 customerId: widget.customer.id,
                                 text: text,
                                 createdBy: 'Gérant',
@@ -789,10 +826,13 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
                           _textCtrl.clear();
                         },
                         icon: const Icon(Icons.add, size: 13),
-                        label: Text('Ajouter une note',
-                            style: AppTextStyles.caption().copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.nearBlack)),
+                        label: Text(
+                          'Ajouter une note',
+                          style: AppTextStyles.caption().copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.nearBlack,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: green,
                           foregroundColor: AppColors.white,
@@ -801,8 +841,10 @@ class _NotesDialogState extends ConsumerState<_NotesDialog> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusButton)),
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.radiusButton,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -889,30 +931,38 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                           Divider(height: 12, color: dividerColor),
                       itemBuilder: (_, i) {
                         final s = schedules[i];
-                        return Row(children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: green.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
+                        return Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.event_outlined,
+                                size: 13,
+                                color: green,
+                              ),
                             ),
-                            child: Icon(Icons.event_outlined,
-                                size: 13, color: green),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${s.scheduledDate.day}/${s.scheduledDate.month}/${s.scheduledDate.year}',
-                              style:
-                                  AppTextStyles.body().copyWith(fontSize: 13),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${s.scheduledDate.day}/${s.scheduledDate.month}/${s.scheduledDate.year}',
+                                style: AppTextStyles.body().copyWith(
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            CurrencyFormatter.local(context, s.amountHtg),
-                            style: AppTextStyles.body().copyWith(
-                                fontWeight: FontWeight.w700, fontSize: 13),
-                          ),
-                        ]);
+                            Text(
+                              CurrencyFormatter.local(context, s.amountHtg),
+                              style: AppTextStyles.body().copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        );
                       },
                     ),
             ),
@@ -921,50 +971,58 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: dividerColor))),
+                border: Border(top: BorderSide(color: dividerColor)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Ajouter une échéance',
-                      style: AppTextStyles.caption()
-                          .copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    'Ajouter une échéance',
+                    style: AppTextStyles.caption().copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Row(children: [
-                    Expanded(
-                      child: _DenseField(
-                        controller: _dateCtrl,
-                        label: 'Date (touchez pour choisir)',
-                        isDark: isDark,
-                        readOnly: true,
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate:
-                                DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (picked != null) {
-                            _dateCtrl.text =
-                                '${picked.day}/${picked.month}/${picked.year}';
-                          }
-                        },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DenseField(
+                          controller: _dateCtrl,
+                          label: 'Date (touchez pour choisir)',
+                          isDark: isDark,
+                          readOnly: true,
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                            );
+                            if (picked != null) {
+                              _dateCtrl.text =
+                                  '${picked.day}/${picked.month}/${picked.year}';
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _DenseField(
-                        controller: _amtCtrl,
-                        label: 'Montant',
-                        prefixText: 'HTG ',
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        inputFormatters: InputFormatters.decimalAmount,
-                        isDark: isDark,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _DenseField(
+                          controller: _amtCtrl,
+                          label: 'Montant',
+                          prefixText: 'HTG ',
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: InputFormatters.decimalAmount,
+                          isDark: isDark,
+                        ),
                       ),
-                    ),
-                  ]),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
@@ -985,7 +1043,9 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                             }
                           }
                           date ??= DateTime.now().add(const Duration(days: 7));
-                          ref.read(customerProvider.notifier).addSchedule(
+                          ref
+                              .read(customerProvider.notifier)
+                              .addSchedule(
                                 customerId: widget.customer.id,
                                 scheduledDate: date,
                                 amountHtg: amount,
@@ -994,10 +1054,13 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                           _dateCtrl.clear();
                         },
                         icon: const Icon(Icons.add, size: 13),
-                        label: Text('Ajouter',
-                            style: AppTextStyles.caption().copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.nearBlack)),
+                        label: Text(
+                          'Ajouter',
+                          style: AppTextStyles.caption().copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.nearBlack,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: green,
                           foregroundColor: AppColors.white,
@@ -1006,8 +1069,10 @@ class _SchedulesDialogState extends ConsumerState<_SchedulesDialog> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusButton)),
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.radiusButton,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1047,52 +1112,58 @@ class _DialogHeader extends StatelessWidget {
         .withValues(alpha: 0.15);
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-      decoration:
-          BoxDecoration(border: Border(bottom: BorderSide(color: divider))),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 15, color: iconColor),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.body(
-                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
-              ),
-              Text(subtitle,
-                  style: AppTextStyles.caption(),
-                  overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        ),
-        if (count > 0) ...[
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: divider)),
+      ),
+      child: Row(
+        children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              '$count',
-              style: AppTextStyles.caption(color: iconColor)
-                  .copyWith(fontWeight: FontWeight.w700),
+            child: Icon(icon, size: 15, color: iconColor),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.body(
+                    color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                  ).copyWith(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                Text(
+                  subtitle,
+                  style: AppTextStyles.caption(),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 4),
+          if (count > 0) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '$count',
+                style: AppTextStyles.caption(
+                  color: iconColor,
+                ).copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          AppCloseButton(onPressed: () => Navigator.pop(context)),
         ],
-        AppCloseButton(onPressed: () => Navigator.pop(context)),
-      ]),
+      ),
     );
   }
 }
@@ -1115,10 +1186,12 @@ class _DialogEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon,
-              size: 28,
-              color: (isDark ? AppColors.coolGray : AppColors.darkGray)
-                  .withValues(alpha: 0.4)),
+          Icon(
+            icon,
+            size: 28,
+            color: (isDark ? AppColors.coolGray : AppColors.darkGray)
+                .withValues(alpha: 0.4),
+          ),
           const SizedBox(height: 8),
           Text(message, style: AppTextStyles.caption()),
         ],
@@ -1151,8 +1224,8 @@ class _PanelHeader extends StatelessWidget {
     final avatarBg = customer.isCreditBlocked
         ? AppColors.boldRed.withValues(alpha: 0.12)
         : (isDark
-            ? AppColors.primaryBlue.withValues(alpha: 0.3)
-            : AppColors.lightBlue);
+              ? AppColors.primaryBlue.withValues(alpha: 0.3)
+              : AppColors.lightBlue);
     final avatarFg = customer.isCreditBlocked
         ? AppColors.boldRed
         : (isDark ? AppColors.skyBlue : AppColors.primaryBlue);
@@ -1177,8 +1250,9 @@ class _PanelHeader extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
-              style: AppTextStyles.body(color: avatarFg)
-                  .copyWith(fontWeight: FontWeight.w700),
+              style: AppTextStyles.body(
+                color: avatarFg,
+              ).copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(width: 10),
@@ -1187,34 +1261,43 @@ class _PanelHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(children: [
-                  Flexible(
-                    child: Text(customer.name,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        customer.name,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.body(
-                                color: isDark
-                                    ? AppColors.warmWhite
-                                    : AppColors.nearBlack)
-                            .copyWith(fontWeight: FontWeight.w700)),
-                  ),
-                  if (customer.isCreditBlocked) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.boldRed.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(3),
-                        border: Border.all(
-                            color: AppColors.boldRed.withValues(alpha: 0.4)),
+                          color: isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack,
+                        ).copyWith(fontWeight: FontWeight.w700),
                       ),
-                      child: Text('BLOQUÉ',
-                          style: AppTextStyles.caption(color: AppColors.boldRed)
-                              .copyWith(
-                                  fontSize: 8, fontWeight: FontWeight.w700)),
                     ),
+                    if (customer.isCreditBlocked) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.boldRed.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(3),
+                          border: Border.all(
+                            color: AppColors.boldRed.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          'BLOQUÉ',
+                          style: AppTextStyles.caption(
+                            color: AppColors.boldRed,
+                          ).copyWith(fontSize: 8, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ],
-                ]),
+                ),
                 Text(
                   [
                     customer.phone,
@@ -1227,8 +1310,9 @@ class _PanelHeader extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Avoir magasin ${CurrencyFormatter.local(context, storeCreditBalance)}',
-                    style: AppTextStyles.caption(color: AppColors.deepGreen)
-                        .copyWith(fontWeight: FontWeight.w700),
+                    style: AppTextStyles.caption(
+                      color: AppColors.deepGreen,
+                    ).copyWith(fontWeight: FontWeight.w700),
                   ),
                 ],
               ],
@@ -1262,8 +1346,12 @@ class _BlockedBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppConstants.spacing16,
-          AppConstants.spacing8, AppConstants.spacing16, 0),
+      margin: const EdgeInsets.fromLTRB(
+        AppConstants.spacing16,
+        AppConstants.spacing8,
+        AppConstants.spacing16,
+        0,
+      ),
       padding: const EdgeInsets.all(AppConstants.spacing10),
       decoration: BoxDecoration(
         color: AppColors.boldRed.withValues(alpha: 0.07),
@@ -1279,15 +1367,19 @@ class _BlockedBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Crédit bloqué',
-                    style: AppTextStyles.caption(color: AppColors.boldRed)
-                        .copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Crédit bloqué',
+                  style: AppTextStyles.caption(
+                    color: AppColors.boldRed,
+                  ).copyWith(fontWeight: FontWeight.w700),
+                ),
                 if (customer.blockedReason != null)
                   Text(customer.blockedReason!, style: AppTextStyles.caption()),
                 if (customer.blockedBy != null && customer.blockedAt != null)
                   Text(
-                      'Par ${customer.blockedBy} · ${customer.blockedAt!.day}/${customer.blockedAt!.month}/${customer.blockedAt!.year}',
-                      style: AppTextStyles.caption()),
+                    'Par ${customer.blockedBy} · ${customer.blockedAt!.day}/${customer.blockedAt!.month}/${customer.blockedAt!.year}',
+                    style: AppTextStyles.caption(),
+                  ),
               ],
             ),
           ),
@@ -1302,8 +1394,11 @@ class _StatsRow extends StatelessWidget {
   final Customer customer;
   final bool isDark;
 
-  const _StatsRow(
-      {required this.balance, required this.customer, required this.isDark});
+  const _StatsRow({
+    required this.balance,
+    required this.customer,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1312,53 +1407,70 @@ class _StatsRow extends StatelessWidget {
     final bg = isDark ? AppColors.darkBackground : AppColors.warmOffWhite;
     final radius = BorderRadius.circular(AppConstants.radiusCard);
 
-    return Row(children: [
-      Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: balanceColor.withValues(alpha: 0.08),
-            borderRadius: radius,
-            border: Border.all(color: balanceColor.withValues(alpha: 0.25)),
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: balanceColor.withValues(alpha: 0.08),
+              borderRadius: radius,
+              border: Border.all(color: balanceColor.withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Impayé',
+                  style: AppTextStyles.caption(color: balanceColor),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  CurrencyFormatter.local(context, balance),
+                  style: AppTextStyles.body(
+                    color: balanceColor,
+                  ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Impayé',
-                style: AppTextStyles.caption(color: balanceColor)),
-            const SizedBox(height: 2),
-            Text(CurrencyFormatter.local(context, balance),
-                style: AppTextStyles.body(color: balanceColor)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: 13),
-                overflow: TextOverflow.ellipsis),
-          ]),
         ),
-      ),
-      const SizedBox(width: AppConstants.spacing8),
-      Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: radius,
-            border: Border.all(
+        const SizedBox(width: AppConstants.spacing8),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: radius,
+              border: Border.all(
                 color: (isDark ? AppColors.coolGray : AppColors.darkGray)
-                    .withValues(alpha: 0.2)),
+                    .withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Limite de crédit', style: AppTextStyles.caption()),
+                const SizedBox(height: 2),
+                Text(
+                  customer.creditLimitHtg != null
+                      ? CurrencyFormatter.local(
+                          context,
+                          customer.creditLimitHtg!,
+                        )
+                      : 'Sans limite',
+                  style: AppTextStyles.body(
+                    color: limitColor,
+                  ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Limite de crédit', style: AppTextStyles.caption()),
-            const SizedBox(height: 2),
-            Text(
-                customer.creditLimitHtg != null
-                    ? CurrencyFormatter.local(context, customer.creditLimitHtg!)
-                    : 'Sans limite',
-                style: AppTextStyles.body(color: limitColor)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: 13),
-                overflow: TextOverflow.ellipsis),
-          ]),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -1410,29 +1522,31 @@ class _StoreCreditSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.deepGreen.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        border: Border.all(
-            color: AppColors.deepGreen.withValues(alpha: 0.22)),
+        border: Border.all(color: AppColors.deepGreen.withValues(alpha: 0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Crédit magasin',
-            style: AppTextStyles.caption(color: AppColors.deepGreen)
-                .copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.4),
+            style: AppTextStyles.caption(
+              color: AppColors.deepGreen,
+            ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.4),
           ),
           const SizedBox(height: 4),
           Text(
             CurrencyFormatter.local(context, storeCreditBalance),
-            style: AppTextStyles.body(color: AppColors.deepGreen)
-                .copyWith(fontWeight: FontWeight.w800, fontSize: 16),
+            style: AppTextStyles.body(
+              color: AppColors.deepGreen,
+            ).copyWith(fontWeight: FontWeight.w800, fontSize: 16),
           ),
           if (history.isNotEmpty) ...[
             const SizedBox(height: AppConstants.spacing12),
             Text(
               'Historique',
-              style: AppTextStyles.caption(color: secondary)
-                  .copyWith(fontWeight: FontWeight.w700),
+              style: AppTextStyles.caption(
+                color: secondary,
+              ).copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             for (final e in visible) ...[
@@ -1466,9 +1580,7 @@ class _StoreCreditSection extends StatelessWidget {
                   ),
                 ],
               ),
-              Divider(
-                  height: 12,
-                  color: secondary.withValues(alpha: 0.12)),
+              Divider(height: 12, color: secondary.withValues(alpha: 0.12)),
             ],
             if (hasMore)
               TextButton(
@@ -1506,18 +1618,22 @@ class _NoteBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-            .withValues(alpha: 0.06),
+        color: (isDark ? AppColors.skyBlue : AppColors.primaryBlue).withValues(
+          alpha: 0.06,
+        ),
         borderRadius: BorderRadius.circular(AppConstants.radiusInput),
         border: Border.all(
-            color: (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                .withValues(alpha: 0.2)),
+          color: (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
+              .withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline,
-              size: 13,
-              color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+          Icon(
+            Icons.info_outline,
+            size: 13,
+            color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+          ),
           const SizedBox(width: 6),
           Expanded(child: Text(text, style: AppTextStyles.caption())),
         ],
@@ -1550,11 +1666,14 @@ class _ActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const h = 30.0;
-    final textStyle = AppTextStyles.caption()
-        .copyWith(fontWeight: FontWeight.w600, fontSize: 11);
+    final textStyle = AppTextStyles.caption().copyWith(
+      fontWeight: FontWeight.w600,
+      fontSize: 11,
+    );
     final accentBlue = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
-    final accentGreen =
-        isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669);
+    final accentGreen = isDark
+        ? const Color(0xFF6EE7B7)
+        : const Color(0xFF059669);
 
     return Wrap(
       spacing: AppConstants.spacing6,
@@ -1639,8 +1758,10 @@ class _CompactBtn extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: onPressed,
           icon: Icon(icon, size: 13),
-          label: Text(label,
-              style: textStyle.copyWith(color: AppColors.nearBlack)),
+          label: Text(
+            label,
+            style: textStyle.copyWith(color: AppColors.nearBlack),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.amber,
             foregroundColor: AppColors.nearBlack,
@@ -1649,7 +1770,8 @@ class _CompactBtn extends StatelessWidget {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.radiusButton)),
+              borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+            ),
           ),
         ),
       );
@@ -1668,7 +1790,8 @@ class _CompactBtn extends StatelessWidget {
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppConstants.radiusButton)),
+            borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+          ),
         ),
       ),
     );
@@ -1683,14 +1806,18 @@ class _SectionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      Text(label,
-          style: AppTextStyles.caption().copyWith(fontWeight: FontWeight.w600)),
-      const SizedBox(width: 6),
-      Text('($count)', style: AppTextStyles.caption()),
-      const SizedBox(width: 8),
-      const Expanded(child: Divider(height: 1)),
-    ]);
+    return Row(
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.caption().copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(width: 6),
+        Text('($count)', style: AppTextStyles.caption()),
+        const SizedBox(width: 8),
+        const Expanded(child: Divider(height: 1)),
+      ],
+    );
   }
 }
 
@@ -1708,18 +1835,18 @@ class _CompactTxRow extends StatelessWidget {
     final color = isPayment
         ? AppColors.deepGreen
         : isCharge
-            ? AppColors.boldRed
-            : AppColors.amber;
+        ? AppColors.boldRed
+        : AppColors.amber;
     final icon = isPayment
         ? Icons.south_rounded
         : isCharge
-            ? Icons.receipt_outlined
-            : Icons.tune_outlined;
+        ? Icons.receipt_outlined
+        : Icons.tune_outlined;
     final amountStr = isPayment
         ? '-${CurrencyFormatter.local(context, tx.amountHtg)}'
         : isAdjustment
-            ? '${tx.amountHtg >= 0 ? '+' : ''}${CurrencyFormatter.local(context, tx.amountHtg.abs())}'
-            : '+${CurrencyFormatter.local(context, tx.creditedHtg)}';
+        ? '${tx.amountHtg >= 0 ? '+' : ''}${CurrencyFormatter.local(context, tx.amountHtg.abs())}'
+        : '+${CurrencyFormatter.local(context, tx.creditedHtg)}';
 
     final meta = <String>[
       if (tx.linkedTableName != null) tx.linkedTableName!,
@@ -1750,40 +1877,49 @@ class _CompactTxRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(children: [
-                  Flexible(
-                    child: Text(tx.description,
-                        style: AppTextStyles.caption(
-                                color: isDark
-                                    ? AppColors.warmWhite
-                                    : AppColors.nearBlack)
-                            .copyWith(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  if (isPayment && tx.paymentMethodLabel != null) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.deepGreen.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                Row(
+                  children: [
+                    Flexible(
                       child: Text(
-                        tx.paymentMethodLabel!,
-                        style: AppTextStyles.caption(color: AppColors.deepGreen)
-                            .copyWith(fontSize: 9, fontWeight: FontWeight.w700),
+                        tx.description,
+                        style: AppTextStyles.caption(
+                          color: isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack,
+                        ).copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (isPayment && tx.paymentMethodLabel != null) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.deepGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          tx.paymentMethodLabel!,
+                          style: AppTextStyles.caption(
+                            color: AppColors.deepGreen,
+                          ).copyWith(fontSize: 9, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ],
-                ]),
-                Text(meta,
-                    style: AppTextStyles.caption(
-                        color:
-                            isDark ? AppColors.coolGray : AppColors.darkGray),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                ),
+                Text(
+                  meta,
+                  style: AppTextStyles.caption(
+                    color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -1792,13 +1928,18 @@ class _CompactTxRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(amountStr,
-                  style: AppTextStyles.caption(color: color)
-                      .copyWith(fontWeight: FontWeight.w700)),
               Text(
-                  'Bal: ${CurrencyFormatter.local(context, tx.balanceAfterHtg)}',
-                  style: AppTextStyles.caption(
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray)),
+                amountStr,
+                style: AppTextStyles.caption(
+                  color: color,
+                ).copyWith(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                'Bal: ${CurrencyFormatter.local(context, tx.balanceAfterHtg)}',
+                style: AppTextStyles.caption(
+                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                ),
+              ),
             ],
           ),
         ],
@@ -1869,8 +2010,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
         children: [
           // Header row
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppConstants.spacing24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.spacing24,
+            ),
             child: Row(
               children: [
                 Container(
@@ -1880,19 +2022,20 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     color: customer.isCreditBlocked
                         ? AppColors.boldRed.withValues(alpha: 0.12)
                         : (isDark
-                            ? AppColors.primaryBlue.withValues(alpha: 0.25)
-                            : AppColors.lightBlue),
+                              ? AppColors.primaryBlue.withValues(alpha: 0.25)
+                              : AppColors.lightBlue),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Text(
                       customer.name[0].toUpperCase(),
                       style: AppTextStyles.h2(
-                          color: customer.isCreditBlocked
-                              ? AppColors.boldRed
-                              : (isDark
+                        color: customer.isCreditBlocked
+                            ? AppColors.boldRed
+                            : (isDark
                                   ? AppColors.skyBlue
-                                  : AppColors.primaryBlue)),
+                                  : AppColors.primaryBlue),
+                      ),
                     ),
                   ),
                 ),
@@ -1901,11 +2044,14 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(customer.name,
-                          style: AppTextStyles.h2(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.nearBlack)),
+                      Text(
+                        customer.name,
+                        style: AppTextStyles.h2(
+                          color: isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack,
+                        ),
+                      ),
                       Text(customer.phone, style: AppTextStyles.caption()),
                     ],
                   ),
@@ -1931,36 +2077,49 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
           // Blocked banner
           if (customer.isCreditBlocked)
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppConstants.spacing24,
-                  AppConstants.spacing12, AppConstants.spacing24, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppConstants.spacing24,
+                AppConstants.spacing12,
+                AppConstants.spacing24,
+                0,
+              ),
               child: Container(
                 padding: const EdgeInsets.all(AppConstants.spacing12),
                 decoration: BoxDecoration(
                   color: AppColors.boldRed.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(AppConstants.radiusCard),
                   border: Border.all(
-                      color: AppColors.boldRed.withValues(alpha: 0.35)),
+                    color: AppColors.boldRed.withValues(alpha: 0.35),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.block_outlined,
-                        color: AppColors.boldRed, size: 18),
+                    const Icon(
+                      Icons.block_outlined,
+                      color: AppColors.boldRed,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Crédit bloqué',
-                              style:
-                                  AppTextStyles.body(color: AppColors.boldRed)
-                                      .copyWith(fontWeight: FontWeight.w700)),
+                          Text(
+                            'Crédit bloqué',
+                            style: AppTextStyles.body(
+                              color: AppColors.boldRed,
+                            ).copyWith(fontWeight: FontWeight.w700),
+                          ),
                           if (customer.blockedReason != null)
-                            Text(customer.blockedReason!,
-                                style: AppTextStyles.caption()),
+                            Text(
+                              customer.blockedReason!,
+                              style: AppTextStyles.caption(),
+                            ),
                           if (customer.blockedBy != null)
                             Text(
-                                'Par ${customer.blockedBy} le ${_dateStr(customer.blockedAt!)}',
-                                style: AppTextStyles.caption()),
+                              'Par ${customer.blockedBy} le ${_dateStr(customer.blockedAt!)}',
+                              style: AppTextStyles.caption(),
+                            ),
                         ],
                       ),
                     ),
@@ -1980,8 +2139,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     _StatCard(
                       label: 'Impayé',
                       value: CurrencyFormatter.local(context, balance),
-                      color:
-                          balance > 0 ? AppColors.boldRed : AppColors.deepGreen,
+                      color: balance > 0
+                          ? AppColors.boldRed
+                          : AppColors.deepGreen,
                       isDark: isDark,
                     ),
                     const SizedBox(width: AppConstants.spacing12),
@@ -1989,7 +2149,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                       label: 'Limite de crédit',
                       value: customer.creditLimitHtg != null
                           ? CurrencyFormatter.local(
-                              context, customer.creditLimitHtg!)
+                              context,
+                              customer.creditLimitHtg!,
+                            )
                           : 'Sans limite',
                       color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       isDark: isDark,
@@ -2003,18 +2165,15 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   storeCreditBalance: storeCreditBal,
                   history: state.storeCreditHistoryFor(customer.id),
                   shown: _storeCreditShown,
-                  onShowMore: () => setState(
-                      () => _storeCreditShown += _initialCreditCount),
+                  onShowMore: () =>
+                      setState(() => _storeCreditShown += _initialCreditCount),
                   isDark: isDark,
                 ),
 
                 // Hotel section (when opened from hotel customers)
                 if (widget.showHotelSection) ...[
                   const SizedBox(height: AppConstants.spacing24),
-                  _HotelSection(
-                    customerId: customer.id,
-                    isDark: isDark,
-                  ),
+                  _HotelSection(customerId: customer.id, isDark: isDark),
                 ],
 
                 // Payment terms (legacy notes)
@@ -2023,15 +2182,19 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   AppCard(
                     child: Row(
                       children: [
-                        Icon(Icons.schedule_outlined,
-                            size: 16,
-                            color: isDark
-                                ? AppColors.coolGray
-                                : AppColors.darkGray),
+                        Icon(
+                          Icons.schedule_outlined,
+                          size: 16,
+                          color: isDark
+                              ? AppColors.coolGray
+                              : AppColors.darkGray,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(customer.notes!,
-                              style: AppTextStyles.body()),
+                          child: Text(
+                            customer.notes!,
+                            style: AppTextStyles.body(),
+                          ),
                         ),
                       ],
                     ),
@@ -2113,8 +2276,10 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     decoration: InputDecoration(
                       labelText: 'Motif du blocage (obligatoire)',
                       border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.radiusInput)),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
+                      ),
                     ),
                     maxLines: 2,
                   ),
@@ -2124,7 +2289,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     onPressed: () {
                       final reason = _blockReasonCtrl.text.trim();
                       if (reason.isEmpty) return;
-                      ref.read(customerProvider.notifier).blockCustomer(
+                      ref
+                          .read(customerProvider.notifier)
+                          .blockCustomer(
                             customer.id,
                             reason: reason,
                             blockedBy: 'Gérant',
@@ -2143,14 +2310,19 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text('Historique des transactions',
-                          style: AppTextStyles.h2(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.nearBlack)),
+                      child: Text(
+                        'Historique des transactions',
+                        style: AppTextStyles.h2(
+                          color: isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack,
+                        ),
+                      ),
                     ),
-                    Text('$totalTxCount records',
-                        style: AppTextStyles.caption()),
+                    Text(
+                      '$totalTxCount records',
+                      style: AppTextStyles.caption(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppConstants.spacing12),
@@ -2159,11 +2331,14 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.all(AppConstants.spacing24),
-                      child: Text('Aucune transaction pour le moment.',
-                          style: AppTextStyles.body(
-                              color: isDark
-                                  ? AppColors.coolGray
-                                  : AppColors.darkGray)),
+                      child: Text(
+                        'Aucune transaction pour le moment.',
+                        style: AppTextStyles.body(
+                          color: isDark
+                              ? AppColors.coolGray
+                              : AppColors.darkGray,
+                        ),
+                      ),
                     ),
                   )
                 else ...[
@@ -2173,13 +2348,15 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   ],
                   if (hasMoreTx)
                     Padding(
-                      padding:
-                          const EdgeInsets.only(top: AppConstants.spacing12),
+                      padding: const EdgeInsets.only(
+                        top: AppConstants.spacing12,
+                      ),
                       child: Center(
                         child: TextButton(
                           onPressed: () {
                             setState(
-                                () => _transactionsShown += _initialTxCount);
+                              () => _transactionsShown += _initialTxCount,
+                            );
                           },
                           child: const Text('Charger plus'),
                         ),
@@ -2222,7 +2399,11 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
   }
 
   void _showTakePayment(
-      BuildContext context, Customer c, double balance, bool isDark) {
+    BuildContext context,
+    Customer c,
+    double balance,
+    bool isDark,
+  ) {
     final amtCtrl = TextEditingController();
     showAppBottomSheet(
       context: context,
@@ -2245,24 +2426,33 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                 color: AppColors.boldRed.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
                 border: Border.all(
-                    color: AppColors.boldRed.withValues(alpha: 0.25)),
+                  color: AppColors.boldRed.withValues(alpha: 0.25),
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.account_balance_wallet_outlined,
-                      color: AppColors.boldRed, size: 24),
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: AppColors.boldRed,
+                    size: 24,
+                  ),
                   const SizedBox(width: AppConstants.spacing12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Impayé',
-                            style: AppTextStyles.caption(
-                                color: AppColors.boldRed)),
-                        Text(CurrencyFormatter.local(context, balance),
-                            style: AppTextStyles.h2(color: AppColors.boldRed)
-                                .copyWith(
-                                    fontWeight: FontWeight.w700, fontSize: 22)),
+                        Text(
+                          'Impayé',
+                          style: AppTextStyles.caption(
+                            color: AppColors.boldRed,
+                          ),
+                        ),
+                        Text(
+                          CurrencyFormatter.local(context, balance),
+                          style: AppTextStyles.h2(
+                            color: AppColors.boldRed,
+                          ).copyWith(fontWeight: FontWeight.w700, fontSize: 22),
+                        ),
                       ],
                     ),
                   ),
@@ -2272,18 +2462,20 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
             const SizedBox(height: AppConstants.spacing24),
             TextField(
               controller: amtCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: InputFormatters.decimalAmount,
               decoration: InputDecoration(
                 labelText: 'Montant reçu (HTG)',
                 prefixText: 'HTG ',
                 filled: true,
-                fillColor:
-                    isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                fillColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput)),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                ),
               ),
             ),
             const SizedBox(height: AppConstants.spacing24),
@@ -2293,11 +2485,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppConstants.buttonHeight / 2),
                       side: BorderSide(
-                          color:
-                              isDark ? AppColors.coolGray : AppColors.darkGray),
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
                     ),
                     child: const Text('Annuler'),
                   ),
@@ -2310,7 +2500,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     onPressed: () {
                       final amount = double.tryParse(amtCtrl.text) ?? 0;
                       if (amount <= 0) return;
-                      ref.read(customerProvider.notifier).postPayment(
+                      ref
+                          .read(customerProvider.notifier)
+                          .postPayment(
                             customerId: c.id,
                             amountHtg: amount.clamp(0, balance),
                             cashierName: 'Caissier',
@@ -2330,7 +2522,11 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
   }
 
   void _showAdjustment(
-      BuildContext context, Customer c, double balance, bool isDark) {
+    BuildContext context,
+    Customer c,
+    double balance,
+    bool isDark,
+  ) {
     final amtCtrl = TextEditingController();
     final descCtrl = TextEditingController(text: 'Ajustement de solde');
     bool isAdd = true; // true = add, false = subtract
@@ -2349,18 +2545,20 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                 left: AppConstants.spacing24,
                 right: AppConstants.spacing24,
                 top: AppConstants.spacing8,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom +
+                bottom:
+                    MediaQuery.of(ctx).viewInsets.bottom +
                     AppConstants.spacing24,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Ajustement',
-                      style: AppTextStyles.h2(
-                          color: isDark
-                              ? AppColors.warmWhite
-                              : AppColors.nearBlack)),
+                  Text(
+                    'Ajustement',
+                    style: AppTextStyles.h2(
+                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Choisissez d\'ajouter ou de retirer un montant du solde.',
@@ -2393,8 +2591,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   const SizedBox(height: AppConstants.spacing16),
                   TextField(
                     controller: amtCtrl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: InputFormatters.decimalAmount,
                     decoration: InputDecoration(
                       labelText: 'Montant (HTG)',
@@ -2404,8 +2603,10 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                           ? AppColors.darkBackground
                           : AppColors.warmOffWhite,
                       border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.radiusInput)),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacing16),
@@ -2418,8 +2619,10 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                           ? AppColors.darkBackground
                           : AppColors.warmOffWhite,
                       border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.radiusInput)),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacing24),
@@ -2429,12 +2632,11 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(ctx),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: AppConstants.buttonHeight / 2),
                             side: BorderSide(
-                                color: isDark
-                                    ? AppColors.coolGray
-                                    : AppColors.darkGray),
+                              color: isDark
+                                  ? AppColors.coolGray
+                                  : AppColors.darkGray,
+                            ),
                           ),
                           child: const Text('Annuler'),
                         ),
@@ -2448,7 +2650,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                             final amount = double.tryParse(amtCtrl.text) ?? 0;
                             if (amount <= 0) return;
                             final signedAmount = isAdd ? amount : -amount;
-                            ref.read(customerProvider.notifier).postAdjustment(
+                            ref
+                                .read(customerProvider.notifier)
+                                .postAdjustment(
                                   customerId: c.id,
                                   amountHtg: signedAmount,
                                   cashierName: 'Gérant',
@@ -2489,9 +2693,12 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Ajouter une note',
-                style: AppTextStyles.h2(
-                    color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
+            Text(
+              'Ajouter une note',
+              style: AppTextStyles.h2(
+                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+              ),
+            ),
             const SizedBox(height: AppConstants.spacing24),
             TextField(
               controller: textCtrl,
@@ -2499,11 +2706,12 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
               decoration: InputDecoration(
                 labelText: 'Note (ex. client appelé, injoignable)',
                 filled: true,
-                fillColor:
-                    isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                fillColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput)),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                ),
               ),
             ),
             const SizedBox(height: AppConstants.spacing24),
@@ -2513,11 +2721,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppConstants.buttonHeight / 2),
                       side: BorderSide(
-                          color:
-                              isDark ? AppColors.coolGray : AppColors.darkGray),
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
                     ),
                     child: const Text('Annuler'),
                   ),
@@ -2530,7 +2736,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                     onPressed: () {
                       final text = textCtrl.text.trim();
                       if (text.isEmpty) return;
-                      ref.read(customerProvider.notifier).addNote(
+                      ref
+                          .read(customerProvider.notifier)
+                          .addNote(
                             customerId: c.id,
                             text: text,
                             createdBy: 'Gérant',
@@ -2566,9 +2774,12 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Ajouter une échéance',
-                style: AppTextStyles.h2(
-                    color: isDark ? AppColors.warmWhite : AppColors.nearBlack)),
+            Text(
+              'Ajouter une échéance',
+              style: AppTextStyles.h2(
+                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               'Planifiez quand le client compte payer (date + montant).',
@@ -2581,11 +2792,12 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
               decoration: InputDecoration(
                 labelText: 'Date (touchez pour choisir)',
                 filled: true,
-                fillColor:
-                    isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                fillColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput)),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                ),
               ),
               onTap: () async {
                 final date = await showDatePicker(
@@ -2602,18 +2814,20 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
             const SizedBox(height: AppConstants.spacing16),
             TextField(
               controller: amtCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: InputFormatters.decimalAmount,
               decoration: InputDecoration(
                 labelText: 'Montant (HTG)',
                 prefixText: 'HTG ',
                 filled: true,
-                fillColor:
-                    isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                fillColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput)),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                ),
               ),
             ),
             const SizedBox(height: AppConstants.spacing24),
@@ -2623,11 +2837,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppConstants.buttonHeight / 2),
                       side: BorderSide(
-                          color:
-                              isDark ? AppColors.coolGray : AppColors.darkGray),
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
                     ),
                     child: const Text('Annuler'),
                   ),
@@ -2651,7 +2863,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                         }
                       }
                       date ??= DateTime.now().add(const Duration(days: 7));
-                      ref.read(customerProvider.notifier).addSchedule(
+                      ref
+                          .read(customerProvider.notifier)
+                          .addSchedule(
                             customerId: c.id,
                             scheduledDate: date,
                             amountHtg: amount,
@@ -2679,10 +2893,7 @@ class _HotelSection extends StatelessWidget {
   final String customerId;
   final bool isDark;
 
-  const _HotelSection({
-    required this.customerId,
-    required this.isDark,
-  });
+  const _HotelSection({required this.customerId, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -2695,22 +2906,26 @@ class _HotelSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.hotel_outlined,
-                    size: 20,
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+                Icon(
+                  Icons.hotel_outlined,
+                  size: 20,
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ),
                 const SizedBox(width: 8),
-                Text('Hôtel',
-                    style: AppTextStyles.h2(
-                        color: isDark
-                            ? AppColors.warmWhite
-                            : AppColors.nearBlack)),
+                Text(
+                  'Hôtel',
+                  style: AppTextStyles.h2(
+                    color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppConstants.spacing12),
             Text(
               'Aucun séjour',
               style: AppTextStyles.body(
-                  color: isDark ? AppColors.coolGray : AppColors.darkGray),
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
+              ),
             ),
           ],
         ),
@@ -2724,14 +2939,18 @@ class _HotelSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.hotel_outlined,
-                  size: 20,
-                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+              Icon(
+                Icons.hotel_outlined,
+                size: 20,
+                color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+              ),
               const SizedBox(width: 8),
-              Text('Hôtel',
-                  style: AppTextStyles.h2(
-                      color:
-                          isDark ? AppColors.warmWhite : AppColors.nearBlack)),
+              Text(
+                'Hôtel',
+                style: AppTextStyles.h2(
+                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppConstants.spacing16),
@@ -2760,34 +2979,42 @@ class _HotelStayRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.meeting_room_outlined,
-                size: 16,
-                color: isDark ? AppColors.coolGray : AppColors.darkGray),
+            Icon(
+              Icons.meeting_room_outlined,
+              size: 16,
+              color: isDark ? AppColors.coolGray : AppColors.darkGray,
+            ),
             const SizedBox(width: 6),
-            Text(stay.roomName,
-                style: AppTextStyles.body(
-                        color:
-                            isDark ? AppColors.warmWhite : AppColors.nearBlack)
-                    .copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              stay.roomName,
+              style: AppTextStyles.body(
+                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+              ).copyWith(fontWeight: FontWeight.w600),
+            ),
           ],
         ),
         const SizedBox(height: AppConstants.spacing8),
         Text(
           '${stay.totalGuests} client${stay.totalGuests > 1 ? 's' : ''} · ${stay.totalDays} jour${stay.totalDays > 1 ? 's' : ''}',
           style: AppTextStyles.caption(
-              color: isDark ? AppColors.coolGray : AppColors.darkGray),
+            color: isDark ? AppColors.coolGray : AppColors.darkGray,
+          ),
         ),
         const SizedBox(height: AppConstants.spacing8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Montant',
-                style: AppTextStyles.caption(
-                    color: isDark ? AppColors.coolGray : AppColors.darkGray)),
+            Text(
+              'Montant',
+              style: AppTextStyles.caption(
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
+              ),
+            ),
             Text(
               '${CurrencyFormatter.local(context, stay.amountHtg)} / \$${stay.amountUsd.toStringAsFixed(0)}',
               style: AppTextStyles.body(
-                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
+                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+              ),
             ),
           ],
         ),
@@ -2796,9 +3023,12 @@ class _HotelStayRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Payé',
-                  style: AppTextStyles.caption(
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray)),
+              Text(
+                'Payé',
+                style: AppTextStyles.caption(
+                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                ),
+              ),
               Text(
                 CurrencyFormatter.local(context, stay.paidHtg),
                 style: AppTextStyles.body(color: AppColors.deepGreen),
@@ -2811,13 +3041,17 @@ class _HotelStayRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Solde',
-                  style: AppTextStyles.caption(
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray)),
+              Text(
+                'Solde',
+                style: AppTextStyles.caption(
+                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                ),
+              ),
               Text(
                 CurrencyFormatter.local(context, stay.balanceHtg),
-                style: AppTextStyles.body(color: AppColors.boldRed)
-                    .copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.body(
+                  color: AppColors.boldRed,
+                ).copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -2843,19 +3077,19 @@ class _TransactionRow extends StatelessWidget {
     final color = isPayment
         ? AppColors.deepGreen
         : isCharge
-            ? AppColors.boldRed
-            : AppColors.amber;
+        ? AppColors.boldRed
+        : AppColors.amber;
     final icon = isPayment
         ? Icons.arrow_downward_rounded
         : isCharge
-            ? Icons.receipt_long_outlined
-            : Icons.tune_outlined;
+        ? Icons.receipt_long_outlined
+        : Icons.tune_outlined;
 
     final amountStr = isPayment
         ? '-${CurrencyFormatter.local(context, tx.amountHtg)}'
         : isAdjustment
-            ? '${tx.amountHtg >= 0 ? '+' : ''}${CurrencyFormatter.local(context, tx.amountHtg)}'
-            : '+${CurrencyFormatter.local(context, tx.creditedHtg)}';
+        ? '${tx.amountHtg >= 0 ? '+' : ''}${CurrencyFormatter.local(context, tx.amountHtg)}'
+        : '+${CurrencyFormatter.local(context, tx.creditedHtg)}';
 
     final metaParts = <String>[
       if (tx.linkedTableName != null) tx.linkedTableName!,
@@ -2886,16 +3120,13 @@ class _TransactionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(tx.description,
-                      style: AppTextStyles.body(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.nearBlack)
-                          .copyWith(fontWeight: FontWeight.w500)),
                   Text(
-                    metaParts.join(' · '),
-                    style: AppTextStyles.caption(),
+                    tx.description,
+                    style: AppTextStyles.body(
+                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                    ).copyWith(fontWeight: FontWeight.w500),
                   ),
+                  Text(metaParts.join(' · '), style: AppTextStyles.caption()),
                 ],
               ),
             ),
@@ -2904,8 +3135,9 @@ class _TransactionRow extends StatelessWidget {
               children: [
                 Text(
                   amountStr,
-                  style: AppTextStyles.body(color: color)
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: AppTextStyles.body(
+                    color: color,
+                  ).copyWith(fontWeight: FontWeight.w700),
                 ),
                 Text(
                   'Bal: ${CurrencyFormatter.local(context, tx.balanceAfterHtg)}',
@@ -2948,20 +3180,21 @@ class _AdjustmentOptionChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.radiusInput),
         child: Container(
           padding: const EdgeInsets.symmetric(
-              vertical: AppConstants.spacing12,
-              horizontal: AppConstants.spacing12),
+            vertical: AppConstants.spacing12,
+            horizontal: AppConstants.spacing12,
+          ),
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark
-                    ? AppColors.skyBlue.withValues(alpha: 0.2)
-                    : AppColors.primaryBlue.withValues(alpha: 0.12))
+                      ? AppColors.skyBlue.withValues(alpha: 0.2)
+                      : AppColors.primaryBlue.withValues(alpha: 0.12))
                 : (isDark ? AppColors.darkBackground : AppColors.warmOffWhite),
             borderRadius: BorderRadius.circular(AppConstants.radiusInput),
             border: Border.all(
               color: isSelected
                   ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
                   : (isDark ? AppColors.coolGray : AppColors.darkGray)
-                      .withValues(alpha: 0.4),
+                        .withValues(alpha: 0.4),
             ),
           ),
           child: Row(
@@ -2977,14 +3210,20 @@ class _AdjustmentOptionChip extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: AppTextStyles.body(
-                    color: isSelected
-                        ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                        : (isDark ? AppColors.warmWhite : AppColors.nearBlack),
-                  ).copyWith(
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
+                  style:
+                      AppTextStyles.body(
+                        color: isSelected
+                            ? (isDark
+                                  ? AppColors.skyBlue
+                                  : AppColors.primaryBlue)
+                            : (isDark
+                                  ? AppColors.warmWhite
+                                  : AppColors.nearBlack),
+                      ).copyWith(
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -3026,8 +3265,10 @@ class _NotesSection extends StatelessWidget {
                 onTap: onToggle,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -3040,16 +3281,13 @@ class _NotesSection extends StatelessWidget {
                       Text(
                         'Notes',
                         style: AppTextStyles.body(
-                                color: isDark
-                                    ? AppColors.warmWhite
-                                    : AppColors.nearBlack)
-                            .copyWith(fontWeight: FontWeight.w600),
+                          color: isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack,
+                        ).copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        '(${notes.length})',
-                        style: AppTextStyles.caption(),
-                      ),
+                      Text('(${notes.length})', style: AppTextStyles.caption()),
                     ],
                   ),
                 ),
@@ -3060,8 +3298,10 @@ class _NotesSection extends StatelessWidget {
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Ajouter une note'),
                 style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -3076,24 +3316,29 @@ class _NotesSection extends StatelessWidget {
                 child: Text(
                   'Aucune note pour le moment.',
                   style: AppTextStyles.body(
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray),
+                    color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                  ),
                 ),
               )
             else
-              ...notes.reversed.map((n) => Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(n.text, style: AppTextStyles.body()),
-                        Text(
-                          '${n.createdAt.day}/${n.createdAt.month}/${n.createdAt.year} · Par ${n.createdBy}',
-                          style: AppTextStyles.caption(),
-                        ),
-                      ],
-                    ),
-                  )),
+              ...notes.reversed.map(
+                (n) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(n.text, style: AppTextStyles.body()),
+                      Text(
+                        '${n.createdAt.day}/${n.createdAt.month}/${n.createdAt.year} · Par ${n.createdBy}',
+                        style: AppTextStyles.caption(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ],
       ),
@@ -3130,8 +3375,10 @@ class _SchedulesSection extends StatelessWidget {
                 onTap: onToggle,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -3144,10 +3391,10 @@ class _SchedulesSection extends StatelessWidget {
                       Text(
                         'Échéanciers',
                         style: AppTextStyles.body(
-                                color: isDark
-                                    ? AppColors.warmWhite
-                                    : AppColors.nearBlack)
-                            .copyWith(fontWeight: FontWeight.w600),
+                          color: isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack,
+                        ).copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -3164,8 +3411,10 @@ class _SchedulesSection extends StatelessWidget {
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Ajouter une échéance'),
                 style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -3180,37 +3429,42 @@ class _SchedulesSection extends StatelessWidget {
                 child: Text(
                   'Aucun échéancier de paiement.',
                   style: AppTextStyles.body(
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray),
+                    color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                  ),
                 ),
               )
             else
-              ...schedules.map((s) => Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today_outlined,
-                            size: 16,
-                            color: isDark
-                                ? AppColors.coolGray
-                                : AppColors.darkGray),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${s.scheduledDate.day}/${s.scheduledDate.month}/${s.scheduledDate.year}',
-                          style: AppTextStyles.body(),
-                        ),
-                        const Spacer(),
-                        Text(
-                          CurrencyFormatter.local(context, s.amountHtg),
-                          style: AppTextStyles.body(
-                                  color: isDark
-                                      ? AppColors.skyBlue
-                                      : AppColors.primaryBlue)
-                              .copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  )),
+              ...schedules.map(
+                (s) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 0,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 16,
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${s.scheduledDate.day}/${s.scheduledDate.month}/${s.scheduledDate.year}',
+                        style: AppTextStyles.body(),
+                      ),
+                      const Spacer(),
+                      Text(
+                        CurrencyFormatter.local(context, s.amountHtg),
+                        style: AppTextStyles.body(
+                          color: isDark
+                              ? AppColors.skyBlue
+                              : AppColors.primaryBlue,
+                        ).copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ],
       ),
@@ -3242,10 +3496,13 @@ class _StatCard extends StatelessWidget {
           children: [
             Text(label, style: AppTextStyles.caption()),
             const SizedBox(height: 4),
-            Text(value,
-                style: AppTextStyles.body(color: color)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: 13),
-                overflow: TextOverflow.ellipsis),
+            Text(
+              value,
+              style: AppTextStyles.body(
+                color: color,
+              ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),

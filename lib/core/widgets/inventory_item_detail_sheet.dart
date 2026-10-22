@@ -22,10 +22,7 @@ void showLowStockItemsSheet(
   showAppBottomSheet(
     context: context,
     isScrollControlled: true,
-    child: _LowStockItemsList(
-      items: items,
-      onItemTap: onItemTap,
-    ),
+    child: _LowStockItemsList(items: items, onItemTap: onItemTap),
   );
 }
 
@@ -45,7 +42,10 @@ void showInventoryItemDetailSheet(
 }
 
 void _showAddStockDialog(
-    BuildContext context, WidgetRef ref, MockInventoryItem item) {
+  BuildContext context,
+  WidgetRef ref,
+  MockInventoryItem item,
+) {
   final ctrl = TextEditingController();
   showDialog(
     context: context,
@@ -55,8 +55,10 @@ void _showAddStockDialog(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Actuel : ${item.quantity} ${item.unit}',
-              style: AppTextStyles.caption()),
+          Text(
+            'Actuel : ${item.quantity} ${item.unit}',
+            style: AppTextStyles.caption(),
+          ),
           const SizedBox(height: AppConstants.spacing12),
           TextField(
             controller: ctrl,
@@ -64,10 +66,10 @@ void _showAddStockDialog(
               labelText: 'Quantité à ajouter',
               suffixText: item.unit,
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
+                borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+              ),
             ),
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: InputFormatters.decimalAmount,
             autofocus: true,
           ),
@@ -82,11 +84,9 @@ void _showAddStockDialog(
           onPressed: () {
             final add = double.tryParse(ctrl.text) ?? 0;
             if (add > 0) {
-              ref.read(mockRestaurantInventoryProvider.notifier).addTransaction(
-                    item.id,
-                    InventoryTransactionType.add,
-                    add,
-                  );
+              ref
+                  .read(mockRestaurantInventoryProvider.notifier)
+                  .addTransaction(item.id, InventoryTransactionType.add, add);
             }
             Navigator.pop(ctx);
           },
@@ -98,7 +98,10 @@ void _showAddStockDialog(
 }
 
 void _showAdjustSheet(
-    BuildContext context, WidgetRef ref, MockInventoryItem item) {
+  BuildContext context,
+  WidgetRef ref,
+  MockInventoryItem item,
+) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final amtCtrl = TextEditingController();
   final noteCtrl = TextEditingController(text: 'Ajustement de solde');
@@ -113,18 +116,20 @@ void _showAdjustSheet(
           padding: EdgeInsets.only(
             left: AppConstants.spacing24,
             right: AppConstants.spacing24,
-            bottom: MediaQuery.of(context).viewInsets.bottom +
+            bottom:
+                MediaQuery.of(context).viewInsets.bottom +
                 AppConstants.spacing24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Ajustement',
-                  style: AppTextStyles.h2(
-                      color: isDark
-                          ? AppColors.warmWhite
-                          : AppColors.nearBlack)),
+              Text(
+                'Ajustement',
+                style: AppTextStyles.h2(
+                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 'Choisissez d\'ajouter ou de retirer un montant du solde.',
@@ -157,8 +162,9 @@ void _showAdjustSheet(
               const SizedBox(height: AppConstants.spacing16),
               TextField(
                 controller: amtCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: InputFormatters.decimalAmount,
                 decoration: InputDecoration(
                   labelText: 'Quantité (${item.unit})',
@@ -167,8 +173,10 @@ void _showAdjustSheet(
                       ? AppColors.darkBackground
                       : AppColors.warmOffWhite,
                   border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusInput)),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.radiusInput,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppConstants.spacing16),
@@ -181,8 +189,10 @@ void _showAdjustSheet(
                       ? AppColors.darkBackground
                       : AppColors.warmOffWhite,
                   border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusInput)),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.radiusInput,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppConstants.spacing24),
@@ -192,12 +202,11 @@ void _showAdjustSheet(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: AppConstants.buttonHeight / 2),
                         side: BorderSide(
-                            color: isDark
-                                ? AppColors.coolGray
-                                : AppColors.darkGray),
+                          color: isDark
+                              ? AppColors.coolGray
+                              : AppColors.darkGray,
+                        ),
                       ),
                       child: const Text('Annuler'),
                     ),
@@ -261,20 +270,21 @@ class _AdjustmentOptionChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.radiusInput),
         child: Container(
           padding: const EdgeInsets.symmetric(
-              vertical: AppConstants.spacing12,
-              horizontal: AppConstants.spacing12),
+            vertical: AppConstants.spacing12,
+            horizontal: AppConstants.spacing12,
+          ),
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark
-                    ? AppColors.skyBlue.withValues(alpha: 0.2)
-                    : AppColors.primaryBlue.withValues(alpha: 0.12))
+                      ? AppColors.skyBlue.withValues(alpha: 0.2)
+                      : AppColors.primaryBlue.withValues(alpha: 0.12))
                 : (isDark ? AppColors.darkBackground : AppColors.warmOffWhite),
             borderRadius: BorderRadius.circular(AppConstants.radiusInput),
             border: Border.all(
               color: isSelected
                   ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
                   : (isDark ? AppColors.coolGray : AppColors.darkGray)
-                      .withValues(alpha: 0.4),
+                        .withValues(alpha: 0.4),
             ),
           ),
           child: Row(
@@ -290,13 +300,20 @@ class _AdjustmentOptionChip extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: AppTextStyles.body(
-                    color: isSelected
-                        ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                        : (isDark ? AppColors.warmWhite : AppColors.nearBlack),
-                  ).copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
+                  style:
+                      AppTextStyles.body(
+                        color: isSelected
+                            ? (isDark
+                                  ? AppColors.skyBlue
+                                  : AppColors.primaryBlue)
+                            : (isDark
+                                  ? AppColors.warmWhite
+                                  : AppColors.nearBlack),
+                      ).copyWith(
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -313,10 +330,7 @@ class _InventoryItemDetailContent extends ConsumerStatefulWidget {
   final MockInventoryItem item;
   final void Function(MockInventoryItem)? onEdit;
 
-  const _InventoryItemDetailContent({
-    required this.item,
-    this.onEdit,
-  });
+  const _InventoryItemDetailContent({required this.item, this.onEdit});
 
   @override
   ConsumerState<_InventoryItemDetailContent> createState() =>
@@ -332,12 +346,15 @@ class _InventoryItemDetailContentState
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final items = ref.watch(mockRestaurantInventoryProvider);
-    final currentItem = items.where((i) => i.id == widget.item.id).firstOrNull ?? widget.item;
+    final currentItem =
+        items.where((i) => i.id == widget.item.id).firstOrNull ?? widget.item;
     final notifier = ref.read(mockRestaurantInventoryProvider.notifier);
     final allSummaries = notifier.getDailySummaries(currentItem.id);
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
-    final todaySummary = allSummaries.where((s) => s.date == todayDate).firstOrNull;
+    final todaySummary = allSummaries
+        .where((s) => s.date == todayDate)
+        .firstOrNull;
     final totalAddToday = todaySummary?.totalAdd ?? 0;
     final totalUseToday = todaySummary?.totalUse ?? 0;
 
@@ -348,7 +365,8 @@ class _InventoryItemDetailContentState
       padding: EdgeInsets.only(
         left: AppConstants.spacing24,
         right: AppConstants.spacing24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppConstants.spacing24,
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom + AppConstants.spacing24,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -358,7 +376,8 @@ class _InventoryItemDetailContentState
             Text(
               currentItem.name,
               style: AppTextStyles.h2(
-                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
+                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+              ),
             ),
             Text(currentItem.category, style: AppTextStyles.caption()),
             const SizedBox(height: AppConstants.spacing24),
@@ -367,20 +386,23 @@ class _InventoryItemDetailContentState
               children: [
                 _StatCard(
                   label: 'Solde total',
-                  value: '${currentItem.quantity.toStringAsFixed(currentItem.quantity == currentItem.quantity.truncate() ? 0 : 1)} ${currentItem.unit}',
+                  value:
+                      '${currentItem.quantity.toStringAsFixed(currentItem.quantity == currentItem.quantity.truncate() ? 0 : 1)} ${currentItem.unit}',
                   isDark: isDark,
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 _StatCard(
                   label: 'Ajouté aujourd\'hui',
-                  value: '${totalAddToday.toStringAsFixed(0)} ${currentItem.unit}',
+                  value:
+                      '${totalAddToday.toStringAsFixed(0)} ${currentItem.unit}',
                   isDark: isDark,
                   valueColor: AppColors.deepGreen,
                 ),
                 const SizedBox(width: AppConstants.spacing12),
                 _StatCard(
                   label: 'Utilisé aujourd\'hui',
-                  value: '${totalUseToday.toStringAsFixed(0)} ${currentItem.unit}',
+                  value:
+                      '${totalUseToday.toStringAsFixed(0)} ${currentItem.unit}',
                   isDark: isDark,
                   valueColor: AppColors.boldRed,
                 ),
@@ -391,7 +413,8 @@ class _InventoryItemDetailContentState
             Text(
               'Journal du jour',
               style: AppTextStyles.h3(
-                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
+                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+              ),
             ),
             const SizedBox(height: AppConstants.spacing12),
             if (allSummaries.isEmpty)
@@ -455,25 +478,32 @@ class _InventoryItemDetailContentState
                       Expanded(
                         flex: 2,
                         child: Text(
-                          isToday ? 'Aujourd\'hui' : DateFormatter.shortDate(s.date),
+                          isToday
+                              ? 'Aujourd\'hui'
+                              : DateFormatter.shortDate(s.date),
                           style: AppTextStyles.body(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.nearBlack),
+                            color: isDark
+                                ? AppColors.warmWhite
+                                : AppColors.nearBlack,
+                          ),
                         ),
                       ),
                       SizedBox(
                         width: 56,
                         child: Text(
                           '+${s.totalAdd.toStringAsFixed(0)}',
-                          style: AppTextStyles.caption(color: AppColors.deepGreen),
+                          style: AppTextStyles.caption(
+                            color: AppColors.deepGreen,
+                          ),
                         ),
                       ),
                       SizedBox(
                         width: 56,
                         child: Text(
                           '-${s.totalUse.toStringAsFixed(0)}',
-                          style: AppTextStyles.caption(color: AppColors.boldRed),
+                          style: AppTextStyles.caption(
+                            color: AppColors.boldRed,
+                          ),
                         ),
                       ),
                       SizedBox(
@@ -481,9 +511,10 @@ class _InventoryItemDetailContentState
                         child: Text(
                           '${s.balance.toStringAsFixed(0)} ${currentItem.unit}',
                           style: AppTextStyles.body(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.nearBlack),
+                            color: isDark
+                                ? AppColors.warmWhite
+                                : AppColors.nearBlack,
+                          ),
                         ),
                       ),
                     ],
@@ -531,7 +562,8 @@ class _InventoryItemDetailContentState
                 Expanded(
                   child: AppButton(
                     label: 'Ajuster le stock',
-                    onPressed: () => _showAdjustSheet(context, ref, currentItem),
+                    onPressed: () =>
+                        _showAdjustSheet(context, ref, currentItem),
                     icon: Icons.tune,
                     variant: AppButtonVariant.secondary,
                   ),
@@ -550,10 +582,7 @@ class _LowStockItemsList extends StatelessWidget {
   final List<MockInventoryItem> items;
   final void Function(MockInventoryItem)? onItemTap;
 
-  const _LowStockItemsList({
-    required this.items,
-    this.onItemTap,
-  });
+  const _LowStockItemsList({required this.items, this.onItemTap});
 
   @override
   Widget build(BuildContext context) {
@@ -572,7 +601,8 @@ class _LowStockItemsList extends StatelessWidget {
           Text(
             'Articles en stock bas',
             style: AppTextStyles.h2(
-                color: isDark ? AppColors.warmWhite : AppColors.nearBlack),
+              color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+            ),
           ),
           const SizedBox(height: AppConstants.spacing16),
           ConstrainedBox(
@@ -591,21 +621,25 @@ class _LowStockItemsList extends StatelessWidget {
                           onItemTap!(item);
                         }
                       : null,
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.radiusCard),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusCard),
                   child: Container(
                     padding: const EdgeInsets.all(AppConstants.spacing12),
                     decoration: BoxDecoration(
                       color: AppColors.boldRed.withValues(alpha: 0.06),
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusCard),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusCard,
+                      ),
                       border: Border.all(
-                          color: AppColors.boldRed.withValues(alpha: 0.2)),
+                        color: AppColors.boldRed.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded,
-                            color: AppColors.boldRed, size: 20),
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppColors.boldRed,
+                          size: 20,
+                        ),
                         const SizedBox(width: AppConstants.spacing12),
                         Expanded(
                           child: Column(
@@ -623,17 +657,20 @@ class _LowStockItemsList extends StatelessWidget {
                               Text(
                                 '${item.quantity.toStringAsFixed(item.quantity == item.quantity.truncate() ? 0 : 1)} ${item.unit} / min ${item.minThreshold.toStringAsFixed(0)} ${item.unit}',
                                 style: AppTextStyles.caption(
-                                    color: AppColors.boldRed),
+                                  color: AppColors.boldRed,
+                                ),
                               ),
                             ],
                           ),
                         ),
                         if (onItemTap != null)
-                          Icon(Icons.chevron_right_rounded,
-                              size: 18,
-                              color: isDark
-                                  ? AppColors.coolGray
-                                  : AppColors.darkGray),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: isDark
+                                ? AppColors.coolGray
+                                : AppColors.darkGray,
+                          ),
                       ],
                     ),
                   ),
@@ -679,7 +716,8 @@ class _StatCard extends StatelessWidget {
             Text(
               value,
               style: AppTextStyles.body(
-                color: valueColor ??
+                color:
+                    valueColor ??
                     (isDark ? AppColors.warmWhite : AppColors.nearBlack),
               ).copyWith(fontWeight: FontWeight.w700),
             ),

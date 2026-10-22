@@ -30,8 +30,9 @@ Future<void> showRetailProductInventorySheet(
         fullscreenDialog: true,
         pageBuilder: (ctx, animation, secondary) {
           return Scaffold(
-            backgroundColor:
-                isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+            backgroundColor: isDark
+                ? AppColors.darkBackground
+                : AppColors.warmOffWhite,
             body: RetailProductInventoryPanel(product: product),
           );
         },
@@ -117,9 +118,11 @@ class RetailLedgerDisplayRow {
   final String id;
   final int delta;
   final DateTime sortKey;
+
   /// First column — calendar date of the movement (entered / sale day).
   final String dateLabel;
   final String title;
+
   /// Second column — extra context (supplier, notes, etc.).
   final String subtitle;
   final int? inQty;
@@ -155,7 +158,11 @@ class RetailLedgerDisplayRow {
           kind: RetailStockMovementKind.stockIn,
         );
       case RetailStockMovementKind.sale:
-        final d = DateTime(m.receivedAt.year, m.receivedAt.month, m.receivedAt.day);
+        final d = DateTime(
+          m.receivedAt.year,
+          m.receivedAt.month,
+          m.receivedAt.day,
+        );
         return RetailLedgerDisplayRow.saleDayAggregate(d, m.quantityDelta);
       case RetailStockMovementKind.adjustment:
         final isUp = m.quantityDelta >= 0;
@@ -197,8 +204,16 @@ class RetailLedgerDisplayRow {
     if (supplier != null && supplier.isNotEmpty) {
       parts.add(supplier);
     }
-    final recDay = DateTime(m.receivedAt.year, m.receivedAt.month, m.receivedAt.day);
-    final entDay = DateTime(m.enteredAt.year, m.enteredAt.month, m.enteredAt.day);
+    final recDay = DateTime(
+      m.receivedAt.year,
+      m.receivedAt.month,
+      m.receivedAt.day,
+    );
+    final entDay = DateTime(
+      m.enteredAt.year,
+      m.enteredAt.month,
+      m.enteredAt.day,
+    );
     if (recDay != entDay) {
       parts.add('Reçu le ${DateFormatter.shortDate(m.receivedAt)}');
     }
@@ -221,7 +236,11 @@ List<({RetailLedgerDisplayRow row, int balanceAfter})> _buildLedgerRows({
   final nonSale = <RetailStockMovement>[];
   for (final m in raw) {
     if (m.kind == RetailStockMovementKind.sale) {
-      final d = DateTime(m.receivedAt.year, m.receivedAt.month, m.receivedAt.day);
+      final d = DateTime(
+        m.receivedAt.year,
+        m.receivedAt.month,
+        m.receivedAt.day,
+      );
       saleByDay[d] = (saleByDay[d] ?? 0) + m.quantityDelta;
     } else {
       nonSale.add(m);
@@ -337,169 +356,185 @@ class _RetailProductInventoryPanelState
         .toList();
     final rows = _movementKindFilter == null
         ? monthRows
-        : monthRows
-            .where((e) => e.row.kind == _movementKindFilter)
-            .toList();
+        : monthRows.where((e) => e.row.kind == _movementKindFilter).toList();
 
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     int salesToday = 0;
-    for (final m in ledger.where((m) => m.productId == current.id && m.kind == RetailStockMovementKind.sale)) {
-      final d = DateTime(m.receivedAt.year, m.receivedAt.month, m.receivedAt.day);
+    for (final m in ledger.where(
+      (m) =>
+          m.productId == current.id && m.kind == RetailStockMovementKind.sale,
+    )) {
+      final d = DateTime(
+        m.receivedAt.year,
+        m.receivedAt.month,
+        m.receivedAt.day,
+      );
       if (d == todayDate) {
         salesToday += -m.quantityDelta;
       }
     }
 
-    final scrollHorizontalPad = widget.embedded
-        ? 0.0
-        : AppConstants.spacing24;
+    final scrollHorizontalPad = widget.embedded ? 0.0 : AppConstants.spacing24;
 
     final scrollContent = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-          if (!widget.embedded) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    current.name,
-                    style: AppTextStyles.h2(
-                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                    ),
+        if (!widget.embedded) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  current.name,
+                  style: AppTextStyles.h2(
+                    color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
                   ),
                 ),
-                AppCloseButton(onPressed: () => Navigator.of(context).pop()),
-              ],
-            ),
-            Text(current.category, style: AppTextStyles.caption()),
-            const SizedBox(height: AppConstants.spacing8),
-            _InlineStockBadges(
-              stockQuantity: current.stockQuantity,
-              trackStock: current.trackStock,
-              salesToday: salesToday,
-              isDark: isDark,
-            ),
-            const SizedBox(height: AppConstants.spacing16),
-          ] else ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        current.name,
-                        style: AppTextStyles.h2(
-                          color:
-                              isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                        ),
-                      ),
-                      Text(current.category, style: AppTextStyles.caption()),
-                      const SizedBox(height: AppConstants.spacing8),
-                      _InlineStockBadges(
-                        stockQuantity: current.stockQuantity,
-                        trackStock: current.trackStock,
-                        salesToday: salesToday,
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                ),
-                if (widget.onClose != null)
-                  AppCloseButton(onPressed: widget.onClose),
-              ],
-            ),
-            const SizedBox(height: AppConstants.spacing16),
-          ],
-          LayoutBuilder(
-            builder: (context, c) {
-              final thin = c.maxWidth < 420;
-              final title = Text(
-                'Historique des mouvements',
-                style: AppTextStyles.h3(
-                  color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                ),
-              );
-              final yearLabel = Text(
-                '$ledgerYear',
-                style: AppTextStyles.caption(
-                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
-                ),
-              );
-              final monthPicker = _LedgerMonthDropdown(
-                month: _ledgerMonth,
-                isDark: isDark,
-                onChanged: (m) => setState(() => _ledgerMonth = m),
-              );
-              final kindPicker = _LedgerMovementKindDropdown(
-                kind: _movementKindFilter,
-                isDark: isDark,
-                onChanged: (k) => setState(() => _movementKindFilter = k),
-              );
-              if (thin) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              ),
+              AppCloseButton(onPressed: () => Navigator.of(context).pop()),
+            ],
+          ),
+          Text(current.category, style: AppTextStyles.caption()),
+          const SizedBox(height: AppConstants.spacing8),
+          _InlineStockBadges(
+            stockQuantity: current.stockQuantity,
+            trackStock: current.trackStock,
+            salesToday: salesToday,
+            isDark: isDark,
+          ),
+          const SizedBox(height: AppConstants.spacing16),
+        ] else ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    title,
+                    Text(
+                      current.name,
+                      style: AppTextStyles.h2(
+                        color: isDark
+                            ? AppColors.warmWhite
+                            : AppColors.nearBlack,
+                      ),
+                    ),
+                    Text(current.category, style: AppTextStyles.caption()),
                     const SizedBox(height: AppConstants.spacing8),
-                    Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: AppConstants.spacing8,
-                      runSpacing: AppConstants.spacing8,
-                      children: [
-                        yearLabel,
-                        monthPicker,
-                        kindPicker,
-                      ],
+                    _InlineStockBadges(
+                      stockQuantity: current.stockQuantity,
+                      trackStock: current.trackStock,
+                      salesToday: salesToday,
+                      isDark: isDark,
                     ),
                   ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                ),
+              ),
+              if (widget.onClose != null)
+                AppCloseButton(onPressed: widget.onClose),
+            ],
+          ),
+          const SizedBox(height: AppConstants.spacing16),
+        ],
+        LayoutBuilder(
+          builder: (context, c) {
+            final thin = c.maxWidth < 420;
+            final title = Text(
+              'Historique des mouvements',
+              style: AppTextStyles.h3(
+                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+              ),
+            );
+            final yearLabel = Text(
+              '$ledgerYear',
+              style: AppTextStyles.caption(
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
+              ),
+            );
+            final monthPicker = _LedgerMonthDropdown(
+              month: _ledgerMonth,
+              isDark: isDark,
+              onChanged: (m) => setState(() => _ledgerMonth = m),
+            );
+            final kindPicker = _LedgerMovementKindDropdown(
+              kind: _movementKindFilter,
+              isDark: isDark,
+              onChanged: (k) => setState(() => _movementKindFilter = k),
+            );
+            if (thin) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(child: title),
-                  yearLabel,
-                  const SizedBox(width: AppConstants.spacing8),
-                  monthPicker,
-                  const SizedBox(width: AppConstants.spacing8),
-                  kindPicker,
+                  title,
+                  const SizedBox(height: AppConstants.spacing8),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: AppConstants.spacing8,
+                    runSpacing: AppConstants.spacing8,
+                    children: [yearLabel, monthPicker, kindPicker],
+                  ),
                 ],
               );
-            },
-          ),
-          const SizedBox(height: AppConstants.spacing12),
-          if (allRows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing24),
-              child: Text(
-                'Aucun mouvement de stock.',
-                style: AppTextStyles.body(color: isDark ? AppColors.coolGray : AppColors.darkGray),
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: title),
+                yearLabel,
+                const SizedBox(width: AppConstants.spacing8),
+                monthPicker,
+                const SizedBox(width: AppConstants.spacing8),
+                kindPicker,
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: AppConstants.spacing12),
+        if (allRows.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppConstants.spacing24,
+            ),
+            child: Text(
+              'Aucun mouvement de stock.',
+              style: AppTextStyles.body(
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
               ),
-            )
-          else if (monthRows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing24),
-              child: Text(
-                'Aucun mouvement en ${_inventoryMonthName(_ledgerMonth)} $ledgerYear.',
-                style: AppTextStyles.body(color: isDark ? AppColors.coolGray : AppColors.darkGray),
+            ),
+          )
+        else if (monthRows.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppConstants.spacing24,
+            ),
+            child: Text(
+              'Aucun mouvement en ${_inventoryMonthName(_ledgerMonth)} $ledgerYear.',
+              style: AppTextStyles.body(
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
               ),
-            )
-          else if (rows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing24),
-              child: Text(
-                'No ${_ledgerMovementKindEmptyPhrase(_movementKindFilter!)} for ${_inventoryMonthName(_ledgerMonth)} $ledgerYear.',
-                style: AppTextStyles.body(color: isDark ? AppColors.coolGray : AppColors.darkGray),
+            ),
+          )
+        else if (rows.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppConstants.spacing24,
+            ),
+            child: Text(
+              'No ${_ledgerMovementKindEmptyPhrase(_movementKindFilter!)} for ${_inventoryMonthName(_ledgerMonth)} $ledgerYear.',
+              style: AppTextStyles.body(
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
               ),
-            )
-          else
-            _LedgerTable(rows: rows, isDark: isDark),
-          SizedBox(height: widget.embedded ? AppConstants.spacing8 : AppConstants.spacing16),
-        ],
+            ),
+          )
+        else
+          _LedgerTable(rows: rows, isDark: isDark),
+        SizedBox(
+          height: widget.embedded
+              ? AppConstants.spacing8
+              : AppConstants.spacing16,
+        ),
+      ],
     );
 
     final body = Column(
@@ -538,16 +573,11 @@ class _RetailProductInventoryPanelState
     if (isMobile) {
       return SizedBox(
         height: h,
-        child: SafeArea(
-          child: body,
-        ),
+        child: SafeArea(child: body),
       );
     }
 
-    return SizedBox(
-      height: h,
-      child: body,
-    );
+    return SizedBox(height: h, child: body);
   }
 
   Future<void> _openAddStock(
@@ -619,9 +649,9 @@ class _InlineStockBadges extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               value,
-              style: AppTextStyles.caption(color: accent).copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: AppTextStyles.caption(
+                color: accent,
+              ).copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -663,7 +693,9 @@ class _LedgerMonthDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = isDark ? AppColors.darkBorder : AppColors.darkGray.withValues(alpha: 0.3);
+    final border = isDark
+        ? AppColors.darkBorder
+        : AppColors.darkGray.withValues(alpha: 0.3);
     final fill = isDark ? AppColors.darkSurface : AppColors.warmOffWhite;
 
     return Container(
@@ -685,16 +717,13 @@ class _LedgerMonthDropdown extends StatelessWidget {
           style: AppTextStyles.caption(
             color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
           ).copyWith(fontWeight: FontWeight.w600),
-          items: List.generate(
-            12,
-            (i) {
-              final m = i + 1;
-              return DropdownMenuItem<int>(
-                value: m,
-                child: Text(_inventoryMonthName(m)),
-              );
-            },
-          ),
+          items: List.generate(12, (i) {
+            final m = i + 1;
+            return DropdownMenuItem<int>(
+              value: m,
+              child: Text(_inventoryMonthName(m)),
+            );
+          }),
           onChanged: (v) {
             if (v != null) onChanged(v);
           },
@@ -717,7 +746,9 @@ class _LedgerMovementKindDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = isDark ? AppColors.darkBorder : AppColors.darkGray.withValues(alpha: 0.3);
+    final border = isDark
+        ? AppColors.darkBorder
+        : AppColors.darkGray.withValues(alpha: 0.3);
     final fill = isDark ? AppColors.darkSurface : AppColors.warmOffWhite;
 
     return Container(
@@ -757,15 +788,23 @@ class _LedgerMovementKindDropdown extends StatelessWidget {
             ),
             DropdownMenuItem<RetailStockMovementKind?>(
               value: RetailStockMovementKind.sale,
-              child: Text(_ledgerMovementKindMenuLabel(RetailStockMovementKind.sale)),
+              child: Text(
+                _ledgerMovementKindMenuLabel(RetailStockMovementKind.sale),
+              ),
             ),
             DropdownMenuItem<RetailStockMovementKind?>(
               value: RetailStockMovementKind.stockIn,
-              child: Text(_ledgerMovementKindMenuLabel(RetailStockMovementKind.stockIn)),
+              child: Text(
+                _ledgerMovementKindMenuLabel(RetailStockMovementKind.stockIn),
+              ),
             ),
             DropdownMenuItem<RetailStockMovementKind?>(
               value: RetailStockMovementKind.adjustment,
-              child: Text(_ledgerMovementKindMenuLabel(RetailStockMovementKind.adjustment)),
+              child: Text(
+                _ledgerMovementKindMenuLabel(
+                  RetailStockMovementKind.adjustment,
+                ),
+              ),
             ),
           ],
           onChanged: onChanged,
@@ -776,10 +815,7 @@ class _LedgerMovementKindDropdown extends StatelessWidget {
 }
 
 class _LedgerTable extends StatelessWidget {
-  const _LedgerTable({
-    required this.rows,
-    required this.isDark,
-  });
+  const _LedgerTable({required this.rows, required this.isDark});
 
   final List<({RetailLedgerDisplayRow row, int balanceAfter})> rows;
   final bool isDark;
@@ -799,7 +835,15 @@ class _LedgerTable extends StatelessWidget {
                 if (compact) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: rows.map((e) => _LedgerTile(row: e.row, balance: e.balanceAfter, isDark: isDark)).toList(),
+                    children: rows
+                        .map(
+                          (e) => _LedgerTile(
+                            row: e.row,
+                            balance: e.balanceAfter,
+                            isDark: isDark,
+                          ),
+                        )
+                        .toList(),
                   );
                 }
                 return Column(
@@ -810,14 +854,18 @@ class _LedgerTable extends StatelessWidget {
                           flex: 2,
                           child: Text(
                             'Date',
-                            style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
+                            style: AppTextStyles.caption(
+                              color: headerColor,
+                            ).copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                         Expanded(
                           flex: 3,
                           child: Text(
                             'Détails',
-                            style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
+                            style: AppTextStyles.caption(
+                              color: headerColor,
+                            ).copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                         SizedBox(
@@ -825,7 +873,9 @@ class _LedgerTable extends StatelessWidget {
                           child: Text(
                             'Entrée',
                             textAlign: TextAlign.end,
-                            style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
+                            style: AppTextStyles.caption(
+                              color: headerColor,
+                            ).copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                         SizedBox(
@@ -833,7 +883,9 @@ class _LedgerTable extends StatelessWidget {
                           child: Text(
                             'Sortie',
                             textAlign: TextAlign.end,
-                            style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
+                            style: AppTextStyles.caption(
+                              color: headerColor,
+                            ).copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                         SizedBox(
@@ -841,7 +893,9 @@ class _LedgerTable extends StatelessWidget {
                           child: Text(
                             'Solde',
                             textAlign: TextAlign.end,
-                            style: AppTextStyles.caption(color: headerColor).copyWith(fontWeight: FontWeight.w600),
+                            style: AppTextStyles.caption(
+                              color: headerColor,
+                            ).copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ],
@@ -852,7 +906,10 @@ class _LedgerTable extends StatelessWidget {
                       return Column(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -861,19 +918,24 @@ class _LedgerTable extends StatelessWidget {
                                   child: Text(
                                     e.row.dateLabel,
                                     style: AppTextStyles.caption(
-                                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                                      color: isDark
+                                          ? AppColors.warmWhite
+                                          : AppColors.nearBlack,
                                     ).copyWith(fontWeight: FontWeight.w500),
                                   ),
                                 ),
                                 Expanded(
                                   flex: 3,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         e.row.title,
                                         style: AppTextStyles.body(
-                                          color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                                          color: isDark
+                                              ? AppColors.warmWhite
+                                              : AppColors.nearBlack,
                                         ).copyWith(fontWeight: FontWeight.w600),
                                       ),
                                       if (e.row.subtitle.isNotEmpty) ...[
@@ -891,17 +953,25 @@ class _LedgerTable extends StatelessWidget {
                                 SizedBox(
                                   width: 48,
                                   child: Text(
-                                    e.row.inQty != null ? '+${e.row.inQty}' : '—',
+                                    e.row.inQty != null
+                                        ? '+${e.row.inQty}'
+                                        : '—',
                                     textAlign: TextAlign.end,
-                                    style: AppTextStyles.caption(color: AppColors.deepGreen),
+                                    style: AppTextStyles.caption(
+                                      color: AppColors.deepGreen,
+                                    ),
                                   ),
                                 ),
                                 SizedBox(
                                   width: 48,
                                   child: Text(
-                                    e.row.outQty != null ? '−${e.row.outQty}' : '—',
+                                    e.row.outQty != null
+                                        ? '−${e.row.outQty}'
+                                        : '—',
                                     textAlign: TextAlign.end,
-                                    style: AppTextStyles.caption(color: AppColors.boldRed),
+                                    style: AppTextStyles.caption(
+                                      color: AppColors.boldRed,
+                                    ),
                                   ),
                                 ),
                                 SizedBox(
@@ -910,14 +980,17 @@ class _LedgerTable extends StatelessWidget {
                                     '${e.balanceAfter}',
                                     textAlign: TextAlign.end,
                                     style: AppTextStyles.body(
-                                      color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                                      color: isDark
+                                          ? AppColors.warmWhite
+                                          : AppColors.nearBlack,
                                     ).copyWith(fontWeight: FontWeight.w700),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          if (i < rows.length - 1) const Divider(height: 1, indent: 16, endIndent: 16),
+                          if (i < rows.length - 1)
+                            const Divider(height: 1, indent: 16, endIndent: 16),
                         ],
                       );
                     }),
@@ -949,10 +1022,14 @@ class _LedgerTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppConstants.spacing8),
       padding: const EdgeInsets.all(AppConstants.spacing12),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkBackground.withValues(alpha: 0.45) : AppColors.lightBlue.withValues(alpha: 0.35),
+        color: isDark
+            ? AppColors.darkBackground.withValues(alpha: 0.45)
+            : AppColors.lightBlue.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(AppConstants.radiusInput),
         border: Border.all(
-          color: (isDark ? AppColors.coolGray : AppColors.darkGray).withValues(alpha: 0.25),
+          color: (isDark ? AppColors.coolGray : AppColors.darkGray).withValues(
+            alpha: 0.25,
+          ),
         ),
       ),
       child: Column(
@@ -977,7 +1054,9 @@ class _LedgerTile extends StatelessWidget {
                     Text(
                       row.title,
                       style: AppTextStyles.body(
-                        color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                        color: isDark
+                            ? AppColors.warmWhite
+                            : AppColors.nearBlack,
                       ).copyWith(fontWeight: FontWeight.w600),
                     ),
                     if (row.subtitle.isNotEmpty) ...[
@@ -1085,7 +1164,8 @@ class _AddRetailStockSheet extends ConsumerStatefulWidget {
   final MockProduct product;
 
   @override
-  ConsumerState<_AddRetailStockSheet> createState() => _AddRetailStockSheetState();
+  ConsumerState<_AddRetailStockSheet> createState() =>
+      _AddRetailStockSheetState();
 }
 
 class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
@@ -1148,10 +1228,7 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              widget.product.name,
-              style: AppTextStyles.caption(),
-            ),
+            Text(widget.product.name, style: AppTextStyles.caption()),
             const SizedBox(height: AppConstants.spacing24),
             TextField(
               controller: _qtyCtrl,
@@ -1161,7 +1238,9 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
                 labelText: 'Quantity',
                 suffixText: 'unités',
                 filled: true,
-                fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                fillColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
                 ),
@@ -1183,9 +1262,13 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
                 decoration: InputDecoration(
                   labelText: 'Date de réception',
                   filled: true,
-                  fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                  fillColor: isDark
+                      ? AppColors.darkBackground
+                      : AppColors.warmOffWhite,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.radiusInput,
+                    ),
                   ),
                 ),
                 child: Row(
@@ -1210,7 +1293,9 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
               decoration: InputDecoration(
                 labelText: 'Supplier',
                 filled: true,
-                fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                fillColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
                 ),
@@ -1231,7 +1316,8 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.caption(),
                         ),
-                        onPressed: () => setState(() => _supplierCtrl.text = s.name),
+                        onPressed: () =>
+                            setState(() => _supplierCtrl.text = s.name),
                       ),
                     )
                     .toList(),
@@ -1244,7 +1330,9 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
               decoration: InputDecoration(
                 labelText: 'Notes (facultatif)',
                 filled: true,
-                fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+                fillColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppConstants.radiusInput),
                 ),
@@ -1256,9 +1344,6 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: AppConstants.buttonHeight / 2),
-                    ),
                     child: const Text('Annuler'),
                   ),
                 ),
@@ -1278,12 +1363,16 @@ class _AddRetailStockSheetState extends ConsumerState<_AddRetailStockSheet> {
                         _receivedDate.month,
                         _receivedDate.day,
                       );
-                      ref.read(retailInventoryLedgerProvider.notifier).addStockIn(
+                      ref
+                          .read(retailInventoryLedgerProvider.notifier)
+                          .addStockIn(
                             productId: widget.product.id,
                             quantity: q,
                             receivedAt: received,
                             supplierName: sup,
-                            notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+                            notes: _notesCtrl.text.trim().isEmpty
+                                ? null
+                                : _notesCtrl.text.trim(),
                           );
                       Navigator.pop(context);
                     },
@@ -1305,10 +1394,12 @@ class _AdjustRetailStockSheet extends ConsumerStatefulWidget {
   final MockProduct product;
 
   @override
-  ConsumerState<_AdjustRetailStockSheet> createState() => _AdjustRetailStockSheetState();
+  ConsumerState<_AdjustRetailStockSheet> createState() =>
+      _AdjustRetailStockSheetState();
 }
 
-class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet> {
+class _AdjustRetailStockSheetState
+    extends ConsumerState<_AdjustRetailStockSheet> {
   final _amtCtrl = TextEditingController();
   final _noteCtrl = TextEditingController(text: 'Correction d\'inventaire');
   bool _isAdd = true;
@@ -1342,10 +1433,7 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            widget.product.name,
-            style: AppTextStyles.caption(),
-          ),
+          Text(widget.product.name, style: AppTextStyles.caption()),
           const SizedBox(height: AppConstants.spacing24),
           Row(
             children: [
@@ -1378,7 +1466,9 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
             decoration: InputDecoration(
               labelText: 'Units',
               filled: true,
-              fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+              fillColor: isDark
+                  ? AppColors.darkBackground
+                  : AppColors.warmOffWhite,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.radiusInput),
               ),
@@ -1390,7 +1480,9 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
             decoration: InputDecoration(
               labelText: 'Reason',
               filled: true,
-              fillColor: isDark ? AppColors.darkBackground : AppColors.warmOffWhite,
+              fillColor: isDark
+                  ? AppColors.darkBackground
+                  : AppColors.warmOffWhite,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.radiusInput),
               ),
@@ -1402,9 +1494,6 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: AppConstants.buttonHeight / 2),
-                  ),
                   child: const Text('Annuler'),
                 ),
               ),
@@ -1418,7 +1507,9 @@ class _AdjustRetailStockSheetState extends ConsumerState<_AdjustRetailStockSheet
                     final n = int.tryParse(_amtCtrl.text) ?? 0;
                     if (n <= 0) return;
                     final signed = _isAdd ? n : -n;
-                    ref.read(retailInventoryLedgerProvider.notifier).adjust(
+                    ref
+                        .read(retailInventoryLedgerProvider.notifier)
+                        .adjust(
                           productId: widget.product.id,
                           signedDelta: signed,
                           notes: _noteCtrl.text.trim(),
@@ -1466,27 +1557,38 @@ class _AdjChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? (isDark
-                    ? AppColors.skyBlue.withValues(alpha: 0.2)
-                    : AppColors.primaryBlue.withValues(alpha: 0.12))
+                      ? AppColors.skyBlue.withValues(alpha: 0.2)
+                      : AppColors.primaryBlue.withValues(alpha: 0.12))
                 : (isDark ? AppColors.darkBackground : AppColors.warmOffWhite),
             borderRadius: BorderRadius.circular(AppConstants.radiusInput),
             border: Border.all(
               color: selected
                   ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
                   : (isDark ? AppColors.coolGray : AppColors.darkGray)
-                      .withValues(alpha: 0.4),
+                        .withValues(alpha: 0.4),
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 20, color: selected ? AppColors.primaryBlue : AppColors.darkGray),
+              Icon(
+                icon,
+                size: 20,
+                color: selected ? AppColors.primaryBlue : AppColors.darkGray,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   label,
-                  style: AppTextStyles.body(
-                    color: selected ? AppColors.primaryBlue : AppColors.nearBlack,
-                  ).copyWith(fontWeight: selected ? FontWeight.w600 : FontWeight.normal),
+                  style:
+                      AppTextStyles.body(
+                        color: selected
+                            ? AppColors.primaryBlue
+                            : AppColors.nearBlack,
+                      ).copyWith(
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
                 ),
               ),
             ],

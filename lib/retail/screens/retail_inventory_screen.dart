@@ -10,6 +10,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/status_badge.dart';
+import '../widgets/category_filter_button.dart';
 import '../widgets/retail_product_inventory_panel.dart';
 
 const int _kInventoryPageSize = 15;
@@ -27,7 +28,6 @@ double _inventoryGridAspectRatio(int crossAxisCount) {
   }
 }
 
-
 class RetailInventoryScreen extends ConsumerStatefulWidget {
   const RetailInventoryScreen({super.key});
 
@@ -39,6 +39,7 @@ class RetailInventoryScreen extends ConsumerStatefulWidget {
 class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+
   /// `null` = all categories.
   String? _categoryFilter;
   int _currentPage = 1;
@@ -93,11 +94,12 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
           p.category.toLowerCase().contains(q);
     }).toList();
 
-    final lowStockItems =
-        products.fold<int>(0, (n, p) => n + (p.isLowStock ? 1 : 0));
-    final filteredSorted = [...filtered]..sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
+    final lowStockItems = products.fold<int>(
+      0,
+      (n, p) => n + (p.isLowStock ? 1 : 0),
+    );
+    final filteredSorted = [...filtered]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     final totalPages = max(
       1,
@@ -140,8 +142,9 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
             vertical: AppConstants.spacing24,
           );
 
-          final panelW =
-              AppConstants.retailInventoryDetailPanelWidth(constraints.maxWidth);
+          final panelW = AppConstants.retailInventoryDetailPanelWidth(
+            constraints.maxWidth,
+          );
 
           final listSection = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +179,9 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                             border: Border.all(
                               color: isDark
                                   ? AppColors.skyBlue.withValues(alpha: 0.35)
-                                  : AppColors.primaryBlue.withValues(alpha: 0.2),
+                                  : AppColors.primaryBlue.withValues(
+                                      alpha: 0.2,
+                                    ),
                             ),
                           ),
                           child: Text(
@@ -217,9 +222,7 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                 const SizedBox(height: AppConstants.spacing8),
                 Text(
                   '$lowStockItems sous le stock minimum',
-                  style: AppTextStyles.caption(
-                    color: AppColors.amber,
-                  ),
+                  style: AppTextStyles.caption(color: AppColors.amber),
                 ),
               ],
               const SizedBox(height: AppConstants.spacing16),
@@ -247,19 +250,21 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                         child: Text(
                           'Aucun produit ne correspond à votre recherche.',
                           style: AppTextStyles.body(
-                            color:
-                                isDark ? AppColors.coolGray : AppColors.darkGray,
+                            color: isDark
+                                ? AppColors.coolGray
+                                : AppColors.darkGray,
                           ),
                         ),
                       )
                     : LayoutBuilder(
                         builder: (context, constraints) {
                           final cw = constraints.maxWidth;
-                          final crossAxisCount = cw >= AppConstants.tabletBreakpoint
+                          final crossAxisCount =
+                              cw >= AppConstants.tabletBreakpoint
                               ? 3
                               : cw >= AppConstants.mobileBreakpoint
-                                  ? 2
-                                  : 1;
+                              ? 2
+                              : 1;
                           if (crossAxisCount == 1) {
                             return Column(
                               children: pageItems.asMap().entries.map((e) {
@@ -270,7 +275,8 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                                     _InventoryProductRow(
                                       product: p,
                                       isDark: isDark,
-                                      selected: p.id == _selectedProductId &&
+                                      selected:
+                                          p.id == _selectedProductId &&
                                           _drawerOpen,
                                       onTap: () {
                                         if (useSideDrawer) {
@@ -294,27 +300,29 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                             );
                           }
                           return Padding(
-                            padding: const EdgeInsets.all(AppConstants.spacing12),
+                            padding: const EdgeInsets.all(
+                              AppConstants.spacing12,
+                            ),
                             child: GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: AppConstants.spacing12,
-                                mainAxisSpacing: AppConstants.spacing12,
-                                childAspectRatio: _inventoryGridAspectRatio(
-                                  crossAxisCount,
-                                ),
-                              ),
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: AppConstants.spacing12,
+                                    mainAxisSpacing: AppConstants.spacing12,
+                                    childAspectRatio: _inventoryGridAspectRatio(
+                                      crossAxisCount,
+                                    ),
+                                  ),
                               itemCount: pageItems.length,
                               itemBuilder: (context, i) {
                                 final p = pageItems[i];
                                 return _InventoryProductGridTile(
                                   product: p,
                                   isDark: isDark,
-                                  selected: p.id == _selectedProductId &&
-                                      _drawerOpen,
+                                  selected:
+                                      p.id == _selectedProductId && _drawerOpen,
                                   onTap: () {
                                     if (useSideDrawer) {
                                       _openDrawer(p);
@@ -398,15 +406,16 @@ class _RetailInventoryScreenState extends ConsumerState<RetailInventoryScreen> {
                       child: Material(
                         elevation: 16,
                         shadowColor: Colors.black.withValues(alpha: 0.35),
-                        color:
-                            isDark ? AppColors.darkSurface : AppColors.white,
+                        color: isDark ? AppColors.darkSurface : AppColors.white,
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border(
                               left: BorderSide(
                                 color: isDark
                                     ? AppColors.darkBorder
-                                    : AppColors.darkGray.withValues(alpha: 0.25),
+                                    : AppColors.darkGray.withValues(
+                                        alpha: 0.25,
+                                      ),
                               ),
                             ),
                           ),
@@ -522,7 +531,6 @@ class _InventoryFilterSearchRow extends StatelessWidget {
         ? AppColors.darkBorder
         : AppColors.darkGray.withValues(alpha: 0.25);
     final fill = isDark ? AppColors.darkSurface : AppColors.white;
-    final active = categoryFilter != null;
 
     final searchField = TextField(
       controller: searchController,
@@ -555,12 +563,13 @@ class _InventoryFilterSearchRow extends StatelessWidget {
       ),
     );
 
-    final catChip = _CategoryFilterButton(
+    final catChip = CategoryFilterButton(
       isDark: isDark,
       fill: fill,
       borderColor: borderColor,
-      active: active,
+      expand: narrow,
       label: categoryFilter ?? 'Toutes les catégories',
+      selected: categoryFilter,
       categories: categories,
       onChanged: onCategoryChanged,
     );
@@ -584,169 +593,6 @@ class _InventoryFilterSearchRow extends StatelessWidget {
         Expanded(child: searchField),
       ],
     );
-  }
-}
-
-class _CategoryFilterButton extends StatelessWidget {
-  const _CategoryFilterButton({
-    required this.isDark,
-    required this.fill,
-    required this.borderColor,
-    required this.active,
-    required this.label,
-    required this.categories,
-    required this.onChanged,
-  });
-
-  final bool isDark;
-  final Color fill;
-  final Color borderColor;
-  final bool active;
-  final String label;
-  final List<String> categories;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final activeColor = AppColors.primaryBlue;
-    final bg = active
-        ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08)
-        : fill;
-    final border = active
-        ? activeColor.withValues(alpha: isDark ? 0.55 : 0.4)
-        : borderColor;
-    final textColor = active
-        ? (isDark ? AppColors.skyBlue : activeColor)
-        : (isDark ? AppColors.coolGray : AppColors.darkGray);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: () => _openMenu(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.category_outlined,
-              size: 16,
-              color: textColor,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: AppTextStyles.caption(color: textColor)
-                  .copyWith(fontWeight: active ? FontWeight.w600 : FontWeight.w500),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.expand_more_rounded,
-              size: 16,
-              color: textColor,
-            ),
-            if (active) ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => onChanged(null),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 14,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openMenu(BuildContext context) {
-    final items = <PopupMenuEntry<String?>>[
-      PopupMenuItem<String?>(
-        value: null,
-        child: Row(
-          children: [
-            Icon(
-              Icons.select_all_rounded,
-              size: 16,
-              color: isDark ? AppColors.coolGray : AppColors.darkGray,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Toutes les catégories',
-              style: AppTextStyles.body(
-                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(height: 4),
-      ...categories.map(
-        (c) => PopupMenuItem<String?>(
-          value: c,
-          child: Row(
-            children: [
-              Icon(
-                c == label && active
-                    ? Icons.check_rounded
-                    : Icons.label_outline_rounded,
-                size: 16,
-                color: c == label && active
-                    ? AppColors.primaryBlue
-                    : (isDark ? AppColors.coolGray : AppColors.darkGray),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                c,
-                style: AppTextStyles.body(
-                  color: c == label && active
-                      ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                      : (isDark ? AppColors.warmWhite : AppColors.nearBlack),
-                ).copyWith(
-                  fontWeight: c == label && active ? FontWeight.w600 : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ];
-
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    showMenu<String?>(
-      context: context,
-      color: isDark ? AppColors.darkSurface : AppColors.white,
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        side: BorderSide(
-          color: isDark
-              ? AppColors.darkBorder
-              : AppColors.darkGray.withValues(alpha: 0.15),
-        ),
-      ),
-      position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy + size.height + 4,
-        offset.dx + size.width,
-        0,
-      ),
-      items: items,
-    ).then((val) {
-      if (val != null || val == null) onChanged(val);
-    });
   }
 }
 
@@ -798,8 +644,9 @@ class _InventoryProductGridTile extends StatelessWidget {
                           ? product.name.substring(0, 1).toUpperCase()
                           : '?',
                       style: AppTextStyles.h3(
-                        color:
-                            isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                        color: isDark
+                            ? AppColors.skyBlue
+                            : AppColors.primaryBlue,
                       ),
                     ),
                   ),
@@ -814,8 +661,9 @@ class _InventoryProductGridTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.body(
-                            color:
-                                isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                            color: isDark
+                                ? AppColors.warmWhite
+                                : AppColors.nearBlack,
                           ).copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 1),
@@ -824,8 +672,9 @@ class _InventoryProductGridTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.caption(
-                            color:
-                                isDark ? AppColors.coolGray : AppColors.darkGray,
+                            color: isDark
+                                ? AppColors.coolGray
+                                : AppColors.darkGray,
                           ),
                         ),
                         const SizedBox(height: 1),
@@ -835,16 +684,19 @@ class _InventoryProductGridTile extends StatelessWidget {
                               product.trackStock
                                   ? '${product.stockQuantity}'
                                   : 'Non suivi',
-                              style: AppTextStyles.body(
-                                color: product.isLowStock
-                                    ? AppColors.boldRed
-                                    : (isDark
-                                        ? AppColors.warmWhite
-                                        : AppColors.nearBlack),
-                              ).copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
+                              style:
+                                  AppTextStyles.body(
+                                    color: product.isLowStock
+                                        ? AppColors.boldRed
+                                        : (isDark
+                                              ? AppColors.warmWhite
+                                              : AppColors.nearBlack),
+                                  ).copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
                             ),
                             const SizedBox(width: 6),
                             if (product.isLowStock)
@@ -934,11 +786,14 @@ class _InventoryProductRow extends StatelessWidget {
               onTap: onTap,
               child: Container(
                 color: selected
-                    ? AppColors.primaryBlue
-                        .withValues(alpha: isDark ? 0.18 : 0.08)
+                    ? AppColors.primaryBlue.withValues(
+                        alpha: isDark ? 0.18 : 0.08,
+                      )
                     : null,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Row(
                   children: [
                     CircleAvatar(
@@ -951,8 +806,9 @@ class _InventoryProductRow extends StatelessWidget {
                             ? product.name.substring(0, 1).toUpperCase()
                             : '?',
                         style: AppTextStyles.h3(
-                          color:
-                              isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                          color: isDark
+                              ? AppColors.skyBlue
+                              : AppColors.primaryBlue,
                         ),
                       ),
                     ),
@@ -984,16 +840,17 @@ class _InventoryProductRow extends StatelessWidget {
                           product.trackStock
                               ? '${product.stockQuantity}'
                               : 'Non suivi',
-                          style: AppTextStyles.body(
-                            color: product.isLowStock
-                                ? AppColors.boldRed
-                                : (isDark
-                                    ? AppColors.warmWhite
-                                    : AppColors.nearBlack),
-                          ).copyWith(
-                            fontWeight: FontWeight.w700,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
+                          style:
+                              AppTextStyles.body(
+                                color: product.isLowStock
+                                    ? AppColors.boldRed
+                                    : (isDark
+                                          ? AppColors.warmWhite
+                                          : AppColors.nearBlack),
+                              ).copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
                         ),
                         if (product.isLowStock)
                           const StatusBadge(
