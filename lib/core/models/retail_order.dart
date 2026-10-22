@@ -101,6 +101,9 @@ class RetailOrder {
   final DateTime createdAt;
   final DateTime paidAt;
 
+  /// Clerk or account that recorded the sale. Older sales have none.
+  final String? recordedBy;
+
   /// Card last 4, MonCash phone last 4, or credit account last 4 (mock / gateway).
   final String? paymentLastFour;
 
@@ -127,6 +130,7 @@ class RetailOrder {
     this.deliveryPhone,
     required this.createdAt,
     required this.paidAt,
+    this.recordedBy,
     this.paymentLastFour,
     this.checkPayment,
   });
@@ -176,6 +180,7 @@ class RetailOrder {
     Object? deliveryPhone = _sentinel,
     DateTime? createdAt,
     DateTime? paidAt,
+    Object? recordedBy = _sentinel,
     Object? paymentLastFour = _sentinel,
     Object? checkPayment = _sentinel,
   }) {
@@ -208,6 +213,9 @@ class RetailOrder {
           : deliveryPhone as String?,
       createdAt: createdAt ?? this.createdAt,
       paidAt: paidAt ?? this.paidAt,
+      recordedBy: recordedBy == _sentinel
+          ? this.recordedBy
+          : recordedBy as String?,
       paymentLastFour: paymentLastFour == _sentinel
           ? this.paymentLastFour
           : paymentLastFour as String?,
@@ -237,6 +245,7 @@ class RetailOrder {
         'deliveryPhone': deliveryPhone,
         'createdAt': createdAt.toIso8601String(),
         'paidAt': paidAt.toIso8601String(),
+        'recordedBy': recordedBy,
         'paymentLastFour': paymentLastFour,
         'checkPayment': checkPayment?.toJson(),
       };
@@ -296,6 +305,7 @@ class RetailOrder {
       deliveryPhone: json['deliveryPhone']?.toString(),
       createdAt: DateTime.tryParse('${json['createdAt']}') ?? now,
       paidAt: DateTime.tryParse('${json['paidAt']}') ?? now,
+      recordedBy: _recordedBy(json['recordedBy']),
       paymentLastFour: json['paymentLastFour']?.toString(),
       checkPayment: RetailCheckPayment.fromJson(json['checkPayment']),
     );
@@ -303,3 +313,8 @@ class RetailOrder {
 }
 
 const Object _sentinel = Object();
+
+String? _recordedBy(Object? raw) {
+  final name = raw?.toString().trim() ?? '';
+  return name.isEmpty ? null : name;
+}

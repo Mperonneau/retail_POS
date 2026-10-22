@@ -1,23 +1,34 @@
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:retail_pos/core/models/order_history.dart';
 import 'package:retail_pos/core/models/retail_check_payment.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
+import 'package:retail_pos/core/theme/app_theme.dart';
 import 'package:retail_pos/retail/receipt/sale_receipt_pdf.dart';
 import 'package:retail_pos/retail/receipt/sale_receipt_text.dart';
+import 'package:retail_pos/retail/receipt/share_receipt_file.dart';
+import 'package:retail_pos/retail/widgets/sale_receipt_panel.dart';
 
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
+    GoogleFonts.config.allowRuntimeFetching = false;
     Intl.defaultLocale = 'fr';
     await initializeDateFormatting('fr');
   });
 
-  RetailOrder sample({bool cleared = false, String? clearedBy}) {
+  RetailOrder sample({
+    bool cleared = false,
+    String? clearedBy,
+    String? recordedBy,
+  }) {
     return RetailOrder(
       id: 'pos-1',
       orderNumber: 'ORD-2026-4596',
@@ -45,6 +56,7 @@ void main() {
       ],
       createdAt: DateTime(2026, 10, 22, 8, 23),
       paidAt: DateTime(2026, 10, 22, 8, 23),
+      recordedBy: recordedBy,
     );
   }
 
@@ -95,6 +107,29 @@ void main() {
     expect(text, contains('Chèque compensé par : Nadia Pierre'));
   });
 
+  test('the receipt names the clerk who recorded the sale', () {
+    final order = sample(recordedBy: 'Nadia Pierre');
+    final text = saleReceiptText(
+      order: order,
+      figures: figures,
+      shopName: 'Boutique Soleil',
+      money: money,
+    );
+    expect(text, contains('Caissier : Nadia Pierre'));
+    expect(RetailOrder.fromJson(order.toJson())?.recordedBy, 'Nadia Pierre');
+    final legacy = order.toJson()..remove('recordedBy');
+    expect(RetailOrder.fromJson(legacy)?.recordedBy, isNull);
+    expect(
+      saleReceiptText(
+        order: sample(),
+        figures: figures,
+        shopName: 'Boutique Soleil',
+        money: money,
+      ),
+      isNot(contains('Caissier')),
+    );
+  });
+
   test('WhatsApp and e-mail links carry the receipt', () {
     const body = 'Reçu ORD-2026-4596';
     expect(
@@ -119,7 +154,11 @@ void main() {
     Future<Uint8List> build(PdfPageFormat format) {
       return buildSaleReceiptPdf(
         format: format,
-        order: sample(cleared: true, clearedBy: 'Nadia Pierre'),
+        order: sample(
+          cleared: true,
+          clearedBy: 'Nadia Pierre',
+          recordedBy: 'Nadia Pierre',
+        ),
         figures: figures,
         shopName: 'Boutique Soleil',
         money: money,
@@ -178,6 +217,64 @@ void main() {
       money: money,
     );
     expect(_mediaBoxCount(bytes), greaterThan(1));
+  });
+
+  testWidgets('WhatsApp, e-mail, and share send the PDF receipt', (
+    tester,
+  ) async {
+    final shared = <({Uint8List bytes, String filename, String subject})>[];
+    final previous = shareReceiptFile;
+    shareReceiptFile =
+        ({
+          required Uint8List bytes,
+          required String filename,
+          required String subject,
+        }) async {
+          shared.add((bytes: bytes, filename: filename, subject: subject));
+        };
+    addTearDown(() => shareReceiptFile = previous);
+
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: SaleReceiptPanel(
+              order: sample(recordedBy: 'Nadia Pierre'),
+              figures: figures,
+              statusLine: 'Vente n°4596 — chèque en attente',
+              onDone: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Caissier : Nadia Pierre'), findsOneWidget);
+
+    for (final key in const [
+      'receipt-whatsapp',
+      'receipt-email',
+      'receipt-share',
+    ]) {
+      await tester.ensureVisible(find.byKey(Key(key)));
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+    }
+
+    expect(shared, hasLength(3));
+    for (final item in shared) {
+      expect(String.fromCharCodes(item.bytes.take(5)), '%PDF-');
+      expect(item.filename, 'recu-ORD-2026-4596.pdf');
+      expect(item.subject, 'Reçu ORD-2026-4596');
+    }
+    expect(find.text('Impossible de préparer le reçu.'), findsNothing);
   });
 }
 

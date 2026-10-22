@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/models/retail_fulfillment_mode.dart';
 import '../../core/models/retail_order.dart';
@@ -17,9 +16,9 @@ import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_close_button.dart';
 import '../../core/widgets/payment_method_block.dart';
-import '../receipt/open_receipt_url.dart';
 import '../receipt/sale_receipt_pdf.dart';
 import '../receipt/sale_receipt_text.dart';
+import '../receipt/share_receipt_file.dart';
 
 /// The sale the cashier just recorded, laid out as a receipt that can be
 /// printed, downloaded, or shared.
@@ -45,6 +44,38 @@ class SaleReceiptPanel extends ConsumerStatefulWidget {
 
 class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
   bool _busy = false;
+  Uint8List? _pdfBytes;
+  String? _pdfShop;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _preparePdf());
+  }
+
+  Future<void> _preparePdf() async {
+    if (!mounted) return;
+    final shop = ref.read(authProvider).businessName?.trim() ?? '';
+    try {
+      final bytes = await _pdf(shop, PdfPageFormat.a4);
+      if (!mounted) return;
+      setState(() {
+        _pdfBytes = bytes;
+        _pdfShop = shop;
+      });
+    } catch (_) {
+      // The share buttons build the file again if this pass fails.
+    }
+  }
+
+  Future<Uint8List> _readyPdf(String shopName) async {
+    final cached = _pdfBytes;
+    if (cached != null && _pdfShop == shopName) return cached;
+    final bytes = await _pdf(shopName, PdfPageFormat.a4);
+    _pdfBytes = bytes;
+    _pdfShop = shopName;
+    return bytes;
+  }
 
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
@@ -65,20 +96,6 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
   }
 
   String _money(double amount) => CurrencyFormatter.local(context, amount);
-
-  String _text(String shopName) {
-    final usd = CurrencyFormatter.usdEquivalentOrNull(
-      context,
-      widget.figures.total,
-    );
-    return saleReceiptText(
-      order: widget.order,
-      figures: widget.figures,
-      shopName: shopName,
-      money: _money,
-      usdTotal: usd,
-    );
-  }
 
   Future<Uint8List> _pdf(String shopName, PdfPageFormat format) {
     final usd = CurrencyFormatter.usdEquivalentOrNull(
@@ -103,40 +120,19 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
   }
 
   Future<void> _download(String shopName) async {
-    final bytes = await _pdf(shopName, PdfPageFormat.a4);
+    final bytes = await _readyPdf(shopName);
     await Printing.sharePdf(
       bytes: bytes,
       filename: saleReceiptFilename(widget.order),
     );
   }
 
-  Future<void> _whatsApp(String shopName) async {
-    final text = _text(shopName);
-    final url = whatsAppReceiptUrl(phone: widget.order.clientPhone, text: text);
-    if (url.length > 1800) {
-      await Share.share(text, subject: 'Reçu ${widget.order.orderNumber}');
-      return;
-    }
-    openReceiptUrl(url);
-  }
-
-  Future<void> _email(String shopName) async {
-    final text = _text(shopName);
-    final url = emailReceiptUrl(
-      to: widget.order.clientEmail,
-      subject: 'Reçu ${widget.order.orderNumber}',
-      body: text,
-    );
-    if (url.length > 1800) {
-      await Share.share(text, subject: 'Reçu ${widget.order.orderNumber}');
-      return;
-    }
-    openReceiptUrl(url);
-  }
-
-  Future<void> _share(String shopName) async {
-    await Share.share(
-      _text(shopName),
+  /// WhatsApp, e-mail, and the share button all hand the PDF to the phone.
+  Future<void> _sharePdf(String shopName) async {
+    final bytes = await _readyPdf(shopName);
+    await shareReceiptFile(
+      bytes: bytes,
+      filename: saleReceiptFilename(widget.order),
       subject: 'Reçu ${widget.order.orderNumber}',
     );
   }
@@ -264,6 +260,14 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                         '${DateFormatter.shortDate(order.createdAt)} · ${DateFormatter.timeOfDay(order.createdAt)}',
                         style: AppTextStyles.caption(color: muted),
                       ),
+                      if ((order.recordedBy ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        _meta(
+                          Icons.badge_outlined,
+                          'Caissier : ${order.recordedBy!.trim()}',
+                          ink,
+                        ),
+                      ],
                       const SizedBox(height: 10),
                       if ((order.clientName ?? '').trim().isNotEmpty)
                         _meta(
@@ -408,7 +412,7 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                   key: const Key('receipt-whatsapp'),
                   label: 'Envoyer le reçu par WhatsApp',
                   icon: Icons.send_outlined,
-                  onPressed: _busy ? null : () => _run(() => _whatsApp(shop)),
+                  onPressed: _busy ? null : () => _run(() => _sharePdf(shop)),
                 ),
                 const SizedBox(height: 8),
                 AppButton(
@@ -416,7 +420,7 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                   label: 'Envoyer le reçu par e-mail',
                   icon: Icons.email_outlined,
                   variant: AppButtonVariant.secondary,
-                  onPressed: _busy ? null : () => _run(() => _email(shop)),
+                  onPressed: _busy ? null : () => _run(() => _sharePdf(shop)),
                 ),
                 const SizedBox(height: 8),
                 AppButton(
@@ -424,7 +428,7 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                   label: 'Partager le reçu',
                   icon: Icons.share_outlined,
                   variant: AppButtonVariant.secondary,
-                  onPressed: _busy ? null : () => _run(() => _share(shop)),
+                  onPressed: _busy ? null : () => _run(() => _sharePdf(shop)),
                 ),
                 const SizedBox(height: 8),
                 Center(

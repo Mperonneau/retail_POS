@@ -177,6 +177,8 @@ List<pw.Widget> _header(
     _field('Numéro', order.orderNumber, body),
     _field('Date', _stamp(order.createdAt), body),
   ];
+  final clerk = order.recordedBy?.trim() ?? '';
+  if (clerk.isNotEmpty) fields.add(_field('Caissier', clerk, body));
   final client = order.clientName?.trim() ?? '';
   if (client.isNotEmpty) fields.add(_field('Client', client, body));
   final phone = order.clientPhone?.trim() ?? '';

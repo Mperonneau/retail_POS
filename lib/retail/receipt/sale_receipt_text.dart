@@ -115,6 +115,8 @@ String saleReceiptText({
     '${DateFormatter.shortDate(order.createdAt)} ${DateFormatter.timeOfDay(order.createdAt)}',
   );
   lines.add(saleReceiptHeadline(order));
+  final clerk = order.recordedBy?.trim() ?? '';
+  if (clerk.isNotEmpty) lines.add('Caissier : $clerk');
   lines.add('');
 
   final client = order.clientName?.trim() ?? '';

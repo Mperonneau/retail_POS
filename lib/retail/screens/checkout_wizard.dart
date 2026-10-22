@@ -759,6 +759,10 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                         : null,
                     createdAt: now,
                     paidAt: now,
+                    recordedBy: currentOperatorName(
+                      staffName: ref.read(staffSessionProvider)?.employeeName,
+                      accountName: ref.read(authProvider).userName,
+                    ),
                   );
             ref.read(retailOrdersProvider.notifier).add(sale);
             ref.read(mockProductsProvider.notifier).applySale(map);
