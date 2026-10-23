@@ -2294,6 +2294,8 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                       amount: current.amountPaidHtg ?? 0,
                       isDark: isDark,
                       context: context,
+                      isBold: true,
+                      emphasis: AppColors.deepGreen,
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -2819,6 +2821,7 @@ class _TotalRowSimple extends StatelessWidget {
   final BuildContext context;
   final bool isBold;
   final bool isDiscount;
+  final Color? emphasis;
 
   const _TotalRowSimple({
     required this.label,
@@ -2827,23 +2830,27 @@ class _TotalRowSimple extends StatelessWidget {
     required this.context,
     this.isBold = false,
     this.isDiscount = false,
+    this.emphasis,
   });
 
   @override
   Widget build(BuildContext _) {
-    final baseColor = isDiscount
-        ? (isDark ? AppColors.mediumGreen : AppColors.deepGreen)
-        : (isDark ? AppColors.warmWhite : AppColors.nearBlack);
+    final baseColor = emphasis ??
+        (isDiscount
+            ? (isDark ? AppColors.mediumGreen : AppColors.deepGreen)
+            : (isDark ? AppColors.warmWhite : AppColors.nearBlack));
+    final labelColor = emphasis ??
+        (isDark ? AppColors.coolGray : AppColors.darkGray);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: AppTextStyles.body(
-                  color: isDark ? AppColors.coolGray : AppColors.darkGray)
-              .copyWith(
-                  fontWeight:
-                      isBold ? FontWeight.w600 : FontWeight.normal),
+          style: AppTextStyles.body(color: labelColor).copyWith(
+            fontWeight: emphasis != null
+                ? FontWeight.w700
+                : (isBold ? FontWeight.w600 : FontWeight.normal),
+          ),
         ),
         Text(
           isDiscount

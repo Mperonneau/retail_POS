@@ -11,6 +11,7 @@ import 'package:retail_pos/core/models/order_history.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
 import 'package:retail_pos/core/providers/auth_provider.dart';
 import 'package:retail_pos/core/services/local_store.dart';
+import 'package:retail_pos/core/theme/app_colors.dart';
 import 'package:retail_pos/core/theme/app_theme.dart';
 import 'package:retail_pos/retail/models/retail_cart_entry.dart';
 import 'package:retail_pos/retail/screens/checkout_wizard.dart';
@@ -210,6 +211,17 @@ void main() {
     expect(find.text('Payé'), findsOneWidget);
     expect(find.text('Solde au crédit'), findsOneWidget);
     expect(find.text('Solde impayé'), findsNothing);
+    final paidLabel = tester.widget<Text>(find.text('Payé'));
+    expect(paidLabel.style?.color, AppColors.deepGreen);
+    expect(paidLabel.style?.fontWeight, FontWeight.w700);
+    final paidRow = find
+        .ancestor(of: find.text('Payé'), matching: find.byType(Row))
+        .first;
+    final paidAmount = tester.widget<Text>(
+      find.descendant(of: paidRow, matching: find.byType(Text)).last,
+    );
+    expect(paidAmount.style?.color, AppColors.deepGreen);
+    expect(paidAmount.style?.fontWeight, FontWeight.w700);
 
     final sale = container
         .read(retailOrdersProvider)

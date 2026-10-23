@@ -395,8 +395,9 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                         _amountRow(
                           'Payé',
                           _money(figures.amountPaid),
-                          muted,
-                          ink,
+                          AppColors.deepGreen,
+                          AppColors.deepGreen,
+                          bold: true,
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -545,7 +546,12 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: AppTextStyles.body(color: labelColor)),
+            child: Text(
+              label,
+              style: AppTextStyles.body(color: labelColor).copyWith(
+                fontWeight: bold ? FontWeight.w700 : null,
+              ),
+            ),
           ),
           Text(value, style: style),
         ],

@@ -398,7 +398,7 @@ pw.Widget _totals(
       for (final row in rows) line(row.$1, row.$2, bold: row.$3),
       if (figures.hasBalanceDue) ...[
         pw.SizedBox(height: 4),
-        line('Payé', money(figures.amountPaid), bold: false),
+        line('Payé', money(figures.amountPaid), bold: true),
         pw.SizedBox(height: 4),
         pw.Container(
           width: narrow ? double.infinity : 220,
