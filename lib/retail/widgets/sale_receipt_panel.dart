@@ -398,7 +398,7 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                           saleReceiptCheckAwaitingCredit(order)
                               ? ink
                               : AppColors.deepGreen,
-                          bold: !saleReceiptCheckAwaitingCredit(order),
+                          bold: true,
                         ),
                         const SizedBox(height: 8),
                         Container(

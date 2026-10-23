@@ -401,7 +401,7 @@ pw.Widget _totals(
         line(
           saleReceiptPaidLabel(order),
           money(figures.amountPaid),
-          bold: !saleReceiptCheckAwaitingCredit(order),
+          bold: true,
         ),
         pw.SizedBox(height: 4),
         pw.Container(

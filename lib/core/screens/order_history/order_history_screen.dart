@@ -2295,9 +2295,11 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                       amount: current.amountPaidHtg ?? 0,
                       isDark: isDark,
                       context: context,
-                      isBold: !saleReceiptCheckAwaitingCredit(current),
+                      isBold: true,
                       emphasis: saleReceiptCheckAwaitingCredit(current)
-                          ? null
+                          ? (isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack)
                           : AppColors.deepGreen,
                     ),
                     const SizedBox(height: 8),

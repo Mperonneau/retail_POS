@@ -776,6 +776,24 @@ void main() {
     expect(find.text('Paiement confirmé !'), findsNothing);
     expect(find.text('Chèque en attente'), findsOneWidget);
     expect(find.text('Montant du chèque'), findsOneWidget);
+    final checkAmountLabel = tester.widget<Text>(
+      find.text('Montant du chèque'),
+    );
+    expect(checkAmountLabel.style?.fontWeight, FontWeight.w700);
+    final checkAmountValue = tester.widget<Text>(
+      find
+          .descendant(
+            of: find
+                .ancestor(
+                  of: find.text('Montant du chèque'),
+                  matching: find.byType(Row),
+                )
+                .first,
+            matching: find.byType(Text),
+          )
+          .last,
+    );
+    expect(checkAmountValue.style?.fontWeight, FontWeight.w700);
     expect(find.text('Solde en attente de crédit'), findsOneWidget);
     expect(find.text('Solde au crédit'), findsNothing);
     final sale = container
