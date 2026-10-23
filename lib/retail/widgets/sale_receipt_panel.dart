@@ -143,7 +143,9 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
     final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     final pending = saleReceiptCheckPending(widget.order);
+    final onCredit = saleReceiptBalanceOnCredit(widget.order);
     final partial = !pending &&
+        !onCredit &&
         (widget.order.status == RetailOrderStatus.partiallyPaid ||
             widget.figures.hasBalanceDue);
     final markColor = pending
@@ -421,7 +423,7 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Solde impayé',
+                                  saleReceiptBalanceLabel(order),
                                   style: AppTextStyles.body(
                                     color: AppColors.boldRed,
                                   ).copyWith(fontWeight: FontWeight.w800),

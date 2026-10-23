@@ -128,7 +128,7 @@ List<pw.Widget> _parts({
     pw.SizedBox(height: narrow ? 8 : 16),
     ..._itemRows(order, money, narrow, body, small),
     pw.SizedBox(height: narrow ? 8 : 14),
-    _totals(figures, money, usdTotal, narrow, body),
+    _totals(order, figures, money, usdTotal, narrow, body),
     pw.SizedBox(height: narrow ? 8 : 16),
     ..._payment(order, body, small),
     pw.SizedBox(height: narrow ? 12 : 22),
@@ -330,6 +330,7 @@ List<pw.Widget> _narrowItems(
 }
 
 pw.Widget _totals(
+  RetailOrder order,
   SaleReceiptFigures figures,
   String Function(double amount) money,
   String? usdTotal,
@@ -409,7 +410,7 @@ pw.Widget _totals(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
               pw.Text(
-                'Solde impayé',
+                saleReceiptBalanceLabel(order),
                 style: pw.TextStyle(
                   fontSize: body + 1,
                   fontWeight: pw.FontWeight.bold,

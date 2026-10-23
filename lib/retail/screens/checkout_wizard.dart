@@ -786,7 +786,11 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             final clientEmail = _clientEmailCtrl.text.trim();
             final awaitingCheck = method == PaymentMethodType.check &&
                 !(check?.cleared ?? false);
-            final partial = !awaitingCheck && balanceDueHtg > 0.009;
+            final paidNow = amountPaidHtg ?? 0;
+            final owes = !awaitingCheck && balanceDueHtg > 0.009;
+            final creditSplit =
+                owes && method == PaymentMethodType.credit && paidNow > 0.009;
+            final partial = owes && !creditSplit;
             final creditName = creditCustomer?.name.trim() ?? '';
             final creditPhone = creditCustomer?.phone.trim() ?? '';
             final operator = currentOperatorName(
@@ -812,8 +816,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                         : partial
                             ? RetailOrderStatus.partiallyPaid
                             : RetailOrderStatus.paid,
-                    amountPaidHtg: partial ? (amountPaidHtg ?? 0) : null,
-                    balanceDueHtg: partial ? balanceDueHtg : null,
+                    amountPaidHtg: owes ? paidNow : null,
+                    balanceDueHtg: owes ? balanceDueHtg : null,
                     paymentSource: RetailPaymentSource.pos,
                     paymentMethod: method,
                     checkPayment: method == PaymentMethodType.check
@@ -875,7 +879,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               _completedSaleNumber = saleNo;
               _completedOrder = sale;
               _awaitingCheckClearance = awaitingCheck;
-              _receiptBalanceDue = partial ? balanceDueHtg : 0;
+              _receiptBalanceDue = owes ? balanceDueHtg : 0;
               _step = _successStepIndex;
             });
           },
@@ -910,7 +914,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
           contextSubtitle: _successContextSubtitle(),
           statusLine: _awaitingCheckClearance
               ? 'Vente n°$_completedSaleNumber — chèque en attente'
-              : _receiptBalanceDue > 0.009
+              : _completedOrder?.status == RetailOrderStatus.partiallyPaid
                   ? 'Vente n°$_completedSaleNumber partiellement payée'
                   : 'Vente n°$_completedSaleNumber payée',
           onDone: _finishPaymentSuccess,
@@ -1937,6 +1941,11 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     if (_method == _RPayMethod.check && check == null) return;
     final partialCash =
         _method == _RPayMethod.cash && _cashBalanceDue > 0.009;
+    final paidNow = _creditPartialPaid < 0 ? 0.0 : _creditPartialPaid;
+    final creditDue = widget.total - paidNow;
+    final creditSplit = _method == _RPayMethod.credit &&
+        paidNow > 0.009 &&
+        creditDue > 0.009;
     final creditCustomerSelected = _method == _RPayMethod.credit
         ? (_selectedCustomer == null
             ? null
@@ -1988,8 +1997,16 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         _RPayMethod.check => PaymentMethodType.check,
       },
       check: check,
-      amountPaidHtg: partialCash ? _cashApplied : null,
-      balanceDueHtg: partialCash ? _cashBalanceDue : 0,
+      amountPaidHtg: partialCash
+          ? _cashApplied
+          : creditSplit
+              ? paidNow
+              : null,
+      balanceDueHtg: partialCash
+          ? _cashBalanceDue
+          : creditSplit
+              ? creditDue
+              : 0,
       creditCustomer: balanceCustomer,
       creditAuthorizedBy: authorizedBy,
     );
@@ -4077,6 +4094,7 @@ class _RCreditContent extends StatelessWidget {
                 ),
                 const SizedBox(height: AppConstants.spacing8),
                 TextField(
+                  key: const Key('credit-paid-now'),
                   controller: partialCtrl,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,

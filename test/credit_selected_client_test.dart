@@ -5,7 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:retail_pos/core/mock/mock_retail_data.dart';
+import 'package:retail_pos/core/mock/mock_retail_orders.dart';
 import 'package:retail_pos/core/models/customer.dart';
+import 'package:retail_pos/core/models/order_history.dart';
+import 'package:retail_pos/core/models/retail_order.dart';
 import 'package:retail_pos/core/providers/auth_provider.dart';
 import 'package:retail_pos/core/services/local_store.dart';
 import 'package:retail_pos/core/theme/app_theme.dart';
@@ -185,6 +188,45 @@ void main() {
     expect(
       container.read(customerProvider).balanceFor(client.id),
       greaterThan(0),
+    );
+  });
+
+  testWidgets('credit with cash shows the paid amount and the credit balance', (
+    tester,
+  ) async {
+    final container = await openRegister(tester);
+    await pickMadamePierre(tester);
+    await openCredit(tester);
+
+    await tester.enterText(find.byKey(const Key('credit-paid-now')), '100');
+    await tester.pump();
+    await tester.ensureVisible(find.text('Confirmer le paiement'));
+    await tester.tap(find.text('Confirmer le paiement'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Paiement confirmé !'), findsOneWidget);
+    expect(find.text('Paiement partiel'), findsNothing);
+    expect(find.text('Payé'), findsOneWidget);
+    expect(find.text('Solde au crédit'), findsOneWidget);
+    expect(find.text('Solde impayé'), findsNothing);
+
+    final sale = container
+        .read(retailOrdersProvider)
+        .firstWhere((order) => order.id.startsWith('pos-'));
+    expect(sale.paymentMethod, PaymentMethodType.credit);
+    expect(sale.status, RetailOrderStatus.paid);
+    expect(sale.amountPaidHtg, 100);
+    expect(sale.balanceDueHtg, greaterThan(0));
+    expect(sale.amountPaidHtg! + sale.balanceDueHtg!, greaterThan(100));
+
+    final client = container
+        .read(customerProvider)
+        .customers
+        .firstWhere((customer) => customer.name == 'Boutique Madame Pierre');
+    expect(
+      container.read(customerProvider).balanceFor(client.id),
+      sale.balanceDueHtg,
     );
   });
 }

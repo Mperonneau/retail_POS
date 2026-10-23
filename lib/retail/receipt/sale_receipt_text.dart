@@ -65,10 +65,31 @@ bool saleReceiptCheckPending(RetailOrder order) {
       !check.cleared;
 }
 
+/// Cash was taken and a remainder was kept. Full credit, with nothing paid
+/// now, is not a split.
+bool saleReceiptShowsSplit(RetailOrder order) {
+  final paid = order.amountPaidHtg;
+  return paid != null && paid > 0.009 && order.unpaidBalanceHtg > 0.009;
+}
+
+bool saleReceiptBalanceOnCredit(RetailOrder order) {
+  return saleReceiptShowsSplit(order) &&
+      order.paymentMethod == PaymentMethodType.credit;
+}
+
+/// Credit keeps the remainder on the client account. Other methods still owe it.
+String saleReceiptBalanceLabel(RetailOrder order) {
+  if (order.paymentMethod == PaymentMethodType.credit) {
+    return 'Solde au crédit';
+  }
+  return 'Solde impayé';
+}
+
 String saleReceiptHeadline(RetailOrder order) {
   if (saleReceiptCheckPending(order)) return 'Chèque en attente';
-  if (order.status == RetailOrderStatus.partiallyPaid ||
-      order.unpaidBalanceHtg > 0.009) {
+  if (!saleReceiptBalanceOnCredit(order) &&
+      (order.status == RetailOrderStatus.partiallyPaid ||
+          order.unpaidBalanceHtg > 0.009)) {
     return 'Paiement partiel';
   }
   return 'Paiement confirmé !';
@@ -190,7 +211,12 @@ String saleReceiptText({
   );
   if (figures.hasBalanceDue) {
     lines.add(_moneyLine('Payé', money(figures.amountPaid)));
-    lines.add(_moneyLine('SOLDE IMPAYÉ', money(figures.balanceDue)));
+    lines.add(
+      _moneyLine(
+        saleReceiptBalanceLabel(order).toUpperCase(),
+        money(figures.balanceDue),
+      ),
+    );
   }
   lines.add('');
   lines.add('Paiement : ${order.paymentMethod.label}');

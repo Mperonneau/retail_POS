@@ -2317,7 +2317,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Solde impayé',
+                              saleReceiptBalanceLabel(current),
                               style: AppTextStyles.body(color: AppColors.boldRed)
                                   .copyWith(fontWeight: FontWeight.w800),
                             ),
