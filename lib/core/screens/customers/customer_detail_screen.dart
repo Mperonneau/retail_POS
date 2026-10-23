@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../mock/mock_retail_orders.dart';
+import '../../models/check_credit.dart';
 import '../../models/customer.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -60,6 +62,10 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
     final transactions = allTransactions.take(_transactionsShown).toList();
     final hasMoreTx = _transactionsShown < totalTxCount;
     final balance = state.balanceFor(customer.id);
+    final reserved = reservedCheckCredit(
+      orders: ref.watch(retailOrdersProvider),
+      customerId: customer.id,
+    );
     final storeCreditBal = state.storeCreditBalanceFor(customer.id);
     final isDark = widget.isDark;
 
@@ -103,7 +109,12 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
               ),
               children: [
                 // Stats row
-                _StatsRow(balance: balance, customer: customer, isDark: isDark),
+                _StatsRow(
+                  balance: balance,
+                  reserved: reserved,
+                  customer: customer,
+                  isDark: isDark,
+                ),
 
                 const SizedBox(height: AppConstants.spacing12),
                 _StoreCreditSection(
@@ -1389,11 +1400,13 @@ class _BlockedBanner extends StatelessWidget {
 
 class _StatsRow extends StatelessWidget {
   final double balance;
+  final double reserved;
   final Customer customer;
   final bool isDark;
 
   const _StatsRow({
     required this.balance,
+    this.reserved = 0,
     required this.customer,
     required this.isDark,
   });
@@ -1430,6 +1443,15 @@ class _StatsRow extends StatelessWidget {
                   ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (reserved > 0.009) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'En attente de chèque : ${CurrencyFormatter.local(context, reserved)}',
+                    key: const Key('check-credit-reserved'),
+                    style: AppTextStyles.caption(color: AppColors.amber)
+                        .copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1996,6 +2018,10 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
     final transactions = allTransactions.take(_transactionsShown).toList();
     final hasMoreTx = _transactionsShown < totalTxCount;
     final balance = state.balanceFor(customer.id);
+    final reserved = reservedCheckCredit(
+      orders: ref.watch(retailOrdersProvider),
+      customerId: customer.id,
+    );
     final storeCreditBal = state.storeCreditBalanceFor(customer.id);
     final isDark = widget.isDark;
 
@@ -2141,6 +2167,9 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                           ? AppColors.boldRed
                           : AppColors.deepGreen,
                       isDark: isDark,
+                      caption: reserved > 0.009
+                          ? 'En attente de chèque : ${CurrencyFormatter.local(context, reserved)}'
+                          : null,
                     ),
                     const SizedBox(width: AppConstants.spacing12),
                     _StatCard(
@@ -3477,12 +3506,14 @@ class _StatCard extends StatelessWidget {
   final String value;
   final Color color;
   final bool isDark;
+  final String? caption;
 
   const _StatCard({
     required this.label,
     required this.value,
     required this.color,
     required this.isDark,
+    this.caption,
   });
 
   @override
@@ -3501,6 +3532,15 @@ class _StatCard extends StatelessWidget {
               ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),
+            if (caption != null && caption!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                caption!,
+                key: const Key('check-credit-reserved'),
+                style: AppTextStyles.caption(color: AppColors.amber)
+                    .copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
           ],
         ),
       ),

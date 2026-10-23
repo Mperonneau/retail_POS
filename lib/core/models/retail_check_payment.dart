@@ -20,39 +20,73 @@ class RetailCheckPayment {
   /// Person who compensated the check.
   final String? clearedBy;
 
+  /// Face value. Null on checks saved before a short check was possible.
+  final double? amountHtg;
+
+  /// Client who will carry the remainder. Empty when the check covers the sale.
+  final String? creditCustomerId;
+
+  /// True once the remainder was posted on the client account.
+  final bool creditPosted;
+
+  /// True when the check was refused and will not be collected.
+  final bool refused;
+
   const RetailCheckPayment({
     required this.number,
     required this.bank,
     required this.payerName,
     required this.date,
     required this.imageDataUrl,
+    this.amountHtg,
+    this.creditCustomerId,
+    this.creditPosted = false,
     this.cleared = false,
+    this.refused = false,
     this.clearedAt,
     this.clearedBy,
   });
 
   /// Status line, including who compensated the check when that name is known.
   String get clearanceLabel {
+    if (refused) return 'Chèque refusé';
     if (!cleared) return 'En attente de compensation';
     final name = clearedBy?.trim() ?? '';
     if (name.isEmpty) return 'Chèque compensé';
     return 'Chèque compensé par : $name';
   }
 
+  static const Object _keep = Object();
+
   RetailCheckPayment copyWith({
+    String? number,
+    String? bank,
+    String? payerName,
+    DateTime? date,
+    String? imageDataUrl,
+    Object? amountHtg = _keep,
+    Object? creditCustomerId = _keep,
+    bool? creditPosted,
     bool? cleared,
-    DateTime? clearedAt,
-    String? clearedBy,
+    bool? refused,
+    Object? clearedAt = _keep,
+    Object? clearedBy = _keep,
   }) {
     return RetailCheckPayment(
-      number: number,
-      bank: bank,
-      payerName: payerName,
-      date: date,
-      imageDataUrl: imageDataUrl,
+      number: number ?? this.number,
+      bank: bank ?? this.bank,
+      payerName: payerName ?? this.payerName,
+      date: date ?? this.date,
+      imageDataUrl: imageDataUrl ?? this.imageDataUrl,
+      amountHtg: amountHtg == _keep ? this.amountHtg : amountHtg as double?,
+      creditCustomerId: creditCustomerId == _keep
+          ? this.creditCustomerId
+          : creditCustomerId as String?,
+      creditPosted: creditPosted ?? this.creditPosted,
       cleared: cleared ?? this.cleared,
-      clearedAt: clearedAt ?? this.clearedAt,
-      clearedBy: clearedBy ?? this.clearedBy,
+      refused: refused ?? this.refused,
+      clearedAt: clearedAt == _keep ? this.clearedAt : clearedAt as DateTime?,
+      clearedBy: clearedBy == _keep ? this.clearedBy : clearedBy as String?,
     );
   }
 
@@ -90,6 +124,10 @@ class RetailCheckPayment {
     required Uint8List? photo,
     required String mime,
     bool cleared = false,
+    bool refused = false,
+    bool creditPosted = false,
+    double? amountHtg,
+    String? creditCustomerId,
     DateTime? clearedAt,
     String? clearedBy,
   }) {
@@ -109,7 +147,11 @@ class RetailCheckPayment {
       payerName: payer,
       date: DateTime(date.year, date.month, date.day),
       imageDataUrl: dataUrlFor(photo, mime),
+      amountHtg: amountHtg,
+      creditCustomerId: _cleanName(creditCustomerId),
+      creditPosted: creditPosted,
       cleared: cleared,
+      refused: refused,
       clearedAt: cleared ? (clearedAt ?? DateTime.now()) : null,
       clearedBy: cleared ? _cleanName(clearedBy) : null,
     );
@@ -126,7 +168,11 @@ class RetailCheckPayment {
     'payerName': payerName,
     'date': DateTime(date.year, date.month, date.day).toIso8601String(),
     'imageDataUrl': imageDataUrl,
+    'amountHtg': amountHtg,
+    'creditCustomerId': creditCustomerId,
+    'creditPosted': creditPosted,
     'cleared': cleared,
+    'refused': refused,
     'clearedAt': clearedAt?.toIso8601String(),
     'clearedBy': clearedBy,
   };
@@ -148,13 +194,18 @@ class RetailCheckPayment {
     final cleared = json.containsKey('cleared')
         ? json['cleared'] == true
         : true;
+    final amount = json['amountHtg'];
     return RetailCheckPayment(
       number: number,
       bank: bank,
       payerName: payerName,
       date: DateTime.tryParse('${json['date']}') ?? DateTime.now(),
       imageDataUrl: imageDataUrl,
+      amountHtg: amount is num ? amount.toDouble() : double.tryParse('$amount'),
+      creditCustomerId: _cleanName(json['creditCustomerId']?.toString()),
+      creditPosted: json['creditPosted'] == true,
       cleared: cleared,
+      refused: json['refused'] == true,
       clearedAt: DateTime.tryParse('${json['clearedAt']}'),
       clearedBy: _cleanName(json['clearedBy']?.toString()),
     );

@@ -14,6 +14,7 @@ import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
 import '../../../retail/receipt/sale_receipt_pdf.dart';
 import '../../../retail/receipt/sale_receipt_text.dart';
+import '../../../retail/widgets/edit_check_sheet.dart';
 import '../../../retail/storefront/receipt_scan.dart';
 import '../../printing/shop_pdf.dart';
 import '../../widgets/phone_field.dart';
@@ -2290,12 +2291,14 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   if (current.unpaidBalanceHtg > 0.009) ...[
                     const SizedBox(height: 4),
                     _TotalRowSimple(
-                      label: 'Payé',
+                      label: saleReceiptPaidLabel(current),
                       amount: current.amountPaidHtg ?? 0,
                       isDark: isDark,
                       context: context,
-                      isBold: true,
-                      emphasis: AppColors.deepGreen,
+                      isBold: !saleReceiptCheckAwaitingCredit(current),
+                      emphasis: saleReceiptCheckAwaitingCredit(current)
+                          ? null
+                          : AppColors.deepGreen,
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -2305,23 +2308,36 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.boldRed.withValues(alpha: 0.08),
+                        color: (saleReceiptCheckAwaitingCredit(current)
+                                ? AppColors.amber
+                                : AppColors.boldRed)
+                            .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.boldRed, width: 1.5),
+                        border: Border.all(
+                          color: saleReceiptCheckAwaitingCredit(current)
+                              ? AppColors.amber
+                              : AppColors.boldRed,
+                          width: 1.5,
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.warning_amber_rounded,
-                            color: AppColors.boldRed,
+                            color: saleReceiptCheckAwaitingCredit(current)
+                                ? AppColors.amber
+                                : AppColors.boldRed,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               saleReceiptBalanceLabel(current),
-                              style: AppTextStyles.body(color: AppColors.boldRed)
-                                  .copyWith(fontWeight: FontWeight.w800),
+                              style: AppTextStyles.body(
+                                color: saleReceiptCheckAwaitingCredit(current)
+                                    ? AppColors.amber
+                                    : AppColors.boldRed,
+                              ).copyWith(fontWeight: FontWeight.w800),
                             ),
                           ),
                           Text(
@@ -2329,7 +2345,11 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                               context,
                               current.unpaidBalanceHtg,
                             ),
-                            style: AppTextStyles.price(color: AppColors.boldRed),
+                            style: AppTextStyles.price(
+                              color: saleReceiptCheckAwaitingCredit(current)
+                                  ? AppColors.amber
+                                  : AppColors.boldRed,
+                            ),
                           ),
                         ],
                       ),
@@ -2377,13 +2397,43 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (current.status == RetailOrderStatus.checkPending)
+                if (current.checkPayment != null &&
+                    !current.checkPayment!.refused) ...[
+                  OutlinedButton.icon(
+                    key: const Key('edit-check'),
+                    onPressed: () => showEditCheckPanel(
+                      context,
+                      orderId: current.id,
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Modifier le chèque'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark
+                          ? AppColors.skyBlue
+                          : AppColors.primaryBlue,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusButton,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (current.status == RetailOrderStatus.checkPending &&
+                    current.checkPayment != null &&
+                    !current.checkPayment!.refused) ...[
                   ElevatedButton.icon(
                     key: const Key('approve-check'),
                     onPressed: () {
-                      ref
+                      final error = ref
                           .read(retailOrdersProvider.notifier)
                           .clearCheck(current.id);
+                      if (error == null || !context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error)),
+                      );
                     },
                     icon: const Icon(Icons.verified_outlined, size: 16),
                     label: const Text('Approuver le chèque'),
@@ -2396,8 +2446,50 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(
                               AppConstants.radiusButton)),
                     ),
-                  )
-                else ...[
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const Key('refuse-check'),
+                    onPressed: () async {
+                      final refuse = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Refuser le chèque'),
+                          content: const Text(
+                            'Le solde réservé sera annulé et la vente restera impayée.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Annuler'),
+                            ),
+                            TextButton(
+                              key: const Key('refuse-check-confirm'),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Refuser'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (refuse != true || !context.mounted) return;
+                      ref
+                          .read(retailOrdersProvider.notifier)
+                          .refuseCheck(current.id);
+                    },
+                    icon: const Icon(Icons.block, size: 16),
+                    label: const Text('Refuser le chèque'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.boldRed,
+                      side: const BorderSide(color: AppColors.boldRed),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusButton,
+                        ),
+                      ),
+                    ),
+                  ),
+                ] else ...[
                 if (nextStatus != null && nextLabel != null)
                   ElevatedButton.icon(
                     onPressed: () {

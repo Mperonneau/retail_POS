@@ -8,8 +8,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:retail_pos/core/mock/mock_retail_data.dart';
 import 'package:retail_pos/core/mock/mock_retail_orders.dart';
+import 'package:retail_pos/core/models/customer.dart';
 import 'package:retail_pos/core/models/order_history.dart';
 import 'package:retail_pos/core/providers/auth_provider.dart';
+import 'package:retail_pos/retail/receipt/sale_receipt_text.dart';
 import 'package:retail_pos/core/utils/operator_name.dart';
 import 'package:retail_pos/core/models/retail_check_payment.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
@@ -144,6 +146,9 @@ void main() {
     expect(restored.checkPayment!.date, DateTime(2026, 10, 22));
     expect(restored.checkPayment!.imageBytes, _tinyPng);
     expect(restored.checkPayment!.cleared, isFalse);
+    expect(restored.checkPayment!.amountHtg, isNull);
+    expect(restored.checkPayment!.creditPosted, isFalse);
+    expect(restored.checkPayment!.refused, isFalse);
     expect(restored.appliesElectronicServiceFee, isFalse);
     expect(restored.serviceChargeAmountHtg, 0);
 
@@ -486,12 +491,441 @@ void main() {
     expect(find.text('Approuver le chèque'), findsNothing);
     expect(find.text('Payé'), findsOneWidget);
     expect(find.text('Marquer terminé'), findsOneWidget);
+    expect(find.text('Modifier le chèque'), findsOneWidget);
+  });
+
+  test('a short check reserves credit until it is compensated', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final before = container.read(customerProvider).balanceFor('c6');
+    final order = _shortOrder(amount: 1000, due: 500);
+    container.read(retailOrdersProvider.notifier).add(order);
+
+    final pending = container
+        .read(retailOrdersProvider)
+        .firstWhere((row) => row.id == order.id);
+    expect(saleReceiptCheckPending(pending), isTrue);
+    expect(saleReceiptBalanceLabel(pending), 'Solde en attente de crédit');
+    expect(saleReceiptPaidLabel(pending), 'Montant du chèque');
+    expect(container.read(customerProvider).balanceFor('c6'), before);
+
+    final blocked = container
+        .read(retailOrdersProvider.notifier)
+        .clearCheck('missing');
+    expect(blocked, isNull);
+
+    container
+        .read(customerProvider.notifier)
+        .addCustomer(
+          Customer(
+            id: 'tight',
+            name: 'Limite Basse',
+            phone: '+509 3000-1111',
+            creditLimitHtg: 100,
+            createdAt: DateTime(2026, 1, 1),
+          ),
+        );
+    final tight = _shortOrder(
+      id: 'pos-tight',
+      amount: 50,
+      due: 150,
+      customerId: 'tight',
+    );
+    container.read(retailOrdersProvider.notifier).add(tight);
+    expect(
+      container.read(retailOrdersProvider.notifier).clearCheck(tight.id),
+      'La limite de crédit sera dépassée.',
+    );
+    expect(
+      container
+          .read(retailOrdersProvider)
+          .firstWhere((row) => row.id == tight.id)
+          .checkPayment!
+          .cleared,
+      isFalse,
+    );
+
+    container
+        .read(customerProvider.notifier)
+        .addCustomer(
+          Customer(
+            id: 'room',
+            name: 'Marge Crédit',
+            phone: '+509 3000-2222',
+            creditLimitHtg: 200,
+            createdAt: DateTime(2026, 1, 1),
+          ),
+        );
+    final room = _shortOrder(
+      id: 'pos-room',
+      amount: 150,
+      due: 150,
+      customerId: 'room',
+    );
+    container.read(retailOrdersProvider.notifier).add(room);
+    expect(
+      container
+          .read(retailOrdersProvider.notifier)
+          .updateCheck(
+            orderId: room.id,
+            amountHtg: 120,
+            number: '1000',
+            bank: 'Sogebank',
+            payerName: 'Marge Crédit',
+            date: DateTime(2026, 10, 23),
+            creditCustomerId: 'room',
+          ),
+      isNull,
+    );
+    expect(
+      container
+          .read(retailOrdersProvider)
+          .firstWhere((row) => row.id == room.id)
+          .unpaidBalanceHtg,
+      180,
+    );
+    expect(container.read(customerProvider).balanceFor('room'), 0);
+    expect(
+      container
+          .read(retailOrdersProvider.notifier)
+          .updateCheck(
+            orderId: room.id,
+            amountHtg: 50,
+            number: '1000',
+            bank: 'Sogebank',
+            payerName: 'Marge Crédit',
+            date: DateTime(2026, 10, 23),
+            creditCustomerId: 'room',
+          ),
+      'La limite de crédit sera dépassée.',
+    );
+
+    final refusedCustomer = _shortOrder(
+      id: 'pos-blocked',
+      amount: 50,
+      due: 100,
+      customerId: 'c4',
+    );
+    container.read(retailOrdersProvider.notifier).add(refusedCustomer);
+    expect(
+      container
+          .read(retailOrdersProvider.notifier)
+          .clearCheck(refusedCustomer.id),
+      'Rosnel Dupont est bloqué.',
+    );
+
+    expect(
+      container.read(retailOrdersProvider.notifier).clearCheck(order.id),
+      isNull,
+    );
+    final cleared = container
+        .read(retailOrdersProvider)
+        .firstWhere((row) => row.id == order.id);
+    expect(cleared.status, RetailOrderStatus.partiallyPaid);
+    expect(cleared.checkPayment!.cleared, isTrue);
+    expect(cleared.checkPayment!.creditPosted, isTrue);
+    expect(
+      container.read(customerProvider).balanceFor('c6'),
+      closeTo(before + 500, 0.01),
+    );
+    expect(saleReceiptBalanceLabel(cleared), 'Solde au crédit');
+    expect(saleReceiptPaidLabel(cleared), 'Payé');
+
+    expect(
+      container
+          .read(retailOrdersProvider.notifier)
+          .updateCheck(
+            orderId: order.id,
+            amountHtg: 1200,
+            number: '1000',
+            bank: 'Sogebank',
+            payerName: 'Sophie Laurent',
+            date: DateTime(2026, 10, 23),
+            creditCustomerId: 'c6',
+          ),
+      isNull,
+    );
+    expect(
+      container.read(customerProvider).balanceFor('c6'),
+      closeTo(before + 300, 0.01),
+    );
+    expect(
+      container
+          .read(retailOrdersProvider.notifier)
+          .updateCheck(
+            orderId: order.id,
+            amountHtg: 1400,
+            number: '1000',
+            bank: 'Unibank',
+            payerName: 'Sophie Laurent',
+            date: DateTime(2026, 10, 23),
+            creditCustomerId: 'c6',
+          ),
+      isNull,
+    );
+    final adjusted = container
+        .read(retailOrdersProvider)
+        .firstWhere((row) => row.id == order.id);
+    expect(adjusted.unpaidBalanceHtg, 100);
+    expect(adjusted.checkPayment!.bank, 'Unibank');
+    expect(
+      container.read(customerProvider).balanceFor('c6'),
+      closeTo(before + 100, 0.01),
+    );
+
+    container.read(retailOrdersProvider.notifier).refuseCheck(tight.id);
+    final dropped = container
+        .read(retailOrdersProvider)
+        .firstWhere((row) => row.id == tight.id);
+    expect(dropped.checkPayment!.refused, isTrue);
+    expect(dropped.checkPayment!.clearanceLabel, 'Chèque refusé');
+    expect(dropped.balanceDueHtg, 200);
+    expect(dropped.amountPaidHtg, 0);
+    expect(saleReceiptCheckPending(dropped), isFalse);
+    expect(saleReceiptBalanceLabel(dropped), 'Solde impayé');
+    expect(container.read(customerProvider).balanceFor('tight'), 0);
+    expect(
+      container
+          .read(retailOrdersProvider.notifier)
+          .updateCheck(
+            orderId: tight.id,
+            amountHtg: 100,
+            number: '1000',
+            bank: 'Sogebank',
+            payerName: 'Limite Basse',
+            date: DateTime(2026, 10, 23),
+          ),
+      'Ce chèque a été refusé.',
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+  });
+
+  testWidgets('a short check asks for a client and waits to post the credit', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    container
+        .read(authProvider.notifier)
+        .login(
+          userName: 'Nadia Pierre',
+          businessName: 'Boutique Soleil',
+          module: ActiveModule.retail,
+        );
+    final before = container.read(customerProvider).balanceFor('c6');
+    final product = container.read(mockProductsProvider).first;
+    checkPhotoPicker = () async =>
+        PickedProductPhoto(bytes: _tinyPng, mime: 'image/png');
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: RetailCheckoutWizard(
+              cart: [RetailCartEntry(product: product)],
+              discountPercent: 0,
+              initialStepIndex: 2,
+              onSuccess: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Chèque'));
+    await tester.pump();
+
+    await _fill(tester, const Key('check-number'), '1000');
+    await _fill(tester, const Key('check-bank'), 'Sogebank');
+    await _fill(tester, const Key('check-payer'), 'Sophie Laurent');
+    await tester.ensureVisible(find.byKey(const Key('check-photo')));
+    await tester.tap(find.byKey(const Key('check-photo')));
+    await tester.pump();
+    await tester.pump();
+    expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNotNull);
+
+    await _fill(tester, const Key('check-amount'), '100');
+    await tester.pump();
+    expect(find.byKey(const Key('check-balance-warning')), findsOneWidget);
+    expect(find.textContaining('en attente de crédit'), findsOneWidget);
+    expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNull);
+
+    await tester.ensureVisible(find.byKey(const Key('cash-credit-search')));
+    await tester.enterText(
+      find.byKey(const Key('cash-credit-search')),
+      'Sophie',
+    );
+    await tester.pump();
+    final sophie = find.widgetWithText(ListTile, 'Sophie Laurent');
+    await tester.ensureVisible(sophie);
+    await tester.tap(sophie);
+    await tester.pump();
+    expect(_confirm(tester, 'Enregistrer le chèque').onPressed, isNotNull);
+
+    await tester.tap(find.text('Enregistrer le chèque'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Paiement confirmé !'), findsNothing);
+    expect(find.text('Chèque en attente'), findsOneWidget);
+    expect(find.text('Montant du chèque'), findsOneWidget);
+    expect(find.text('Solde en attente de crédit'), findsOneWidget);
+    expect(find.text('Solde au crédit'), findsNothing);
+    final sale = container
+        .read(retailOrdersProvider)
+        .firstWhere((order) => order.id.startsWith('pos-'));
+    expect(sale.status, RetailOrderStatus.checkPending);
+    expect(sale.amountPaidHtg, 100);
+    expect(sale.balanceDueHtg, greaterThan(100));
+    expect(sale.checkPayment!.amountHtg, 100);
+    expect(sale.checkPayment!.creditCustomerId, 'c6');
+    expect(sale.checkPayment!.creditPosted, isFalse);
+    expect(container.read(customerProvider).balanceFor('c6'), before);
+
+    expect(
+      container.read(retailOrdersProvider.notifier).clearCheck(sale.id),
+      isNull,
+    );
+    final cleared = container
+        .read(retailOrdersProvider)
+        .firstWhere((order) => order.id == sale.id);
+    expect(cleared.status, RetailOrderStatus.partiallyPaid);
+    expect(cleared.checkPayment!.cleared, isTrue);
+    expect(cleared.checkPayment!.creditPosted, isTrue);
+    expect(
+      container.read(customerProvider).balanceFor('c6'),
+      closeTo(before + sale.balanceDueHtg!, 0.01),
+    );
+  });
+
+  testWidgets('the check can be corrected after it was recorded', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    container
+        .read(authProvider.notifier)
+        .login(
+          userName: 'Marc Joseph',
+          businessName: 'Boutique Soleil',
+          module: ActiveModule.retail,
+        );
+    final before = container.read(customerProvider).balanceFor('c6');
+    final order = _shortOrder(amount: 1000, due: 500);
+    container.read(retailOrdersProvider.notifier).add(order);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: RetailOrderDetailPage(order: order),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Solde en attente de crédit'), findsOneWidget);
+    expect(find.text('Modifier le chèque'), findsOneWidget);
+    expect(find.text('Refuser le chèque'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('edit-check')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      tester.getSize(find.byKey(const Key('edit-check-panel'))).width,
+      480,
+    );
+    await _fill(tester, const Key('edit-check-number'), '2000');
+    await _fill(tester, const Key('edit-check-amount'), '1200');
+    await tester.pump();
+    expect(find.byKey(const Key('edit-check-balance')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('edit-check-save')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('2000'), findsWidgets);
+    expect(container.read(customerProvider).balanceFor('c6'), before);
+    final edited = container
+        .read(retailOrdersProvider)
+        .firstWhere((row) => row.id == order.id);
+    expect(edited.checkPayment!.number, '2000');
+    expect(edited.amountPaidHtg, 1200);
+    expect(edited.balanceDueHtg, 300);
+    expect(edited.checkPayment!.creditPosted, isFalse);
+
+    await tester.tap(find.text('Refuser le chèque'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('refuse-check-confirm')));
+    await tester.pump();
+    await tester.pump();
+
+    final refused = container
+        .read(retailOrdersProvider)
+        .firstWhere((row) => row.id == order.id);
+    expect(refused.checkPayment!.refused, isTrue);
+    expect(refused.balanceDueHtg, 1500);
+    expect(container.read(customerProvider).balanceFor('c6'), before);
+    expect(find.text('Chèque refusé'), findsOneWidget);
+    expect(find.text('Modifier le chèque'), findsNothing);
+    expect(find.text('Solde impayé'), findsOneWidget);
   });
 }
 
 ElevatedButton _confirm(WidgetTester tester, String label) {
   return tester.widget<ElevatedButton>(
     find.widgetWithText(ElevatedButton, label),
+  );
+}
+
+RetailOrder _shortOrder({
+  String id = 'pos-short',
+  required double amount,
+  required double due,
+  String customerId = 'c6',
+}) {
+  return RetailOrder(
+    id: id,
+    orderNumber: 'ORD-$id',
+    clientName: 'Sophie Laurent',
+    clientPhone: '+509 3711-3344',
+    status: RetailOrderStatus.checkPending,
+    paymentSource: RetailPaymentSource.pos,
+    paymentMethod: PaymentMethodType.check,
+    amountPaidHtg: amount,
+    balanceDueHtg: due,
+    checkPayment: RetailCheckPayment(
+      number: '1000',
+      bank: 'Sogebank',
+      payerName: 'Sophie Laurent',
+      date: DateTime(2026, 10, 23),
+      imageDataUrl: RetailCheckPayment.dataUrlFor(_tinyPng, 'image/png'),
+      amountHtg: amount,
+      creditCustomerId: customerId,
+    ),
+    lines: const [
+      RetailOrderLine(
+        productName: 'Riz',
+        productId: 1,
+        quantity: 1,
+        unitPriceHtg: 1000,
+      ),
+    ],
+    createdAt: DateTime(2026, 10, 23),
+    paidAt: DateTime(2026, 10, 23),
   );
 }
 

@@ -4,6 +4,7 @@ import '../models/order_history.dart';
 import '../models/retail_check_payment.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../utils/currency_formatter.dart';
 import 'check_photo_viewer.dart';
 
 /// Last 4 digits for card / MonCash phone / credit account (digits only or any string — non-digits stripped).
@@ -146,6 +147,13 @@ class CheckPaymentSummary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (check.amountHtg != null)
+          _line(
+            'Montant',
+            CurrencyFormatter.local(context, check.amountHtg!),
+            ink,
+            muted,
+          ),
         _line('N° chèque', check.number, ink, muted),
         _line('Banque', check.bank, ink, muted),
         _line('Tireur', check.payerName, ink, muted),
@@ -159,9 +167,19 @@ class CheckPaymentSummary extends StatelessWidget {
         ),
         Text(
           check.clearanceLabel,
-          key: Key(check.cleared ? 'check-cleared' : 'check-awaiting'),
+          key: Key(
+            check.refused
+                ? 'check-refused'
+                : check.cleared
+                ? 'check-cleared'
+                : 'check-awaiting',
+          ),
           style: AppTextStyles.caption(
-            color: check.cleared ? AppColors.deepGreen : AppColors.amber,
+            color: check.refused
+                ? AppColors.boldRed
+                : check.cleared
+                ? AppColors.deepGreen
+                : AppColors.amber,
           ).copyWith(fontWeight: FontWeight.w700),
         ),
         if (photo != null) ...[

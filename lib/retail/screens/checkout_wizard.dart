@@ -14,6 +14,7 @@ import '../../core/widgets/card_fee_breakdown.dart';
 import '../../core/mock/mock_retail_data.dart';
 import '../models/sale_measure.dart';
 import '../../core/mock/mock_retail_orders.dart';
+import '../../core/models/check_credit.dart';
 import '../../core/models/customer.dart';
 import '../../core/models/order_history.dart';
 import '../../core/models/retail_check_payment.dart';
@@ -785,12 +786,15 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
             final clientName = _clientNameCtrl.text.trim();
             final clientEmail = _clientEmailCtrl.text.trim();
             final awaitingCheck = method == PaymentMethodType.check &&
-                !(check?.cleared ?? false);
+                !(check?.cleared ?? false) &&
+                !(check?.refused ?? false);
             final paidNow = amountPaidHtg ?? 0;
+            final checkHold = awaitingCheck && balanceDueHtg > 0.009;
             final owes = !awaitingCheck && balanceDueHtg > 0.009;
             final creditSplit =
                 owes && method == PaymentMethodType.credit && paidNow > 0.009;
             final partial = owes && !creditSplit;
+            final storeSplit = owes || checkHold;
             final creditName = creditCustomer?.name.trim() ?? '';
             final creditPhone = creditCustomer?.phone.trim() ?? '';
             final operator = currentOperatorName(
@@ -816,8 +820,8 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                         : partial
                             ? RetailOrderStatus.partiallyPaid
                             : RetailOrderStatus.paid,
-                    amountPaidHtg: owes ? paidNow : null,
-                    balanceDueHtg: owes ? balanceDueHtg : null,
+                    amountPaidHtg: storeSplit ? paidNow : null,
+                    balanceDueHtg: storeSplit ? balanceDueHtg : null,
                     paymentSource: RetailPaymentSource.pos,
                     paymentMethod: method,
                     checkPayment: method == PaymentMethodType.check
@@ -879,7 +883,7 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
               _completedSaleNumber = saleNo;
               _completedOrder = sale;
               _awaitingCheckClearance = awaitingCheck;
-              _receiptBalanceDue = owes ? balanceDueHtg : 0;
+              _receiptBalanceDue = storeSplit ? balanceDueHtg : 0;
               _step = _successStepIndex;
             });
           },
@@ -1745,6 +1749,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
   final _checkNumberCtrl = TextEditingController();
   final _checkBankCtrl = TextEditingController();
   final _checkPayerCtrl = TextEditingController();
+  final _checkAmountCtrl = TextEditingController();
   DateTime _checkDate = DateTime.now();
   Uint8List? _checkPhoto;
   String _checkMime = 'image/jpeg';
@@ -1816,6 +1821,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     _checkNumberCtrl.dispose();
     _checkBankCtrl.dispose();
     _checkPayerCtrl.dispose();
+    _checkAmountCtrl.dispose();
     super.dispose();
   }
 
@@ -1836,23 +1842,16 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
           _payerContactCtrl.text.trim().isNotEmpty;
     }
     if (_method == _RPayMethod.check) {
-      return _builtCheck() != null;
+      if (_builtCheck() == null ||
+          _checkAmountTooHigh ||
+          _checkAmountTooLow) {
+        return false;
+      }
+      if (_checkRemainder <= 0.009) return true;
+      return _balanceClientReady(_checkRemainder);
     }
     if (_method == _RPayMethod.cash && _cashBalanceDue > 0.009) {
-      if (_isDirectoryClient) {
-        final match = _directoryMatch;
-        if (match == null) return true;
-        if (match.isCreditBlocked) return false;
-        if (_creditWouldExceed(match, _cashBalanceDue)) return false;
-        return true;
-      }
-      if (_isPhoneOnlyClient) {
-        return widget.knownClientPhone.trim().isNotEmpty ||
-            _balancePhoneCtrl.text.trim().isNotEmpty;
-      }
-      final customer = _selectedCustomer;
-      if (customer == null || customer.isCreditBlocked) return false;
-      if (_creditWouldExceed(customer, _cashBalanceDue)) return false;
+      return _balanceClientReady(_cashBalanceDue);
     }
     return true;
   }
@@ -1889,11 +1888,51 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     return received < 0 ? 0 : received;
   }
 
+  bool get _checkAmountSpecified => _checkAmountCtrl.text.trim().isNotEmpty;
+
+  double get _checkFace {
+    if (!_checkAmountSpecified) return widget.total;
+    return double.tryParse(_checkAmountCtrl.text) ?? 0;
+  }
+
+  double get _checkRemainder {
+    if (!_checkAmountSpecified) return 0;
+    final due = widget.total - _checkFace;
+    return due > 0.009 ? due : 0;
+  }
+
+  bool get _checkAmountTooHigh =>
+      _checkAmountSpecified && _checkFace - widget.total > 0.009;
+
+  bool get _checkAmountTooLow => _checkAmountSpecified && _checkFace < 1;
+
+  bool _balanceClientReady(double remainder) {
+    if (_isDirectoryClient) {
+      final match = _directoryMatch;
+      if (match == null) return true;
+      if (match.isCreditBlocked) return false;
+      if (_creditWouldExceed(match, remainder)) return false;
+      return true;
+    }
+    if (_isPhoneOnlyClient) {
+      return widget.knownClientPhone.trim().isNotEmpty ||
+          _balancePhoneCtrl.text.trim().isNotEmpty;
+    }
+    final customer = _selectedCustomer;
+    if (customer == null || customer.isCreditBlocked) return false;
+    if (_creditWouldExceed(customer, remainder)) return false;
+    return true;
+  }
+
   bool _creditWouldExceed(Customer customer, double amount) {
     final limit = customer.creditLimitHtg;
     if (limit == null) return false;
     final balance = ref.read(customerProvider).balanceFor(customer.id);
-    return balance + amount > limit + 0.009;
+    final reserved = reservedCheckCredit(
+      orders: ref.read(retailOrdersProvider),
+      customerId: customer.id,
+    );
+    return balance + reserved + amount > limit + 0.009;
   }
 
   String get _confirmLabel {
@@ -1937,10 +1976,11 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       return;
     }
     if (!await widget.onValidateStock()) return;
-    final check = _method == _RPayMethod.check ? _builtCheck() : null;
-    if (_method == _RPayMethod.check && check == null) return;
+    if (_method == _RPayMethod.check && _builtCheck() == null) return;
     final partialCash =
         _method == _RPayMethod.cash && _cashBalanceDue > 0.009;
+    final checkShort =
+        _method == _RPayMethod.check && _checkRemainder > 0.009;
     final paidNow = _creditPartialPaid < 0 ? 0.0 : _creditPartialPaid;
     final creditDue = widget.total - paidNow;
     final creditSplit = _method == _RPayMethod.credit &&
@@ -1961,7 +2001,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       if (limit != null && (balance + creditAmount) > limit) return;
     }
     String? authorizedBy;
-    if (partialCash || creditAmount > 0.009) {
+    if (partialCash || creditAmount > 0.009 || checkShort) {
       final granted = await _authorizeClientCredit();
       if (!granted || !mounted) return;
       authorizedBy = _creditAuthorizedBy;
@@ -1988,6 +2028,15 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     final balanceCustomer =
         partialCash ? _ensureBalanceCustomer() : null;
     if (partialCash && balanceCustomer == null) return;
+    final checkCustomer = checkShort ? _ensureBalanceCustomer() : null;
+    if (checkShort && checkCustomer == null) return;
+    final check = _method == _RPayMethod.check
+        ? _builtCheck(
+            creditCustomerId: checkCustomer?.id,
+            creditPosted: checkShort && _clearCheckNow,
+          )
+        : null;
+    if (_method == _RPayMethod.check && check == null) return;
     await _finishSale(
       switch (_method) {
         _RPayMethod.moncash => PaymentMethodType.moncash,
@@ -1997,17 +2046,21 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
         _RPayMethod.check => PaymentMethodType.check,
       },
       check: check,
-      amountPaidHtg: partialCash
-          ? _cashApplied
-          : creditSplit
-              ? paidNow
-              : null,
-      balanceDueHtg: partialCash
-          ? _cashBalanceDue
-          : creditSplit
-              ? creditDue
-              : 0,
-      creditCustomer: balanceCustomer,
+      amountPaidHtg: checkShort
+          ? _checkFace
+          : partialCash
+              ? _cashApplied
+              : creditSplit
+                  ? paidNow
+                  : null,
+      balanceDueHtg: checkShort
+          ? _checkRemainder
+          : partialCash
+              ? _cashBalanceDue
+              : creditSplit
+                  ? creditDue
+                  : 0,
+      creditCustomer: partialCash ? balanceCustomer : checkCustomer,
       creditAuthorizedBy: authorizedBy,
     );
   }
@@ -2063,7 +2116,10 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     return _selectedCustomer;
   }
 
-  RetailCheckPayment? _builtCheck() {
+  RetailCheckPayment? _builtCheck({
+    String? creditCustomerId,
+    bool creditPosted = false,
+  }) {
     return RetailCheckPayment.compose(
       number: _checkNumberCtrl.text,
       bank: _checkBankCtrl.text,
@@ -2071,6 +2127,9 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       date: _checkDate,
       photo: _checkPhoto,
       mime: _checkMime,
+      amountHtg: _checkFace,
+      creditCustomerId: creditCustomerId,
+      creditPosted: creditPosted,
       cleared: _clearCheckNow,
       clearedAt: _clearCheckNow ? DateTime.now() : null,
       clearedBy: _clearCheckNow ? _operatorName() : null,
@@ -2180,6 +2239,10 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     setState(() {
       _method = method;
       _remoteError = null;
+      if (method == _RPayMethod.check &&
+          _checkAmountCtrl.text.trim().isEmpty) {
+        _checkAmountCtrl.text = _amountField(widget.total);
+      }
     });
     if (method == _RPayMethod.card) {
       _loadCardConfig();
@@ -2548,6 +2611,83 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
     );
   }
 
+  String _amountField(double value) {
+    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(2);
+  }
+
+  Widget _checkBalanceChild(bool isDark, CustomerState customerState) {
+    final hold = !_clearCheckNow;
+    if (_isDirectoryClient) {
+      final match = _directoryMatch;
+      return _KnownBalanceClient(
+        name: match?.name ?? widget.knownClientName,
+        phone: match?.phone ?? widget.knownClientPhone,
+        blocked: match?.isCreditBlocked ?? false,
+        exceedsLimit:
+            match != null && _creditWouldExceed(match, _checkRemainder),
+        creating: match == null,
+        holdUntilClear: hold,
+      );
+    }
+    if (_isPhoneOnlyClient) {
+      final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+      final knownPhone = widget.knownClientPhone.trim();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.knownClientName,
+            key: const Key('cash-known-client'),
+            style: AppTextStyles.body(color: ink).copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (knownPhone.isNotEmpty)
+            Text(knownPhone, style: AppTextStyles.caption())
+          else
+            PhoneField(
+              key: const Key('cash-balance-phone'),
+              controller: _balancePhoneCtrl,
+              label: 'Téléphone *',
+            ),
+        ],
+      );
+    }
+    final selected = _selectedCustomer;
+    return _CashCreditPicker(
+      isDark: isDark,
+      balanceDue: _checkRemainder,
+      selectedCustomer: selected,
+      creditSearch: _creditSearch,
+      showNewCustomer: _showNewCustomer,
+      newNameCtrl: _newNameCtrl,
+      newPhoneCtrl: _newPhoneCtrl,
+      customerState: customerState,
+      balanceExceedsLimit:
+          selected != null && _creditWouldExceed(selected, _checkRemainder),
+      onSearchChanged: (value) => setState(() => _creditSearch = value),
+      onCustomerSelected: (customer) => setState(() {
+        _selectedCustomer = customer;
+        _creditSearch = '';
+      }),
+      onCustomerCleared: () => setState(() => _selectedCustomer = null),
+      onToggleNewForm: () =>
+          setState(() => _showNewCustomer = !_showNewCustomer),
+      onCustomerCreated: (customer) {
+        ref.read(customerProvider.notifier).addCustomer(customer);
+        _newNameCtrl.clear();
+        _newPhoneCtrl.clear();
+        setState(() {
+          _selectedCustomer = customer;
+          _showNewCustomer = false;
+          _creditSearch = '';
+        });
+      },
+    );
+  }
+
   Widget _buildMethodContent(bool isDark, CustomerState customerState) {
     switch (_method) {
       case _RPayMethod.moncash:
@@ -2681,6 +2821,12 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
       case _RPayMethod.check:
         return CheckPaymentForm(
           totalHtg: widget.total,
+          amountCtrl: _checkAmountCtrl,
+          remainder: _checkRemainder,
+          amountTooHigh: _checkAmountTooHigh,
+          balanceChild: _checkRemainder > 0.009
+              ? _checkBalanceChild(isDark, customerState)
+              : null,
           isDark: isDark,
           numberCtrl: _checkNumberCtrl,
           bankCtrl: _checkBankCtrl,
@@ -3489,6 +3635,7 @@ class _KnownBalanceClient extends StatelessWidget {
   final bool blocked;
   final bool exceedsLimit;
   final bool creating;
+  final bool holdUntilClear;
 
   const _KnownBalanceClient({
     required this.name,
@@ -3496,6 +3643,7 @@ class _KnownBalanceClient extends StatelessWidget {
     required this.blocked,
     required this.exceedsLimit,
     required this.creating,
+    this.holdUntilClear = false,
   });
 
   @override
@@ -3505,8 +3653,12 @@ class _KnownBalanceClient extends StatelessWidget {
         : exceedsLimit
             ? 'La limite de crédit sera dépassée.'
             : creating
-                ? 'Un compte sera créé pour ce client.'
-                : 'Le solde sera enregistré sur ce compte.';
+                ? (holdUntilClear
+                    ? 'Un compte sera créé. Le solde restera en attente jusqu\'à compensation du chèque.'
+                    : 'Un compte sera créé pour ce client.')
+                : (holdUntilClear
+                    ? 'Le solde restera en attente jusqu\'à compensation du chèque.'
+                    : 'Le solde sera enregistré sur ce compte.');
     final color = blocked || exceedsLimit ? AppColors.boldRed : AppColors.darkGray;
     return Column(
       key: const Key('cash-known-client'),

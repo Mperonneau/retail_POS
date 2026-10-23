@@ -144,20 +144,21 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
     final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
     final pending = saleReceiptCheckPending(widget.order);
     final onCredit = saleReceiptBalanceOnCredit(widget.order);
-    final partial = !pending &&
+    final partial =
+        !pending &&
         !onCredit &&
         (widget.order.status == RetailOrderStatus.partiallyPaid ||
             widget.figures.hasBalanceDue);
     final markColor = pending
         ? AppColors.amber
         : partial
-            ? AppColors.boldRed
-            : AppColors.deepGreen;
+        ? AppColors.boldRed
+        : AppColors.deepGreen;
     final markIcon = pending
         ? Icons.account_balance_outlined
         : partial
-            ? Icons.warning_amber_rounded
-            : Icons.check_circle_rounded;
+        ? Icons.warning_amber_rounded
+        : Icons.check_circle_rounded;
     final shop = ref.watch(authProvider).businessName?.trim() ?? '';
     final order = widget.order;
     final figures = widget.figures;
@@ -219,11 +220,7 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                       color: markColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      markIcon,
-                      color: markColor,
-                      size: 40,
-                    ),
+                    child: Icon(markIcon, color: markColor, size: 40),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -393,11 +390,15 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                       if (figures.hasBalanceDue) ...[
                         const SizedBox(height: 6),
                         _amountRow(
-                          'Payé',
+                          saleReceiptPaidLabel(order),
                           _money(figures.amountPaid),
-                          AppColors.deepGreen,
-                          AppColors.deepGreen,
-                          bold: true,
+                          saleReceiptCheckAwaitingCredit(order)
+                              ? ink
+                              : AppColors.deepGreen,
+                          saleReceiptCheckAwaitingCredit(order)
+                              ? ink
+                              : AppColors.deepGreen,
+                          bold: !saleReceiptCheckAwaitingCredit(order),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -407,18 +408,26 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.boldRed.withValues(alpha: 0.08),
+                            color:
+                                (saleReceiptCheckAwaitingCredit(order)
+                                        ? AppColors.amber
+                                        : AppColors.boldRed)
+                                    .withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: AppColors.boldRed,
+                              color: saleReceiptCheckAwaitingCredit(order)
+                                  ? AppColors.amber
+                                  : AppColors.boldRed,
                               width: 1.5,
                             ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.warning_amber_rounded,
-                                color: AppColors.boldRed,
+                                color: saleReceiptCheckAwaitingCredit(order)
+                                    ? AppColors.amber
+                                    : AppColors.boldRed,
                                 size: 22,
                               ),
                               const SizedBox(width: 8),
@@ -426,14 +435,18 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
                                 child: Text(
                                   saleReceiptBalanceLabel(order),
                                   style: AppTextStyles.body(
-                                    color: AppColors.boldRed,
+                                    color: saleReceiptCheckAwaitingCredit(order)
+                                        ? AppColors.amber
+                                        : AppColors.boldRed,
                                   ).copyWith(fontWeight: FontWeight.w800),
                                 ),
                               ),
                               Text(
                                 _money(figures.balanceDue),
                                 style: AppTextStyles.price(
-                                  color: AppColors.boldRed,
+                                  color: saleReceiptCheckAwaitingCredit(order)
+                                      ? AppColors.amber
+                                      : AppColors.boldRed,
                                 ),
                               ),
                             ],
@@ -548,9 +561,9 @@ class _SaleReceiptPanelState extends ConsumerState<SaleReceiptPanel> {
           Expanded(
             child: Text(
               label,
-              style: AppTextStyles.body(color: labelColor).copyWith(
-                fontWeight: bold ? FontWeight.w700 : null,
-              ),
+              style: AppTextStyles.body(
+                color: labelColor,
+              ).copyWith(fontWeight: bold ? FontWeight.w700 : null),
             ),
           ),
           Text(value, style: style),

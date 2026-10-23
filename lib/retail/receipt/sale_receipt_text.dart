@@ -62,7 +62,29 @@ bool saleReceiptCheckPending(RetailOrder order) {
   final check = order.checkPayment;
   return order.paymentMethod == PaymentMethodType.check &&
       check != null &&
-      !check.cleared;
+      !check.cleared &&
+      !check.refused;
+}
+
+/// The remainder stays reserved until this check is compensated.
+bool saleReceiptCheckAwaitingCredit(RetailOrder order) {
+  return saleReceiptCheckPending(order) && order.unpaidBalanceHtg > 0.009;
+}
+
+/// The remainder was posted on the client account when the check cleared.
+bool saleReceiptCheckCreditPosted(RetailOrder order) {
+  final check = order.checkPayment;
+  return order.paymentMethod == PaymentMethodType.check &&
+      check != null &&
+      check.cleared &&
+      check.creditPosted &&
+      order.unpaidBalanceHtg > 0.009;
+}
+
+/// Pending short checks name the face value. Every other split says Payé.
+String saleReceiptPaidLabel(RetailOrder order) {
+  if (saleReceiptCheckAwaitingCredit(order)) return 'Montant du chèque';
+  return 'Payé';
 }
 
 /// Cash was taken and a remainder was kept. Full credit, with nothing paid
@@ -77,9 +99,14 @@ bool saleReceiptBalanceOnCredit(RetailOrder order) {
       order.paymentMethod == PaymentMethodType.credit;
 }
 
-/// Credit keeps the remainder on the client account. Other methods still owe it.
+/// Credit keeps the remainder on the client account. A pending check only
+/// reserves it. Other methods still owe it.
 String saleReceiptBalanceLabel(RetailOrder order) {
-  if (order.paymentMethod == PaymentMethodType.credit) {
+  if (saleReceiptCheckAwaitingCredit(order)) {
+    return 'Solde en attente de crédit';
+  }
+  if (order.paymentMethod == PaymentMethodType.credit ||
+      saleReceiptCheckCreditPosted(order)) {
     return 'Solde au crédit';
   }
   return 'Solde impayé';
@@ -210,7 +237,9 @@ String saleReceiptText({
     _moneyLine('TOTAL', usdTotal == null ? total : '$total ($usdTotal)'),
   );
   if (figures.hasBalanceDue) {
-    lines.add(_moneyLine('Payé', money(figures.amountPaid)));
+    lines.add(
+      _moneyLine(saleReceiptPaidLabel(order), money(figures.amountPaid)),
+    );
     lines.add(
       _moneyLine(
         saleReceiptBalanceLabel(order).toUpperCase(),
@@ -222,13 +251,17 @@ String saleReceiptText({
   lines.add('Paiement : ${order.paymentMethod.label}');
   final check = order.checkPayment;
   if (check != null) {
-    lines.addAll(_checkLines(check));
+    lines.addAll(_checkLines(check, money));
   }
   return lines.join('\n');
 }
 
-List<String> _checkLines(RetailCheckPayment check) {
+List<String> _checkLines(
+  RetailCheckPayment check,
+  String Function(double amount) money,
+) {
   return [
+    if (check.amountHtg != null) 'Montant : ${money(check.amountHtg!)}',
     'N° chèque : ${check.number}',
     'Banque : ${check.bank}',
     'Tireur : ${check.payerName}',

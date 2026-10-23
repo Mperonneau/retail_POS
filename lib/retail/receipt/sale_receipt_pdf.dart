@@ -398,14 +398,16 @@ pw.Widget _totals(
       for (final row in rows) line(row.$1, row.$2, bold: row.$3),
       if (figures.hasBalanceDue) ...[
         pw.SizedBox(height: 4),
-        line('Payé', money(figures.amountPaid), bold: true),
+        line(
+          saleReceiptPaidLabel(order),
+          money(figures.amountPaid),
+          bold: !saleReceiptCheckAwaitingCredit(order),
+        ),
         pw.SizedBox(height: 4),
         pw.Container(
           width: narrow ? double.infinity : 220,
           padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(width: 1.6),
-          ),
+          decoration: pw.BoxDecoration(border: pw.Border.all(width: 1.6)),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [

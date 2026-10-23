@@ -7,6 +7,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/date_formatter.dart';
+import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_input.dart';
@@ -15,6 +16,10 @@ import '../../core/widgets/check_photo_viewer.dart';
 /// Check number, bank, drawer, date, and photo collected at the register.
 class CheckPaymentForm extends StatelessWidget {
   final double totalHtg;
+  final TextEditingController amountCtrl;
+  final double remainder;
+  final bool amountTooHigh;
+  final Widget? balanceChild;
   final bool isDark;
   final TextEditingController numberCtrl;
   final TextEditingController bankCtrl;
@@ -32,6 +37,10 @@ class CheckPaymentForm extends StatelessWidget {
   const CheckPaymentForm({
     super.key,
     required this.totalHtg,
+    required this.amountCtrl,
+    required this.remainder,
+    required this.amountTooHigh,
+    this.balanceChild,
     required this.isDark,
     required this.numberCtrl,
     required this.bankCtrl,
@@ -46,6 +55,12 @@ class CheckPaymentForm extends StatelessWidget {
     required this.onClearNow,
     required this.onPickPhoto,
   });
+
+  bool get _amountTooLow {
+    final raw = amountCtrl.text.trim();
+    if (raw.isEmpty) return false;
+    return (double.tryParse(raw) ?? 0) < 1;
+  }
 
   Future<void> _pickDate(BuildContext context) async {
     final picked = await showDatePicker(
@@ -88,13 +103,61 @@ class CheckPaymentForm extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Montant du chèque', style: AppTextStyles.body()),
+                Text('Total de la commande', style: AppTextStyles.body()),
                 Text(
                   CurrencyFormatter.local(context, totalHtg),
                   style: AppTextStyles.price(),
                 ),
               ],
             ),
+            const SizedBox(height: AppConstants.spacing12),
+            AppInput(
+              key: const Key('check-amount'),
+              label: 'Montant du chèque',
+              controller: amountCtrl,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: InputFormatters.decimalAmount,
+              onChanged: onChanged,
+            ),
+            if (_amountTooLow) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Le montant du chèque doit être d\'au moins 1 HTG.',
+                style: AppTextStyles.body(
+                  color: AppColors.boldRed,
+                ).copyWith(fontWeight: FontWeight.w700),
+              ),
+            ] else if (amountTooHigh) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Le chèque ne peut pas dépasser le total.',
+                style: AppTextStyles.body(
+                  color: AppColors.boldRed,
+                ).copyWith(fontWeight: FontWeight.w700),
+              ),
+            ] else if (remainder > 0.009) ...[
+              const SizedBox(height: 8),
+              Container(
+                key: const Key('check-balance-warning'),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.amber.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.amber),
+                ),
+                child: Text(
+                  clearNow
+                      ? 'Solde restant : ${CurrencyFormatter.local(context, remainder)}. Il sera enregistré comme crédit au client.'
+                      : 'Solde restant : ${CurrencyFormatter.local(context, remainder)}. Il restera en attente de crédit jusqu\'à compensation du chèque.',
+                  style: AppTextStyles.body(
+                    color: AppColors.amber,
+                  ).copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              ?balanceChild,
+            ],
             const SizedBox(height: AppConstants.spacing12),
             AppInput(
               key: const Key('check-number'),
