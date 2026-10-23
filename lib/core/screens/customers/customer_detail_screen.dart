@@ -17,6 +17,7 @@ import '../../widgets/app_card.dart';
 import 'customer_form_screen.dart';
 import 'customer_payment_modal.dart';
 import '../../widgets/app_close_button.dart';
+import '../../../retail/widgets/sale_receipt_panel.dart';
 
 // ─── Right-side Detail Panel ──────────────────────────────────────────────────
 
@@ -178,7 +179,11 @@ class _CustomerDetailPanelState extends ConsumerState<CustomerDetailPanel> {
                   )
                 else ...[
                   for (final tx in transactions) ...[
-                    _CompactTxRow(tx: tx, isDark: isDark),
+                    _CompactTxRow(
+                      tx: tx,
+                      isDark: isDark,
+                      onOpen: _receiptOpener(context, ref, tx),
+                    ),
                     Divider(
                       height: 1,
                       color: (isDark ? AppColors.coolGray : AppColors.darkGray)
@@ -1841,11 +1846,35 @@ class _SectionDivider extends StatelessWidget {
   }
 }
 
+VoidCallback? _receiptOpener(
+  BuildContext context,
+  WidgetRef ref,
+  CustomerTransaction tx,
+) {
+  final id = tx.linkedOrderId?.trim() ?? '';
+  if (id.isEmpty) return null;
+  return () {
+    for (final order in ref.read(retailOrdersProvider)) {
+      if (order.id != id) continue;
+      showSaleReceiptPanel(context, order: order);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Ce reçu est introuvable.')),
+    );
+  };
+}
+
 class _CompactTxRow extends StatelessWidget {
   final CustomerTransaction tx;
   final bool isDark;
+  final VoidCallback? onOpen;
 
-  const _CompactTxRow({required this.tx, required this.isDark});
+  const _CompactTxRow({
+    required this.tx,
+    required this.isDark,
+    this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1875,7 +1904,7 @@ class _CompactTxRow extends StatelessWidget {
       tx.cashierName,
     ].join(' · ');
 
-    return Container(
+    final row = Container(
       color: isAdjustment
           ? AppColors.amber.withValues(alpha: 0.08)
           : Colors.transparent,
@@ -1962,7 +1991,24 @@ class _CompactTxRow extends StatelessWidget {
               ),
             ],
           ),
+          if (onOpen != null) ...[
+            const SizedBox(width: 2),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: isDark ? AppColors.coolGray : AppColors.darkGray,
+            ),
+          ],
         ],
+      ),
+    );
+    if (onOpen == null) return row;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: Key('customer-tx-${tx.id}'),
+        onTap: onOpen,
+        child: row,
       ),
     );
   }
@@ -2370,7 +2416,11 @@ class _CustomerDetailSheetState extends ConsumerState<CustomerDetailSheet> {
                   )
                 else ...[
                   for (final tx in transactions) ...[
-                    _TransactionRow(tx: tx, isDark: isDark),
+                    _TransactionRow(
+                      tx: tx,
+                      isDark: isDark,
+                      onOpen: _receiptOpener(context, ref, tx),
+                    ),
                     const Divider(height: 1),
                   ],
                   if (hasMoreTx)
@@ -3093,8 +3143,13 @@ class _HotelStayRow extends StatelessWidget {
 class _TransactionRow extends StatelessWidget {
   final CustomerTransaction tx;
   final bool isDark;
+  final VoidCallback? onOpen;
 
-  const _TransactionRow({required this.tx, required this.isDark});
+  const _TransactionRow({
+    required this.tx,
+    required this.isDark,
+    this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -3125,7 +3180,7 @@ class _TransactionRow extends StatelessWidget {
       'By ${tx.cashierName}',
     ];
 
-    return Container(
+    final row = Container(
       color: isAdjustment
           ? AppColors.amber.withValues(alpha: 0.12)
           : Colors.transparent,
@@ -3172,8 +3227,22 @@ class _TransactionRow extends StatelessWidget {
                 ),
               ],
             ),
+            if (onOpen != null)
+              Icon(
+                Icons.chevron_right_rounded,
+                color: isDark ? AppColors.coolGray : AppColors.darkGray,
+              ),
           ],
         ),
+      ),
+    );
+    if (onOpen == null) return row;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: Key('customer-tx-${tx.id}'),
+        onTap: onOpen,
+        child: row,
       ),
     );
   }

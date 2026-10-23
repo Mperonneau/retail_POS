@@ -20,6 +20,69 @@ import '../receipt/sale_receipt_pdf.dart';
 import '../receipt/sale_receipt_text.dart';
 import '../receipt/share_receipt_file.dart';
 
+/// Opens the sale receipt in a right-hand panel, full screen on a phone.
+Future<void> showSaleReceiptPanel(
+  BuildContext context, {
+  required RetailOrder order,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final client = order.clientName?.trim() ?? '';
+  final subtitle = client.isEmpty
+      ? order.fulfillmentMode.label
+      : '${order.fulfillmentMode.label} · $client';
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Reçu',
+    barrierColor: Colors.black54,
+    transitionDuration: const Duration(milliseconds: 220),
+    transitionBuilder: (ctx, anim, _, child) => SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(1, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+      child: child,
+    ),
+    pageBuilder: (ctx, _, _) {
+      final width = MediaQuery.sizeOf(ctx).width;
+      final panelWidth = AppConstants.sidePanelWidth(width, 480);
+      final bg = isDark ? AppColors.darkSurface : AppColors.white;
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Material(
+          color: bg,
+          elevation: 12,
+          child: SizedBox(
+            key: const Key('linked-sale-receipt'),
+            width: panelWidth,
+            height: double.infinity,
+            child: SafeArea(
+              child: SaleReceiptPanel(
+                order: order,
+                figures: SaleReceiptFigures.fromOrder(order),
+                contextSubtitle: subtitle,
+                statusLine: _saleReceiptStatusLine(order),
+                onDone: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+String _saleReceiptStatusLine(RetailOrder order) {
+  final number = order.orderNumber;
+  if (saleReceiptCheckPending(order)) {
+    return 'Vente $number — chèque en attente';
+  }
+  if (order.status == RetailOrderStatus.partiallyPaid) {
+    return 'Vente $number partiellement payée';
+  }
+  return 'Vente $number payée';
+}
+
 /// The sale the cashier just recorded, laid out as a receipt that can be
 /// printed, downloaded, or shared.
 class SaleReceiptPanel extends ConsumerStatefulWidget {

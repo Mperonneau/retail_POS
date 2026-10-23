@@ -15,6 +15,7 @@ import 'package:retail_pos/retail/receipt/sale_receipt_text.dart';
 import 'package:retail_pos/core/utils/operator_name.dart';
 import 'package:retail_pos/core/models/retail_check_payment.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
+import 'package:retail_pos/core/screens/customers/customer_detail_screen.dart';
 import 'package:retail_pos/core/screens/order_history/order_history_screen.dart';
 import 'package:retail_pos/core/services/local_store.dart';
 import 'package:retail_pos/core/theme/app_theme.dart';
@@ -900,6 +901,85 @@ void main() {
     expect(find.text('Chèque refusé'), findsOneWidget);
     expect(find.text('Modifier le chèque'), findsNothing);
     expect(find.text('Solde impayé'), findsOneWidget);
+  });
+
+  testWidgets('a balance transaction opens the sale receipt', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    container.read(authProvider.notifier).login(
+          userName: 'Gérant',
+          businessName: 'Boutique Soleil',
+          module: ActiveModule.retail,
+        );
+    final order = _shortOrder(amount: 200, due: 448);
+    container.read(retailOrdersProvider.notifier).add(order);
+    container.read(customerProvider.notifier).postCharge(
+          customerId: 'c6',
+          amountHtg: 448,
+          cashierName: 'Gérant',
+          linkedOrderId: order.id,
+          description:
+              'Solde du chèque ${order.orderNumber} après compensation',
+        );
+    final customer = container
+        .read(customerProvider)
+        .customers
+        .firstWhere((row) => row.id == 'c6');
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: CustomerDetailPanel(
+              customer: customer,
+              isDark: false,
+              onClose: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.ensureVisible(find.text('Lunch'));
+    await tester.tap(find.text('Lunch'));
+    await tester.pump();
+    expect(find.byKey(const Key('linked-sale-receipt')), findsNothing);
+
+    final charge = find.textContaining('Solde du chèque');
+    await tester.ensureVisible(charge);
+    await tester.tap(charge);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byKey(const Key('linked-sale-receipt')), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('linked-sale-receipt'))).width,
+      390,
+    );
+    expect(find.text('Reçu'), findsOneWidget);
+    expect(find.text('Chèque en attente'), findsOneWidget);
+    expect(find.text('Montant du chèque'), findsOneWidget);
+    expect(find.text('1000'), findsOneWidget);
+    expect(find.text('Sogebank'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('linked-sale-receipt')),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('linked-sale-receipt')), findsNothing);
   });
 }
 

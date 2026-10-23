@@ -2021,6 +2021,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
             customerId: creditCustomerSelected.id,
             amountHtg: widget.total,
             paidAmountHtg: _creditPartialPaid,
+            linkedOrderId: 'pos-${widget.checkoutId}',
             cashierName: 'Caissier',
             description: note,
           );

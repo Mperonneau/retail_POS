@@ -582,6 +582,7 @@ class RetailOrdersNotifier extends StateNotifier<List<RetailOrder>> {
             cashierName: _operator(),
             description: 'Ajustement du chèque ${order.orderNumber}',
             paymentMethodLabel: 'Chèque',
+            linkedOrderId: order.id,
           );
     }
     final status = remainder > 0.009

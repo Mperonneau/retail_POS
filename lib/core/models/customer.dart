@@ -522,6 +522,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
     String description = 'Paiement reçu',
     String? paymentMethodLabel,
     String? receiptNumber,
+    String? linkedOrderId,
   }) {
     _txCounter++;
     final currentBalance = state.balanceFor(customerId);
@@ -537,6 +538,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       timestamp: DateTime.now(),
       paymentMethodLabel: paymentMethodLabel,
       receiptNumber: receiptNumber,
+      linkedOrderId: linkedOrderId,
     );
     state = CustomerState(
       customers: state.customers,
