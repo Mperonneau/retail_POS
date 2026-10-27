@@ -70,7 +70,7 @@ final _restaurantDestinations = <_NavDestination>[
 final _retailDestinations = <_NavDestination>[
   _NavDestination(label: 'Caisse', icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, route: AppRoutes.retailPos),
   _NavDestination(label: 'Produits', icon: Icons.inventory_outlined, selectedIcon: Icons.inventory, route: AppRoutes.retailProducts),
-  _NavDestination(label: 'Commandes', icon: Icons.manage_search_outlined, selectedIcon: Icons.manage_search, route: AppRoutes.retailOrderHistory),
+  _NavDestination(label: 'Commandes', icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, route: AppRoutes.retailOrderHistory),
   _NavDestination(label: 'Liens', icon: Icons.add_link_outlined, selectedIcon: Icons.add_link, route: AppRoutes.retailPayLinks),
   _NavDestination(label: 'Devis', icon: Icons.request_quote_outlined, selectedIcon: Icons.request_quote, route: AppRoutes.retailQuotes),
   _NavDestination(label: 'Clients', icon: Icons.people_outline, selectedIcon: Icons.people, route: AppRoutes.retailCustomers),

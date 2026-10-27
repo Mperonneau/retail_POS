@@ -10,6 +10,18 @@ enum RetailOrderStatus {
   completed,  // Closed / finalised (in-store or explicit manager action)
 }
 
+/// Status written the moment a sale is paid in full.
+///
+/// Retrait is finished as soon as it is paid, so it is marked Terminé.
+/// En magasin and Livraison stay Payé: the goods still have to be handed over.
+RetailOrderStatus statusAfterFullPayment(RetailFulfillmentMode mode) {
+  if (mode == RetailFulfillmentMode.inStore ||
+      mode == RetailFulfillmentMode.delivery) {
+    return RetailOrderStatus.paid;
+  }
+  return RetailOrderStatus.completed;
+}
+
 extension RetailOrderStatusExt on RetailOrderStatus {
   String get label => switch (this) {
         RetailOrderStatus.paid => 'Payé',

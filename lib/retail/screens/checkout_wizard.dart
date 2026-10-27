@@ -673,7 +673,11 @@ class _RetailCheckoutWizardState extends ConsumerState<RetailCheckoutWizard> {
                     fulfillmentMode: _fulfillmentSectionVisible
                         ? _fulfillment
                         : RetailFulfillmentMode.inStore,
-                    status: RetailOrderStatus.paid,
+                    status: statusAfterFullPayment(
+                      _fulfillmentSectionVisible
+                          ? _fulfillment
+                          : RetailFulfillmentMode.inStore,
+                    ),
                     paymentSource: RetailPaymentSource.pos,
                     paymentMethod: method,
                     lines: [
@@ -1444,6 +1448,7 @@ class _RetailPaymentPanelState extends ConsumerState<_RetailPaymentPanel> {
 
   bool get _canConfirm {
     if (widget.submitting) return false;
+    if (_method == _RPayMethod.cash) return _cashReceived > 0;
     if (_method == _RPayMethod.credit) {
       return _selectedCustomer != null && !_selectedCustomer!.isCreditBlocked;
     }

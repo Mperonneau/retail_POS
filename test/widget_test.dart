@@ -14,6 +14,7 @@ import 'package:retail_pos/core/models/order_history.dart';
 import 'package:retail_pos/core/models/pending_operation.dart';
 import 'package:retail_pos/core/screens/order_history/order_history_screen.dart';
 import 'package:retail_pos/core/navigation/app_router.dart';
+import 'package:retail_pos/core/models/retail_fulfillment_mode.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
 import 'package:retail_pos/core/providers/device_session_provider.dart';
 import 'package:retail_pos/core/screens/sync/sync_screen.dart';
@@ -282,6 +283,89 @@ void main() {
     expect(find.text('Rien à envoyer pour l\'instant.'), findsOneWidget);
     expect(find.text('ORD-2026-0042'), findsNothing);
   });
+
+  testWidgets('Espèces stays off until an amount is entered, and a paid retrait is terminé',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final previousOnError = FlutterError.onError;
+    addTearDown(() => FlutterError.onError = previousOnError);
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('A RenderFlex overflowed')) return;
+      if (message.contains('attached to more than one ScrollPosition')) return;
+      previousOnError?.call(details);
+    };
+
+    await _signInToRetailShell(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    );
+    container.read(appRouterProvider).go('/retail/pos');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    final firstProduct = container.read(mockProductsProvider).first;
+    await tester.tap(find.text(firstProduct.name).first);
+    await tester.pump();
+    await tester.tap(find.textContaining('Panier').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('Encaisser').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final retrait = find.text('Retrait');
+    await tester.ensureVisible(retrait);
+    await tester.tap(retrait);
+    await tester.pump();
+
+    await tester.tap(find.text('Suivant').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.tap(find.text('Payer').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.tap(find.text('Espèces').last);
+    await tester.pump();
+
+    ElevatedButton confirmButton() => tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, 'Confirmer le paiement'),
+        );
+
+    expect(confirmButton().onPressed, isNull);
+
+    final cashField = find.byWidgetPredicate(
+      (widget) =>
+          widget is TextField &&
+          widget.decoration?.labelText == 'Espèces reçues (HTG)',
+    );
+    await tester.enterText(cashField, '500');
+    await tester.pump();
+
+    expect(confirmButton().onPressed, isNotNull);
+
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, 'Confirmer le paiement'),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final created = container
+        .read(retailOrdersProvider)
+        .where((order) => order.id.startsWith('pos-'))
+        .toList();
+    expect(created, hasLength(1));
+    expect(created.single.fulfillmentMode, RetailFulfillmentMode.pickup);
+    expect(created.single.status, RetailOrderStatus.completed);
+    expect(created.single.status.label, 'Terminé');
+  });
 }
 
 Future<void> _signInToRetailShell(
@@ -328,6 +412,34 @@ void _expectBottomNavLabelsVisible(WidgetTester tester) {
   expect(
     tester.widget<NavigationBar>(navBar).labelBehavior,
     NavigationDestinationLabelBehavior.alwaysShow,
+  );
+
+  expect(
+    find.descendant(
+      of: navBar,
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is Icon &&
+            (widget.icon == Icons.receipt_long_outlined ||
+                widget.icon == Icons.receipt_long),
+      ),
+    ),
+    findsOneWidget,
+    reason: 'Commandes uses a receipt icon, not the search icon',
+  );
+  expect(
+    find.descendant(
+      of: navBar,
+      matching: find.byIcon(Icons.manage_search),
+    ),
+    findsNothing,
+  );
+  expect(
+    find.descendant(
+      of: navBar,
+      matching: find.byIcon(Icons.manage_search_outlined),
+    ),
+    findsNothing,
   );
 
   for (final label in labels) {
