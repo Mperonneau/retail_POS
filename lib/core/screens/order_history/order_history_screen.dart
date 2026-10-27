@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 
 import '../../mock/mock_order_history.dart';
 import '../../mock/mock_retail_orders.dart';
@@ -11,6 +12,12 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/input_formatters.dart';
+import '../../../retail/receipt/sale_receipt_pdf.dart';
+import '../../../retail/receipt/sale_receipt_text.dart';
+import '../../../retail/widgets/edit_check_sheet.dart';
+import '../../../retail/storefront/receipt_scan.dart';
+import '../../printing/shop_pdf.dart';
+import '../../widgets/phone_field.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/list_page_nav.dart';
 import '../../widgets/payment_method_block.dart';
@@ -138,6 +145,32 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.scope == OrderHistoryListScope.retail) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingReceipt());
+    }
+  }
+
+  void _openPendingReceipt() {
+    if (!mounted) return;
+    final id = ref.read(pendingReceiptScanProvider);
+    if (id == null || id.isEmpty) return;
+    final order = ref
+        .read(retailOrdersProvider)
+        .where((row) => row.id == 'vit_$id')
+        .firstOrNull;
+    if (order == null) return;
+    ref.read(pendingReceiptScanProvider.notifier).state = null;
+    final mobile =
+        MediaQuery.sizeOf(context).width < AppConstants.mobileBreakpoint;
+    setState(() {
+      _retailTab = 0;
+      _selectedActiveOrder = mobile ? null : order;
+    });
+    if (mobile) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => _RetailOrderDetailPage(order: order)),
+      );
+    }
   }
 
   void _resetPage() => setState(() => _currentPage = 0);
@@ -1180,6 +1213,7 @@ class _PaymentBadge extends StatelessWidget {
       PaymentMethodType.cash => ('Espèces', AppColors.deepGreen),
       PaymentMethodType.credit => ('Crédit', AppColors.boldRed),
       PaymentMethodType.paymentLink => ('Lien', const Color(0xFF7C3AED)),
+      PaymentMethodType.check => ('Chèque', const Color(0xFF0F766E)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1596,6 +1630,8 @@ class _ActiveOrderCard extends StatelessWidget {
   Color get _statusColor {
     final d = isDark;
     return switch (order.status) {
+      RetailOrderStatus.checkPending => AppColors.amber,
+      RetailOrderStatus.partiallyPaid => AppColors.boldRed,
       RetailOrderStatus.paid => d ? AppColors.skyBlue : AppColors.primaryBlue,
       RetailOrderStatus.ready => AppColors.amber,
       _ => d ? AppColors.mediumGreen : AppColors.deepGreen,
@@ -1904,20 +1940,11 @@ void _showActiveOrderWhatsAppDialog(BuildContext context, RetailOrder order) {
       builder: (ctx, setD) {
         return AlertDialog(
           title: const Text('Envoyer par WhatsApp'),
-          content: TextField(
+          content: PhoneField(
             controller: ctrl,
+            label: 'Numéro de téléphone',
+            errorText: errHolder[0],
             onChanged: (_) => setD(() => errHolder[0] = null),
-            decoration: InputDecoration(
-              labelText: 'Numéro de téléphone',
-              hintText: '+509 XXXX-XXXX',
-              prefixIcon: const Icon(Icons.phone_outlined),
-              errorText: errHolder[0],
-              border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.radiusInput)),
-            ),
-            keyboardType: TextInputType.phone,
-            inputFormatters: InputFormatters.phone,
           ),
           actions: [
             TextButton(
@@ -1996,23 +2023,27 @@ void _showActiveOrderEmailDialog(BuildContext context, RetailOrder order) {
   );
 }
 
-void _showActiveOrderPrintDialog(BuildContext context, RetailOrder order) {
-  final name = order.clientName?.trim();
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Imprimer'),
-      content: Text(
-        name == null || name.isEmpty
-            ? 'Commande ${order.orderNumber} envoyée à l\'imprimante.'
-            : 'Commande ${order.orderNumber} pour $name envoyée à l\'imprimante.',
+Future<void> _showActiveOrderPrintDialog(
+  BuildContext context,
+  RetailOrder order,
+) async {
+  try {
+    await Printing.layoutPdf(
+      name: saleReceiptFilename(order),
+      onLayout: (format) => buildSaleReceiptPdf(
+        format: format,
+        order: order,
+        figures: SaleReceiptFigures.fromOrder(order),
+        shopName: shopNameFrom(context),
+        money: (amount) => localMoney(context, amount),
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-      ],
-    ),
-  );
+    );
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(content: Text('Le reçu n\'a pas pu être préparé.')),
+    );
+  }
 }
 
 // ── Active order detail panel ─────────────────────────────────────────────────
@@ -2257,6 +2288,75 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                     context: context,
                     isBold: true,
                   ),
+                  if (current.unpaidBalanceHtg > 0.009) ...[
+                    const SizedBox(height: 4),
+                    _TotalRowSimple(
+                      label: saleReceiptPaidLabel(current),
+                      amount: current.amountPaidHtg ?? 0,
+                      isDark: isDark,
+                      context: context,
+                      isBold: true,
+                      emphasis: saleReceiptCheckAwaitingCredit(current)
+                          ? (isDark
+                              ? AppColors.warmWhite
+                              : AppColors.nearBlack)
+                          : AppColors.deepGreen,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      key: const Key('order-balance-due'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (saleReceiptCheckAwaitingCredit(current)
+                                ? AppColors.amber
+                                : AppColors.boldRed)
+                            .withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: saleReceiptCheckAwaitingCredit(current)
+                              ? AppColors.amber
+                              : AppColors.boldRed,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: saleReceiptCheckAwaitingCredit(current)
+                                ? AppColors.amber
+                                : AppColors.boldRed,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              saleReceiptBalanceLabel(current),
+                              style: AppTextStyles.body(
+                                color: saleReceiptCheckAwaitingCredit(current)
+                                    ? AppColors.amber
+                                    : AppColors.boldRed,
+                              ).copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          Text(
+                            CurrencyFormatter.local(
+                              context,
+                              current.unpaidBalanceHtg,
+                            ),
+                            style: AppTextStyles.price(
+                              color: saleReceiptCheckAwaitingCredit(current)
+                                  ? AppColors.amber
+                                  : AppColors.boldRed,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Divider(
                       color: isDark
@@ -2269,10 +2369,17 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                     isDark: isDark,
                     paymentMethod: current.paymentMethod,
                     paymentLastFour: current.paymentLastFour,
+                    check: current.paymentMethod == PaymentMethodType.check
+                        ? current.checkPayment
+                        : null,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Payé le ${_formatDate(current.paidAt, withTime: true)}',
+                    current.status == RetailOrderStatus.checkPending
+                        ? 'Chèque reçu le ${_formatDate(current.createdAt, withTime: true)}'
+                        : current.status == RetailOrderStatus.partiallyPaid
+                            ? 'Encaissé le ${_formatDate(current.paidAt, withTime: true)}'
+                            : 'Payé le ${_formatDate(current.paidAt, withTime: true)}',
                     style: AppTextStyles.caption(
                         color:
                             isDark ? AppColors.coolGray : AppColors.darkGray),
@@ -2292,6 +2399,99 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (current.checkPayment != null &&
+                    !current.checkPayment!.refused) ...[
+                  OutlinedButton.icon(
+                    key: const Key('edit-check'),
+                    onPressed: () => showEditCheckPanel(
+                      context,
+                      orderId: current.id,
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Modifier le chèque'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark
+                          ? AppColors.skyBlue
+                          : AppColors.primaryBlue,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusButton,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (current.status == RetailOrderStatus.checkPending &&
+                    current.checkPayment != null &&
+                    !current.checkPayment!.refused) ...[
+                  ElevatedButton.icon(
+                    key: const Key('approve-check'),
+                    onPressed: () {
+                      final error = ref
+                          .read(retailOrdersProvider.notifier)
+                          .clearCheck(current.id);
+                      if (error == null || !context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error)),
+                      );
+                    },
+                    icon: const Icon(Icons.verified_outlined, size: 16),
+                    label: const Text('Approuver le chèque'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.amber,
+                      foregroundColor: AppColors.nearBlack,
+                      elevation: 0,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              AppConstants.radiusButton)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const Key('refuse-check'),
+                    onPressed: () async {
+                      final refuse = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Refuser le chèque'),
+                          content: const Text(
+                            'Le solde réservé sera annulé et la vente restera impayée.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Annuler'),
+                            ),
+                            TextButton(
+                              key: const Key('refuse-check-confirm'),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Refuser'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (refuse != true || !context.mounted) return;
+                      ref
+                          .read(retailOrdersProvider.notifier)
+                          .refuseCheck(current.id);
+                    },
+                    icon: const Icon(Icons.block, size: 16),
+                    label: const Text('Refuser le chèque'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.boldRed,
+                      side: const BorderSide(color: AppColors.boldRed),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusButton,
+                        ),
+                      ),
+                    ),
+                  ),
+                ] else ...[
                 if (nextStatus != null && nextLabel != null)
                   ElevatedButton.icon(
                     onPressed: () {
@@ -2334,6 +2534,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                             AppConstants.radiusButton)),
                   ),
                 ),
+                ],
               ],
             ),
           ),
@@ -2591,6 +2792,8 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (order.status) {
+      RetailOrderStatus.checkPending => AppColors.amber,
+      RetailOrderStatus.partiallyPaid => AppColors.boldRed,
       RetailOrderStatus.paid =>
         isDark ? AppColors.skyBlue : AppColors.primaryBlue,
       RetailOrderStatus.ready => AppColors.amber,
@@ -2712,6 +2915,7 @@ class _TotalRowSimple extends StatelessWidget {
   final BuildContext context;
   final bool isBold;
   final bool isDiscount;
+  final Color? emphasis;
 
   const _TotalRowSimple({
     required this.label,
@@ -2720,23 +2924,27 @@ class _TotalRowSimple extends StatelessWidget {
     required this.context,
     this.isBold = false,
     this.isDiscount = false,
+    this.emphasis,
   });
 
   @override
   Widget build(BuildContext _) {
-    final baseColor = isDiscount
-        ? (isDark ? AppColors.mediumGreen : AppColors.deepGreen)
-        : (isDark ? AppColors.warmWhite : AppColors.nearBlack);
+    final baseColor = emphasis ??
+        (isDiscount
+            ? (isDark ? AppColors.mediumGreen : AppColors.deepGreen)
+            : (isDark ? AppColors.warmWhite : AppColors.nearBlack));
+    final labelColor = emphasis ??
+        (isDark ? AppColors.coolGray : AppColors.darkGray);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: AppTextStyles.body(
-                  color: isDark ? AppColors.coolGray : AppColors.darkGray)
-              .copyWith(
-                  fontWeight:
-                      isBold ? FontWeight.w600 : FontWeight.normal),
+          style: AppTextStyles.body(color: labelColor).copyWith(
+            fontWeight: emphasis != null
+                ? FontWeight.w700
+                : (isBold ? FontWeight.w600 : FontWeight.normal),
+          ),
         ),
         Text(
           isDiscount

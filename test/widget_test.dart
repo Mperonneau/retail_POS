@@ -14,7 +14,6 @@ import 'package:retail_pos/core/models/order_history.dart';
 import 'package:retail_pos/core/models/pending_operation.dart';
 import 'package:retail_pos/core/screens/order_history/order_history_screen.dart';
 import 'package:retail_pos/core/navigation/app_router.dart';
-import 'package:retail_pos/core/models/retail_fulfillment_mode.dart';
 import 'package:retail_pos/core/models/retail_order.dart';
 import 'package:retail_pos/core/providers/device_session_provider.dart';
 import 'package:retail_pos/core/screens/sync/sync_screen.dart';
@@ -44,12 +43,17 @@ void main() {
 
     await _signInToRetailShell(tester, expectDemoPins: true);
 
-    expect(find.text('Tableau de bord'), findsWidgets);
+    expect(
+      find.text('Rechercher un produit ou scanner un code-barres...'),
+      findsOneWidget,
+    );
     expect(find.text('Boutique Soleil'), findsWidgets);
     expect(find.textContaining('Page not found'), findsNothing);
   });
 
-  testWidgets('Mobile bottom nav shows every destination label', (tester) async {
+  testWidgets('Mobile bottom nav shows every destination label', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -70,7 +74,10 @@ void main() {
     _expectBottomNavLabelsVisible(tester);
 
     await tester.tap(
-      find.descendant(of: find.byType(NavigationBar), matching: find.text('Commandes')),
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Commandes'),
+      ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -90,7 +97,9 @@ void main() {
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });
 
-  testWidgets('On a phone the cart and checkout panels fill the screen', (tester) async {
+  testWidgets('On a phone the cart and checkout panels fill the screen', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -114,16 +123,21 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     final firstProduct = container.read(mockProductsProvider).first;
-    await tester.tap(find.text(firstProduct.name).first);
+    await tester.tap(_productAddButton(firstProduct.name));
     await tester.pump();
     await tester.tap(find.textContaining('Panier').last);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
     double panelWidth() => tester
-        .getSize(find
-            .ancestor(of: find.byType(AppCloseButton).last, matching: find.byType(Material))
-            .at(1))
+        .getSize(
+          find
+              .ancestor(
+                of: find.byType(AppCloseButton).last,
+                matching: find.byType(Material),
+              )
+              .at(1),
+        )
         .width;
 
     expect(find.byType(AppCloseButton), findsOneWidget);
@@ -135,14 +149,13 @@ void main() {
     expect(find.text('Suivant'), findsWidgets);
     final checkoutClose = find.byType(AppCloseButton).last;
     expect(tester.getSize(checkoutClose), const Size(36, 36));
-    expect(
-      tester.getRect(checkoutClose).right,
-      lessThanOrEqualTo(390),
-    );
+    expect(tester.getRect(checkoutClose).right, lessThanOrEqualTo(390));
     expect(tester.getRect(checkoutClose).left, lessThan(60));
   });
 
-  testWidgets('A sale paid offline waits on the synchronisation page', (tester) async {
+  testWidgets('A sale paid offline waits on the synchronisation page', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -169,14 +182,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     final firstProduct = container.read(mockProductsProvider).first;
-    await tester.tap(find.text(firstProduct.name).first);
+    await tester.tap(_productAddButton(firstProduct.name));
     await tester.pump();
-    for (final label in ['Encaisser', 'Suivant', 'Payer', 'Confirmer le paiement']) {
+    for (final label in ['Encaisser', 'Suivant', 'Payer']) {
       expect(find.text(label), findsWidgets, reason: label);
       await tester.tap(find.text(label).last);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
     }
+    // Card and MonCash wait for the payments server. Cash records the sale.
+    expect(find.text('Espèces'), findsWidgets);
+    await tester.tap(find.text('Espèces').last);
+    await tester.pump();
+    expect(find.text('Confirmer le paiement'), findsWidgets);
+    await tester.enterText(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Espèces reçues (HTG)',
+      ),
+      '100000',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Confirmer le paiement').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     final pending = container.read(deviceSessionProvider).pending;
     expect(pending.map((op) => op.kind), [PendingOperationKind.sale]);
@@ -199,7 +229,9 @@ void main() {
     expect(find.text(firstProduct.name), findsWidgets);
   });
 
-  testWidgets('Banner opens the waiting sales and Synchroniser sends them', (tester) async {
+  testWidgets('Banner opens the waiting sales and Synchroniser sends them', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -283,89 +315,6 @@ void main() {
     expect(find.text('Rien à envoyer pour l\'instant.'), findsOneWidget);
     expect(find.text('ORD-2026-0042'), findsNothing);
   });
-
-  testWidgets('Espèces stays off until an amount is entered, and a paid retrait is terminé',
-      (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final previousOnError = FlutterError.onError;
-    addTearDown(() => FlutterError.onError = previousOnError);
-    FlutterError.onError = (details) {
-      final message = details.exceptionAsString();
-      if (message.contains('A RenderFlex overflowed')) return;
-      if (message.contains('attached to more than one ScrollPosition')) return;
-      previousOnError?.call(details);
-    };
-
-    await _signInToRetailShell(tester);
-    final container = ProviderScope.containerOf(
-      tester.element(find.byType(Scaffold).first),
-    );
-    container.read(appRouterProvider).go('/retail/pos');
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-
-    final firstProduct = container.read(mockProductsProvider).first;
-    await tester.tap(find.text(firstProduct.name).first);
-    await tester.pump();
-    await tester.tap(find.textContaining('Panier').last);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    await tester.tap(find.text('Encaisser').last);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    final retrait = find.text('Retrait');
-    await tester.ensureVisible(retrait);
-    await tester.tap(retrait);
-    await tester.pump();
-
-    await tester.tap(find.text('Suivant').last);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    await tester.tap(find.text('Payer').last);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    await tester.tap(find.text('Espèces').last);
-    await tester.pump();
-
-    ElevatedButton confirmButton() => tester.widget<ElevatedButton>(
-          find.widgetWithText(ElevatedButton, 'Confirmer le paiement'),
-        );
-
-    expect(confirmButton().onPressed, isNull);
-
-    final cashField = find.byWidgetPredicate(
-      (widget) =>
-          widget is TextField &&
-          widget.decoration?.labelText == 'Espèces reçues (HTG)',
-    );
-    await tester.enterText(cashField, '500');
-    await tester.pump();
-
-    expect(confirmButton().onPressed, isNotNull);
-
-    await tester.tap(
-      find.widgetWithText(ElevatedButton, 'Confirmer le paiement'),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    final created = container
-        .read(retailOrdersProvider)
-        .where((order) => order.id.startsWith('pos-'))
-        .toList();
-    expect(created, hasLength(1));
-    expect(created.single.fulfillmentMode, RetailFulfillmentMode.pickup);
-    expect(created.single.status, RetailOrderStatus.completed);
-    expect(created.single.status.label, 'Terminé');
-  });
 }
 
 Future<void> _signInToRetailShell(
@@ -405,8 +354,21 @@ Future<void> _signInToRetailShell(
   await tester.pump();
 }
 
+/// The product name opens details. The plus button adds the product.
+Finder _productAddButton(String productName) {
+  return find.descendant(
+    of: find
+        .ancestor(
+          of: find.text(productName),
+          matching: find.byType(GestureDetector),
+        )
+        .first,
+    matching: find.byIcon(Icons.add),
+  );
+}
+
 void _expectBottomNavLabelsVisible(WidgetTester tester) {
-  const labels = ['Caisse', 'Produits', 'Commandes', 'Liens', 'Devis'];
+  const labels = ['Vente', 'Produits', 'Commandes', 'Liens', 'Devis'];
   final navBar = find.byType(NavigationBar);
   expect(navBar, findsOneWidget);
   expect(

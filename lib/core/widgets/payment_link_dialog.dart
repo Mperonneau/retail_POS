@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
+import 'phone_field.dart';
 
 enum PaymentLinkChannel { whatsApp, email, sms }
 
@@ -24,10 +25,12 @@ class PaymentLinkSendResult {
 }
 
 /// Mock checkout base path (no scheme). Real integration would return a URL from the API.
-String buildOrderPaymentLinkPath(Object orderId) => 'pay.bizmanager.ht/order-$orderId';
+String buildOrderPaymentLinkPath(Object orderId) =>
+    'pay.bizmanager.ht/order-$orderId';
 
 /// Standalone paylink page path from our app’s paylink id.
-String buildStandalonePaylinkPath(String payLinkId) => 'pay.bizmanager.ht/pl/$payLinkId';
+String buildStandalonePaylinkPath(String payLinkId) =>
+    'pay.bizmanager.ht/pl/$payLinkId';
 
 /// Retail quote checkout path.
 String buildQuotePaymentLinkPath(String quoteNumber) =>
@@ -39,6 +42,45 @@ String normalizePaymentLinkUrl(String pathOrUrl) {
   return 'https://$t';
 }
 
+/// Message for the share sheet. The checkout URL is included so the payer can
+/// open it, along with the commande or devis number and the client.
+///
+/// The amount is the dollar charge, with the gourde amount in parentheses.
+/// The payer's phone is never included.
+String paymentLinkShareMessage({
+  required String url,
+  required String number,
+  String? kindLabel,
+  String? clientName,
+  String? usdLabel,
+  String? htgLabel,
+}) {
+  final lines = <String>['Lien de paiement'];
+  final num = number.trim();
+  final kind = kindLabel?.trim() ?? '';
+  if (num.isNotEmpty) {
+    lines.add(kind.isEmpty ? 'Numéro : $num' : '$kind : $num');
+  }
+  final client = clientName?.trim() ?? '';
+  if (client.isNotEmpty) lines.add('Client : $client');
+  final usd = usdLabel?.trim() ?? '';
+  final htg = htgLabel?.trim() ?? '';
+  if (usd.isNotEmpty && htg.isNotEmpty) {
+    lines.add('Montant : $usd ($htg)');
+  } else if (usd.isNotEmpty) {
+    lines.add('Montant : $usd');
+  } else if (htg.isNotEmpty) {
+    lines.add('Montant : $htg');
+  }
+  final link = url.trim();
+  if (link.isNotEmpty) {
+    lines.add('');
+    lines.add('Cliquez sur le lien ci-dessous pour effectuer le paiement.');
+    lines.add(link);
+  }
+  return lines.join('\n');
+}
+
 /// Shown after a payment link is **created and sent** (bill, quote, or paylink).
 Future<void> showPaymentLinkSuccessDialog(
   BuildContext context, {
@@ -46,12 +88,14 @@ Future<void> showPaymentLinkSuccessDialog(
   required String title,
   required String pathOrUrl,
   String? subtitle,
+  String headline = 'Le lien a été envoyé',
+  String? shareText,
 }) {
   final fullUrl = normalizePaymentLinkUrl(pathOrUrl);
+  final shared = (shareText ?? '').trim().isEmpty ? fullUrl : shareText!.trim();
   return showDialog<void>(
     context: context,
     builder: (ctx) {
-      const headline = 'Le lien a été envoyé';
       final linkCopied = <bool>[false];
       return StatefulBuilder(
         builder: (context, setModalState) {
@@ -68,8 +112,11 @@ Future<void> showPaymentLinkSuccessDialog(
                     color: AppColors.deepGreen.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.check_circle_rounded,
-                      color: AppColors.deepGreen, size: 22),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.deepGreen,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -104,102 +151,69 @@ Future<void> showPaymentLinkSuccessDialog(
                   ],
                   const SizedBox(height: 12),
                   Text(
-                    'Vous pouvez copier ou partager le lien avec le client ou le payeur. '
-                    'Il n\'était pas actif avant l\'envoi.',
+                    'Copiez le lien ou partagez-le avec le payeur.',
                     style: AppTextStyles.caption(
                       color: isDark ? AppColors.coolGray : AppColors.darkGray,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkBackground
-                          : AppColors.lightBlue,
+                  Material(
+                    color: isDark
+                        ? AppColors.darkBackground
+                        : AppColors.lightBlue,
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.darkBorder
-                            : AppColors.primaryBlue.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.link,
-                            size: 14,
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: fullUrl));
+                        setModalState(() => linkCopied[0] = true);
+                        Future.delayed(const Duration(seconds: 2), () {
+                          if (context.mounted) {
+                            setModalState(() => linkCopied[0] = false);
+                          }
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
                             color: isDark
-                                ? AppColors.skyBlue
-                                : AppColors.primaryBlue),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: SelectableText(
-                            fullUrl,
-                            style: AppTextStyles.caption(
-                              color: isDark
-                                  ? AppColors.skyBlue
-                                  : AppColors.primaryBlue,
-                            ).copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
+                                ? AppColors.darkBorder
+                                : AppColors.primaryBlue.withValues(alpha: 0.3),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: fullUrl));
-                              setModalState(() => linkCopied[0] = true);
-                              Future.delayed(
-                                  const Duration(seconds: 2), () {
-                                if (context.mounted) {
-                                  setModalState(
-                                      () => linkCopied[0] = false);
-                                }
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: (isDark
-                                        ? AppColors.darkSurface
-                                        : AppColors.white)
-                                    .withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: (isDark
-                                          ? AppColors.coolGray
-                                          : AppColors.primaryBlue)
-                                      .withValues(alpha: 0.35),
-                                ),
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: AppConstants.animFast,
-                                child: linkCopied[0]
-                                    ? const Icon(
-                                        Icons.check_circle_outline_rounded,
-                                        key: ValueKey('ok'),
-                                        size: 16,
-                                        color: AppColors.deepGreen,
-                                      )
-                                    : Icon(
-                                        Icons.copy_outlined,
-                                        key: const ValueKey('cp'),
-                                        size: 16,
-                                        color: isDark
-                                            ? AppColors.skyBlue
-                                            : AppColors.primaryBlue,
-                                      ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              linkCopied[0]
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.copy_outlined,
+                              size: 18,
+                              color: linkCopied[0]
+                                  ? AppColors.deepGreen
+                                  : (isDark
+                                        ? AppColors.skyBlue
+                                        : AppColors.primaryBlue),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                linkCopied[0] ? 'Lien copié' : 'Copier le lien',
+                                style: AppTextStyles.body(
+                                  color: isDark
+                                      ? AppColors.skyBlue
+                                      : AppColors.primaryBlue,
+                                ).copyWith(fontWeight: FontWeight.w600),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -216,7 +230,7 @@ Future<void> showPaymentLinkSuccessDialog(
                 ),
               ),
               OutlinedButton.icon(
-                onPressed: () => Share.share(fullUrl, subject: title),
+                onPressed: () => Share.share(shared, subject: title),
                 icon: const Icon(Icons.share_rounded, size: 18),
                 label: const Text('Partager'),
                 style: OutlinedButton.styleFrom(
@@ -304,8 +318,9 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
       return false;
     }
     if (widget.allowPrepaidAmount && _usePrepaidAmount) {
-      final v =
-          double.tryParse(_prepaidAmountCtrl.text.replaceAll(',', '').trim());
+      final v = double.tryParse(
+        _prepaidAmountCtrl.text.replaceAll(',', '').trim(),
+      );
       if (v == null || v <= 0) return false;
     }
     return true;
@@ -313,8 +328,9 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
 
   double? get _parsedPrepaidAmount {
     if (!widget.allowPrepaidAmount || !_usePrepaidAmount) return null;
-    final v =
-        double.tryParse(_prepaidAmountCtrl.text.replaceAll(',', '').trim());
+    final v = double.tryParse(
+      _prepaidAmountCtrl.text.replaceAll(',', '').trim(),
+    );
     if (v == null || v <= 0) return null;
     return v;
   }
@@ -327,8 +343,7 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
     }
     if (_channel != PaymentLinkChannel.email &&
         _phoneCtrl.text.trim().isEmpty) {
-      final name =
-          _channel == PaymentLinkChannel.whatsApp ? 'WhatsApp' : 'SMS';
+      final name = _channel == PaymentLinkChannel.whatsApp ? 'WhatsApp' : 'SMS';
       return "Saisissez le téléphone du payeur pour l'envoi via $name";
     }
     return null;
@@ -337,9 +352,10 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
-    final desc = widget.description ??
+    final desc =
+        widget.description ??
         "Saisissez ci-dessous le téléphone ou l'e-mail du payeur, "
-        'puis choisissez le mode d\'envoi. Le paiement sera appliqué à cette commande une fois terminé.';
+            'puis choisissez le mode d\'envoi. Le paiement sera appliqué à cette commande une fois terminé.';
 
     return AlertDialog(
       backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
@@ -354,25 +370,29 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
               color: AppColors.deepGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.link_rounded,
-                size: 20,
-                color: isDark ? AppColors.mediumGreen : AppColors.deepGreen),
+            child: Icon(
+              Icons.link_rounded,
+              size: 20,
+              color: isDark ? AppColors.mediumGreen : AppColors.deepGreen,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Envoyer le lien de paiement',
-                    style: AppTextStyles.h3(
-                        color: isDark
-                            ? AppColors.warmWhite
-                            : AppColors.nearBlack)),
-                Text(widget.referenceLabel,
-                    style: AppTextStyles.caption(
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray)),
+                Text(
+                  'Envoyer le lien de paiement',
+                  style: AppTextStyles.h3(
+                    color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+                  ),
+                ),
+                Text(
+                  widget.referenceLabel,
+                  style: AppTextStyles.caption(
+                    color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                  ),
+                ),
               ],
             ),
           ),
@@ -386,13 +406,19 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 4),
-              Text(desc,
-                  style: AppTextStyles.body(
-                      color: isDark ? AppColors.coolGray : AppColors.darkGray)),
+              Text(
+                desc,
+                style: AppTextStyles.body(
+                  color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                ),
+              ),
               const SizedBox(height: 10),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: isDark
                       ? AppColors.darkBackground
@@ -406,15 +432,19 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline_rounded,
-                        size: 16,
-                        color: isDark ? AppColors.skyBlue : AppColors.primaryBlue),
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Le lien de paiement est créé seulement quand vous touchez « Envoyer le lien ».',
                         style: AppTextStyles.caption(
-                          color: isDark ? AppColors.coolGray : AppColors.darkGray,
+                          color: isDark
+                              ? AppColors.coolGray
+                              : AppColors.darkGray,
                         ),
                       ),
                     ),
@@ -431,25 +461,10 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
+              PhoneField(
                 controller: _phoneCtrl,
+                label: 'Téléphone du payeur',
                 onChanged: (_) => setState(() {}),
-                keyboardType: TextInputType.phone,
-                // `null` fully disables platform / browser autofill (default `[]` does not).
-                autofillHints: null,
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: 'Téléphone du payeur',
-                  prefixIcon: const Icon(Icons.phone_outlined, size: 18),
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput),
-                  ),
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -463,12 +478,15 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                   labelText: 'E-mail du payeur',
                   prefixIcon: const Icon(Icons.email_outlined, size: 18),
                   border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusInput),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.radiusInput,
+                    ),
                   ),
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -484,7 +502,8 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                       selected: _channel == PaymentLinkChannel.whatsApp,
                       isDark: isDark,
                       onTap: () => setState(
-                          () => _channel = PaymentLinkChannel.whatsApp),
+                        () => _channel = PaymentLinkChannel.whatsApp,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -516,7 +535,9 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
               if (widget.allowPrepaidAmount) ...[
                 const SizedBox(height: 16),
                 _SectionLabel(
-                    label: 'MONTANT PRÉPAYÉ (FACULTATIF)', isDark: isDark),
+                  label: 'MONTANT PRÉPAYÉ (FACULTATIF)',
+                  isDark: isDark,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'Le client utilise ce solde sur cette note (taxe et service '
@@ -543,27 +564,29 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                   TextField(
                     controller: _prepaidAmountCtrl,
                     onChanged: (_) => setState(() {}),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Montant prépayé (HTG)',
-                      prefixIcon:
-                          const Icon(Icons.payments_outlined, size: 18),
+                      prefixIcon: const Icon(Icons.payments_outlined, size: 18),
                       border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppConstants.radiusInput),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusInput,
+                        ),
                       ),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                   Builder(
                     builder: (ctx) {
                       final v = _parsedPrepaidAmount;
                       if (v == null) return const SizedBox.shrink();
-                      final usd =
-                          CurrencyFormatter.usdEquivalentOrNull(ctx, v);
+                      final usd = CurrencyFormatter.usdEquivalentOrNull(ctx, v);
                       if (usd == null) return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(left: 4, top: 6),
@@ -587,13 +610,19 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
                         padding: const EdgeInsets.only(top: 8),
                         child: Row(
                           children: [
-                            const Icon(Icons.warning_amber_rounded,
-                                size: 13, color: AppColors.boldRed),
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 13,
+                              color: AppColors.boldRed,
+                            ),
                             const SizedBox(width: 5),
                             Expanded(
-                              child: Text(_validationMessage!,
-                                  style: AppTextStyles.caption(
-                                      color: AppColors.boldRed)),
+                              child: Text(
+                                _validationMessage!,
+                                style: AppTextStyles.caption(
+                                  color: AppColors.boldRed,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -608,34 +637,38 @@ class _PaymentLinkDialogState extends State<PaymentLinkDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Annuler',
-              style: AppTextStyles.button(
-                  color: isDark ? AppColors.coolGray : AppColors.darkGray)),
+          child: Text(
+            'Annuler',
+            style: AppTextStyles.button(
+              color: isDark ? AppColors.coolGray : AppColors.darkGray,
+            ),
+          ),
         ),
         ElevatedButton.icon(
           onPressed: _canSend
               ? () => Navigator.pop(
-                    context,
-                    PaymentLinkSendResult(
-                      channel: _channel!,
-                      contact: _channel == PaymentLinkChannel.email
-                          ? _emailCtrl.text.trim()
-                          : _phoneCtrl.text.trim(),
-                      prepaidCapHtg: _parsedPrepaidAmount,
-                    ),
-                  )
+                  context,
+                  PaymentLinkSendResult(
+                    channel: _channel!,
+                    contact: _channel == PaymentLinkChannel.email
+                        ? _emailCtrl.text.trim()
+                        : _phoneCtrl.text.trim(),
+                    prepaidCapHtg: _parsedPrepaidAmount,
+                  ),
+                )
               : null,
           icon: const Icon(Icons.send_rounded, size: 16),
           label: const Text('Envoyer le lien'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.deepGreen,
             foregroundColor: AppColors.white,
-            disabledBackgroundColor:
-                isDark ? AppColors.darkBorder : const Color(0xFFEEEEEE),
+            disabledBackgroundColor: isDark
+                ? AppColors.darkBorder
+                : const Color(0xFFEEEEEE),
             elevation: 0,
             shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppConstants.radiusButton)),
+              borderRadius: BorderRadius.circular(AppConstants.radiusButton),
+            ),
           ),
         ),
       ],
@@ -686,9 +719,7 @@ class _ChannelChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? color.withValues(alpha: isDark ? 0.18 : 0.1)
-              : (isDark
-                  ? AppColors.darkBackground
-                  : const Color(0xFFF7F7F7)),
+              : (isDark ? AppColors.darkBackground : const Color(0xFFF7F7F7)),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: selected
@@ -700,22 +731,27 @@ class _ChannelChip extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 16,
-                color: selected
-                    ? color
-                    : (isDark ? AppColors.coolGray : AppColors.darkGray)),
+            Icon(
+              icon,
+              size: 16,
+              color: selected
+                  ? color
+                  : (isDark ? AppColors.coolGray : AppColors.darkGray),
+            ),
             const SizedBox(height: 1),
-            Text(label,
-                style: AppTextStyles.caption(
-                  color: selected
-                      ? color
-                      : (isDark ? AppColors.coolGray : AppColors.darkGray),
-                ).copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 10,
-                  height: 1.1,
-                )),
+            Text(
+              label,
+              style:
+                  AppTextStyles.caption(
+                    color: selected
+                        ? color
+                        : (isDark ? AppColors.coolGray : AppColors.darkGray),
+                  ).copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    height: 1.1,
+                  ),
+            ),
           ],
         ),
       ),

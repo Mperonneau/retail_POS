@@ -19,10 +19,8 @@ String? _preferredRoleHomeRoute(ActiveModule module, StaffRole role) {
       }
       return null;
     case ActiveModule.retail:
-      if (role == StaffRole.cashier) {
-        return AppRoutes.retailPos;
-      }
-      return null;
+      // Opening the shop lands on the product grid for every retail role.
+      return AppRoutes.retailPos;
   }
 }
 
@@ -104,8 +102,8 @@ String firstAllowedHomeRoute({
       AppRoutes.hotelSettings,
     ],
     ActiveModule.retail => [
-      AppRoutes.retailDashboard,
       AppRoutes.retailPos,
+      AppRoutes.retailDashboard,
       AppRoutes.retailProducts,
       AppRoutes.retailInventory,
       AppRoutes.retailSuppliers,

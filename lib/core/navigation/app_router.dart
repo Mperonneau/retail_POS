@@ -36,6 +36,7 @@ import '../../retail/screens/retail_cash_control_screen.dart';
 import '../../retail/screens/retail_cash_reconciliation_screen.dart';
 import '../../retail/screens/retail_reports.dart';
 import '../../retail/screens/quotes_screen.dart';
+import '../../retail/screens/vitrine_screen.dart';
 
 import '../../settings/screens/settings_screen.dart';
 import '../../payments/screens/payment_flow_screen.dart';
@@ -305,6 +306,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.retailQuotes,
               pageBuilder: (_, state) =>
                   _noTransitionPage(state, const QuotesScreen())),
+          GoRoute(
+              path: AppRoutes.retailVitrine,
+              pageBuilder: (_, state) =>
+                  _noTransitionPage(state, const VitrineScreen())),
           GoRoute(
               path: AppRoutes.retailTimeclock,
               pageBuilder: (_, state) =>

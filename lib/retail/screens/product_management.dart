@@ -1,5 +1,8 @@
 import 'dart:math' show max, min;
 
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,19 +11,93 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/models/currency_settings.dart';
 import '../../core/providers/currency_settings_provider.dart';
 import '../../core/utils/catalog_price_helpers.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_close_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/form_field_error.dart';
 import '../../core/widgets/status_badge.dart';
+import '../catalog_import/catalog_import_sheet.dart';
+import '../catalog_import/catalog_import_watch.dart';
+import '../models/product_option.dart';
+import '../models/sale_measure.dart';
+import '../widgets/category_filter_button.dart';
 import '../widgets/product_category_field.dart';
+import '../widgets/product_options_editor.dart';
+import '../widgets/product_photo_pick.dart';
 
 const int _kProductPageSize = 15;
+
+class _CatalogImportBanner extends StatelessWidget {
+  const _CatalogImportBanner({
+    required this.isDark,
+    required this.ready,
+    required this.onOpen,
+  });
+
+  final bool isDark;
+  final bool ready;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    final message = ready
+        ? 'L\'analyse de vos documents est prête. Touchez ici pour vérifier les produits.'
+        : 'Nous analysons vos documents. Vous pouvez continuer ici. Le résultat vous attend dans Importer avec l\'IA.';
+    return Material(
+      color: color.withValues(alpha: isDark ? 0.16 : 0.1),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(
+                ready
+                    ? Icons.check_circle_outline
+                    : Icons.auto_awesome_outlined,
+                size: 18,
+                color: color,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppTextStyles.caption(color: color),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _productMeta(MockProduct product) {
+  if (product.saleHint.isEmpty) {
+    return '${product.category} · ${product.margin.toStringAsFixed(0)} % marge';
+  }
+  return '${product.category} · ${product.saleHint}';
+}
+
+String _listedPrice(BuildContext context, MockProduct product) {
+  return '${CurrencyFormatter.local(context, product.sellingPriceHtg)}${product.priceUnitSuffix}';
+}
+
+String _stockBadge(MockProduct product) {
+  if (product.saleMode == SaleMode.roll) return '${product.stockQuantity} po';
+  return '${product.stockQuantity} u.';
+}
 
 double _productGridAspectRatio(int crossAxisCount) {
   switch (crossAxisCount) {
@@ -55,22 +132,30 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final importWatch = ref.watch(catalogImportWatchProvider);
     final allProducts = ref.watch(mockProductsProvider);
 
     final categoryNames = allProducts.map((p) => p.category).toSet().toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-    final filtered = allProducts.where((p) {
-      if (_categoryFilter != null && p.category != _categoryFilter) {
-        return false;
-      }
-      if (_query.trim().isEmpty) return true;
-      final q = _query.toLowerCase();
-      return p.name.toLowerCase().contains(q) ||
-          p.category.toLowerCase().contains(q) ||
-          (p.barcode != null && p.barcode!.toLowerCase().contains(q));
-    }).toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final filtered =
+        allProducts.where((p) {
+          if (_categoryFilter != null && p.category != _categoryFilter) {
+            return false;
+          }
+          if (_query.trim().isEmpty) return true;
+          final q = _query.toLowerCase();
+          return p.name.toLowerCase().contains(q) ||
+              p.category.toLowerCase().contains(q) ||
+              p.description.toLowerCase().contains(q) ||
+              (p.barcode != null && p.barcode!.toLowerCase().contains(q));
+        }).toList()..sort((a, b) {
+          final aPiece = a.saleMode == SaleMode.piece ? 1 : 0;
+          final bPiece = b.saleMode == SaleMode.piece ? 1 : 0;
+          final byMode = aPiece.compareTo(bPiece);
+          if (byMode != 0) return byMode;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
 
     final totalPages = max(
       1,
@@ -84,8 +169,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
       });
     }
     final pageStart = (safePage - 1) * _kProductPageSize;
-    final pageItems =
-        filtered.skip(pageStart).take(_kProductPageSize).toList();
+    final pageItems = filtered.skip(pageStart).take(_kProductPageSize).toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -93,7 +177,9 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
         builder: (context, constraints) {
           final narrow = constraints.maxWidth < AppConstants.mobileBreakpoint;
           final pad = EdgeInsets.symmetric(
-            horizontal: narrow ? AppConstants.spacing16 : AppConstants.spacing24,
+            horizontal: narrow
+                ? AppConstants.spacing16
+                : AppConstants.spacing24,
             vertical: AppConstants.spacing24,
           );
 
@@ -118,12 +204,21 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
             ),
           );
           final addButton = AppButton(
-            label: 'Ajouter un produit',
-            onPressed: () => _showProductSheet(context, null),
+            label: narrow ? 'Ajouter' : 'Ajouter un produit',
+            onPressed: () => _openProductPanel(null),
             icon: Icons.add,
             fullWidth: false,
             compact: true,
-            width: narrow ? null : 148,
+            width: narrow ? null : 168,
+          );
+          final importButton = AppButton(
+            label: narrow ? 'Avec l\'IA' : 'Importer avec l\'IA',
+            onPressed: _openCatalogImport,
+            icon: Icons.auto_awesome_outlined,
+            variant: AppButtonVariant.secondary,
+            fullWidth: false,
+            compact: true,
+            width: narrow ? null : 176,
           );
 
           final header = Column(
@@ -145,55 +240,56 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    importButton,
+                    const SizedBox(width: 8),
                     addButton,
                   ],
                 )
               else
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Produits',
-                            style: AppTextStyles.h1(
-                              color: isDark
-                                  ? AppColors.warmWhite
-                                  : AppColors.primaryBlue,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Produits',
+                              style: AppTextStyles.h1(
+                                color: isDark
+                                    ? AppColors.warmWhite
+                                    : AppColors.primaryBlue,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: AppConstants.spacing12),
-                        countBadge,
-                      ],
+                          const SizedBox(width: AppConstants.spacing12),
+                          countBadge,
+                        ],
+                      ),
                     ),
-                  ),
-                  addButton,
-                  if (filtered.isNotEmpty && !narrow) ...[
-                    const SizedBox(width: AppConstants.spacing8),
-                    _ProductTopPagination(
-                      isDark: isDark,
-                      currentPage: safePage,
-                      totalPages: totalPages,
-                      onPrevious: safePage > 1
-                          ? () => setState(() => _currentPage = safePage - 1)
-                          : null,
-                      onNext: safePage < totalPages
-                          ? () => setState(() => _currentPage = safePage + 1)
-                          : null,
-                    ),
+                    importButton,
+                    const SizedBox(width: 8),
+                    addButton,
+                    if (filtered.isNotEmpty && !narrow) ...[
+                      const SizedBox(width: AppConstants.spacing8),
+                      _ProductTopPagination(
+                        isDark: isDark,
+                        currentPage: safePage,
+                        totalPages: totalPages,
+                        onPrevious: safePage > 1
+                            ? () => setState(() => _currentPage = safePage - 1)
+                            : null,
+                        onNext: safePage < totalPages
+                            ? () => setState(() => _currentPage = safePage + 1)
+                            : null,
+                      ),
+                    ],
                   ],
-                ],
-              ),
+                ),
               const SizedBox(height: AppConstants.spacing8),
               Row(
                 children: [
-                  if (narrow) ...[
-                    countBadge,
-                    const SizedBox(width: 8),
-                  ],
+                  if (narrow) ...[countBadge, const SizedBox(width: 8)],
                   Expanded(
                     child: Text(
                       'Gérez le catalogue, les prix et les stocks.',
@@ -207,6 +303,15 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                 ],
               ),
               const SizedBox(height: AppConstants.spacing16),
+              if (importWatch.phase == CatalogImportPhase.running ||
+                  importWatch.phase == CatalogImportPhase.ready) ...[
+                _CatalogImportBanner(
+                  isDark: isDark,
+                  ready: importWatch.phase == CatalogImportPhase.ready,
+                  onOpen: _openCatalogImport,
+                ),
+                const SizedBox(height: AppConstants.spacing12),
+              ],
               _ProductFilterRow(
                 isDark: isDark,
                 narrow: narrow,
@@ -269,8 +374,8 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                                     _ProductListTile(
                                       product: p,
                                       isDark: isDark,
-                                      onMoreTap: () =>
-                                          _showOptions(context, p),
+                                      onTap: () => _openProductPanel(p),
+                                      onMoreTap: () => _showOptions(context, p),
                                     ),
                                     if (i < pageItems.length - 1)
                                       const Divider(
@@ -285,26 +390,28 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
                           }
 
                           return Padding(
-                            padding:
-                                const EdgeInsets.all(AppConstants.spacing12),
+                            padding: const EdgeInsets.all(
+                              AppConstants.spacing12,
+                            ),
                             child: GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: AppConstants.spacing12,
-                                mainAxisSpacing: AppConstants.spacing12,
-                                childAspectRatio: _productGridAspectRatio(
-                                  crossAxisCount,
-                                ),
-                              ),
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: AppConstants.spacing12,
+                                    mainAxisSpacing: AppConstants.spacing12,
+                                    childAspectRatio: _productGridAspectRatio(
+                                      crossAxisCount,
+                                    ),
+                                  ),
                               itemCount: pageItems.length,
                               itemBuilder: (context, i) {
                                 final p = pageItems[i];
                                 return _ProductGridTile(
                                   product: p,
                                   isDark: isDark,
+                                  onTap: () => _openProductPanel(p),
                                   onMoreTap: () => _showOptions(context, p),
                                 );
                               },
@@ -337,12 +444,7 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(
-                  pad.left,
-                  pad.top,
-                  pad.right,
-                  0,
-                ),
+                padding: EdgeInsets.fromLTRB(pad.left, pad.top, pad.right, 0),
                 child: header,
               ),
               const SizedBox(height: AppConstants.spacing12),
@@ -364,17 +466,129 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
     );
   }
 
-  void _showProductSheet(BuildContext context, MockProduct? existing) {
-    showAppBottomSheet(
-      context: context,
-      child: _AddProductSheet(
-        existing: existing,
-        onSave: (product) {
-          if (existing == null) {
-            ref.read(mockProductsProvider.notifier).add(product);
-          } else {
-            ref.read(mockProductsProvider.notifier).update(product);
+  void _openCatalogImport() {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final isNarrow = screenW <= AppConstants.mobileBreakpoint;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final panelW = min(screenW, 480.0);
+    final panelColor = isDark ? AppColors.darkSurface : AppColors.white;
+    Navigator.of(context, rootNavigator: true).push<void>(
+      PageRouteBuilder<void>(
+        opaque: isNarrow,
+        fullscreenDialog: isNarrow,
+        barrierDismissible: !isNarrow,
+        barrierLabel: 'Fermer',
+        barrierColor: isNarrow ? null : Colors.black.withValues(alpha: 0.45),
+        transitionDuration: AppConstants.animNormal,
+        reverseTransitionDuration: AppConstants.animNormal,
+        pageBuilder: (ctx, animation, secondaryAnimation) {
+          final sheet = CatalogImportSheet(
+            onClose: () {
+              if (!ctx.mounted) return;
+              Navigator.of(ctx).pop();
+            },
+          );
+          if (isNarrow) {
+            return Scaffold(
+              backgroundColor: panelColor,
+              body: SafeArea(child: sheet),
+            );
           }
+          return Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: panelW,
+              height: MediaQuery.sizeOf(ctx).height,
+              child: Material(
+                color: panelColor,
+                child: SafeArea(child: sheet),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openProductPanel(MockProduct? existing) {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final isNarrow = screenW <= AppConstants.mobileBreakpoint;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final panelW = min(
+      screenW,
+      AppConstants.retailInventoryDetailPanelWidth(screenW),
+    );
+    final panelColor = isDark ? AppColors.darkSurface : AppColors.white;
+
+    Navigator.of(context, rootNavigator: true).push<void>(
+      PageRouteBuilder<void>(
+        opaque: isNarrow,
+        fullscreenDialog: isNarrow,
+        barrierDismissible: !isNarrow,
+        barrierLabel: 'Fermer',
+        barrierColor: isNarrow ? null : Colors.black.withValues(alpha: 0.45),
+        transitionDuration: AppConstants.animNormal,
+        reverseTransitionDuration: AppConstants.animNormal,
+        pageBuilder: (ctx, animation, secondaryAnimation) {
+          final form = _AddProductSheet(
+            existing: existing,
+            onClose: () {
+              if (!ctx.mounted) return;
+              Navigator.of(ctx).pop();
+            },
+            onSave: (product) {
+              if (existing == null) {
+                ref.read(mockProductsProvider.notifier).add(product);
+              } else {
+                ref.read(mockProductsProvider.notifier).update(product);
+              }
+            },
+          );
+          if (isNarrow) {
+            return Scaffold(
+              backgroundColor: panelColor,
+              body: SafeArea(child: form),
+            );
+          }
+          final inset = MediaQuery.viewInsetsOf(ctx).bottom;
+          return Align(
+            alignment: Alignment.topRight,
+            child: SizedBox(
+              width: panelW,
+              height: MediaQuery.sizeOf(ctx).height - inset,
+              child: Material(
+                elevation: 16,
+                shadowColor: Colors.black.withValues(alpha: 0.35),
+                color: panelColor,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.darkGray.withValues(alpha: 0.25),
+                      ),
+                    ),
+                  ),
+                  child: SafeArea(left: false, child: form),
+                ),
+              ),
+            ),
+          );
+        },
+        transitionsBuilder: (ctx, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          );
         },
       ),
     );
@@ -398,12 +612,14 @@ class _ProductManagementState extends ConsumerState<ProductManagement> {
               title: const Text('Modifier le produit'),
               onTap: () {
                 Navigator.pop(context);
-                _showProductSheet(context, product);
+                _openProductPanel(product);
               },
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.delete_outline, color: AppColors.boldRed),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: AppColors.boldRed,
+              ),
               title: const Text(
                 'Supprimer le produit',
                 style: TextStyle(color: AppColors.boldRed),
@@ -544,7 +760,6 @@ class _ProductFilterRow extends StatelessWidget {
         ? AppColors.darkBorder
         : AppColors.darkGray.withValues(alpha: 0.25);
     final fill = isDark ? AppColors.darkSurface : AppColors.white;
-    final active = categoryFilter != null;
 
     final clearIconColor = isDark ? AppColors.coolGray : AppColors.darkGray;
     final searchField = TextField(
@@ -612,15 +827,14 @@ class _ProductFilterRow extends StatelessWidget {
       ),
     );
 
-    final catChip = _ProductCategoryFilterButton(
+    final catChip = CategoryFilterButton(
       isDark: isDark,
       fill: fill,
       borderColor: borderColor,
-      active: active,
-      label: categoryFilter ??
-          (narrow ? 'Catégories' : 'Toutes les catégories'),
-      compact: narrow,
-      categoryFilter: categoryFilter,
+      expand: narrow,
+      label:
+          categoryFilter ?? (narrow ? 'Catégories' : 'Toutes les catégories'),
+      selected: categoryFilter,
       categories: categories,
       onChanged: onCategoryChanged,
     );
@@ -649,189 +863,19 @@ class _ProductFilterRow extends StatelessWidget {
   }
 }
 
-class _ProductCategoryFilterButton extends StatelessWidget {
-  const _ProductCategoryFilterButton({
-    required this.isDark,
-    required this.fill,
-    required this.borderColor,
-    required this.active,
-    required this.label,
-    this.compact = false,
-    required this.categoryFilter,
-    required this.categories,
-    required this.onChanged,
-  });
-
-  final bool isDark;
-  final Color fill;
-  final Color borderColor;
-  final bool active;
-  final String label;
-  final bool compact;
-  final String? categoryFilter;
-  final List<String> categories;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    const activeColor = AppColors.primaryBlue;
-    final bg =
-        active ? activeColor.withValues(alpha: isDark ? 0.25 : 0.08) : fill;
-    final border = active
-        ? activeColor.withValues(alpha: isDark ? 0.55 : 0.4)
-        : borderColor;
-    final textColor = active
-        ? (isDark ? AppColors.skyBlue : activeColor)
-        : (isDark ? AppColors.coolGray : AppColors.darkGray);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: () => _openMenu(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 10 : 14,
-          vertical: compact ? 6 : 9,
-        ),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
-          children: [
-            Icon(Icons.category_outlined, size: 16, color: textColor),
-            const SizedBox(width: 6),
-            if (compact)
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.caption(color: textColor).copyWith(
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-              )
-            else
-              Text(
-                label,
-                style: AppTextStyles.caption(color: textColor).copyWith(
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            const SizedBox(width: 4),
-            Icon(Icons.expand_more_rounded, size: 16, color: textColor),
-            if (active) ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => onChanged(null),
-                child: Icon(Icons.close_rounded, size: 14, color: textColor),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openMenu(BuildContext context) {
-    final items = <PopupMenuEntry<String?>>[
-      PopupMenuItem<String?>(
-        value: null,
-        child: Row(
-          children: [
-            Icon(
-              Icons.select_all_rounded,
-              size: 16,
-              color: isDark ? AppColors.coolGray : AppColors.darkGray,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Toutes les catégories',
-              style: AppTextStyles.body(
-                color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(height: 4),
-      ...categories.map(
-        (c) => PopupMenuItem<String?>(
-          value: c,
-          child: Row(
-            children: [
-              Icon(
-                categoryFilter == c
-                    ? Icons.check_rounded
-                    : Icons.category_outlined,
-                size: 16,
-                color: categoryFilter == c
-                    ? AppColors.primaryBlue
-                    : (isDark ? AppColors.coolGray : AppColors.darkGray),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                c,
-                style: AppTextStyles.body(
-                  color: categoryFilter == c
-                      ? (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                      : (isDark ? AppColors.warmWhite : AppColors.nearBlack),
-                ).copyWith(
-                  fontWeight:
-                      categoryFilter == c ? FontWeight.w600 : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ];
-
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    showMenu<String?>(
-      context: context,
-      color: isDark ? AppColors.darkSurface : AppColors.white,
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        side: BorderSide(
-          color: isDark
-              ? AppColors.darkBorder
-              : AppColors.darkGray.withValues(alpha: 0.15),
-        ),
-      ),
-      position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy + size.height + 4,
-        offset.dx + size.width,
-        0,
-      ),
-      items: items,
-    ).then((val) {
-      if (!context.mounted) return;
-      onChanged(val);
-    });
-  }
-}
-
 // ─── Grid tile ────────────────────────────────────────────────────────────────
 
 class _ProductGridTile extends StatelessWidget {
   const _ProductGridTile({
     required this.product,
     required this.isDark,
+    required this.onTap,
     required this.onMoreTap,
   });
 
   final MockProduct product;
   final bool isDark;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
   @override
@@ -850,7 +894,7 @@ class _ProductGridTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppConstants.radiusCard),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onMoreTap,
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
@@ -874,17 +918,18 @@ class _ProductGridTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.body(color: textPrimary)
                                 .copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11.5,
-                              height: 1.15,
-                            ),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11.5,
+                                  height: 1.15,
+                                ),
                           ),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          CurrencyFormatter.local(context, product.priceHtg),
-                          style: AppTextStyles.price(color: textPrimary)
-                              .copyWith(fontSize: 11.5, height: 1.15),
+                          _listedPrice(context, product),
+                          style: AppTextStyles.price(
+                            color: textPrimary,
+                          ).copyWith(fontSize: 11.5, height: 1.15),
                         ),
                       ],
                     ),
@@ -896,7 +941,7 @@ class _ProductGridTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '${product.category} · ${product.margin.toStringAsFixed(0)} % marge',
+                            _productMeta(product),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.caption(
@@ -911,7 +956,7 @@ class _ProductGridTile extends StatelessWidget {
                           Text(
                             CurrencyFormatter.usdEquivalent(
                               context,
-                              product.priceHtg,
+                              product.sellingPriceHtg,
                             ),
                             style: AppTextStyles.caption().copyWith(
                               fontSize: 8.5,
@@ -936,8 +981,12 @@ class _ProductGridTile extends StatelessWidget {
                             ),
                           ),
                         StatusBadge(
-                          status: StatusType.active,
-                          customLabel: '${product.stockQuantity} u.',
+                          status: product.trackStock
+                              ? StatusType.active
+                              : StatusType.inactive,
+                          customLabel: product.trackStock
+                              ? _stockBadge(product)
+                              : 'Non suivi',
                           compact: true,
                           micro: true,
                         ),
@@ -974,11 +1023,13 @@ class _ProductListTile extends StatelessWidget {
   const _ProductListTile({
     required this.product,
     required this.isDark,
+    required this.onTap,
     required this.onMoreTap,
   });
 
   final MockProduct product;
   final bool isDark;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
   @override
@@ -992,7 +1043,7 @@ class _ProductListTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onMoreTap,
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Row(
@@ -1007,19 +1058,16 @@ class _ProductListTile extends StatelessWidget {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.body(color: textPrimary).copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
+                      style: AppTextStyles.body(
+                        color: textPrimary,
+                      ).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                     ),
                     Text(
-                      '${product.category} · ${product.margin.toStringAsFixed(0)} % marge',
+                      _productMeta(product),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray,
+                        color: isDark ? AppColors.coolGray : AppColors.darkGray,
                       ).copyWith(fontSize: 10),
                     ),
                   ],
@@ -1030,25 +1078,37 @@ class _ProductListTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    CurrencyFormatter.local(context, product.priceHtg),
-                    style: AppTextStyles.price(color: textPrimary)
-                        .copyWith(fontSize: 12),
+                    _listedPrice(context, product),
+                    style: AppTextStyles.price(
+                      color: textPrimary,
+                    ).copyWith(fontSize: 12),
                   ),
+                  if (product.discountPercent > 0)
+                    Text(
+                      '−${product.discountPercent} %',
+                      style: AppTextStyles.caption(
+                        color: AppColors.amber,
+                      ).copyWith(fontSize: 9, fontWeight: FontWeight.w700),
+                    ),
                   if (usd != null)
                     Text(
                       CurrencyFormatter.usdEquivalent(
                         context,
-                        product.priceHtg,
+                        product.sellingPriceHtg,
                       ),
                       style: AppTextStyles.caption().copyWith(fontSize: 9),
                     ),
                   StatusBadge(
-                    status: product.isLowStock
+                    status: !product.trackStock
+                        ? StatusType.inactive
+                        : product.isLowStock
                         ? StatusType.lowStock
                         : StatusType.active,
-                    customLabel: product.isLowStock
-                        ? 'Bas ${product.stockQuantity}'
-                        : '${product.stockQuantity}',
+                    customLabel: !product.trackStock
+                        ? 'Non suivi'
+                        : product.isLowStock
+                        ? 'Bas ${_stockBadge(product)}'
+                        : _stockBadge(product),
                     compact: true,
                     micro: true,
                   ),
@@ -1073,8 +1133,13 @@ class _ProductListTile extends StatelessWidget {
 class _AddProductSheet extends ConsumerStatefulWidget {
   final MockProduct? existing;
   final void Function(MockProduct) onSave;
+  final VoidCallback onClose;
 
-  const _AddProductSheet({this.existing, required this.onSave});
+  const _AddProductSheet({
+    this.existing,
+    required this.onSave,
+    required this.onClose,
+  });
 
   @override
   ConsumerState<_AddProductSheet> createState() => _AddProductSheetState();
@@ -1087,12 +1152,34 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
   late final TextEditingController _stockCtrl;
   late final TextEditingController _minCtrl;
   late final TextEditingController _barcodeCtrl;
+  late final TextEditingController _discountCtrl;
+  late final TextEditingController _descCtrl;
   late String _category;
+  late String _stockUnit;
+  late bool _active;
+  late bool _showOnStorefront;
+  late bool _trackStock;
+  late SaleMode _saleMode;
+  late bool _limitLength;
+  late final TextEditingController _rollPriceCtrl;
+  late final TextEditingController _rollWidthCtrl;
+  late final TextEditingController _minWidthCtrl;
+  late final TextEditingController _casePriceCtrl;
+  late final TextEditingController _unitsPerCaseCtrl;
+  String? _photoDataUrl;
+  Uint8List? _photoBytes;
+  String _photoMime = 'image/jpeg';
+  bool _photoCleared = false;
+  final List<ProductOptionDraft> _optionDrafts = [];
 
   String? _errorName;
   String? _errorCategory;
   String? _errorPrice;
   String? _errorStockInitial;
+  String? _errorDiscount;
+  String? _errorPhoto;
+  String? _errorOptions;
+  String? _errorMeasure;
 
   void _onPriceChanged() => setState(() {});
 
@@ -1103,11 +1190,38 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _nameCtrl = TextEditingController(text: e?.name ?? '');
     _priceCtrl = TextEditingController();
     _priceCtrl.addListener(_onPriceChanged);
-    _costCtrl = TextEditingController(text: e?.costHtg.toStringAsFixed(0) ?? '');
+    _costCtrl = TextEditingController(
+      text: e?.costHtg.toStringAsFixed(0) ?? '',
+    );
     _stockCtrl = TextEditingController(text: e?.stockQuantity.toString() ?? '');
     _minCtrl = TextEditingController(text: e?.minStock.toString() ?? '');
     _barcodeCtrl = TextEditingController(text: e?.barcode ?? '');
+    _discountCtrl = TextEditingController(
+      text: e != null && e.discountPercent > 0 ? '${e.discountPercent}' : '',
+    );
+    _descCtrl = TextEditingController(text: e?.description ?? '');
     _category = e?.category ?? '';
+    _stockUnit = e?.stockUnit ?? 'u';
+    _active = e?.active ?? true;
+    _showOnStorefront = e?.showOnStorefront ?? true;
+    _trackStock = e?.trackStock ?? true;
+    _saleMode = e?.saleMode ?? SaleMode.piece;
+    _limitLength = e?.limitLength ?? false;
+    _rollPriceCtrl = TextEditingController();
+    _rollWidthCtrl = TextEditingController(
+      text: e != null && e.rollWidth > 0 ? '${e.rollWidth}' : '',
+    );
+    _minWidthCtrl = TextEditingController(
+      text: e != null && e.minWidth > 0 ? '${e.minWidth}' : '',
+    );
+    _casePriceCtrl = TextEditingController();
+    _unitsPerCaseCtrl = TextEditingController(
+      text: e != null && e.unitsPerCase > 0 ? '${e.unitsPerCase}' : '',
+    );
+    _photoDataUrl = e?.photoDataUrl;
+    for (final group in e?.options ?? const <ProductOptionGroup>[]) {
+      _optionDrafts.add(ProductOptionDraft.fromGroup(group));
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ex = widget.existing;
@@ -1118,6 +1232,20 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
           ex.priceHtg,
           ex.priceUsd,
         );
+        if (ex.rollPriceHtg > 0 || ex.rollPriceUsd > 0) {
+          _rollPriceCtrl.text = CatalogPriceLogic.initialPriceFieldText(
+            s,
+            ex.rollPriceHtg,
+            ex.rollPriceUsd,
+          );
+        }
+        if (ex.casePriceHtg > 0 || ex.casePriceUsd > 0) {
+          _casePriceCtrl.text = CatalogPriceLogic.initialPriceFieldText(
+            s,
+            ex.casePriceHtg,
+            ex.casePriceUsd,
+          );
+        }
       }
     });
   }
@@ -1131,7 +1259,32 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     _stockCtrl.dispose();
     _minCtrl.dispose();
     _barcodeCtrl.dispose();
+    _discountCtrl.dispose();
+    _descCtrl.dispose();
+    _rollPriceCtrl.dispose();
+    _rollWidthCtrl.dispose();
+    _minWidthCtrl.dispose();
+    _casePriceCtrl.dispose();
+    _unitsPerCaseCtrl.dispose();
+    for (final draft in _optionDrafts) {
+      draft.dispose();
+    }
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final picked = await pickProductPhoto();
+    if (!mounted || picked == null) return;
+    setState(() {
+      if (picked.error != null) {
+        _errorPhoto = picked.error;
+        return;
+      }
+      _errorPhoto = null;
+      _photoBytes = picked.bytes;
+      _photoMime = picked.mime;
+      _photoCleared = false;
+    });
   }
 
   Future<void> _openBarcodeScanner() async {
@@ -1141,12 +1294,40 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     setState(() => _barcodeCtrl.text = code);
   }
 
+  String _priceLabel(CurrencySettings s) {
+    final code = CatalogPriceLogic.entryCurrencyIsUsd(s)
+        ? 'USD'
+        : s.localCurrencyCode;
+    return switch (_saleMode) {
+      SaleMode.piece => '${CatalogPriceLogic.priceFieldLabel(s)} *',
+      SaleMode.roll => 'Prix par pouce ($code) *',
+      SaleMode.pack => "Prix d'une unité ($code) *",
+    };
+  }
+
+  String get _saleHelp => switch (_saleMode) {
+    SaleMode.piece => 'Un seul prix pour une pièce.',
+    SaleMode.roll =>
+      "Le prix ci-dessus est le prix d'un pouce. À la vente, on prend la longueur entière ou on saisit une longueur.",
+    SaleMode.pack =>
+      "Le prix ci-dessus est le prix d'une unité. À la vente, on choisit la caisse ou une seule unité.",
+  };
+
+  String get _stockHelp => switch (_saleMode) {
+    SaleMode.roll => 'Stock en pouces. La longueur entière retire ses pouces.',
+    SaleMode.pack => 'Stock en unités. Une caisse retire toutes ses unités.',
+    SaleMode.piece => "Unités en stock au moment d'ajouter ce produit.",
+  };
+
   void _save() {
     setState(() {
       _errorName = null;
       _errorCategory = null;
       _errorPrice = null;
       _errorStockInitial = null;
+      _errorDiscount = null;
+      _errorOptions = null;
+      _errorMeasure = null;
     });
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -1165,33 +1346,136 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       setState(() => _errorPrice = 'Le prix est obligatoire');
       return;
     }
-    final stockRaw = _stockCtrl.text.trim();
-    if (stockRaw.isEmpty) {
-      setState(() => _errorStockInitial = 'Le stock initial est obligatoire');
-      return;
+    final discountRaw = _discountCtrl.text.trim();
+    var discount = 0;
+    if (discountRaw.isNotEmpty) {
+      discount = int.tryParse(discountRaw) ?? -1;
+      if (discount < 0 || discount > 100) {
+        setState(() => _errorDiscount = 'Saisissez un rabais entre 0 et 100.');
+        return;
+      }
     }
-    final stockQty = int.tryParse(stockRaw);
-    if (stockQty == null || stockQty < 0) {
-      setState(
-        () => _errorStockInitial = 'Saisissez un nombre entier valide (0 ou plus)',
-      );
-      return;
+    int stockQty = widget.existing?.stockQuantity ?? 0;
+    var minStock = widget.existing?.minStock ?? 0;
+    if (_trackStock) {
+      final stockRaw = _stockCtrl.text.trim();
+      if (stockRaw.isEmpty) {
+        setState(() => _errorStockInitial = 'Le stock initial est obligatoire');
+        return;
+      }
+      final parsedStock = int.tryParse(stockRaw);
+      if (parsedStock == null || parsedStock < 0) {
+        setState(
+          () => _errorStockInitial =
+              'Saisissez un nombre entier valide (0 ou plus)',
+        );
+        return;
+      }
+      stockQty = parsedStock;
+      minStock = int.tryParse(_minCtrl.text) ?? 0;
+    }
+    final groups = <ProductOptionGroup>[];
+    for (final draft in _optionDrafts) {
+      final named = draft.nameCtrl.text.trim().isNotEmpty;
+      final group = draft.toGroup();
+      if (named && group == null) {
+        setState(
+          () => _errorOptions =
+              'Chaque option doit avoir un nom et au moins un choix.',
+        );
+        return;
+      }
+      if (group != null) groups.add(group);
+    }
+    String? photo = widget.existing?.photoDataUrl;
+    if (_photoCleared) {
+      photo = null;
+    } else if (_photoBytes != null) {
+      photo = 'data:$_photoMime;base64,${base64Encode(_photoBytes!)}';
     }
     final p = CatalogPriceLogic.commitParsed(s, priceParsed);
+    var rollPriceHtg = 0.0;
+    var rollPriceUsd = 0.0;
+    var casePriceHtg = 0.0;
+    var casePriceUsd = 0.0;
+    var rollWidth = 0;
+    var minWidth = 0;
+    var unitsPerCase = 0;
+    if (_saleMode == SaleMode.roll) {
+      final rollParsed = double.tryParse(_rollPriceCtrl.text.trim());
+      rollWidth = int.tryParse(_rollWidthCtrl.text.trim()) ?? 0;
+      minWidth = int.tryParse(_minWidthCtrl.text.trim()) ?? 0;
+      if (rollParsed == null || rollParsed <= 0) {
+        setState(
+          () => _errorMeasure = 'Indiquez le prix de la longueur entière.',
+        );
+        return;
+      }
+      if (rollWidth < 1) {
+        setState(
+          () => _errorMeasure = 'Indiquez la longueur entière en pouces.',
+        );
+        return;
+      }
+      if (minWidth < 1 || minWidth > rollWidth) {
+        setState(
+          () =>
+              _errorMeasure = 'Le minimum doit être entre 1 et $rollWidth po.',
+        );
+        return;
+      }
+      final rolled = CatalogPriceLogic.commitParsed(s, rollParsed);
+      rollPriceHtg = rolled.priceHtg;
+      rollPriceUsd = rolled.priceUsd;
+    } else if (_saleMode == SaleMode.pack) {
+      final caseParsed = double.tryParse(_casePriceCtrl.text.trim());
+      unitsPerCase = int.tryParse(_unitsPerCaseCtrl.text.trim()) ?? 0;
+      if (caseParsed == null || caseParsed <= 0) {
+        setState(() => _errorMeasure = 'Indiquez le prix de la caisse.');
+        return;
+      }
+      if (unitsPerCase < 2) {
+        setState(
+          () => _errorMeasure = 'Une caisse contient au moins 2 unités.',
+        );
+        return;
+      }
+      final packed = CatalogPriceLogic.commitParsed(s, caseParsed);
+      casePriceHtg = packed.priceHtg;
+      casePriceUsd = packed.priceUsd;
+    }
     final barcode = _barcodeCtrl.text.trim();
-    widget.onSave(MockProduct(
-      id: widget.existing?.id ?? 0,
-      name: name,
-      category: cat,
-      priceHtg: p.priceHtg,
-      priceUsd: p.priceUsd,
-      costHtg: double.tryParse(_costCtrl.text) ?? 0,
-      stockQuantity: stockQty,
-      minStock: int.tryParse(_minCtrl.text) ?? 0,
-      barcode: barcode.isEmpty ? null : barcode,
-      active: widget.existing?.active ?? true,
-    ));
-    Navigator.pop(context);
+    widget.onSave(
+      MockProduct(
+        id: widget.existing?.id ?? 0,
+        name: name,
+        category: cat,
+        priceHtg: p.priceHtg,
+        priceUsd: p.priceUsd,
+        costHtg: double.tryParse(_costCtrl.text) ?? 0,
+        stockQuantity: stockQty,
+        minStock: minStock,
+        barcode: barcode.isEmpty ? null : barcode,
+        active: _active,
+        description: _descCtrl.text.trim(),
+        photoDataUrl: photo,
+        discountPercent: discount,
+        trackStock: _trackStock,
+        stockUnit: _stockUnit,
+        options: groups,
+        showOnStorefront: _showOnStorefront,
+        saleMode: _saleMode,
+        rollPriceHtg: rollPriceHtg,
+        rollPriceUsd: rollPriceUsd,
+        minWidth: minWidth,
+        rollWidth: rollWidth,
+        limitLength: _saleMode == SaleMode.roll && _limitLength,
+        casePriceHtg: casePriceHtg,
+        casePriceUsd: casePriceUsd,
+        unitsPerCase: unitsPerCase,
+      ),
+    );
+    widget.onClose();
   }
 
   @override
@@ -1199,8 +1483,8 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
     final s = ref.watch(currencySettingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.warmWhite : AppColors.nearBlack;
-    final helperColor =
-        (isDark ? AppColors.coolGray : AppColors.darkGray).withValues(alpha: 0.65);
+    final helperColor = (isDark ? AppColors.coolGray : AppColors.darkGray)
+        .withValues(alpha: 0.65);
     final helperStyle = TextStyle(
       fontSize: 11,
       height: 1.4,
@@ -1218,24 +1502,23 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       String? errorText,
       Widget? prefixIcon,
       Widget? suffixIcon,
-    }) =>
-        InputDecoration(
-          labelText: label,
-          prefixText: prefixText,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          helperText: helperText,
-          helperMaxLines: helperMaxLines,
-          helperStyle: helperText != null ? helperStyle : null,
-          errorText: errorText,
-          errorMaxLines: 2,
-          border: outlineBorder,
-        );
+    }) => InputDecoration(
+      labelText: label,
+      prefixText: prefixText,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      helperText: helperText,
+      helperMaxLines: helperMaxLines,
+      helperStyle: helperText != null ? helperStyle : null,
+      errorText: errorText,
+      errorMaxLines: 2,
+      border: outlineBorder,
+    );
 
     final scrollableFields = SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
         AppConstants.spacing24,
-        AppConstants.spacing24,
+        AppConstants.spacing16,
         AppConstants.spacing24,
         AppConstants.spacing16,
       ),
@@ -1243,11 +1526,6 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.existing == null ? 'Ajouter un produit' : 'Modifier le produit',
-            style: AppTextStyles.h2(color: textPrimary),
-          ),
-          const SizedBox(height: AppConstants.spacing20),
           TextField(
             controller: _nameCtrl,
             decoration: fieldDec(label: 'Nom du produit *'),
@@ -1270,12 +1548,13 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                 child: TextField(
                   controller: _priceCtrl,
                   decoration: fieldDec(
-                    label: '${CatalogPriceLogic.priceFieldLabel(s)} *',
+                    label: _priceLabel(s),
                     prefixText: CatalogPriceLogic.priceFieldPrefix(s),
                     errorText: _errorPrice,
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: InputFormatters.decimalAmount,
                   onChanged: (_) {
                     if (_errorPrice != null) {
@@ -1292,8 +1571,9 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                     label: 'Cost (${s.localCurrencyCode})',
                     prefixText: '${s.localCurrencyCode} ',
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: InputFormatters.decimalAmount,
                 ),
               ),
@@ -1309,41 +1589,277 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
               ),
             ),
           const SizedBox(height: AppConstants.spacing16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Text(
+            'Comment ce produit se vend',
+            style: AppTextStyles.body(
+              color: textPrimary,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: _stockCtrl,
-                  decoration: fieldDec(
-                    label: 'Stock initial *',
-                    helperText:
-                        'Unités en stock au moment d\'ajouter ce produit.',
-                    errorText: _errorStockInitial,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: InputFormatters.digitsOnly,
-                  onChanged: (_) {
-                    if (_errorStockInitial != null) {
-                      setState(() => _errorStockInitial = null);
-                    }
-                  },
-                ),
+              ChoiceChip(
+                label: const Text('Prix simple'),
+                selected: _saleMode == SaleMode.piece,
+                onSelected: (_) => setState(() => _saleMode = SaleMode.piece),
               ),
-              const SizedBox(width: AppConstants.spacing12),
-              Expanded(
-                child: TextField(
-                  controller: _minCtrl,
-                  decoration: fieldDec(
-                    label: 'Stock minimum',
-                    helperText: 'Signale un stock bas à ce seuil ou en dessous.',
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: InputFormatters.digitsOnly,
-                ),
+              ChoiceChip(
+                label: const Text('Au pouce'),
+                selected: _saleMode == SaleMode.roll,
+                onSelected: (_) => setState(() => _saleMode = SaleMode.roll),
+              ),
+              ChoiceChip(
+                label: const Text('Caisse'),
+                selected: _saleMode == SaleMode.pack,
+                onSelected: (_) => setState(() => _saleMode = SaleMode.pack),
               ),
             ],
           ),
+          const SizedBox(height: 6),
+          Text(_saleHelp, style: helperStyle),
+          if (_saleMode == SaleMode.roll) ...[
+            const SizedBox(height: AppConstants.spacing12),
+            TextField(
+              controller: _rollPriceCtrl,
+              decoration: fieldDec(
+                label: 'Prix de la longueur entière *',
+                prefixText: CatalogPriceLogic.priceFieldPrefix(s),
+                helperText: 'Prix quand le client prend toute la longueur.',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: InputFormatters.decimalAmount,
+            ),
+            const SizedBox(height: AppConstants.spacing12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _rollWidthCtrl,
+                    decoration: fieldDec(
+                      label: 'Longueur entière (po) *',
+                      helperText: 'Pouces dans une longueur entière.',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                  ),
+                ),
+                const SizedBox(width: AppConstants.spacing12),
+                Expanded(
+                  child: TextField(
+                    controller: _minWidthCtrl,
+                    decoration: fieldDec(
+                      label: 'Minimum (po) *',
+                      helperText: 'La plus petite longueur acceptée.',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                  ),
+                ),
+              ],
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _limitLength,
+              activeThumbColor: AppColors.primaryBlue,
+              title: Text(
+                'Ne pas dépasser la longueur entière',
+                style: AppTextStyles.body(
+                  color: textPrimary,
+                ).copyWith(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                'Coché : une longueur saisie ne peut pas dépasser la longueur entière.',
+                style: helperStyle,
+              ),
+              onChanged: (value) => setState(() => _limitLength = value),
+            ),
+          ],
+          if (_saleMode == SaleMode.pack) ...[
+            const SizedBox(height: AppConstants.spacing12),
+            TextField(
+              controller: _casePriceCtrl,
+              decoration: fieldDec(
+                label: 'Prix d\'une caisse *',
+                prefixText: CatalogPriceLogic.priceFieldPrefix(s),
+                helperText: 'Ce prix n\'est pas le prix unitaire multiplié.',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: InputFormatters.decimalAmount,
+            ),
+            const SizedBox(height: AppConstants.spacing12),
+            TextField(
+              controller: _unitsPerCaseCtrl,
+              decoration: fieldDec(
+                label: 'Unités dans la caisse *',
+                helperText: 'Une vente de caisse retire ce nombre du stock.',
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: InputFormatters.digitsOnly,
+            ),
+          ],
+          FormFieldError(text: _errorMeasure),
+          const SizedBox(height: AppConstants.spacing16),
+          TextField(
+            controller: _discountCtrl,
+            decoration: fieldDec(
+              label: 'Rabais article (%)',
+              helperText: 'Facultatif. 0 ou vide = aucun rabais sur le prix.',
+              errorText: _errorDiscount,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: InputFormatters.digitsOnly,
+            onChanged: (_) {
+              if (_errorDiscount != null) setState(() => _errorDiscount = null);
+            },
+          ),
+          const SizedBox(height: AppConstants.spacing16),
+          TextField(
+            controller: _descCtrl,
+            minLines: 2,
+            maxLines: 4,
+            decoration: fieldDec(
+              label: 'Description (facultatif)',
+              helperText: 'Détail du produit, pour la fiche et la vitrine.',
+            ),
+          ),
+          const SizedBox(height: AppConstants.spacing16),
+          _PhotoField(
+            bytes: _photoBytes,
+            storedDataUrl: _photoCleared ? null : _photoDataUrl,
+            errorText: _errorPhoto,
+            onPick: _pickPhoto,
+            onClear:
+                (_photoBytes != null ||
+                    (!_photoCleared &&
+                        _photoDataUrl != null &&
+                        _photoDataUrl!.isNotEmpty))
+                ? () => setState(() {
+                    _photoBytes = null;
+                    _photoDataUrl = null;
+                    _photoCleared = true;
+                    _errorPhoto = null;
+                  })
+                : null,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _active,
+            activeThumbColor: AppColors.deepGreen,
+            title: Text(
+              'Disponible à la vente',
+              style: AppTextStyles.body(
+                color: textPrimary,
+              ).copyWith(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'Décoché : le produit n’apparaît pas à la caisse.',
+              style: helperStyle,
+            ),
+            onChanged: (value) => setState(() => _active = value),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _showOnStorefront && _active,
+            activeThumbColor: AppColors.primaryBlue,
+            title: Text(
+              'Afficher sur la vitrine',
+              style: AppTextStyles.body(
+                color: textPrimary,
+              ).copyWith(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              _active
+                  ? 'Les clients le voient et peuvent le commander en ligne.'
+                  : 'Rendez le produit disponible pour le montrer en ligne.',
+              style: helperStyle,
+            ),
+            onChanged: _active
+                ? (value) => setState(() => _showOnStorefront = value)
+                : null,
+          ),
+          const Divider(height: 24),
+          ProductOptionsEditor(
+            drafts: _optionDrafts,
+            errorText: _errorOptions,
+            onChanged: () => setState(() => _errorOptions = null),
+          ),
+          const Divider(height: 24),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _trackStock,
+            activeThumbColor: AppColors.primaryBlue,
+            title: Text(
+              'Suivre le stock',
+              style: AppTextStyles.body(
+                color: textPrimary,
+              ).copyWith(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'Décochez si la vente ne doit pas diminuer le stock.',
+              style: helperStyle,
+            ),
+            onChanged: (value) => setState(() => _trackStock = value),
+          ),
+          if (_trackStock) ...[
+            const SizedBox(height: AppConstants.spacing8),
+            DropdownButtonFormField<String>(
+              initialValue: _stockUnit,
+              decoration: fieldDec(label: 'Unité'),
+              items: const [
+                DropdownMenuItem(value: 'u', child: Text('Unité')),
+                DropdownMenuItem(value: 'kg', child: Text('kg')),
+                DropdownMenuItem(value: 'L', child: Text('L')),
+                DropdownMenuItem(value: 'paquet', child: Text('Paquet')),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _stockUnit = value);
+              },
+            ),
+            const SizedBox(height: AppConstants.spacing16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _stockCtrl,
+                    decoration: fieldDec(
+                      label: 'Stock initial *',
+                      helperText: _stockHelp,
+                      errorText: _errorStockInitial,
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                    onChanged: (_) {
+                      if (_errorStockInitial != null) {
+                        setState(() => _errorStockInitial = null);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppConstants.spacing12),
+                Expanded(
+                  child: TextField(
+                    controller: _minCtrl,
+                    decoration: fieldDec(
+                      label: 'Stock minimum',
+                      helperText:
+                          'Signale un stock bas à ce seuil ou en dessous.',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: InputFormatters.digitsOnly,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppConstants.spacing16),
           TextField(
             controller: _barcodeCtrl,
@@ -1354,7 +1870,10 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                   'pour le lire avec la caméra.',
               suffixIcon: BarcodeScanScreen.isSupported
                   ? IconButton(
-                      icon: const Icon(Icons.document_scanner_outlined, size: 22),
+                      icon: const Icon(
+                        Icons.document_scanner_outlined,
+                        size: 22,
+                      ),
                       tooltip: 'Scanner le code-barres',
                       onPressed: _openBarcodeScanner,
                     )
@@ -1368,55 +1887,186 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
 
     final h = AppConstants.buttonHeightCompact;
     Widget actionRow() => Padding(
-          padding: EdgeInsets.fromLTRB(
-            AppConstants.spacing24,
-            AppConstants.spacing8,
-            AppConstants.spacing24,
-            MediaQuery.of(context).viewInsets.bottom + AppConstants.spacing16,
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.spacing24,
+        AppConstants.spacing8,
+        AppConstants.spacing24,
+        AppConstants.spacing16,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            flex: 2,
+            child: AppButton(
+              label: widget.existing == null
+                  ? 'Enregistrer le produit'
+                  : 'Mettre à jour le produit',
+              onPressed: _save,
+              compact: true,
+            ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 2,
-                child: AppButton(
-                  label: widget.existing == null
-                      ? 'Enregistrer le produit'
-                      : 'Mettre à jour le produit',
-                  onPressed: _save,
-                  compact: true,
-                ),
-              ),
-              const SizedBox(width: AppConstants.spacing12),
-              Expanded(
-                child: SizedBox(
-                  height: h,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size(double.infinity, h),
-                      maximumSize: Size(double.infinity, h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.radiusButton,
-                        ),
-                      ),
+          const SizedBox(width: AppConstants.spacing12),
+          Expanded(
+            child: SizedBox(
+              height: h,
+              child: OutlinedButton(
+                onPressed: widget.onClose,
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size(double.infinity, h),
+                  maximumSize: Size(double.infinity, h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.radiusButton,
                     ),
-                    child: const Text('Annuler'),
                   ),
                 ),
+                child: const Text('Annuler'),
               ),
-            ],
+            ),
           ),
-        );
+        ],
+      ),
+    );
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Flexible(child: scrollableFields),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.spacing24,
+            AppConstants.spacing16,
+            AppConstants.spacing12,
+            AppConstants.spacing12,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.existing == null
+                      ? 'Ajouter un produit'
+                      : 'Modifier le produit',
+                  style: AppTextStyles.h2(color: textPrimary),
+                ),
+              ),
+              AppCloseButton(onPressed: widget.onClose),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(child: scrollableFields),
         const Divider(height: 1),
         actionRow(),
+      ],
+    );
+  }
+}
+
+class _PhotoField extends StatelessWidget {
+  const _PhotoField({
+    required this.bytes,
+    required this.storedDataUrl,
+    required this.onPick,
+    this.onClear,
+    this.errorText,
+  });
+
+  final Uint8List? bytes;
+  final String? storedDataUrl;
+  final VoidCallback onPick;
+  final VoidCallback? onClear;
+  final String? errorText;
+
+  Uint8List? get _preview {
+    if (bytes != null) return bytes;
+    final url = storedDataUrl;
+    if (url == null || !url.contains(',')) return null;
+    try {
+      return base64Decode(url.split(',').last);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ink = isDark ? AppColors.warmWhite : AppColors.nearBlack;
+    final muted = isDark ? AppColors.coolGray : AppColors.darkGray;
+    final preview = _preview;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Photo vitrine (facultatif)',
+          style: AppTextStyles.body(
+            color: ink,
+          ).copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Pour la vitrine en ligne. Elle n’apparaît pas à la caisse.',
+          style: AppTextStyles.caption(color: muted),
+        ),
+        const SizedBox(height: AppConstants.spacing8),
+        Row(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warmOffWhite,
+                borderRadius: BorderRadius.circular(AppConstants.radiusCard),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : const Color(0xFFE4E7EC),
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: preview == null
+                  ? Icon(Icons.image_outlined, color: muted)
+                  : Image.memory(preview, fit: BoxFit.cover),
+            ),
+            const SizedBox(width: AppConstants.spacing12),
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  AppButton(
+                    label: preview == null ? 'Choisir une photo' : 'Changer',
+                    icon: Icons.photo_outlined,
+                    variant: AppButtonVariant.secondary,
+                    compact: true,
+                    fullWidth: false,
+                    onPressed: onPick,
+                  ),
+                  if (onClear != null)
+                    AppButton(
+                      label: 'Retirer',
+                      variant: AppButtonVariant.ghost,
+                      compact: true,
+                      fullWidth: false,
+                      onPressed: onClear,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (errorText != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            errorText!,
+            style: AppTextStyles.caption(color: AppColors.boldRed),
+          ),
+        ],
+        const SizedBox(height: AppConstants.spacing8),
       ],
     );
   }

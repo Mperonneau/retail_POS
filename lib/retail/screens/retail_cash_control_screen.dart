@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/mock/mock_retail_data.dart';
 import '../../core/models/cash_control.dart';
+import '../../core/models/staff_directory_entry.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/widgets/cash_history_panel.dart';
 import '../../core/widgets/tender_movements_panel.dart';
@@ -14,6 +15,9 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/providers/staff_directory_provider.dart';
+import '../../core/providers/staff_session_provider.dart';
+import '../cash/cash_report_pdf.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
@@ -171,7 +175,6 @@ class _ActiveSessionView extends ConsumerStatefulWidget {
 
 class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
   _MovFilter _filter = _MovFilter.all;
-  bool _showUsd = false;
   bool _showMovementLog = false;
   final _searchCtrl = TextEditingController();
   String _query = '';
@@ -278,10 +281,9 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                             ),
                           ],
                         );
-                        final actions = Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                        final actions = SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
                           children: [
                             _HeaderBtn(
                               icon: Icons.history_rounded,
@@ -291,16 +293,51 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                                     context,
                                     isDark,
                                     sessionProvider: retailCashSessionProvider,
+                                    onPrintActive: (ctx, cash) =>
+                                        showCashPdfActions(
+                                      ctx,
+                                      filename: 'rapport-caisse.pdf',
+                                      title: 'Rapport de caisse',
+                                      build: () => buildSessionReportPdf(
+                                        CashReportFigures.fromState(
+                                          cash,
+                                          shopName: 'Boutique Soleil',
+                                        ),
+                                      ),
+                                    ),
+                                    onPrintClosed: (ctx, summary) =>
+                                        showCashPdfActions(
+                                      ctx,
+                                      filename: 'cloture-caisse.pdf',
+                                      title: 'Clôture de caisse',
+                                      build: () => buildClosurePdf(
+                                        shopName: 'Boutique Soleil',
+                                        summary: summary,
+                                        countedHtg: summary.finalBalanceHtg,
+                                        countedUsd: summary.finalBalanceUsd,
+                                        note: summary.session.closingNote ?? '',
+                                      ),
+                                    ),
                                   ),
                             ),
+                            const SizedBox(width: 8),
                             _HeaderBtn(
                               icon: Icons.payments_outlined,
                               label: 'Pourboires',
                               isDark: isDark,
                               onTap: () => showTipsPanel(context, isDark),
                             ),
+                            const SizedBox(width: 8),
+                            _HeaderBtn(
+                              icon: Icons.print_outlined,
+                              label: 'Rapport',
+                              isDark: isDark,
+                              onTap: () => _exportSessionReport(context),
+                            ),
+                            const SizedBox(width: 8),
                             _StatusBadge(open: true),
                           ],
+                          ),
                         );
                         if (narrow) {
                           return Column(
@@ -316,7 +353,8 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(child: titleBlock),
-                            actions,
+                            const SizedBox(width: 12),
+                            Flexible(child: actions),
                           ],
                         );
                       },
@@ -349,13 +387,8 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                               : w > 420
                                   ? 2
                                   : 1;
-                      return GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: cross,
-                        crossAxisSpacing: AppConstants.spacing12,
-                        mainAxisSpacing: AppConstants.spacing12,
-                        childAspectRatio: 1.8,
+                      return _EqualGrid(
+                        columns: cross,
                         children: [
                           for (final t in tenders)
                             TenderStatCard(
@@ -379,81 +412,15 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                   ),
                 ),
 
-                // ── Drawer summary strip ──────────────────────────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      'Tiroir-caisse physique',
-                      style: AppTextStyles.h3(
-                        color:
-                            isDark ? AppColors.warmWhite : AppColors.nearBlack,
-                      ),
-                    ),
-                  ),
-                ),
+                // ── Drawer summary ────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 24),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final w = constraints.maxWidth;
-                        final chips = <Widget>[
-                          _SummaryChip(
-                            label: 'Ouverture',
-                            htg: session.openingBalanceHtg,
-                            usd: session.openingBalanceUsd,
-                            color: isDark
-                                ? AppColors.skyBlue
-                                : AppColors.primaryBlue,
-                            isDark: isDark,
-                          ),
-                          _SummaryChip(
-                            label: 'Entrée de caisse',
-                            htg: state.totalIn,
-                            usd: state.totalInUsd,
-                            color: AppColors.deepGreen,
-                            isDark: isDark,
-                          ),
-                          _SummaryChip(
-                            label: 'Sortie de caisse',
-                            htg: state.totalOut,
-                            usd: state.totalOutUsd,
-                            color: AppColors.boldRed,
-                            isDark: isDark,
-                          ),
-                          _SummaryChip(
-                            label: 'Attendu',
-                            htg: state.expectedBalance,
-                            usd: state.expectedBalanceUsd,
-                            color: AppColors.amber,
-                            isDark: isDark,
-                          ),
-                        ];
-                        if (w >= 720) {
-                          return IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                for (var i = 0; i < chips.length; i++) ...[
-                                  if (i > 0)
-                                    const SizedBox(width: AppConstants.spacing8),
-                                  Expanded(child: chips[i]),
-                                ],
-                              ],
-                            ),
-                          );
-                        }
-                        final gap = 8.0;
-                        final colW = (w - gap) / 2;
-                        return Wrap(
-                          spacing: gap,
-                          runSpacing: gap,
-                          children: chips
-                              .map((c) => SizedBox(width: colW, child: c))
-                              .toList(),
-                        );
-                      },
+                    child: _DrawerSummary(
+                      state: state,
+                      isDark: isDark,
+                      onPrintHandoff: () => _exportLatestHandoff(context),
+                      onOpenBox: (box) => _openTillBox(context, box, isDark),
                     ),
                   ),
                 ),
@@ -512,12 +479,6 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                           final toggles = Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _CurrencyToggle(
-                                showUsd: _showUsd,
-                                onToggle: (v) => setState(() => _showUsd = v),
-                                isDark: isDark,
-                              ),
-                              const SizedBox(width: 8),
                               TextButton.icon(
                                 onPressed: () =>
                                     _showAddMovementSheet(context, isDark),
@@ -603,7 +564,6 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                         final m = filtered[i];
                         return _MovementTile(
                           movement: m,
-                          showUsd: _showUsd,
                           isDark: isDark,
                           onTap: () => _showMovementDetail(context, m, isDark),
                         );
@@ -623,14 +583,214 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
         Divider(height: 1, color: divColor),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: AppConstants.spacing12),
-          child: AppButton(
-            label: 'Fermer le tiroir et rapprocher',
-            onPressed: () => context.go(AppRoutes.retailCashReconciliation),
-            icon: Icons.lock_outlined,
-            variant: AppButtonVariant.secondary,
+          child: Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: 'Fin de service',
+                  onPressed: () => _openShiftHandoff(context, isDark),
+                  icon: Icons.swap_horiz_rounded,
+                  variant: AppButtonVariant.secondary,
+                  compact: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: AppButton(
+                  label: 'Fermer le tiroir et rapprocher',
+                  onPressed: () =>
+                      context.go(AppRoutes.retailCashReconciliation),
+                  icon: Icons.lock_outlined,
+                  variant: AppButtonVariant.secondary,
+                  compact: true,
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  void _openTillBox(BuildContext context, _TillBox box, bool isDark) {
+    final state = widget.state;
+    final session = state.activeSession;
+    if (session == null) return;
+    final usd = box == _TillBox.attenduUsd ||
+        box == _TillBox.ouvertureUsd ||
+        box == _TillBox.entreeUsd ||
+        box == _TillBox.sortieUsd;
+    final tender = usd ? PaymentTender.cashUsd : PaymentTender.cashHtg;
+    final drawer = state.sessionMovements
+        .where((m) => m.tender == tender)
+        .toList();
+    String money(double value) => usd
+        ? CurrencyFormatter.usd(value)
+        : CurrencyFormatter.local(context, value);
+
+    late final String title;
+    late final String amount;
+    late final Color accent;
+    late final List<CashMovement> movements;
+    late final List<CashPanelFact> facts;
+    var showTypeFilters = true;
+    String? note;
+
+    switch (box) {
+      case _TillBox.attenduHtg:
+      case _TillBox.attenduUsd:
+        title = usd ? 'Attendu USD' : 'Attendu HTG';
+        amount = money(usd ? state.drawerExpectedUsd : state.drawerExpectedHtg);
+        accent = AppColors.amber;
+        movements = drawer;
+        facts = [
+          CashPanelFact(
+            label: 'Ouverture',
+            value: money(usd ? session.openingBalanceUsd : session.openingBalanceHtg),
+          ),
+          CashPanelFact(
+            label: 'Entrées',
+            value: money(usd ? state.drawerCashInUsd : state.drawerCashInHtg),
+          ),
+          CashPanelFact(
+            label: 'Sorties',
+            value: money(usd ? state.drawerCashOutUsd : state.drawerCashOutHtg),
+          ),
+          CashPanelFact(label: 'Attendu', value: amount),
+        ];
+        note = usd
+            ? 'Dollars du tiroir seulement. La carte est en dollars, mais elle n\'est pas dans le tiroir.'
+            : 'Gourdes du tiroir seulement. MonCash et les chèques restent hors du tiroir.';
+        break;
+      case _TillBox.ouvertureHtg:
+      case _TillBox.ouvertureUsd:
+        title = usd ? 'Ouverture USD' : 'Ouverture HTG';
+        amount = money(usd ? session.openingBalanceUsd : session.openingBalanceHtg);
+        accent = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+        movements = const [];
+        facts = [
+          CashPanelFact(label: 'Ouvert par', value: session.openedBy),
+          CashPanelFact(label: 'Ouvert à', value: _timeStr(session.openedAt)),
+          CashPanelFact(label: 'Fonds de caisse', value: amount),
+        ];
+        note = 'Montant saisi à l\'ouverture. Cette case ne contient pas les ventes.';
+        break;
+      case _TillBox.entreeHtg:
+      case _TillBox.entreeUsd:
+        title = usd ? 'Entrée USD' : 'Entrée HTG';
+        amount = money(usd ? state.drawerCashInUsd : state.drawerCashInHtg);
+        accent = AppColors.deepGreen;
+        movements = drawer
+            .where((m) => m.type == CashMovementType.cashIn)
+            .toList();
+        showTypeFilters = false;
+        facts = [
+          CashPanelFact(label: 'Total des entrées', value: amount),
+          CashPanelFact(label: 'Mouvements', value: '${movements.length}'),
+        ];
+        break;
+      case _TillBox.sortieHtg:
+      case _TillBox.sortieUsd:
+        title = usd ? 'Sortie USD' : 'Sortie HTG';
+        amount = money(usd ? state.drawerCashOutUsd : state.drawerCashOutHtg);
+        accent = AppColors.boldRed;
+        movements = drawer
+            .where((m) => m.type == CashMovementType.cashOut)
+            .toList();
+        showTypeFilters = false;
+        facts = [
+          CashPanelFact(label: 'Total des sorties', value: amount),
+          CashPanelFact(label: 'Mouvements', value: '${movements.length}'),
+        ];
+        if (movements.isEmpty) {
+          note = 'Aucune sortie dans cette devise.';
+        }
+        break;
+    }
+
+    showTenderMovementsPanel(
+      context,
+      movements: movements,
+      tender: null,
+      isDark: isDark,
+      title: title,
+      amount: amount,
+      accent: accent,
+      facts: facts,
+      note: note,
+      showTypeFilters: showTypeFilters,
+    );
+  }
+
+  Future<void> _exportLatestHandoff(BuildContext context) {
+    final state = ref.read(retailCashSessionProvider);
+    final sessionId = state.activeSession?.id;
+    final latest = state.shiftHandoffs
+        .where((h) => h.sessionId == sessionId)
+        .toList();
+    if (latest.isEmpty) return Future.value();
+    return showCashPdfActions(
+      context,
+      filename: 'fin-de-service.pdf',
+      title: 'Contrôle de fin de service',
+      build: () => buildShiftHandoffPdf(
+        shopName: 'Boutique Soleil',
+        handoff: latest.first,
+      ),
+    );
+  }
+
+  Future<void> _exportSessionReport(BuildContext context) {
+    final state = ref.read(retailCashSessionProvider);
+    return showCashPdfActions(
+      context,
+      filename: 'rapport-caisse.pdf',
+      title: 'Rapport de caisse',
+      build: () => buildSessionReportPdf(
+        CashReportFigures.fromState(state, shopName: 'Boutique Soleil'),
+      ),
+    );
+  }
+
+  Future<void> _openShiftHandoff(BuildContext context, bool isDark) async {
+    final state = ref.read(retailCashSessionProvider);
+    final me = ref.read(staffSessionProvider);
+    final staff = ref.read(staffDirectoryProvider);
+    final saved = await showAppBottomSheet<CashierShiftHandoff>(
+      context: context,
+      child: _ShiftHandoffSheet(
+        isDark: isDark,
+        expectedHtg: state.drawerExpectedHtg,
+        expectedUsd: state.drawerExpectedUsd,
+        fromName: me?.employeeName ?? 'Gérant',
+        receivers: staff
+            .where((e) =>
+                e.isActive &&
+                e.id != me?.employeeId &&
+                (e.role == StaffRole.owner ||
+                    e.role == StaffRole.admin ||
+                    e.role == StaffRole.manager ||
+                    e.role == StaffRole.cashier))
+            .toList(),
+      ),
+    );
+    if (saved == null || !context.mounted) return;
+    final handoff = ref.read(retailCashSessionProvider.notifier).recordShiftHandoff(
+          closedByName: saved.closedByName,
+          receivedByName: saved.receivedByName,
+          countedHtg: saved.countedHtg,
+          countedUsd: saved.countedUsd,
+          note: saved.note,
+        );
+    if (handoff == null || !context.mounted) return;
+    await showCashPdfActions(
+      context,
+      filename: 'fin-de-service.pdf',
+      title: 'Contrôle enregistré — la caisse reste ouverte',
+      build: () => buildShiftHandoffPdf(
+        shopName: 'Boutique Soleil',
+        handoff: handoff,
+      ),
     );
   }
 
@@ -720,13 +880,33 @@ class _ClosedSessionView extends ConsumerWidget {
                   color: isDark ? AppColors.coolGray : AppColors.darkGray),
               textAlign: TextAlign.center),
           const SizedBox(height: AppConstants.spacing32),
+          if (state.sessionHistory.isNotEmpty)
+            AppButton(
+              label: 'Imprimer ou télécharger la clôture',
+              onPressed: () {
+                final summary = state.sessionHistory.first;
+                showCashPdfActions(
+                  context,
+                  filename: 'cloture-caisse.pdf',
+                  title: 'Clôture de caisse',
+                  build: () => buildClosurePdf(
+                    shopName: 'Boutique Soleil',
+                    summary: summary,
+                    countedHtg: summary.finalBalanceHtg,
+                    countedUsd: summary.finalBalanceUsd,
+                    note: summary.session.closingNote ?? '',
+                  ),
+                );
+              },
+              icon: Icons.print_outlined,
+              variant: AppButtonVariant.secondary,
+            ),
+          if (state.sessionHistory.isNotEmpty)
+            const SizedBox(height: 8),
           AppButton(
             label: 'Nouvelle session',
             onPressed: () {
-              ref.read(retailCashSessionProvider.notifier).openSession(
-                    openedBy: 'Gérant',
-                    openingBalanceHtg: 0,
-                  );
+              ref.read(retailCashSessionProvider.notifier).prepareNextSession();
             },
             icon: Icons.lock_open_outlined,
           ),
@@ -736,130 +916,233 @@ class _ClosedSessionView extends ConsumerWidget {
   }
 }
 
-// ─── Summary Chip (dual currency) ─────────────────────────────────────────────
+// ─── Physical drawer: Attendu first, one currency per card ───────────────────
 
-class _SummaryChip extends StatelessWidget {
-  final String label;
-  final double htg;
-  final double usd;
-  final Color color;
-  final bool isDark;
-
-  const _SummaryChip({
-    required this.label,
-    required this.htg,
-    required this.usd,
-    required this.color,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: AppTextStyles.caption(color: color)),
-          const SizedBox(height: 3),
-          Text(
-            CurrencyFormatter.local(context, htg),
-            style: AppTextStyles.body(color: color)
-                .copyWith(fontWeight: FontWeight.w700, fontSize: 11),
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 1),
-          Text(
-            '\$${usd.toStringAsFixed(2)}',
-            style: AppTextStyles.caption(color: color.withValues(alpha: 0.65))
-                .copyWith(fontSize: 10),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
+enum _TillBox {
+  attenduHtg,
+  attenduUsd,
+  ouvertureHtg,
+  ouvertureUsd,
+  entreeHtg,
+  entreeUsd,
+  sortieHtg,
+  sortieUsd,
 }
 
-// ─── Currency Toggle ──────────────────────────────────────────────────────────
-
-class _CurrencyToggle extends StatelessWidget {
-  final bool showUsd;
-  final ValueChanged<bool> onToggle;
+class _DrawerSummary extends StatelessWidget {
+  final CashControlState state;
   final bool isDark;
+  final VoidCallback? onPrintHandoff;
+  final ValueChanged<_TillBox> onOpenBox;
 
-  const _CurrencyToggle({
-    required this.showUsd,
-    required this.onToggle,
+  const _DrawerSummary({
+    required this.state,
     required this.isDark,
+    required this.onOpenBox,
+    this.onPrintHandoff,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 30,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : const Color(0xFFF0F0F0),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: isDark ? AppColors.darkBorder : const Color(0xFFDDDDDD)),
+    final session = state.activeSession;
+    final latest = state.shiftHandoffs
+        .where((h) => h.sessionId == session?.id)
+        .toList();
+    final blue = isDark ? AppColors.skyBlue : AppColors.primaryBlue;
+    final cards = <Widget>[
+      _MoneyCard(
+        label: 'Attendu HTG',
+        amount: CurrencyFormatter.local(context, state.drawerExpectedHtg),
+        color: AppColors.amber,
+        emphasize: true,
+        onTap: () => onOpenBox(_TillBox.attenduHtg),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _Pill(
-              label: 'HTG',
-              active: !showUsd,
-              isDark: isDark,
-              onTap: () => onToggle(false)),
-          _Pill(
-              label: 'USD',
-              active: showUsd,
-              isDark: isDark,
-              onTap: () => onToggle(true)),
-        ],
+      _MoneyCard(
+        label: 'Attendu USD',
+        amount: CurrencyFormatter.usd(state.drawerExpectedUsd),
+        color: AppColors.amber,
+        emphasize: true,
+        onTap: () => onOpenBox(_TillBox.attenduUsd),
       ),
-    );
-  }
-}
+      _MoneyCard(
+        label: 'Ouverture HTG',
+        amount: CurrencyFormatter.local(context, session?.openingBalanceHtg ?? 0),
+        color: blue,
+        onTap: () => onOpenBox(_TillBox.ouvertureHtg),
+      ),
+      _MoneyCard(
+        label: 'Ouverture USD',
+        amount: CurrencyFormatter.usd(session?.openingBalanceUsd ?? 0),
+        color: blue,
+        onTap: () => onOpenBox(_TillBox.ouvertureUsd),
+      ),
+      _MoneyCard(
+        label: 'Entrée HTG',
+        amount: CurrencyFormatter.local(context, state.drawerCashInHtg),
+        color: AppColors.deepGreen,
+        onTap: () => onOpenBox(_TillBox.entreeHtg),
+      ),
+      _MoneyCard(
+        label: 'Entrée USD',
+        amount: CurrencyFormatter.usd(state.drawerCashInUsd),
+        color: AppColors.deepGreen,
+        onTap: () => onOpenBox(_TillBox.entreeUsd),
+      ),
+      _MoneyCard(
+        label: 'Sortie HTG',
+        amount: CurrencyFormatter.local(context, state.drawerCashOutHtg),
+        color: AppColors.boldRed,
+        onTap: () => onOpenBox(_TillBox.sortieHtg),
+      ),
+      _MoneyCard(
+        label: 'Sortie USD',
+        amount: CurrencyFormatter.usd(state.drawerCashOutUsd),
+        color: AppColors.boldRed,
+        onTap: () => onOpenBox(_TillBox.sortieUsd),
+      ),
+    ];
 
-class _Pill extends StatelessWidget {
-  final String label;
-  final bool active;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _Pill({
-    required this.label,
-    required this.active,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppConstants.animFast,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          color: active ? AppColors.amber : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tiroir-caisse physique',
+          style: AppTextStyles.h3(
+            color: isDark ? AppColors.warmWhite : AppColors.nearBlack,
+          ),
         ),
-        child: Text(
-          label,
+        const SizedBox(height: 4),
+        Text(
+          'Les gourdes et les dollars restent séparés. La carte est en dollars.',
           style: AppTextStyles.caption(
-                  color: active
-                      ? AppColors.white
-                      : (isDark ? AppColors.coolGray : AppColors.darkGray))
-              .copyWith(fontWeight: FontWeight.w600, fontSize: 11),
+            color: isDark ? AppColors.coolGray : AppColors.darkGray,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _EqualGrid(columns: 2, children: cards),
+        if (latest.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(
+            'Dernier contrôle · ${latest.first.closedByName} → ${latest.first.receivedByName}. La caisse reste ouverte.',
+            style: AppTextStyles.caption(
+              color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onPrintHandoff,
+              icon: const Icon(Icons.print_outlined, size: 16),
+              label: const Text('Imprimer ce contrôle'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _EqualGrid extends StatelessWidget {
+  final int columns;
+  final List<Widget> children;
+
+  const _EqualGrid({required this.columns, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    const gap = 8.0;
+    final rows = <Widget>[];
+    for (var i = 0; i < children.length; i += columns) {
+      final end = i + columns > children.length ? children.length : i + columns;
+      final slice = children.sublist(i, end);
+      rows.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: i + columns < children.length ? gap : 0),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var j = 0; j < columns; j++) ...[
+                  if (j > 0) const SizedBox(width: gap),
+                  Expanded(
+                    child: j < slice.length ? slice[j] : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return Column(children: rows);
+  }
+}
+
+class _MoneyCard extends StatelessWidget {
+  final String label;
+  final String amount;
+  final Color color;
+  final bool emphasize;
+  final VoidCallback? onTap;
+
+  const _MoneyCard({
+    required this.label,
+    required this.amount,
+    required this.color,
+    this.emphasize = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppConstants.radiusCard);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Ink(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: emphasize ? 0.16 : 0.08),
+            borderRadius: radius,
+            border: Border.all(
+              color: color.withValues(alpha: emphasize ? 0.55 : 0.25),
+              width: emphasize ? 1.5 : 1,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: emphasize ? 14 : 12,
+            ),
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: AppTextStyles.caption(color: color)
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  if (onTap != null)
+                    Icon(Icons.chevron_right_rounded, size: 16, color: color),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                amount,
+                style: (emphasize
+                        ? AppTextStyles.h3(color: color)
+                        : AppTextStyles.body(color: color))
+                    .copyWith(fontWeight: FontWeight.w800),
+              ),
+            ],
+            ),
+          ),
         ),
       ),
     );
@@ -1052,13 +1335,11 @@ class _StatusBadge extends StatelessWidget {
 
 class _MovementTile extends StatelessWidget {
   final CashMovement movement;
-  final bool showUsd;
   final bool isDark;
   final VoidCallback onTap;
 
   const _MovementTile({
     required this.movement,
-    required this.showUsd,
     required this.isDark,
     required this.onTap,
   });
@@ -1084,9 +1365,9 @@ class _MovementTile extends StatelessWidget {
             ? (m.adjustmentAddsToDrawer ? '+' : '−')
             : '-';
 
-    final amountStr = showUsd
-        ? '$sign\$${(isIn ? m.totalUsd : m.totalUsd).toStringAsFixed(2)}'
-        : '$sign${CurrencyFormatter.local(context, isIn ? m.totalHtg : m.totalHtg)}';
+    final amountStr = tenderUsesUsd(m.tender)
+        ? '$sign${CurrencyFormatter.usd(m.totalUsd)}'
+        : '$sign${CurrencyFormatter.local(context, m.totalHtg)}';
 
     final subtitle = [
       if (isAdj) m.adjustmentAddsToDrawer ? 'Ajouter' : 'Retirer',
@@ -1238,15 +1519,11 @@ class _MovementDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '$sign${CurrencyFormatter.local(context, m.amountHtg)}',
+                          tenderUsesUsd(m.tender)
+                              ? '$sign${CurrencyFormatter.usd(m.amountUsd)}'
+                              : '$sign${CurrencyFormatter.local(context, m.amountHtg)}',
                           style: AppTextStyles.h2(color: color),
                         ),
-                        if (m.amountUsd > 0)
-                          Text(
-                            '$sign\$${m.amountUsd.toStringAsFixed(2)}',
-                            style: AppTextStyles.caption(
-                                color: color.withValues(alpha: 0.7)),
-                          ),
                       ],
                     ),
                   ],
@@ -1263,23 +1540,12 @@ class _MovementDetailSheet extends StatelessWidget {
                               color: isDark
                                   ? AppColors.coolGray
                                   : AppColors.darkGray)),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '+${CurrencyFormatter.local(context, m.tipsHtg)}',
-                            style:
-                                AppTextStyles.body(color: AppColors.deepGreen)
-                                    .copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          if (m.tipsUsd > 0)
-                            Text(
-                              '+\$${m.tipsUsd.toStringAsFixed(2)}',
-                              style: AppTextStyles.caption(
-                                  color: AppColors.deepGreen
-                                      .withValues(alpha: 0.7)),
-                            ),
-                        ],
+                      Text(
+                        tenderUsesUsd(m.tender)
+                            ? '+${CurrencyFormatter.usd(m.tipsUsd)}'
+                            : '+${CurrencyFormatter.local(context, m.tipsHtg)}',
+                        style: AppTextStyles.body(color: AppColors.deepGreen)
+                            .copyWith(fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -1295,21 +1561,12 @@ class _MovementDetailSheet extends StatelessWidget {
                                       ? AppColors.warmWhite
                                       : AppColors.nearBlack)
                               .copyWith(fontWeight: FontWeight.w700)),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '$sign${CurrencyFormatter.local(context, m.totalHtg)}',
-                            style: AppTextStyles.body(color: color)
-                                .copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          if (m.totalUsd > 0)
-                            Text(
-                              '$sign\$${m.totalUsd.toStringAsFixed(2)}',
-                              style: AppTextStyles.caption(
-                                  color: color.withValues(alpha: 0.7)),
-                            ),
-                        ],
+                      Text(
+                        tenderUsesUsd(m.tender)
+                            ? '$sign${CurrencyFormatter.usd(m.totalUsd)}'
+                            : '$sign${CurrencyFormatter.local(context, m.totalHtg)}',
+                        style: AppTextStyles.body(color: color)
+                            .copyWith(fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
@@ -1797,26 +2054,30 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
     super.dispose();
   }
 
+  bool get _usdTender => tenderUsesUsd(_tender);
+
   void _save() {
-    var amtHtg = double.tryParse(_htgCtrl.text) ?? 0;
-    var amtUsd = double.tryParse(_usdCtrl.text) ?? 0;
+    final raw = double.tryParse(_usdTender ? _usdCtrl.text : _htgCtrl.text) ?? 0;
+    var amtHtg = _usdTender ? 0.0 : raw;
+    var amtUsd = _usdTender ? raw : 0.0;
     final description = _descriptionCtrl.text.trim();
     if (description.isEmpty) return;
     if (_type == CashMovementType.adjustment) {
-      if (amtHtg <= 0 && amtUsd <= 0) return;
+      if (raw <= 0) return;
       if (!_adjustmentAdds) {
         amtHtg = -amtHtg;
         amtUsd = -amtUsd;
       }
-    } else if (amtHtg <= 0 && amtUsd <= 0) {
+    } else if (raw <= 0) {
       return;
     }
+    final tips = double.tryParse(_usdTender ? _tipsUsdCtrl.text : _tipsHtgCtrl.text) ?? 0;
     widget.onSave(
       _type,
       amtHtg,
       amtUsd,
-      double.tryParse(_tipsHtgCtrl.text) ?? 0,
-      double.tryParse(_tipsUsdCtrl.text) ?? 0,
+      _usdTender ? 0 : tips,
+      _usdTender ? tips : 0,
       description,
       _tableCtrl.text.trim().isEmpty ? null : _tableCtrl.text.trim(),
       _waiterCtrl.text.trim().isEmpty ? null : _waiterCtrl.text.trim(),
@@ -1974,80 +2235,31 @@ class _AddMovementSheetState extends State<_AddMovementSheet> {
           ],
           const SizedBox(height: AppConstants.spacing12),
 
-          // Amounts
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _htgCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: InputFormatters.decimalAmount,
-                  decoration: InputDecoration(
-                    labelText: 'Montant (HTG) *',
-                    prefixText: 'HTG ',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppConstants.radiusInput)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _usdCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: InputFormatters.decimalAmount,
-                  decoration: InputDecoration(
-                    labelText: 'Montant (USD)',
-                    prefixText: '\$ ',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppConstants.radiusInput)),
-                  ),
-                ),
-              ),
-            ],
+          TextField(
+            key: ValueKey('amount-$_usdTender'),
+            controller: _usdTender ? _usdCtrl : _htgCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: InputFormatters.decimalAmount,
+            decoration: InputDecoration(
+              labelText: _usdTender ? 'Montant (USD) *' : 'Montant (HTG) *',
+              prefixText: _usdTender ? '\$ ' : 'HTG ',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
+            ),
           ),
-
-          // Tips (cash in only)
           if (_showTableFields) ...[
             const SizedBox(height: AppConstants.spacing12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _tipsHtgCtrl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: InputFormatters.decimalAmount,
-                    decoration: InputDecoration(
-                      labelText: 'Tips (HTG)',
-                      prefixText: 'HTG ',
-                      border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.radiusInput)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _tipsUsdCtrl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: InputFormatters.decimalAmount,
-                    decoration: InputDecoration(
-                      labelText: 'Tips (USD)',
-                      prefixText: '\$ ',
-                      border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.radiusInput)),
-                    ),
-                  ),
-                ),
-              ],
+            TextField(
+              key: ValueKey('tips-$_usdTender'),
+              controller: _usdTender ? _tipsUsdCtrl : _tipsHtgCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: InputFormatters.decimalAmount,
+              decoration: InputDecoration(
+                labelText: _usdTender ? 'Pourboire (USD)' : 'Pourboire (HTG)',
+                prefixText: _usdTender ? '\$ ' : 'HTG ',
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppConstants.radiusInput)),
+              ),
             ),
           ],
           const SizedBox(height: AppConstants.spacing12),
@@ -2226,6 +2438,280 @@ class _MovLogToggle extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Fin de service (the drawer stays open) ───────────────────────────────────
+
+class _ShiftHandoffSheet extends StatefulWidget {
+  final bool isDark;
+  final double expectedHtg;
+  final double expectedUsd;
+  final String fromName;
+  final List<StaffDirectoryEntry> receivers;
+
+  const _ShiftHandoffSheet({
+    required this.isDark,
+    required this.expectedHtg,
+    required this.expectedUsd,
+    required this.fromName,
+    required this.receivers,
+  });
+
+  @override
+  State<_ShiftHandoffSheet> createState() => _ShiftHandoffSheetState();
+}
+
+class _ShiftHandoffSheetState extends State<_ShiftHandoffSheet> {
+  final _htgCtrl = TextEditingController();
+  final _usdCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  StaffDirectoryEntry? _receiver;
+
+  @override
+  void dispose() {
+    _htgCtrl.dispose();
+    _usdCtrl.dispose();
+    _noteCtrl.dispose();
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  String get _receiverName {
+    if (widget.receivers.isEmpty) return _nameCtrl.text.trim();
+    return _receiver?.fullName ?? '';
+  }
+
+  void _save() {
+    final countedHtg = double.tryParse(_htgCtrl.text);
+    final countedUsd = double.tryParse(_usdCtrl.text);
+    if (countedHtg == null || countedUsd == null || _receiverName.isEmpty) {
+      return;
+    }
+    Navigator.pop(
+      context,
+      CashierShiftHandoff(
+        id: '',
+        sessionId: '',
+        createdAt: DateTime.now(),
+        closedByName: widget.fromName,
+        receivedByName: _receiverName,
+        expectedHtg: widget.expectedHtg,
+        countedHtg: countedHtg,
+        expectedUsd: widget.expectedUsd,
+        countedUsd: countedUsd,
+        openingHtg: 0,
+        openingUsd: 0,
+        inflowHtg: 0,
+        inflowUsd: 0,
+        outflowHtg: 0,
+        outflowUsd: 0,
+        note: _noteCtrl.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final countedHtg = double.tryParse(_htgCtrl.text);
+    final countedUsd = double.tryParse(_usdCtrl.text);
+    final canSave =
+        countedHtg != null && countedUsd != null && _receiverName.isNotEmpty;
+    final textSecondary =
+        widget.isDark ? AppColors.coolGray : AppColors.darkGray;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        AppConstants.spacing24,
+        0,
+        AppConstants.spacing24,
+        AppConstants.spacing24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Fin de service',
+            style: AppTextStyles.h2(
+              color: widget.isDark ? AppColors.warmWhite : AppColors.primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Comptez le tiroir et passez-le au caissier suivant. La caisse reste ouverte. Ce n\'est pas une clôture.',
+            style: AppTextStyles.body(color: textSecondary),
+          ),
+          const SizedBox(height: 14),
+          _EqualGrid(
+            columns: 2,
+            children: [
+              _MoneyCard(
+                label: 'Attendu HTG',
+                amount: CurrencyFormatter.local(context, widget.expectedHtg),
+                color: AppColors.amber,
+                emphasize: true,
+              ),
+              _MoneyCard(
+                label: 'Attendu USD',
+                amount: CurrencyFormatter.usd(widget.expectedUsd),
+                color: AppColors.amber,
+                emphasize: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppConstants.spacing16),
+          TextField(
+            controller: _htgCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: InputFormatters.decimalAmount,
+            decoration: InputDecoration(
+              labelText: 'Compté HTG *',
+              prefixText: 'HTG ',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppConstants.spacing12),
+          TextField(
+            controller: _usdCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: InputFormatters.decimalAmount,
+            decoration: InputDecoration(
+              labelText: 'Compté USD *',
+              prefixText: '\$ ',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          if (countedHtg != null || countedUsd != null) ...[
+            const SizedBox(height: AppConstants.spacing12),
+            _HandoffDelta(
+              label: 'Écart HTG',
+              ready: countedHtg != null,
+              text: countedHtg == null
+                  ? '—'
+                  : CurrencyFormatter.local(
+                      context, ((countedHtg) - widget.expectedHtg).abs()),
+              zero: countedHtg != null &&
+                  (countedHtg - widget.expectedHtg).abs() < 1,
+              positive: countedHtg != null && countedHtg > widget.expectedHtg,
+            ),
+            const SizedBox(height: 6),
+            _HandoffDelta(
+              label: 'Écart USD',
+              ready: countedUsd != null,
+              text: countedUsd == null
+                  ? '—'
+                  : CurrencyFormatter.usd((countedUsd - widget.expectedUsd).abs()),
+              zero: countedUsd != null &&
+                  (countedUsd - widget.expectedUsd).abs() < 0.01,
+              positive: countedUsd != null && countedUsd > widget.expectedUsd,
+            ),
+          ],
+          const SizedBox(height: AppConstants.spacing16),
+          if (widget.receivers.isEmpty)
+            TextField(
+              controller: _nameCtrl,
+              decoration: InputDecoration(
+                labelText: 'Reçu par *',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            )
+          else
+            DropdownButtonFormField<StaffDirectoryEntry>(
+              // ignore: deprecated_member_use
+              value: _receiver,
+              decoration: InputDecoration(
+                labelText: 'Reçu par *',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+                ),
+              ),
+              items: [
+                for (final person in widget.receivers)
+                  DropdownMenuItem(
+                    value: person,
+                    child: Text(
+                      '${person.fullName} · ${staffRoleDisplayLabel(person.role)}',
+                    ),
+                  ),
+              ],
+              onChanged: (v) => setState(() => _receiver = v),
+            ),
+          const SizedBox(height: AppConstants.spacing12),
+          TextField(
+            controller: _noteCtrl,
+            maxLines: 2,
+            decoration: InputDecoration(
+              labelText: 'Note — facultatif',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusInput),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppConstants.spacing16),
+          AppButton(
+            label: 'Enregistrer le contrôle',
+            icon: Icons.swap_horiz_rounded,
+            onPressed: canSave ? _save : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HandoffDelta extends StatelessWidget {
+  final String label;
+  final bool ready;
+  final String text;
+  final bool zero;
+  final bool positive;
+
+  const _HandoffDelta({
+    required this.label,
+    required this.ready,
+    required this.text,
+    required this.zero,
+    required this.positive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = !ready
+        ? AppColors.darkGray
+        : zero
+            ? AppColors.deepGreen
+            : positive
+                ? AppColors.deepGreen
+                : AppColors.boldRed;
+    final word = !ready
+        ? ''
+        : zero
+            ? 'Juste'
+            : positive
+                ? 'Excédent'
+                : 'Manque';
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label, style: AppTextStyles.body(color: color)),
+        ),
+        Text(
+          word.isEmpty ? text : '$word · $text',
+          style: AppTextStyles.body(color: color)
+              .copyWith(fontWeight: FontWeight.w700),
+        ),
+      ],
     );
   }
 }

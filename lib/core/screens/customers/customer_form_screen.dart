@@ -8,6 +8,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/input_formatters.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/phone_field.dart';
 import '../../widgets/form_field_error.dart';
 
 class CustomerFormSheet extends ConsumerStatefulWidget {
@@ -269,6 +270,9 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
     String? prefix,
     List<TextInputFormatter>? inputFormatters,
   }) {
+    if (type == TextInputType.phone) {
+      return PhoneField(controller: ctrl, label: label);
+    }
     return TextField(
       controller: ctrl,
       keyboardType: type,

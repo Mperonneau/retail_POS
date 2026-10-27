@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../printing/shop_pdf.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
@@ -111,6 +112,26 @@ class PaymentSuccessPanel extends StatelessWidget {
             onPressed: () => PaymentReceiptDialogs.showPrint(
               context,
               receiptName: printReceiptName,
+              document: ShopPdf(
+                shopName: shopNameFrom(context),
+                title: 'REÇU',
+                headline: 'Paiement confirmé',
+                when: formatPdfStamp(DateTime.now()),
+                fields: [
+                  if ((printReceiptName ?? '').trim().isNotEmpty)
+                    PdfField('Client', printReceiptName!.trim()),
+                  PdfField('Statut', statusLine),
+                  if ((receiptDetailLine ?? '').trim().isNotEmpty)
+                    PdfField('Détail', receiptDetailLine!.trim()),
+                ],
+                totals: [
+                  PdfTotalLine(
+                    'Total',
+                    localMoney(context, amountHtg),
+                    strong: true,
+                  ),
+                ],
+              ),
             ),
             variant: AppButtonVariant.secondary,
             icon: Icons.print_outlined,

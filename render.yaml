@@ -10,9 +10,13 @@ services:
       export PATH="$PWD/flutter/bin:$PATH" &&
       flutter config --enable-web &&
       flutter pub get &&
-      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT &&
+      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=PAYMENTS_API=https://retail-pos-payments.onrender.com --dart-define=STOREFRONT_URL=https://retail-pos-storefront.onrender.com &&
       python3 -c "import json,os; p='build/web/version.json'; d=json.load(open(p)); d['build_id']=os.environ.get('RENDER_GIT_COMMIT',''); json.dump(d, open(p,'w'))"
     staticPublishPath: build/web
+    buildFilter:
+      ignoredPaths:
+        - payments_server/**
+        - storefront/**
     pullRequestPreviewsEnabled: true
     routes:
       - type: rewrite
@@ -34,3 +38,71 @@ services:
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
+  - type: web
+    name: retail-pos-storefront
+    runtime: static
+    branch: main
+    buildCommand: >-
+      git clone https://github.com/flutter/flutter.git --depth 1 -b stable &&
+      export PATH="$PWD/flutter/bin:$PATH" &&
+      flutter config --enable-web &&
+      cd storefront &&
+      flutter pub get &&
+      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=STOREFRONT_API=https://retail-pos-payments.onrender.com &&
+      python3 -c "import json,os; p='build/web/version.json'; d=json.load(open(p)); d['build_id']=os.environ.get('RENDER_GIT_COMMIT',''); json.dump(d, open(p,'w'))"
+    staticPublishPath: storefront/build/web
+    buildFilter:
+      paths:
+        - storefront/**
+    pullRequestPreviewsEnabled: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /version.json
+        name: Cache-Control
+        value: no-cache
+      - path: /flutter_service_worker.js
+        name: Cache-Control
+        value: no-cache
+      - path: /flutter_bootstrap.js
+        name: Cache-Control
+        value: no-cache
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+  # Secrets are set in the Render dashboard (sync: false). Never commit them.
+  # Storefront data lives in STOREFRONT_DATA_DIR; attach a Render disk there so
+  # requests survive restarts (the POS republishes the catalogue on its own).
+  - type: web
+    name: retail-pos-payments
+    runtime: python
+    branch: main
+    buildCommand: "python3 -m compileall payments_server"
+    startCommand: python3 payments_server/server.py
+    # A restart forgets running catalogue analyses and vitrine data.
+    buildFilter:
+      paths:
+        - payments_server/**
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: MONCASH_CLIENT_ID
+        sync: false
+      - key: MONCASH_SECRET
+        sync: false
+      - key: MONCASH_BASE_URL
+        value: https://moncashbutton.digicelgroup.com
+      - key: DAY_USD_RATE
+        value: "135"
+      - key: CLAUDE_API_SECRET_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        sync: false

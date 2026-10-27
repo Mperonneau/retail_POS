@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/mock/mock_retail_data.dart';
+import '../../core/printing/shop_pdf.dart';
 import '../../core/models/retail_fulfillment_mode.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/providers/app_notification_provider.dart';
@@ -12,11 +13,15 @@ import '../../core/utils/constants.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_button.dart';
+import '../../core/widgets/phone_field.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/list_page_nav.dart';
-import '../../core/widgets/payment_link_dialog.dart';
 import '../../core/widgets/status_badge.dart';
 import '../models/retail_cart_entry.dart';
+import '../storefront/receipt_scan.dart';
+import '../storefront/storefront_api.dart';
+import '../storefront/storefront_link_dialog.dart';
+import '../storefront/storefront_sync.dart';
 import 'checkout_wizard.dart';
 import 'pos_screen.dart';
 import '../../core/widgets/app_close_button.dart';
@@ -46,9 +51,31 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingReceipt());
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _openPendingReceipt() {
+    if (!mounted) return;
+    final id = ref.read(pendingReceiptScanProvider);
+    if (id == null || id.isEmpty) return;
+    final quote = ref
+        .read(quotesProvider)
+        .where((row) => row.checkoutId == id || row.id == 'vit_$id')
+        .firstOrNull;
+    if (quote == null) return;
+    ref.read(pendingReceiptScanProvider.notifier).state = null;
+    _onTapQuote(
+      quote,
+      MediaQuery.sizeOf(context).width < AppConstants.mobileBreakpoint,
+    );
   }
 
   List<MockRetailQuote> get _filtered {
@@ -1113,21 +1140,11 @@ void _showActiveQuoteWhatsAppDialog(
       builder: (ctx, setD) {
         return AlertDialog(
           title: const Text('Envoyer par WhatsApp'),
-          content: TextField(
+          content: PhoneField(
             controller: ctrl,
+            label: 'Numéro de téléphone',
+            errorText: errHolder[0],
             onChanged: (_) => setD(() => errHolder[0] = null),
-            decoration: InputDecoration(
-              labelText: 'Numéro de téléphone',
-              hintText: '+509 XXXX-XXXX',
-              prefixIcon: const Icon(Icons.phone_outlined),
-              errorText: errHolder[0],
-              border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(AppConstants.radiusInput),
-              ),
-            ),
-            keyboardType: TextInputType.phone,
-            inputFormatters: InputFormatters.phone,
           ),
           actions: [
             TextButton(
@@ -1207,22 +1224,49 @@ void _showActiveQuoteEmailDialog(
   );
 }
 
-void _showActiveQuotePrintDialog(BuildContext context, MockRetailQuote quote) {
-  final name = quote.clientName?.trim();
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Imprimer'),
-      content: Text(
-        name == null || name.isEmpty
-            ? 'Devis ${quote.quoteNumber} envoyé à l\'imprimante.'
-            : 'Devis ${quote.quoteNumber} pour $name envoyé à l\'imprimante.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('OK'),
-        ),
+Future<void> _showActiveQuotePrintDialog(
+  BuildContext context,
+  MockRetailQuote quote,
+) {
+  String money(double amount) => localMoney(context, amount);
+  final safe = quote.quoteNumber.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '');
+  return printShopPdf(
+    context,
+    filename: 'devis-${safe.isEmpty ? 'document' : safe}.pdf',
+    document: ShopPdf(
+      shopName: shopNameFrom(context),
+      title: 'DEVIS',
+      headline: 'Proforma',
+      number: quote.quoteNumber,
+      when: formatPdfStamp(quote.createdAt),
+      fields: [
+        if ((quote.clientName ?? '').trim().isNotEmpty)
+          PdfField('Client', quote.clientName!.trim()),
+        if ((quote.clientPhone ?? '').trim().isNotEmpty)
+          PdfField('Téléphone', quote.clientPhone!.trim()),
+        if ((quote.clientEmail ?? '').trim().isNotEmpty)
+          PdfField('E-mail', quote.clientEmail!.trim()),
+        PdfField('Remise', quote.fulfillmentMode.label),
+        if ((quote.deliveryLocation ?? '').trim().isNotEmpty)
+          PdfField('Lieu', quote.deliveryLocation!.trim()),
+      ],
+      lines: [
+        for (final line in quote.lines)
+          PdfDocLine(
+            name: line.displayName,
+            quantity: '${line.quantity}',
+            unit: money(line.unitPriceHtg),
+            total: money(line.lineTotalHtg),
+          ),
+      ],
+      totals: [
+        PdfTotalLine('Sous-total', money(quote.subtotalHtg())),
+        if (quote.discountPercent > 0)
+          PdfTotalLine(
+            'Remise (${quote.discountPercent.toStringAsFixed(0)} %)',
+            money(-quote.discountAmountHtg()),
+          ),
+        PdfTotalLine('Total', money(quote.totalBeforeTaxHtg()), strong: true),
       ],
     ),
   );
@@ -1262,37 +1306,28 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
       .firstOrNull;
 
   Future<void> _sendPaymentLink(MockRetailQuote quote) async {
-    final result = await showDialog<PaymentLinkSendResult>(
-      context: context,
-      builder: (ctx) => PaymentLinkDialog(
-        referenceLabel: quote.quoteNumber,
-        description: "Partagez une page de paiement Stripe. Saisissez le contact du payeur ; "
-            'le devis devient une commande active une fois payé.',
-        isDark: widget.isDark,
-      ),
-    );
-
-    if (result != null && mounted) {
-      setState(() => _sendingLink = true);
-      await Future.delayed(const Duration(milliseconds: 700));
+    setState(() => _sendingLink = true);
+    try {
+      final url =
+          await ref.read(storefrontSyncProvider.notifier).shareQuote(quote);
       if (!mounted) return;
-      ref.read(quotesProvider.notifier).markPaymentLinkSent(quote.id);
       setState(() => _sendingLink = false);
       widget.onQuoteUpdated();
-      if (!mounted) return;
-      final channelName = result.channel == PaymentLinkChannel.whatsApp
-          ? 'WhatsApp'
-          : result.channel == PaymentLinkChannel.email
-              ? 'E-mail'
-              : 'SMS';
-      final path = buildQuotePaymentLinkPath(quote.quoteNumber);
-      await showPaymentLinkSuccessDialog(
+      await showStorefrontLinkDialog(
         context,
-        isDark: widget.isDark,
-        title: 'Lien de paiement pour ${quote.quoteNumber} — envoyé via $channelName',
-        pathOrUrl: path,
-        subtitle: 'Le lien est actif. Copiez-le ou partagez-le avec votre client.',
+        title: 'Lien de paiement ${quote.quoteNumber}',
+        message: 'Toute personne qui a ce lien peut consulter le devis et le '
+            'payer par carte ou MonCash. Une fois payé, il devient une commande.',
+        url: url,
+        openLabel: 'Ouvrir la page de paiement',
       );
+    } on StorefrontApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _sendingLink = false);
+      ref.read(appNotificationProvider.notifier).show(
+            e.message,
+            kind: AppNotificationKind.warning,
+          );
     }
   }
 
@@ -1304,9 +1339,15 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
   }
 
   void _convertToOrder(MockRetailQuote quote) {
-    final cart = quote.lines
-        .map((l) => RetailCartEntry(product: l.product, quantity: l.quantity))
-        .toList();
+    final products = ref.read(mockProductsProvider);
+    final cart = quote.lines.map((l) {
+      final live = products.where((p) => p.id == l.product.id).firstOrNull ?? l.product;
+      return RetailCartEntry(
+        product: live,
+        quantity: l.quantity,
+        measure: l.measure,
+      );
+    }).toList();
     showRetailCheckoutDialog(
       context,
       ref,
@@ -1661,7 +1702,7 @@ class _QuoteDetailPanelState extends ConsumerState<_QuoteDetailPanel> {
                       rows: quote.lines
                           .map((l) => (
                                 l.quantity,
-                                l.product.name,
+                                l.displayName,
                                 l.unitPriceHtg,
                                 l.lineTotalHtg,
                               ))

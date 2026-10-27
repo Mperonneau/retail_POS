@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/auth_provider.dart';
 import '../providers/device_session_provider.dart';
+import '../providers/staff_session_provider.dart';
+import '../utils/operator_name.dart';
 import '../services/local_store.dart';
 
+import '../models/check_credit.dart';
+import '../models/customer.dart';
 import '../models/order_history.dart';
 import '../models/retail_fulfillment_mode.dart';
 import '../models/retail_order.dart';
@@ -445,6 +450,239 @@ class RetailOrdersNotifier extends StateNotifier<List<RetailOrder>> {
     ];
     if (extras.isEmpty) return;
     state = [...extras, ...state];
+  }
+
+  /// Marks the check cleared. A waiting remainder is posted as credit.
+  /// Returns a French error when the credit cannot be posted.
+  String? clearCheck(String id) {
+    final order = _order(id);
+    final check = order?.checkPayment;
+    if (order == null || check == null || check.cleared || check.refused) {
+      return null;
+    }
+    final now = DateTime.now();
+    final remainder = order.unpaidBalanceHtg;
+    if (remainder > 0.009) {
+      final error = _guardCredit(
+        customerId: check.creditCustomerId,
+        remainder: remainder,
+        exceptOrderId: order.id,
+      );
+      if (error != null) return error;
+      _ref.read(customerProvider.notifier).postCharge(
+            customerId: check.creditCustomerId!,
+            amountHtg: remainder,
+            cashierName: _operator(),
+            linkedOrderId: order.id,
+            description:
+                'Solde du chèque ${order.orderNumber} après compensation',
+          );
+    }
+    final updated = order.copyWith(
+      status: order.status == RetailOrderStatus.checkPending
+          ? (remainder > 0.009
+              ? RetailOrderStatus.partiallyPaid
+              : statusAfterFullPayment(order.fulfillmentMode))
+          : order.status,
+      paidAt: now,
+      checkPayment: check.copyWith(
+        cleared: true,
+        clearedAt: now,
+        clearedBy: _operator(),
+        creditPosted: remainder > 0.009,
+      ),
+    );
+    _replace(updated, statusChange: true);
+    return null;
+  }
+
+  /// Updates the check after it was recorded. A pending remainder stays
+  /// reserved. A cleared remainder is adjusted on the client account.
+  String? updateCheck({
+    required String orderId,
+    required double amountHtg,
+    required String number,
+    required String bank,
+    required String payerName,
+    required DateTime date,
+    String? imageDataUrl,
+    String? creditCustomerId,
+  }) {
+    final order = _order(orderId);
+    final check = order?.checkPayment;
+    if (order == null || check == null) return 'Ce chèque est introuvable.';
+    if (check.refused) return 'Ce chèque a été refusé.';
+    final n = number.trim();
+    final b = bank.trim();
+    final payer = payerName.trim();
+    if (n.isEmpty || b.isEmpty || payer.isEmpty) {
+      return 'Le numéro, la banque et le tireur sont requis.';
+    }
+    if (amountHtg < 1) {
+      return 'Le montant du chèque doit être d\'au moins 1 HTG.';
+    }
+    final saleTotal = checkSaleTotal(order);
+    if (amountHtg - saleTotal > 0.009) {
+      return 'Le chèque ne peut pas dépasser le total.';
+    }
+    final remainder =
+        saleTotal - amountHtg > 0.009 ? saleTotal - amountHtg : 0.0;
+    final customerId = (creditCustomerId ?? check.creditCustomerId)?.trim();
+    final photo = (imageDataUrl ?? check.imageDataUrl).trim();
+    if (photo.isEmpty) return 'La photo du chèque est requise.';
+
+    if (!check.cleared) {
+      if (remainder > 0.009) {
+        final error = _guardCredit(
+          customerId: customerId,
+          remainder: remainder,
+          exceptOrderId: order.id,
+        );
+        if (error != null) return error;
+      }
+      _replace(
+        order.copyWith(
+          amountPaidHtg: amountHtg,
+          balanceDueHtg: remainder,
+          checkPayment: check.copyWith(
+            number: n,
+            bank: b,
+            payerName: payer,
+            date: DateTime(date.year, date.month, date.day),
+            imageDataUrl: photo,
+            amountHtg: amountHtg,
+            creditCustomerId: remainder > 0.009 ? customerId : null,
+            creditPosted: false,
+          ),
+        ),
+      );
+      return null;
+    }
+
+    final oldRemainder = order.unpaidBalanceHtg;
+    final delta = remainder - oldRemainder;
+    if (delta > 0.009) {
+      final error = _guardCredit(
+        customerId: customerId,
+        remainder: delta,
+        exceptOrderId: order.id,
+      );
+      if (error != null) return error;
+      _ref.read(customerProvider.notifier).postCharge(
+            customerId: customerId!,
+            amountHtg: delta,
+            cashierName: _operator(),
+            linkedOrderId: order.id,
+            description: 'Ajustement du chèque ${order.orderNumber}',
+          );
+    } else if (delta < -0.009 && check.creditPosted && customerId != null) {
+      _ref.read(customerProvider.notifier).postPayment(
+            customerId: customerId,
+            amountHtg: -delta,
+            cashierName: _operator(),
+            description: 'Ajustement du chèque ${order.orderNumber}',
+            paymentMethodLabel: 'Chèque',
+            linkedOrderId: order.id,
+          );
+    }
+    final status = remainder > 0.009
+        ? (order.status == RetailOrderStatus.paid ||
+                order.status == RetailOrderStatus.checkPending
+            ? RetailOrderStatus.partiallyPaid
+            : order.status)
+        : (order.status == RetailOrderStatus.partiallyPaid
+            ? statusAfterFullPayment(order.fulfillmentMode)
+            : order.status);
+    _replace(
+      order.copyWith(
+        status: status,
+        amountPaidHtg: amountHtg,
+        balanceDueHtg: remainder,
+        checkPayment: check.copyWith(
+          number: n,
+          bank: b,
+          payerName: payer,
+          date: DateTime(date.year, date.month, date.day),
+          imageDataUrl: photo,
+          amountHtg: amountHtg,
+          creditCustomerId: remainder > 0.009 ? customerId : check.creditCustomerId,
+          creditPosted: remainder > 0.009 || check.creditPosted,
+        ),
+      ),
+    );
+    return null;
+  }
+
+  /// Drops a pending check. The reserved credit is released and the sale
+  /// stays unpaid for its full amount.
+  void refuseCheck(String id) {
+    final order = _order(id);
+    final check = order?.checkPayment;
+    if (order == null || check == null || check.cleared || check.refused) {
+      return;
+    }
+    final total = checkSaleTotal(order);
+    _replace(
+      order.copyWith(
+        status: RetailOrderStatus.partiallyPaid,
+        amountPaidHtg: 0.0,
+        balanceDueHtg: total,
+        checkPayment: check.copyWith(
+          refused: true,
+          creditCustomerId: null,
+          creditPosted: false,
+        ),
+      ),
+      statusChange: true,
+    );
+  }
+
+  RetailOrder? _order(String id) {
+    for (final order in state) {
+      if (order.id == id) return order;
+    }
+    return null;
+  }
+
+  String _operator() {
+    return currentOperatorName(
+      staffName: _ref.read(staffSessionProvider)?.employeeName,
+      accountName: _ref.read(authProvider).userName,
+    );
+  }
+
+  String? _guardCredit({
+    required String? customerId,
+    required double remainder,
+    required String exceptOrderId,
+  }) {
+    final customers = _ref.read(customerProvider).customers;
+    Customer? customer;
+    for (final item in customers) {
+      if (item.id == customerId) {
+        customer = item;
+        break;
+      }
+    }
+    return checkCreditBlockReason(
+      customer: customer,
+      remainder: remainder,
+      orders: state,
+      postedBalance: customer == null
+          ? 0
+          : _ref.read(customerProvider).balanceFor(customer.id),
+      exceptOrderId: exceptOrderId,
+    );
+  }
+
+  void _replace(RetailOrder updated, {bool statusChange = false}) {
+    state = [
+      for (final order in state)
+        if (order.id == updated.id) updated else order,
+    ];
+    _ref
+        .read(deviceSessionProvider.notifier)
+        .captureOrder(updated, statusChange: statusChange);
   }
 
   void updateStatus(String id, RetailOrderStatus status) {

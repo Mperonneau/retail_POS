@@ -1,4 +1,4 @@
-enum PaymentMethodType { moncash, card, cash, credit, paymentLink }
+enum PaymentMethodType { moncash, card, cash, credit, paymentLink, check }
 
 extension PaymentMethodTypeExt on PaymentMethodType {
   String get label {
@@ -13,6 +13,8 @@ extension PaymentMethodTypeExt on PaymentMethodType {
         return 'Crédit';
       case PaymentMethodType.paymentLink:
         return 'Lien de paiement';
+      case PaymentMethodType.check:
+        return 'Chèque';
     }
   }
 }

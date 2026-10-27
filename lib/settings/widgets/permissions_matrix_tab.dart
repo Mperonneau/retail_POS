@@ -104,7 +104,7 @@ class _PermissionsMatrixTabState extends ConsumerState<PermissionsMatrixTab> {
                           ? staffRoleDisplayLabel(_detailRole!)
                           : _showAllMatrix
                               ? 'Tous les droits'
-                              : 'Droits',
+                              : 'Permissions',
                       style: AppTextStyles.h3(),
                     ),
                     if (_detailRole == null) ...[
@@ -235,7 +235,7 @@ class _RoleCardsBody extends StatelessWidget {
           spacing: gap,
           runSpacing: gap,
           children: [
-            for (final role in StaffRole.values)
+            for (final role in staffRolesForModule(module))
               SizedBox(
                 width: cardWidth,
                 child: AppCard(
@@ -310,7 +310,7 @@ class _RolePermissionBody extends ConsumerWidget {
         children: [
           for (final p in PermissionId.values)
             _PermissionToggleRow(
-              label: permissionLabel(p),
+              label: permissionLabel(p, module: module),
               value: settings.roleDefaults[module]![role]![p] ?? false,
               onChanged: (v) => ref
                   .read(permissionSettingsProvider.notifier)
@@ -342,7 +342,7 @@ class _AllRolesPermissionBody extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final role in StaffRole.values) ...[
+          for (final role in staffRolesForModule(module)) ...[
             Text(
               staffRoleDisplayLabel(role),
               style: AppTextStyles.body(
@@ -352,7 +352,7 @@ class _AllRolesPermissionBody extends ConsumerWidget {
             const SizedBox(height: AppConstants.spacing8),
             for (final p in PermissionId.values)
               _PermissionToggleRow(
-                label: permissionLabel(p),
+                label: permissionLabel(p, module: module),
                 value: settings.roleDefaults[module]![role]![p] ?? false,
                 onChanged: (v) => ref
                     .read(permissionSettingsProvider.notifier)

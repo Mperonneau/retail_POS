@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/paylink.dart';
+import '../../payments/payments_client.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/phone_field.dart';
 
 // ─── Entry ────────────────────────────────────────────────────────────────────
 
@@ -17,10 +19,7 @@ Future<void> showPayLinkDetail(
 }) {
   return showAppBottomSheet(
     context: context,
-    child: _PayLinkDetailSheet(
-      link: link,
-      payLinkProvider: payLinkProvider,
-    ),
+    child: _PayLinkDetailSheet(link: link, payLinkProvider: payLinkProvider),
   );
 }
 
@@ -43,6 +42,8 @@ class _PayLinkDetailSheet extends ConsumerStatefulWidget {
 class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
   late PayLink _link;
   bool _editingContact = false;
+  bool _checking = false;
+  String? _checkError;
 
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _emailCtrl;
@@ -53,9 +54,15 @@ class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
     super.initState();
     _link = widget.link;
     _phoneCtrl = TextEditingController(
-        text: _link.channel != PayLinkChannel.email ? _link.sentTo : _link.customerPhone);
+      text: _link.channel != PayLinkChannel.email
+          ? _link.sentTo
+          : _link.customerPhone,
+    );
     _emailCtrl = TextEditingController(
-        text: _link.payerEmail ?? (_link.channel == PayLinkChannel.email ? _link.sentTo : ''));
+      text:
+          _link.payerEmail ??
+          (_link.channel == PayLinkChannel.email ? _link.sentTo : ''),
+    );
     _editChannel = _link.channel;
   }
 
@@ -77,20 +84,62 @@ class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
         ? _emailCtrl.text.trim()
         : _phoneCtrl.text.trim();
     if (sentTo.isEmpty) return;
-    ref.read(widget.payLinkProvider.notifier).updateContact(
+    ref
+        .read(widget.payLinkProvider.notifier)
+        .updateContact(
           _link.id,
           sentTo: sentTo,
           channel: _editChannel,
-          payerEmail: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+          payerEmail: _emailCtrl.text.trim().isEmpty
+              ? null
+              : _emailCtrl.text.trim(),
         );
     setState(() {
       _link = _current.copyWith(
         sentTo: sentTo,
         channel: _editChannel,
-        payerEmail: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+        payerEmail: _emailCtrl.text.trim().isEmpty
+            ? null
+            : _emailCtrl.text.trim(),
       );
       _editingContact = false;
     });
+  }
+
+  Future<void> _checkPayment() async {
+    final sessionId = _current.stripeSessionId;
+    if (sessionId == null || sessionId.isEmpty || _checking) return;
+    setState(() {
+      _checking = true;
+      _checkError = null;
+    });
+    final client = PaymentsClient();
+    try {
+      final paid = await client.checkoutPaid(sessionId);
+      if (!mounted) return;
+      if (!paid) {
+        setState(() {
+          _checking = false;
+          _checkError = 'Pas encore payé.';
+        });
+        return;
+      }
+      ref
+          .read(widget.payLinkProvider.notifier)
+          .markPaid(_link.id, transactionId: sessionId, paymentMethod: 'Carte');
+      setState(() {
+        _link = _current;
+        _checking = false;
+      });
+    } on PaymentsException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _checking = false;
+        _checkError = e.message;
+      });
+    } finally {
+      client.close();
+    }
   }
 
   void _cancel(BuildContext ctx) {
@@ -104,7 +153,11 @@ class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
       onConfirm: () {
         ref.read(widget.payLinkProvider.notifier).cancel(_link.id);
         Navigator.pop(ctx);
-        _showSuccessModal(ctx, title: 'Lien annulé', message: 'Le lien de paiement a été annulé.');
+        _showSuccessModal(
+          ctx,
+          title: 'Lien annulé',
+          message: 'Le lien de paiement a été annulé.',
+        );
       },
     );
   }
@@ -138,17 +191,31 @@ class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
-        24, 0, 24, 24 + MediaQuery.viewInsetsOf(context).bottom,
+        24,
+        0,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header chip ───────────────────────────────────────────────────
-          _SheetHeader(link: _link, isDark: isDark, textColor: textColor, mutedColor: mutedColor),
+          _SheetHeader(
+            link: _link,
+            isDark: isDark,
+            textColor: textColor,
+            mutedColor: mutedColor,
+          ),
           const SizedBox(height: 20),
 
           // ── Amount block ──────────────────────────────────────────────────
-          _AmountBlock(link: _link, isDark: isDark, surface: surface, textColor: textColor, mutedColor: mutedColor),
+          _AmountBlock(
+            link: _link,
+            isDark: isDark,
+            surface: surface,
+            textColor: textColor,
+            mutedColor: mutedColor,
+          ),
           const SizedBox(height: 20),
 
           // ── Status-specific sections ──────────────────────────────────────
@@ -164,11 +231,17 @@ class _PayLinkDetailSheetState extends ConsumerState<_PayLinkDetailSheet> {
               phoneCtrl: _phoneCtrl,
               emailCtrl: _emailCtrl,
               editChannel: _editChannel,
-              onEditToggle: () => setState(() => _editingContact = !_editingContact),
+              onEditToggle: () =>
+                  setState(() => _editingContact = !_editingContact),
               onChannelChanged: (c) => setState(() => _editChannel = c),
               onSaveContact: _saveContact,
               onResend: () => _resendFromSheet(context),
               onCancel: () => _cancel(context),
+              onCheckPayment: _link.stripeSessionId == null
+                  ? null
+                  : _checkPayment,
+              checking: _checking,
+              checkError: _checkError,
             ),
 
           if (_link.status == PayLinkStatus.paidUnused)
@@ -276,15 +349,26 @@ class _AmountBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Montant total',
-                    style: AppTextStyles.caption(color: mutedColor)
-                        .copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Montant total',
+                  style: AppTextStyles.caption(
+                    color: mutedColor,
+                  ).copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   CurrencyFormatter.local(context, link.amountHtg),
-                  style: AppTextStyles.price(color: textColor)
-                      .copyWith(fontSize: 22),
+                  style: AppTextStyles.price(
+                    color: textColor,
+                  ).copyWith(fontSize: 22),
                 ),
+                if (link.payerTotalUsdCents != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Le payeur règle ${CurrencyFormatter.usd(link.payerTotalUsdCents! / 100)}',
+                    style: AppTextStyles.caption(color: mutedColor),
+                  ),
+                ],
               ],
             ),
           ),
@@ -312,6 +396,9 @@ class _ActiveSection extends StatelessWidget {
   final VoidCallback onSaveContact;
   final VoidCallback onResend;
   final VoidCallback onCancel;
+  final VoidCallback? onCheckPayment;
+  final bool checking;
+  final String? checkError;
 
   const _ActiveSection({
     required this.link,
@@ -329,6 +416,9 @@ class _ActiveSection extends StatelessWidget {
     required this.onSaveContact,
     required this.onResend,
     required this.onCancel,
+    required this.onCheckPayment,
+    required this.checking,
+    required this.checkError,
   });
 
   @override
@@ -361,7 +451,18 @@ class _ActiveSection extends StatelessWidget {
           mutedColor: mutedColor,
           textColor: textColor,
         ),
-        if (link.payerEmail != null && link.payerEmail!.isNotEmpty &&
+        if (link.paymentUrl != null && link.paymentUrl!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _InfoRow(
+            icon: Icons.link,
+            label: 'Lien Stripe',
+            value: link.paymentUrl!,
+            mutedColor: mutedColor,
+            textColor: textColor,
+          ),
+        ],
+        if (link.payerEmail != null &&
+            link.payerEmail!.isNotEmpty &&
             link.channel != PayLinkChannel.email) ...[
           const SizedBox(height: 8),
           _InfoRow(
@@ -392,17 +493,22 @@ class _ActiveSection extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text('CONTACT DU PAYEUR',
-                  style: AppTextStyles.caption(color: mutedColor)
-                      .copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.6, fontSize: 10)),
+              child: Text(
+                'CONTACT DU PAYEUR',
+                style: AppTextStyles.caption(color: mutedColor).copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  fontSize: 10,
+                ),
+              ),
             ),
             GestureDetector(
               onTap: onEditToggle,
               child: Text(
                 editing ? 'Annuler la modification' : 'Modifier',
                 style: AppTextStyles.caption(
-                    color: isDark ? AppColors.skyBlue : AppColors.primaryBlue)
-                    .copyWith(fontWeight: FontWeight.w600),
+                  color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                ).copyWith(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -445,12 +551,43 @@ class _ActiveSection extends StatelessWidget {
                 foregroundColor: AppColors.white,
                 minimumSize: const Size(double.infinity, 46),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: const Text('Enregistrer et mettre à jour',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
+              child: const Text(
+                'Enregistrer et mettre à jour',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ),
+        ],
+
+        if (onCheckPayment != null) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: checking ? null : onCheckPayment,
+              icon: const Icon(Icons.verified_outlined, size: 18),
+              label: Text(checking ? 'Vérification…' : 'Vérifier le paiement'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.deepGreen,
+                foregroundColor: AppColors.white,
+                minimumSize: const Size(double.infinity, 46),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+          if (checkError != null && checkError!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                checkError!,
+                style: AppTextStyles.caption(color: AppColors.boldRed),
+              ),
+            ),
         ],
 
         const SizedBox(height: 20),
@@ -466,14 +603,17 @@ class _ActiveSection extends StatelessWidget {
                 icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: const Text('Renvoyer le lien'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
+                  foregroundColor: isDark
+                      ? AppColors.skyBlue
+                      : AppColors.primaryBlue,
                   minimumSize: const Size(0, 46),
                   side: BorderSide(
                     color: (isDark ? AppColors.skyBlue : AppColors.primaryBlue)
                         .withValues(alpha: 0.5),
                   ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
@@ -487,9 +627,11 @@ class _ActiveSection extends StatelessWidget {
                   foregroundColor: AppColors.boldRed,
                   minimumSize: const Size(0, 46),
                   side: BorderSide(
-                      color: AppColors.boldRed.withValues(alpha: 0.45)),
+                    color: AppColors.boldRed.withValues(alpha: 0.45),
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
@@ -531,7 +673,9 @@ class _PaidSection extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.deepGreen.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.deepGreen.withValues(alpha: 0.25)),
+            border: Border.all(
+              color: AppColors.deepGreen.withValues(alpha: 0.25),
+            ),
           ),
           child: Column(
             children: [
@@ -594,18 +738,24 @@ class _PaidSection extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.deepGreen.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.deepGreen.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: AppColors.deepGreen.withValues(alpha: 0.2),
+            ),
           ),
           child: Row(
             children: [
-              const Icon(Icons.account_balance_wallet_outlined,
-                  size: 15, color: AppColors.deepGreen),
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 15,
+                color: AppColors.deepGreen,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Montant crédité sur l\'avoir magasin du client.',
-                  style: AppTextStyles.caption(color: AppColors.deepGreen)
-                      .copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyles.caption(
+                    color: AppColors.deepGreen,
+                  ).copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -661,19 +811,34 @@ class _InactiveSection extends StatelessWidget {
           child: Column(
             children: [
               if (link.canceledAt != null)
-                _InfoRow(icon: Icons.cancel_outlined, label: 'Annulé le',
-                    value: _formatDateTime(link.canceledAt!), mutedColor: mutedColor,
-                    textColor: textColor, valueColor: AppColors.boldRed),
+                _InfoRow(
+                  icon: Icons.cancel_outlined,
+                  label: 'Annulé le',
+                  value: _formatDateTime(link.canceledAt!),
+                  mutedColor: mutedColor,
+                  textColor: textColor,
+                  valueColor: AppColors.boldRed,
+                ),
               if (link.canceledBy != null) ...[
                 const SizedBox(height: 8),
-                _InfoRow(icon: Icons.person_outline_rounded, label: 'Annulé par',
-                    value: link.canceledBy!, mutedColor: mutedColor, textColor: textColor),
+                _InfoRow(
+                  icon: Icons.person_outline_rounded,
+                  label: 'Annulé par',
+                  value: link.canceledBy!,
+                  mutedColor: mutedColor,
+                  textColor: textColor,
+                ),
               ],
               if (link.isExpired) ...[
                 const SizedBox(height: 8),
-                _InfoRow(icon: Icons.event_outlined, label: 'Expiré le',
-                    value: _formatDate(link.expiresAt!), mutedColor: mutedColor,
-                    textColor: textColor, valueColor: AppColors.amber),
+                _InfoRow(
+                  icon: Icons.event_outlined,
+                  label: 'Expiré le',
+                  value: _formatDate(link.expiresAt!),
+                  mutedColor: mutedColor,
+                  textColor: textColor,
+                  valueColor: AppColors.amber,
+                ),
               ],
             ],
           ),
@@ -681,11 +846,21 @@ class _InactiveSection extends StatelessWidget {
         const SizedBox(height: 16),
         _SectionLabel('LIEN D\'ORIGINE', mutedColor: mutedColor),
         const SizedBox(height: 8),
-        _InfoRow(icon: Icons.access_time_rounded, label: 'Créé',
-            value: _formatDateTime(link.createdAt), mutedColor: mutedColor, textColor: textColor),
+        _InfoRow(
+          icon: Icons.access_time_rounded,
+          label: 'Créé',
+          value: _formatDateTime(link.createdAt),
+          mutedColor: mutedColor,
+          textColor: textColor,
+        ),
         const SizedBox(height: 8),
-        _InfoRow(icon: _channelIcon(link.channel), label: 'A été envoyé à',
-            value: link.sentTo, mutedColor: mutedColor, textColor: textColor),
+        _InfoRow(
+          icon: _channelIcon(link.channel),
+          label: 'A été envoyé à',
+          value: link.sentTo,
+          mutedColor: mutedColor,
+          textColor: textColor,
+        ),
       ],
     );
   }
@@ -709,29 +884,38 @@ class _EditableContactFields extends StatelessWidget {
   });
 
   InputDecoration _dec(String label, IconData icon) => InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, size: 18),
-        filled: true,
-        fillColor: isDark ? AppColors.darkSurface : AppColors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD))),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.primaryBlue, width: 1.5)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        isDense: true,
-      );
+    labelText: label,
+    prefixIcon: Icon(icon, size: 18),
+    filled: true,
+    fillColor: isDark ? AppColors.darkSurface : AppColors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(
+        color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+      ),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(
+        color: isDark ? AppColors.darkBorder : const Color(0xFFD0D5DD),
+      ),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    isDense: true,
+  );
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
+        PhoneField(
           controller: phoneCtrl,
-          keyboardType: TextInputType.phone,
-          decoration: _dec('Numéro de téléphone', Icons.phone_outlined),
+          label: 'Numéro de téléphone',
         ),
         const SizedBox(height: 8),
         TextField(
@@ -807,10 +991,12 @@ class _MiniChannelChip extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: selected ? color : AppColors.coolGray),
             const SizedBox(width: 4),
-            Text(label,
-                style: AppTextStyles.caption(
-                    color: selected ? color : AppColors.coolGray)
-                    .copyWith(fontWeight: FontWeight.w600, fontSize: 11)),
+            Text(
+              label,
+              style: AppTextStyles.caption(
+                color: selected ? color : AppColors.coolGray,
+              ).copyWith(fontWeight: FontWeight.w600, fontSize: 11),
+            ),
           ],
         ),
       ),
@@ -827,9 +1013,9 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, label) = switch (status) {
-      PayLinkStatus.active     => (AppColors.amber, 'Actif'),
+      PayLinkStatus.active => (AppColors.amber, 'Actif'),
       PayLinkStatus.paidUnused => (AppColors.deepGreen, 'Payé'),
-      PayLinkStatus.inactive   => (AppColors.coolGray, 'Inactif'),
+      PayLinkStatus.inactive => (AppColors.coolGray, 'Inactif'),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -838,9 +1024,12 @@ class _StatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
-      child: Text(label,
-          style: AppTextStyles.caption(color: color)
-              .copyWith(fontWeight: FontWeight.w700, fontSize: 11)),
+      child: Text(
+        label,
+        style: AppTextStyles.caption(
+          color: color,
+        ).copyWith(fontWeight: FontWeight.w700, fontSize: 11),
+      ),
     );
   }
 }
@@ -852,9 +1041,12 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text,
-        style: AppTextStyles.caption(color: mutedColor)
-            .copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.7, fontSize: 10));
+    return Text(
+      text,
+      style: AppTextStyles.caption(
+        color: mutedColor,
+      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.7, fontSize: 10),
+    );
   }
 }
 
@@ -883,15 +1075,21 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         SizedBox(
           width: 90,
-          child: Text(label,
-              style: AppTextStyles.caption(color: mutedColor)
-                  .copyWith(fontWeight: FontWeight.w600)),
+          child: Text(
+            label,
+            style: AppTextStyles.caption(
+              color: mutedColor,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
         ),
         Expanded(
-          child: Text(value,
-              style: AppTextStyles.body(color: valueColor ?? textColor)
-                  .copyWith(fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis),
+          child: Text(
+            value,
+            style: AppTextStyles.body(
+              color: valueColor ?? textColor,
+            ).copyWith(fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -903,7 +1101,11 @@ class _NoteBox extends StatelessWidget {
   final bool isDark;
   final Color mutedColor;
 
-  const _NoteBox({required this.note, required this.isDark, required this.mutedColor});
+  const _NoteBox({
+    required this.note,
+    required this.isDark,
+    required this.mutedColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -920,8 +1122,12 @@ class _NoteBox extends StatelessWidget {
           Icon(Icons.sticky_note_2_outlined, size: 14, color: mutedColor),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(note,
-                style: AppTextStyles.caption(color: mutedColor).copyWith(height: 1.4)),
+            child: Text(
+              note,
+              style: AppTextStyles.caption(
+                color: mutedColor,
+              ).copyWith(height: 1.4),
+            ),
           ),
         ],
       ),
@@ -958,7 +1164,9 @@ void _showConfirmModal(
             backgroundColor: confirmColor,
             foregroundColor: AppColors.white,
             minimumSize: const Size(0, 40),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: Text(confirmLabel),
         ),
@@ -983,8 +1191,11 @@ void _showSuccessModal(
               color: AppColors.deepGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.check_circle_rounded,
-                color: AppColors.deepGreen, size: 20),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.deepGreen,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 10),
           Text(title, style: AppTextStyles.h3(color: null)),
@@ -998,7 +1209,9 @@ void _showSuccessModal(
             backgroundColor: AppColors.deepGreen,
             foregroundColor: AppColors.white,
             minimumSize: const Size(0, 40),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: const Text('OK'),
         ),
@@ -1010,19 +1223,32 @@ void _showSuccessModal(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _channelName(PayLinkChannel c) => switch (c) {
-      PayLinkChannel.whatsApp => 'WhatsApp',
-      PayLinkChannel.email    => 'E-mail',
-      PayLinkChannel.sms      => 'SMS',
-    };
+  PayLinkChannel.whatsApp => 'WhatsApp',
+  PayLinkChannel.email => 'E-mail',
+  PayLinkChannel.sms => 'SMS',
+};
 
 IconData _channelIcon(PayLinkChannel c) => switch (c) {
-      PayLinkChannel.whatsApp => Icons.chat_rounded,
-      PayLinkChannel.email    => Icons.email_outlined,
-      PayLinkChannel.sms      => Icons.sms_outlined,
-    };
+  PayLinkChannel.whatsApp => Icons.chat_rounded,
+  PayLinkChannel.email => Icons.email_outlined,
+  PayLinkChannel.sms => Icons.sms_outlined,
+};
 
 String _formatDate(DateTime d) {
-  final months = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  final months = [
+    'janv.',
+    'févr.',
+    'mars',
+    'avr.',
+    'mai',
+    'juin',
+    'juil.',
+    'août',
+    'sept.',
+    'oct.',
+    'nov.',
+    'déc.',
+  ];
   return '${d.day} ${months[d.month - 1]} ${d.year}';
 }
 

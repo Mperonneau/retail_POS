@@ -34,19 +34,26 @@ class BarcodeScanScreen {
   }
 
   /// Opens a compact dialog with live camera preview (not a full-screen route).
-  static Future<String?> showModal(BuildContext context) {
+  ///
+  /// [acceptQr] also returns a QR code, so the register can open a vitrine receipt.
+  static Future<String?> showModal(
+    BuildContext context, {
+    bool acceptQr = false,
+  }) {
     if (!isSupported) return Future<String?>.value(null);
     return showDialog<String>(
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.black54,
-      builder: (ctx) => const _BarcodeScanDialog(),
+      builder: (ctx) => _BarcodeScanDialog(acceptQr: acceptQr),
     );
   }
 }
 
 class _BarcodeScanDialog extends StatefulWidget {
-  const _BarcodeScanDialog();
+  const _BarcodeScanDialog({required this.acceptQr});
+
+  final bool acceptQr;
 
   @override
   State<_BarcodeScanDialog> createState() => _BarcodeScanDialogState();
@@ -88,7 +95,10 @@ class _BarcodeScanDialogState extends State<_BarcodeScanDialog> {
   void _onDetect(BarcodeCapture capture) {
     if (!mounted || _handled) return;
     for (final b in capture.barcodes) {
-      if (_isBlockedProductBarcodeFormat(b.format)) continue;
+      final blocked = _isBlockedProductBarcodeFormat(b.format);
+      if (blocked && !(widget.acceptQr && b.format == BarcodeFormat.qrCode)) {
+        continue;
+      }
       final value = (b.rawValue ?? b.displayValue)?.trim();
       if (value == null || value.isEmpty) continue;
       _handled = true;

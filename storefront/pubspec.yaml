@@ -1,0 +1,34 @@
+name: retail_storefront
+description: "Vitrine en ligne de la caisse détail : catalogue, devis, commandes et paiement par lien."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # Design system, card pricing and the Stripe card field come from the POS.
+  retail_pos:
+    path: ../
+  go_router: ^14.6.3
+  google_fonts: ^6.2.1
+  http: ^1.5.0
+  intl: ^0.20.2
+  qr_flutter: ^4.1.0
+  share_plus: ^10.0.0
+  shared_preferences: ^2.5.3
+  web: ^1.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

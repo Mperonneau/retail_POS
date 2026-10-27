@@ -63,24 +63,19 @@ class TenderStatCard extends StatelessWidget {
     final divColor =
         isDark ? AppColors.darkBorder : const Color(0xFFE8E8EE);
 
-    // cashUsd shows its own USD value; everything else is HTG
-    final amountStr = tender == PaymentTender.cashUsd
+    // Dollars stay dollars. Card is always USD. Gourdes stay gourdes.
+    final amountStr = tenderUsesUsd(tender)
         ? CurrencyFormatter.usd(netUsd)
         : CurrencyFormatter.local(context, netHtg);
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.topLeft,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                   // ── Icon + label ─────────────────────────────────────────
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,11 +175,8 @@ class TenderStatCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

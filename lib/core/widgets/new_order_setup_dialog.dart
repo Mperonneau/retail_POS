@@ -7,6 +7,7 @@ import '../providers/new_order_draft_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
+import 'phone_field.dart';
 
 /// Collects order-type-specific info before opening the menu screen.
 /// Returns [NewOrderDraft] on Next, or `null` if cancelled.
@@ -253,17 +254,10 @@ class _NewOrderSetupDialogState extends ConsumerState<_NewOrderSetupDialog> {
               ],
               if (_needsDeliveryFields) ...[
                 const SizedBox(height: AppConstants.spacing12),
-                Text('Téléphone', style: AppTextStyles.caption()),
-                const SizedBox(height: 6),
-                TextField(
+                PhoneField(
                   controller: _phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                    hintText: '+509…',
-                    errorText: _phoneError,
-                  ),
+                  label: 'Téléphone',
+                  errorText: _phoneError,
                   onChanged: (_) => setState(() => _phoneError = null),
                 ),
                 const SizedBox(height: AppConstants.spacing12),

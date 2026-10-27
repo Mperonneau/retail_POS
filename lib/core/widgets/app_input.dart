@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
+import 'phone_field.dart';
 
 class AppInput extends StatefulWidget {
   final String label;
@@ -58,6 +59,19 @@ class _AppInputState extends State<AppInput> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (widget.keyboardType == TextInputType.phone &&
+        widget.controller != null &&
+        widget.maxLines == 1) {
+      return PhoneField(
+        controller: widget.controller!,
+        label: widget.label,
+        errorText: widget.errorText,
+        enabled: widget.enabled,
+        onChanged: widget.onChanged,
+        textInputAction: widget.textInputAction,
+        onEditingComplete: widget.onEditingComplete,
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

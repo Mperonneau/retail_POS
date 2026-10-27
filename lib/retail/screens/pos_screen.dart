@@ -17,7 +17,15 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/discount_approval_dialog.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/mock/mock_retail_orders.dart';
+import '../models/product_option.dart';
 import '../models/retail_cart_entry.dart';
+import '../models/sale_measure.dart';
+import '../storefront/receipt_scan.dart';
+import '../storefront/storefront_sync.dart';
+import '../widgets/pos_product_detail.dart';
+import '../widgets/product_option_picker.dart';
+import '../widgets/sale_measure_picker.dart';
 import 'checkout_wizard.dart';
 import '../../core/widgets/app_close_button.dart';
 
@@ -75,6 +83,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   final Map<int, String> _qtyWarnings = {};
   final Map<int, Timer> _warningTimers = {};
   late final TextEditingController _productSearchController;
+  late final FocusNode _productSearchFocus;
   String _search = '';
   String _category = 'Tous';
   double _discountPercent = 0;
@@ -89,13 +98,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     super.initState();
     _productSearchController = TextEditingController();
     _productSearchController.addListener(_onProductSearchChanged);
+    _productSearchFocus = FocusNode();
+    _productSearchFocus.addListener(_onProductSearchFocus);
     final q = widget.quoteToEdit;
     if (q != null) {
       _cart.clear();
+      final catalog = ref.read(mockProductsProvider);
       _cart.addAll(
-        q.lines.map(
-          (l) => RetailCartEntry(product: l.product, quantity: l.quantity),
-        ),
+        q.lines.map((l) {
+          final live = catalog.where((p) => p.id == l.product.id).firstOrNull ?? l.product;
+          return RetailCartEntry(
+            product: live,
+            quantity: l.quantity,
+            measure: l.measure,
+          );
+        }),
       );
       _discountPercent = q.discountPercent;
     }
@@ -107,31 +124,58 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     setState(() => _search = next);
   }
 
+  void _onProductSearchFocus() {
+    setState(() {});
+  }
+
   /// Mobile-only: right slide-over for cart + checkout.
   bool _mobileCartPanelOpen = false;
 
-  final _categories = [
-    'Tous',
-    'Alimentation',
-    'Boissons',
-    'Ménage',
-    'Électronique',
-    'Hygiène',
-    'Papeterie'
-  ];
+  /// Product open from a card tap. The plus button does not set this.
+  int? _detailProductId;
 
-  int _cartIndexFor(int productId) =>
-      _cart.indexWhere((e) => e.product.id == productId);
+  int _cartQtyFor(int productId) => _cart
+      .where((e) => e.product.id == productId)
+      .fold(0, (sum, e) => sum + e.quantity);
 
-  int _cartQtyFor(int productId) {
-    final idx = _cartIndexFor(productId);
+  int _qtyForLine(
+    MockProduct product,
+    List<ProductOptionChoice> options, [
+    MeasureChoice measure = const MeasureChoice.plain(),
+  ]) {
+    final key = RetailCartEntry.lineKeyFor(product.id, options, measure);
+    final idx = _cart.indexWhere((e) => e.lineKey == key);
     return idx >= 0 ? _cart[idx].quantity : 0;
   }
 
-  void _setCartQty(MockProduct product, int requestedQty) {
-    final idx = _cartIndexFor(product.id);
-    final maxQty = product.stockQuantity;
-    final qty = requestedQty.clamp(0, maxQty).toInt();
+  /// Absolute quantity this line can reach. Null when stock is not tracked.
+  int? _roomFor(
+    MockProduct product,
+    List<ProductOptionChoice> options, [
+    MeasureChoice measure = const MeasureChoice.plain(),
+  ]) {
+    if (!product.trackStock) return null;
+    final each = product.unitsEach(measure);
+    if (each < 1) return 0;
+    final key = RetailCartEntry.lineKeyFor(product.id, options, measure);
+    final others = _cart
+        .where((e) => e.product.id == product.id && e.lineKey != key)
+        .fold(0, (sum, e) => sum + e.stockUnits);
+    final left = product.stockQuantity - others;
+    if (left <= 0) return 0;
+    return left ~/ each;
+  }
+
+  void _setCartQty(
+    MockProduct product,
+    int requestedQty, {
+    List<ProductOptionChoice> options = const [],
+    MeasureChoice measure = const MeasureChoice.plain(),
+  }) {
+    final key = RetailCartEntry.lineKeyFor(product.id, options, measure);
+    final idx = _cart.indexWhere((e) => e.lineKey == key);
+    final room = _roomFor(product, options);
+    final qty = room == null ? requestedQty : requestedQty.clamp(0, room).toInt();
 
     if (qty <= 0) {
       if (idx >= 0) _cart.removeAt(idx);
@@ -143,23 +187,104 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       return;
     }
 
-    _cart.add(RetailCartEntry(product: product, quantity: qty));
+    _cart.add(RetailCartEntry(
+      product: product,
+      quantity: qty,
+      options: options,
+      measure: measure,
+    ));
   }
 
-  void _addToCart(MockProduct p) {
+  void _openProductDetail(MockProduct product) {
     setState(() {
-      _setCartQty(p, _cartQtyFor(p.id) + 1);
+      _detailProductId = product.id;
+      _mobileCartPanelOpen = false;
     });
   }
 
-  void _setQty(MockProduct p, int qty) {
+  void _closeProductDetail() {
+    if (_detailProductId == null) return;
+    setState(() => _detailProductId = null);
+  }
+
+  Future<void> _addToCart(MockProduct p) async {
+    if (p.saleMode != SaleMode.piece) {
+      final picked = await showSaleMeasurePicker(
+        context,
+        p,
+        roomFor: (measure, options) {
+          final room = _roomFor(p, options, measure);
+          if (room == null) return null;
+          return room - _qtyForLine(p, options, measure);
+        },
+      );
+      if (picked == null || !mounted) return;
+      final room = _roomFor(p, picked.options, picked.measure);
+      final next = _qtyForLine(p, picked.options, picked.measure) + picked.quantity;
+      if (room != null && next > room) {
+        _showQtyWarning(p);
+        return;
+      }
+      setState(
+        () => _setCartQty(
+          p,
+          next,
+          options: picked.options,
+          measure: picked.measure,
+        ),
+      );
+      return;
+    }
+    if (p.options.isNotEmpty) {
+      final picked = await showProductOptionPicker(context, p);
+      if (picked == null || !mounted) return;
+      final room = _roomFor(p, picked);
+      if (room != null && _qtyForLine(p, picked) + 1 > room) {
+        _showQtyWarning(p);
+        return;
+      }
+      setState(() => _setCartQty(p, _qtyForLine(p, picked) + 1, options: picked));
+      return;
+    }
+    final room = _roomFor(p, const []);
+    if (room != null && _cartQtyFor(p.id) + 1 > room) {
+      _showQtyWarning(p);
+      return;
+    }
+    setState(() => _setCartQty(p, _cartQtyFor(p.id) + 1));
+  }
+
+  void _setLineQty(int index, int qty) {
+    if (index < 0 || index >= _cart.length) return;
     setState(() {
-      _setCartQty(p, qty);
+      final entry = _cart[index];
+      _setCartQty(
+        entry.product,
+        qty,
+        options: entry.options,
+        measure: entry.measure,
+      );
     });
   }
 
   void _updateQty(MockProduct p, int delta) {
+    if (delta > 0) {
+      _addToCart(p);
+      return;
+    }
     setState(() {
+      if (p.saleMode != SaleMode.piece || p.options.isNotEmpty) {
+        final idx = _cart.lastIndexWhere((e) => e.product.id == p.id);
+        if (idx < 0) return;
+        final entry = _cart[idx];
+        _setCartQty(
+          entry.product,
+          entry.quantity - 1,
+          options: entry.options,
+          measure: entry.measure,
+        );
+        return;
+      }
       _setCartQty(p, _cartQtyFor(p.id) + delta);
     });
   }
@@ -167,7 +292,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   bool get _discountAllowed => ref.watch(discountAllowedProvider);
 
   double get _subtotal =>
-      _cart.fold(0, (s, e) => s + (e.product.priceHtg * e.quantity));
+      _cart.fold(0, (s, e) => s + (e.unitPriceHtg * e.quantity));
   double get _discountAmount => _subtotal * (_discountPercent / 100);
   double get _total => _subtotal - _discountAmount;
 
@@ -204,7 +329,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   void _startEmbeddedCheckout() {
     final cartCopy = _cart
-        .map((e) => RetailCartEntry(product: e.product, quantity: e.quantity))
+        .map(
+          (e) => RetailCartEntry(
+            product: e.product,
+            quantity: e.quantity,
+            options: e.options,
+            measure: e.measure,
+          ),
+        )
         .toList();
     setState(() {
       _checkoutGeneration++;
@@ -257,6 +389,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   void dispose() {
     _productSearchController.removeListener(_onProductSearchChanged);
     _productSearchController.dispose();
+    _productSearchFocus.removeListener(_onProductSearchFocus);
+    _productSearchFocus.dispose();
     for (final t in _warningTimers.values) {
       t.cancel();
     }
@@ -266,7 +400,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   Future<void> _openBarcodeScanner() async {
     String? code;
     if (BarcodeScanScreen.isSupported) {
-      code = await BarcodeScanScreen.showModal(context);
+      code = await BarcodeScanScreen.showModal(context, acceptQr: true);
     } else {
       final ctrl = TextEditingController();
       try {
@@ -303,7 +437,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     _applyBarcodeResult(code.trim());
   }
 
-  void _applyBarcodeResult(String code) {
+  Future<void> _applyBarcodeResult(String code) async {
+    final receiptId = storefrontRequestIdFromScan(code);
+    if (receiptId != null) {
+      await _openScannedReceipt(receiptId);
+      return;
+    }
     final products = ref.read(mockProductsProvider);
     MockProduct? byBarcode;
     for (final p in products) {
@@ -324,11 +463,40 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     _productSearchController.text = code;
   }
 
+  /// A vitrine receipt QR opens the matching commande or devis.
+  Future<void> _openScannedReceipt(String requestId) async {
+    await ref.read(storefrontSyncProvider.notifier).pullInbox();
+    if (!mounted) return;
+    final orderId = 'vit_$requestId';
+    final order = ref
+        .read(retailOrdersProvider)
+        .where((row) => row.id == orderId)
+        .firstOrNull;
+    if (order != null) {
+      ref.read(pendingReceiptScanProvider.notifier).state = requestId;
+      context.go(AppRoutes.retailOrderHistory);
+      return;
+    }
+    final quote = ref
+        .read(quotesProvider)
+        .where((row) => row.checkoutId == requestId || row.id == orderId)
+        .firstOrNull;
+    if (quote != null) {
+      ref.read(pendingReceiptScanProvider.notifier).state = requestId;
+      context.go(AppRoutes.retailQuotes);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Aucune commande pour ce code.')),
+    );
+  }
+
   void _showQtyWarning(MockProduct product) {
     final id = product.id;
     _warningTimers[id]?.cancel();
     setState(() {
-      _qtyWarnings[id] = 'Seulement ${product.stockQuantity} en stock';
+      final unit = product.saleMode == SaleMode.roll ? ' po' : '';
+      _qtyWarnings[id] = 'Seulement ${product.stockQuantity}$unit en stock';
     });
     _warningTimers[id] = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
@@ -338,13 +506,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     });
   }
 
-  void _removeLineFromCart(MockProduct product) {
-    final id = product.id;
+  void _removeLineAt(int index) {
+    if (index < 0 || index >= _cart.length) return;
+    final id = _cart[index].product.id;
     _warningTimers[id]?.cancel();
     _warningTimers.remove(id);
     setState(() {
       _qtyWarnings.remove(id);
-      _setCartQty(product, 0);
+      _cart.removeAt(index);
     });
   }
 
@@ -363,13 +532,80 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     );
 
     final grid = _buildProductGrid(context);
+    MockProduct? detailProduct;
+    final detailId = _detailProductId;
+    if (detailId != null) {
+      for (final p in ref.watch(mockProductsProvider)) {
+        if (p.id == detailId) {
+          detailProduct = p;
+          break;
+        }
+      }
+      if (detailProduct == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _detailProductId == detailId) {
+            setState(() => _detailProductId = null);
+          }
+        });
+      }
+    }
+
+    Widget productPane = grid;
+    if (detailProduct != null) {
+      final product = detailProduct;
+      productPane = LayoutBuilder(
+        builder: (context, constraints) {
+          final maxW = constraints.maxWidth;
+          final detailW = maxW <= AppConstants.mobileBreakpoint
+              ? maxW
+              : min(460.0, maxW);
+          final full = detailW >= maxW;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              grid,
+              if (!full)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeProductDetail,
+                    behavior: HitTestBehavior.opaque,
+                    child: ColoredBox(
+                      color: Colors.black.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: detailW,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: full
+                        ? null
+                        : Border(
+                            left: BorderSide(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.darkGray.withValues(alpha: 0.25),
+                            ),
+                          ),
+                  ),
+                  child: _detailPanel(product),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
 
     if (isWide) {
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: Row(
           children: [
-            Expanded(flex: 3, child: grid),
+            Expanded(flex: 3, child: productPane),
             const VerticalDivider(width: 1),
             rightPane,
           ],
@@ -463,18 +699,70 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               ),
             ),
           ],
+          if (detailProduct != null)
+            Positioned.fill(child: _detailPanel(detailProduct)),
         ],
       ),
     );
   }
 
+  Widget _detailPanel(MockProduct product) {
+    return PosProductDetail(
+      product: product,
+      cartLines: [
+        for (final line in _cart)
+          if (line.product.id == product.id) line,
+      ],
+      stockWarning: _qtyWarnings[product.id],
+      onAdd: () => _addToCart(product),
+      onDecrementLine: (line) {
+        setState(() {
+          _setCartQty(
+            line.product,
+            line.quantity - 1,
+            options: line.options,
+            measure: line.measure,
+          );
+        });
+      },
+      onClose: _closeProductDetail,
+    );
+  }
+
   Widget _buildProductGrid(BuildContext context) {
-    final products = ref.watch(mockProductsProvider).where((p) {
+    final catalog = ref.watch(mockProductsProvider);
+    final categories = <String>[
+      'Tous',
+      'Quincaillerie',
+      'Alimentation',
+      'Boissons',
+      'Ménage',
+      'Électronique',
+      'Hygiène',
+      'Papeterie',
+    ];
+    for (final product in catalog) {
+      final name = product.category.trim();
+      if (name.isNotEmpty && !categories.contains(name)) categories.add(name);
+    }
+    final products = catalog.where((p) {
       final matchCat = _category == 'Tous' || p.category == _category;
-      final matchSearch = _search.isEmpty ||
-          p.name.toLowerCase().contains(_search.toLowerCase());
+      final query = _search.trim().toLowerCase();
+      final matchSearch = query.isEmpty ||
+          p.name.toLowerCase().contains(query) ||
+          p.category.toLowerCase().contains(query) ||
+          p.description.toLowerCase().contains(query) ||
+          (p.barcode ?? '').toLowerCase().contains(query) ||
+          p.saleHint.toLowerCase().contains(query);
       return matchCat && matchSearch && p.active;
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        final aPiece = a.saleMode == SaleMode.piece ? 1 : 0;
+        final bPiece = b.saleMode == SaleMode.piece ? 1 : 0;
+        final byMode = aPiece.compareTo(bPiece);
+        if (byMode != 0) return byMode;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -544,68 +832,91 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 focusedBorder: pillFocusedBorder,
               );
 
+              final searchFocused = _productSearchFocus.hasFocus;
+              final categoryGap = isNarrow ? 6.0 : 8.0;
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: categoryWidth,
-                    height: fieldMinHeight,
-                    child: DropdownMenu<String>(
-                      width: categoryWidth,
-                      initialSelection: _categories.contains(_category)
-                          ? _category
-                          : 'Tous',
-                      enableFilter: true,
-                      enableSearch: true,
-                      requestFocusOnTap: true,
-                      menuHeight: menuH,
-                      hintText: 'Catégorie',
-                      leadingIcon: Icon(
-                        Icons.category_outlined,
-                        size: filterIconSize,
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray,
+                  IgnorePointer(
+                    ignoring: searchFocused,
+                    child: ClipRect(
+                      child: AnimatedAlign(
+                        duration: AppConstants.animFast,
+                        curve: Curves.easeOut,
+                        alignment: Alignment.centerLeft,
+                        widthFactor: searchFocused ? 0 : 1,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: categoryGap),
+                          child: SizedBox(
+                            width: categoryWidth,
+                            height: fieldMinHeight,
+                            child: DropdownMenu<String>(
+                              width: categoryWidth,
+                              initialSelection: categories.contains(_category)
+                                  ? _category
+                                  : 'Tous',
+                              enableFilter: true,
+                              enableSearch: true,
+                              requestFocusOnTap: true,
+                              menuHeight: menuH,
+                              hintText: 'Catégorie',
+                              leadingIcon: Icon(
+                                Icons.category_outlined,
+                                size: filterIconSize,
+                                color: isDark
+                                    ? AppColors.coolGray
+                                    : AppColors.darkGray,
+                              ),
+                              trailingIcon: Icon(
+                                Icons.arrow_drop_down_rounded,
+                                size: filterIconSize + 2,
+                                color: isDark
+                                    ? AppColors.coolGray
+                                    : AppColors.darkGray,
+                              ),
+                              filterCallback:
+                                  (
+                                    List<DropdownMenuEntry<String>> entries,
+                                    String filter,
+                                  ) {
+                                    final q = filter.trim().toLowerCase();
+                                    if (q.isEmpty) return entries;
+                                    return entries
+                                        .where(
+                                          (e) =>
+                                              e.label.toLowerCase().contains(q),
+                                        )
+                                        .toList();
+                                  },
+                              inputDecorationTheme: categoryInputTheme,
+                              textStyle: AppTextStyles.body(
+                                color: isDark
+                                    ? AppColors.warmWhite
+                                    : AppColors.nearBlack,
+                              ),
+                              onSelected: (v) {
+                                if (v != null) setState(() => _category = v);
+                              },
+                              dropdownMenuEntries: [
+                                for (final c in categories)
+                                  DropdownMenuEntry<String>(value: c, label: c),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      trailingIcon: Icon(
-                        Icons.arrow_drop_down_rounded,
-                        size: filterIconSize + 2,
-                        color: isDark
-                            ? AppColors.coolGray
-                            : AppColors.darkGray,
-                      ),
-                      filterCallback:
-                          (List<DropdownMenuEntry<String>> entries, String filter) {
-                        final q = filter.trim().toLowerCase();
-                        if (q.isEmpty) return entries;
-                        return entries
-                            .where(
-                              (e) => e.label.toLowerCase().contains(q),
-                            )
-                            .toList();
-                      },
-                      inputDecorationTheme: categoryInputTheme,
-                      textStyle: AppTextStyles.body(
-                        color: isDark
-                            ? AppColors.warmWhite
-                            : AppColors.nearBlack,
-                      ),
-                      onSelected: (v) {
-                        if (v != null) setState(() => _category = v);
-                      },
-                      dropdownMenuEntries: [
-                        for (final c in _categories)
-                          DropdownMenuEntry<String>(value: c, label: c),
-                      ],
                     ),
                   ),
-                  SizedBox(width: isNarrow ? 6 : 8),
                   Expanded(
                     child: SizedBox(
                       height: fieldMinHeight,
                       child: TextField(
                         controller: _productSearchController,
+                        focusNode: _productSearchFocus,
                         textAlignVertical: TextAlignVertical.center,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => _productSearchFocus.unfocus(),
+                        onTapOutside: (_) => _productSearchFocus.unfocus(),
                         decoration: InputDecoration(
                           hintText: 'Rechercher un produit ou scanner un code-barres...',
                           prefixIcon: Icon(Icons.search, size: filterIconSize),
@@ -616,24 +927,30 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           suffixIcon: _productSearchController.text
                                   .trim()
                                   .isNotEmpty
-                              ? IconButton(
-                                  tooltip: 'Effacer la recherche',
-                                  onPressed: () {
-                                    _productSearchController.clear();
-                                  },
-                                  padding: EdgeInsets.zero,
-                                  constraints: BoxConstraints.tightFor(
-                                    width: 36,
-                                    height: fieldMinHeight,
+                              ? Focus(
+                                  canRequestFocus: false,
+                                  skipTraversal: true,
+                                  descendantsAreFocusable: false,
+                                  child: IconButton(
+                                    tooltip: 'Effacer la recherche',
+                                    onPressed: () {
+                                      _productSearchController.clear();
+                                      _productSearchFocus.requestFocus();
+                                    },
+                                    padding: EdgeInsets.zero,
+                                    constraints: BoxConstraints.tightFor(
+                                      width: 36,
+                                      height: fieldMinHeight,
+                                    ),
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      size: filterIconSize,
+                                      color: isDark
+                                          ? AppColors.coolGray
+                                          : AppColors.darkGray,
+                                    ),
+                                    visualDensity: VisualDensity.compact,
                                   ),
-                                  icon: Icon(
-                                    Icons.close_rounded,
-                                    size: filterIconSize,
-                                    color: isDark
-                                        ? AppColors.coolGray
-                                        : AppColors.darkGray,
-                                  ),
-                                  visualDensity: VisualDensity.compact,
                                 )
                               : null,
                           suffixIconConstraints: BoxConstraints.tightFor(
@@ -706,6 +1023,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           product: p,
                           cartQty: qty,
                           compact: compact,
+                          onOpen: () => _openProductDetail(p),
                           onAdd: () => _addToCart(p),
                           onRemove: () => _updateQty(p, -1),
                         );
@@ -833,11 +1151,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     _EditableQty(
-                                      key: ValueKey(entry.product.id),
+                                      key: ValueKey(entry.lineKey),
                                       product: entry.product,
                                       quantity: entry.quantity,
-                                      onQtyCommitted: (q) =>
-                                          _setQty(entry.product, q),
+                                      maxQty: _roomFor(
+                                        entry.product,
+                                        entry.options,
+                                        entry.measure,
+                                      ),
+                                      onQtyCommitted: (q) => _setLineQty(i, q),
                                       onStockExceeded: () =>
                                           _showQtyWarning(entry.product),
                                     ),
@@ -847,7 +1169,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                           left: AppConstants.spacing4,
                                         ),
                                         child: Text(
-                                          entry.product.name,
+                                          entry.lineLabel,
                                           style: AppTextStyles.caption(
                                             color: isDark
                                                 ? AppColors.warmWhite
@@ -862,7 +1184,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       width: 76,
                                       child: Text(
                                         CurrencyFormatter.amountOnly(
-                                          entry.product.priceHtg,
+                                          entry.unitPriceHtg,
                                         ),
                                         textAlign: TextAlign.right,
                                         style: AppTextStyles.caption(
@@ -876,7 +1198,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       width: 76,
                                       child: Text(
                                         CurrencyFormatter.amountOnly(
-                                          entry.product.priceHtg *
+                                          entry.unitPriceHtg *
                                               entry.quantity,
                                         ),
                                         textAlign: TextAlign.right,
@@ -894,9 +1216,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         child: Tooltip(
                                           message: 'Retirer la ligne',
                                           child: GestureDetector(
-                                            onTap: () => _removeLineFromCart(
-                                              entry.product,
-                                            ),
+                                            onTap: () => _removeLineAt(i),
                                             child: Container(
                                               width: 20,
                                               height: 20,
@@ -1042,6 +1362,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 class _ProductTile extends StatelessWidget {
   final MockProduct product;
   final int cartQty;
+  final VoidCallback onOpen;
   final VoidCallback onAdd;
   final VoidCallback onRemove;
   /// Phone layout: two tiles per row, price and controls on one line.
@@ -1050,10 +1371,29 @@ class _ProductTile extends StatelessWidget {
   const _ProductTile({
     required this.product,
     required this.cartQty,
+    required this.onOpen,
     required this.onAdd,
     required this.onRemove,
     this.compact = false,
   });
+
+  String _cardPrice(BuildContext context) {
+    final money = CurrencyFormatter.local(context, product.sellingPriceHtg);
+    return '$money${product.priceUnitSuffix}';
+  }
+
+  String _cardStock() {
+    if (product.saleHint.isEmpty) {
+      return product.trackStock
+          ? 'Stock : ${product.stockQuantity}'
+          : 'Stock non suivi';
+    }
+    if (!product.trackStock) return product.saleHint;
+    final qty = product.saleMode == SaleMode.roll
+        ? '${product.stockQuantity} po'
+        : '${product.stockQuantity}';
+    return '$qty · ${product.saleHint}';
+  }
 
   Widget _stepButton({
     required IconData icon,
@@ -1063,6 +1403,7 @@ class _ProductTile extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         width: 28,
         height: 28,
@@ -1119,7 +1460,7 @@ class _ProductTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      CurrencyFormatter.local(context, product.priceHtg),
+                      _cardPrice(context),
                       style: AppTextStyles.caption(
                         color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       ).copyWith(fontWeight: FontWeight.w600),
@@ -1127,7 +1468,7 @@ class _ProductTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Stock : ${product.stockQuantity}',
+                      _cardStock(),
                       style: AppTextStyles.caption(
                         color: product.isLowStock ? AppColors.amber : AppColors.darkGray,
                       ).copyWith(fontSize: 11),
@@ -1173,7 +1514,7 @@ class _ProductTile extends StatelessWidget {
     final inCart = cartQty > 0;
 
     return GestureDetector(
-      onTap: onAdd,
+      onTap: onOpen,
       child: AnimatedContainer(
         duration: AppConstants.animFast,
         decoration: BoxDecoration(
@@ -1251,7 +1592,7 @@ class _ProductTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      CurrencyFormatter.local(context, product.priceHtg),
+                      _cardPrice(context),
                       style: AppTextStyles.caption(
                         color: isDark ? AppColors.skyBlue : AppColors.primaryBlue,
                       ),
@@ -1259,7 +1600,7 @@ class _ProductTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Stock : ${product.stockQuantity}',
+                      _cardStock(),
                       style: AppTextStyles.caption(
                         color: product.isLowStock
                             ? AppColors.amber
@@ -1277,6 +1618,7 @@ class _ProductTile extends StatelessWidget {
                   if (cartQty > 0) ...[
                     GestureDetector(
                       onTap: onRemove,
+                      behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 26,
                         height: 26,
@@ -1299,17 +1641,21 @@ class _ProductTile extends StatelessWidget {
                     ),
                   ] else
                     const SizedBox(width: 26),
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: AppColors.amber,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      size: 14,
-                      color: AppColors.nearBlack,
+                  GestureDetector(
+                    onTap: onAdd,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: AppColors.amber,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        size: 14,
+                        color: AppColors.nearBlack,
+                      ),
                     ),
                   ),
                 ],
@@ -1325,6 +1671,7 @@ class _ProductTile extends StatelessWidget {
 class _EditableQty extends StatefulWidget {
   final MockProduct product;
   final int quantity;
+  final int? maxQty;
   final ValueChanged<int> onQtyCommitted;
   final VoidCallback onStockExceeded;
 
@@ -1332,6 +1679,7 @@ class _EditableQty extends StatefulWidget {
     super.key,
     required this.product,
     required this.quantity,
+    required this.maxQty,
     required this.onQtyCommitted,
     required this.onStockExceeded,
   });
@@ -1369,7 +1717,7 @@ class _EditableQtyState extends State<_EditableQty> {
 
   bool _validateAndCommit(int v, {required bool showWarning}) {
     if (v <= 0) return false;
-    if (v > widget.product.stockQuantity) {
+    if (widget.maxQty != null && v > widget.maxQty!) {
       if (showWarning) widget.onStockExceeded();
       _ctrl.text = '${widget.quantity}';
       _ctrl.selection = TextSelection(

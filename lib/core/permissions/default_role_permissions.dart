@@ -8,6 +8,7 @@ Map<PermissionId, bool> defaultPermissionsForRole(
   StaffRole role,
 ) {
   switch (role) {
+    case StaffRole.owner:
     case StaffRole.admin:
     case StaffRole.manager:
       return {for (final p in PermissionId.values) p: true};
@@ -15,10 +16,30 @@ Map<PermissionId, bool> defaultPermissionsForRole(
       return _cashierDefaults(module);
     case StaffRole.reception:
       return _receptionDefaults(module);
+    case StaffRole.seller:
+      return _sellerDefaults(module);
     case StaffRole.waiter:
       return _waiterDefaults(module);
     case StaffRole.kitchen:
       return _kitchenDefaults(module);
+  }
+}
+
+/// Retail seller: ring up sales only. Catalog, cash office, reports, and
+/// settings stay off until an owner or admin grants owner rights.
+Map<PermissionId, bool> _sellerDefaults(ActiveModule module) {
+  switch (module) {
+    case ActiveModule.retail:
+    case ActiveModule.restaurant:
+    case ActiveModule.hotel:
+      return {
+        PermissionId.settingsAccess: false,
+        PermissionId.reportsView: false,
+        PermissionId.catalogManage: false,
+        PermissionId.transactionsOperate: true,
+        PermissionId.financialCash: false,
+        PermissionId.clientCreditGrant: false,
+      };
   }
 }
 
@@ -33,6 +54,7 @@ Map<PermissionId, bool> _receptionDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
     case ActiveModule.retail:
       return {
@@ -41,6 +63,7 @@ Map<PermissionId, bool> _receptionDefaults(ActiveModule module) {
         PermissionId.catalogManage: true,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
   }
 }
@@ -54,6 +77,7 @@ Map<PermissionId, bool> _cashierDefaults(ActiveModule module) {
         PermissionId.catalogManage: true,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
     case ActiveModule.restaurant:
     case ActiveModule.hotel:
@@ -63,6 +87,7 @@ Map<PermissionId, bool> _cashierDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: true,
+        PermissionId.clientCreditGrant: false,
       };
   }
 }
@@ -77,6 +102,7 @@ Map<PermissionId, bool> _waiterDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: false,
+        PermissionId.clientCreditGrant: false,
       };
     case ActiveModule.retail:
       return {
@@ -85,6 +111,7 @@ Map<PermissionId, bool> _waiterDefaults(ActiveModule module) {
         PermissionId.catalogManage: false,
         PermissionId.transactionsOperate: true,
         PermissionId.financialCash: false,
+        PermissionId.clientCreditGrant: false,
       };
   }
 }
@@ -97,5 +124,6 @@ Map<PermissionId, bool> _kitchenDefaults(ActiveModule module) {
     PermissionId.catalogManage: false,
     PermissionId.transactionsOperate: true,
     PermissionId.financialCash: false,
+    PermissionId.clientCreditGrant: false,
   };
 }

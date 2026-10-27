@@ -15,6 +15,10 @@ enum PaymentTender {
   check,
 }
 
+/// Card and dollar bills are stored and shown in USD. Everything else stays HTG.
+bool tenderUsesUsd(PaymentTender tender) =>
+    tender == PaymentTender.cashUsd || tender == PaymentTender.card;
+
 extension PaymentTenderX on PaymentTender {
   String get label {
     switch (this) {
@@ -25,7 +29,7 @@ extension PaymentTenderX on PaymentTender {
       case PaymentTender.moncash:
         return 'MonCash';
       case PaymentTender.card:
-        return 'Carte de crédit / débit';
+        return 'Carte';
       case PaymentTender.check:
         return 'Check';
     }
@@ -161,7 +165,50 @@ class SessionSummary {
       session.openingBalanceUsd + totalInUsd - totalOutUsd;
   double get overShortHtg => finalBalanceHtg - expectedHtg;
   double get overShortUsd => finalBalanceUsd - expectedUsd;
-  bool get isBalanced => overShortHtg.abs() < 1.0;
+  bool get isBalanced =>
+      overShortHtg.abs() < 1.0 && overShortUsd.abs() < 0.01;
+}
+
+/// Mid-shift count. The drawer stays open for the next cashier.
+class CashierShiftHandoff {
+  final String id;
+  final String sessionId;
+  final DateTime createdAt;
+  final String closedByName;
+  final String receivedByName;
+  final double expectedHtg;
+  final double countedHtg;
+  final double expectedUsd;
+  final double countedUsd;
+  final double openingHtg;
+  final double openingUsd;
+  final double inflowHtg;
+  final double inflowUsd;
+  final double outflowHtg;
+  final double outflowUsd;
+  final String note;
+
+  const CashierShiftHandoff({
+    required this.id,
+    required this.sessionId,
+    required this.createdAt,
+    required this.closedByName,
+    required this.receivedByName,
+    required this.expectedHtg,
+    required this.countedHtg,
+    required this.expectedUsd,
+    required this.countedUsd,
+    required this.openingHtg,
+    required this.openingUsd,
+    required this.inflowHtg,
+    required this.inflowUsd,
+    required this.outflowHtg,
+    required this.outflowUsd,
+    this.note = '',
+  });
+
+  double get deltaHtg => countedHtg - expectedHtg;
+  double get deltaUsd => countedUsd - expectedUsd;
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -170,11 +217,13 @@ class CashControlState {
   final CashSession? activeSession;
   final List<CashMovement> movements;
   final List<SessionSummary> sessionHistory;
+  final List<CashierShiftHandoff> shiftHandoffs;
 
   const CashControlState({
     this.activeSession,
     this.movements = const [],
     this.sessionHistory = const [],
+    this.shiftHandoffs = const [],
   });
 
   // HTG aggregates for current session
@@ -322,6 +371,7 @@ class CashControlState {
     Object? activeSession = _sentinel,
     List<CashMovement>? movements,
     List<SessionSummary>? sessionHistory,
+    List<CashierShiftHandoff>? shiftHandoffs,
   }) {
     return CashControlState(
       activeSession: activeSession == _sentinel
@@ -329,6 +379,7 @@ class CashControlState {
           : activeSession as CashSession?,
       movements: movements ?? this.movements,
       sessionHistory: sessionHistory ?? this.sessionHistory,
+      shiftHandoffs: shiftHandoffs ?? this.shiftHandoffs,
     );
   }
 }
@@ -567,8 +618,8 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         id: 'mov_seed_${c++}',
         sessionId: sessionId,
         type: CashMovementType.cashIn,
-        amountHtg: 22100,
-        amountUsd: 0,
+        amountHtg: 0,
+        amountUsd: 164,
         description: 'Vente caisse — carte',
         linkedOrderId: '4',
         linkedTableNumber: 'RCP-2037',
@@ -617,7 +668,7 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
         sessionId: sessionId,
         type: CashMovementType.cashOut,
         amountHtg: 15000,
-        amountUsd: 150.00,
+        amountUsd: 0,
         description: 'Mid-day bank deposit',
         timestamp: base.subtract(const Duration(minutes: 95)),
         recordedBy: 'Gérant',
@@ -747,30 +798,68 @@ class CashSessionNotifier extends StateNotifier<CashControlState> {
     state = state.copyWith(movements: [...state.movements, movement]);
   }
 
-  void closeSession({String? note, String closedBy = 'Gérant'}) {
+  /// Records a cashier handoff. The session stays open.
+  CashierShiftHandoff? recordShiftHandoff({
+    required String closedByName,
+    required String receivedByName,
+    required double countedHtg,
+    required double countedUsd,
+    String note = '',
+  }) {
+    final session = state.activeSession;
+    if (session == null || session.status != CashSessionStatus.open) return null;
+    final handoff = CashierShiftHandoff(
+      id: 'shift_${DateTime.now().millisecondsSinceEpoch}',
+      sessionId: session.id,
+      createdAt: DateTime.now(),
+      closedByName: closedByName,
+      receivedByName: receivedByName,
+      expectedHtg: state.drawerExpectedHtg,
+      countedHtg: countedHtg,
+      expectedUsd: state.drawerExpectedUsd,
+      countedUsd: countedUsd,
+      openingHtg: session.openingBalanceHtg,
+      openingUsd: session.openingBalanceUsd,
+      inflowHtg: state.drawerCashInHtg,
+      inflowUsd: state.drawerCashInUsd,
+      outflowHtg: state.drawerCashOutHtg,
+      outflowUsd: state.drawerCashOutUsd,
+      note: note,
+    );
+    state = state.copyWith(shiftHandoffs: [handoff, ...state.shiftHandoffs]);
+    return handoff;
+  }
+
+  /// Returns to the opening form after a clôture, keeping history.
+  void prepareNextSession() {
+    final session = state.activeSession;
+    if (session == null || session.status != CashSessionStatus.closed) return;
+    state = state.copyWith(activeSession: null);
+  }
+
+  void closeSession({
+    String? note,
+    String closedBy = 'Gérant',
+    double? countedHtg,
+    double? countedUsd,
+  }) {
     final session = state.activeSession;
     if (session == null) return;
 
-    // Compute totals from this session's movements
-    final sessionMovs = state.movements
-        .where((m) => m.sessionId == session.id)
-        .toList();
-    final totalInHtg = sessionMovs
-        .where((m) => m.type == CashMovementType.cashIn)
-        .fold(0.0, (s, m) => s + m.totalHtg);
-    final totalInUsd = sessionMovs
-        .where((m) => m.type == CashMovementType.cashIn)
-        .fold(0.0, (s, m) => s + m.totalUsd);
-    final totalOutHtg = sessionMovs
-        .where((m) => m.type == CashMovementType.cashOut)
-        .fold(0.0, (s, m) => s + m.totalHtg);
-    final totalOutUsd = sessionMovs
-        .where((m) => m.type == CashMovementType.cashOut)
-        .fold(0.0, (s, m) => s + m.totalUsd);
-    final finalBalanceHtg =
-        session.openingBalanceHtg + totalInHtg - totalOutHtg;
-    final finalBalanceUsd =
-        session.openingBalanceUsd + totalInUsd - totalOutUsd;
+    // Physical drawer only. Card and MonCash are not gourdes in the till.
+    // Adjustments are folded into the ins so the saved Attendu matches the drawer.
+    final expectedHtg = state.drawerExpectedHtg;
+    final expectedUsd = state.drawerExpectedUsd;
+    final adjHtg = expectedHtg -
+        (session.openingBalanceHtg + state.drawerCashInHtg - state.drawerCashOutHtg);
+    final adjUsd = expectedUsd -
+        (session.openingBalanceUsd + state.drawerCashInUsd - state.drawerCashOutUsd);
+    final totalInHtg = state.drawerCashInHtg + adjHtg;
+    final totalInUsd = state.drawerCashInUsd + adjUsd;
+    final totalOutHtg = state.drawerCashOutHtg;
+    final totalOutUsd = state.drawerCashOutUsd;
+    final finalBalanceHtg = countedHtg ?? expectedHtg;
+    final finalBalanceUsd = countedUsd ?? expectedUsd;
 
     final closedSession = session.copyWith(
       closedAt: DateTime.now(),

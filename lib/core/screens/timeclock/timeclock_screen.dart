@@ -9,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../printing/pdf_theme.dart';
 import '../../models/staff_directory_entry.dart';
 import '../../models/timeclock_entry.dart';
 import '../../providers/staff_directory_provider.dart';
@@ -64,7 +65,9 @@ class _TimeclockScreenState extends ConsumerState<TimeclockScreen> {
 
   bool get _isAdmin {
     final role = ref.read(staffSessionProvider)?.role;
-    return role == StaffRole.admin || role == StaffRole.manager;
+    return role == StaffRole.admin ||
+        role == StaffRole.manager ||
+        role == StaffRole.owner;
   }
 
   @override
@@ -1298,19 +1301,24 @@ Future<Uint8List> _buildTimesheetPdfBytes({
         ],
       );
 
+  final theme = await shopPdfTheme();
   final doc = pw.Document();
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
+      theme: theme,
       margin: const pw.EdgeInsets.all(40),
       build: (ctx) => [
         pw.Text(
-          'Feuille de temps',
+          'FEUILLE DE TEMPS',
           style: pw.TextStyle(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: pw.FontWeight.bold,
+            letterSpacing: 1.2,
           ),
         ),
+        pw.SizedBox(height: 8),
+        pw.Container(height: 1, color: PdfColors.grey600),
         pw.SizedBox(height: 6),
         pw.Text(
           employeeName,
@@ -1419,19 +1427,24 @@ Future<Uint8List> _buildMonthlyHoursSummaryPdf({
     );
   }
 
+  final theme = await shopPdfTheme();
   final doc = pw.Document();
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
+      theme: theme,
       margin: const pw.EdgeInsets.all(40),
       build: (ctx) => [
         pw.Text(
-          'Résumé des heures du mois',
+          'RÉSUMÉ DES HEURES',
           style: pw.TextStyle(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: pw.FontWeight.bold,
+            letterSpacing: 1.2,
           ),
         ),
+        pw.SizedBox(height: 8),
+        pw.Container(height: 1, color: PdfColors.grey600),
         pw.SizedBox(height: 4),
         pw.Text(
           monthTitle,
@@ -2639,11 +2652,29 @@ class _PrintDialogState extends State<_PrintDialog> {
     }
   }
 
-  void _doPrint(BuildContext ctx) {
+  Future<void> _doPrint(BuildContext ctx) async {
+    final name = widget.employeeName;
+    final entries = List<TimeclockEntry>.from(_filtered);
+    final start = _start;
+    final end = _end;
     Navigator.pop(ctx);
-    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-      content: Text('Feuille de temps de ${widget.employeeName} envoyée à l\'imprimante.'),
-      backgroundColor: AppColors.deepGreen,
-    ));
+    try {
+      await Printing.layoutPdf(
+        name: 'feuille-de-temps.pdf',
+        onLayout: (_) => _buildTimesheetPdfBytes(
+          employeeName: name,
+          entries: entries,
+          periodStart: start,
+          periodEnd: end,
+        ),
+      );
+    } catch (_) {
+      if (!ctx.mounted) return;
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(
+          content: Text('La feuille de temps n\'a pas pu être préparée.'),
+        ),
+      );
+    }
   }
 }
