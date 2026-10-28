@@ -2498,6 +2498,13 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                       ref
                           .read(retailOrdersProvider.notifier)
                           .updateStatus(current.id, nextStatus);
+                      showOrderStatusNotice(
+                        context,
+                        orderStatusNoticeMessage(
+                          current.orderNumber,
+                          nextStatus,
+                        ),
+                      );
                     },
                     icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                     label: Text(nextLabel),
@@ -2516,6 +2523,13 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                   onPressed: () {
                     ref.read(retailOrdersProvider.notifier).updateStatus(
                         current.id, RetailOrderStatus.completed);
+                    showOrderStatusNotice(
+                      context,
+                      orderStatusNoticeMessage(
+                        current.orderNumber,
+                        RetailOrderStatus.completed,
+                      ),
+                    );
                   },
                   icon: const Icon(Icons.check_circle_outline_rounded,
                       size: 16),
@@ -2573,6 +2587,87 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
       RetailOrderStatus.delivered => 'Marquer livré',
       _ => null,
     };
+  }
+}
+
+/// Sentence shown after a clerk advances a commande.
+String orderStatusNoticeMessage(String orderNumber, RetailOrderStatus status) {
+  final state = switch (status) {
+    RetailOrderStatus.completed => 'terminée',
+    RetailOrderStatus.delivered => 'livrée',
+    RetailOrderStatus.pickedUp => 'retirée',
+    RetailOrderStatus.ready => 'prête',
+    RetailOrderStatus.paid => 'payée',
+    RetailOrderStatus.partiallyPaid => 'partiellement payée',
+    RetailOrderStatus.checkPending => 'en attente de chèque',
+  };
+  return 'Commande $orderNumber marquée comme $state';
+}
+
+OverlayEntry? _orderStatusNotice;
+
+/// Green confirmation pinned to the top of the screen.
+void showOrderStatusNotice(BuildContext context, String message) {
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (overlay == null) return;
+  _orderStatusNotice?.remove();
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (context) => _OrderStatusNotice(message: message),
+  );
+  _orderStatusNotice = entry;
+  overlay.insert(entry);
+  Future<void>.delayed(const Duration(seconds: 3), () {
+    if (!entry.mounted) return;
+    entry.remove();
+    if (identical(_orderStatusNotice, entry)) _orderStatusNotice = null;
+  });
+}
+
+class _OrderStatusNotice extends StatelessWidget {
+  final String message;
+
+  const _OrderStatusNotice({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top + 8;
+    return Positioned(
+      key: const Key('order-status-notice'),
+      top: top,
+      left: 12,
+      right: 12,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.deepGreen,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppTextStyles.body(color: AppColors.white)
+                      .copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
