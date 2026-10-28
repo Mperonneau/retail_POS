@@ -965,7 +965,19 @@ class _PreviewCard extends StatelessWidget {
   final VoidCallback? onPreview;
 
   Future<void> _share(BuildContext context) async {
-    final cover = vitrineCoverFile(settings.coverDataUrl);
+    final base = url;
+    final link = base == null
+        ? null
+        : vitrineShareLink(base, [
+            name,
+            description,
+            settings.city,
+            settings.department,
+            settings.categories.join(','),
+            settings.openHour,
+            settings.closeHour,
+            settings.coverDataUrl,
+          ]);
     final text = vitrineShareText(
       name: name,
       city: settings.city,
@@ -974,16 +986,11 @@ class _PreviewCard extends StatelessWidget {
       description: description,
       openHour: settings.openHour,
       closeHour: settings.closeHour,
-      url: url,
+      url: link,
     );
     try {
       await shareVitrineCard(
-        VitrineShare(
-          subject: name,
-          text: text,
-          image: cover?.bytes,
-          mime: cover?.mime,
-        ),
+        VitrineShare(subject: name, text: text, url: link),
       );
     } catch (_) {
       await Clipboard.setData(ClipboardData(text: text));

@@ -65,13 +65,16 @@ void main() {
       'Ouvert 8h – 18h\n'
       'https://retail-pos-storefront.onrender.com/boutique-soleil',
     );
+    final link = vitrineShareLink('https://x.test/boutique-soleil', ['a', 1]);
+    expect(link, startsWith('https://x.test/boutique-soleil?v='));
+    expect(vitrineShareLink('https://x.test/boutique-soleil', ['a', 1]), link);
     expect(
-      vitrineCoverFile('data:image/png;base64,$_png')?.mime,
-      'image/png',
+      vitrineShareLink('https://x.test/boutique-soleil', ['b', 1]),
+      isNot(link),
     );
   });
 
-  testWidgets('Partager sits under Aperçu and sends the picture', (
+  testWidgets('Partager sits under Aperçu and sends the shop link', (
     tester,
   ) async {
     final shared = <VitrineShare>[];
@@ -107,10 +110,9 @@ void main() {
     expect(shared.single.text, contains('Jacmel, Sud-Est'));
     expect(shared.single.text, contains('a big magasin'));
     expect(
-      shared.single.text,
-      contains('https://retail-pos-vitrine.onrender.com/boutique-soleil'),
+      shared.single.url,
+      startsWith('https://retail-pos-vitrine.onrender.com/boutique-soleil?v='),
     );
-    expect(shared.single.mime, 'image/png');
-    expect(shared.single.image, base64Decode(_png));
+    expect(shared.single.text, contains(shared.single.url!));
   });
 }

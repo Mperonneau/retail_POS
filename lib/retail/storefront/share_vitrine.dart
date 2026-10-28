@@ -1,21 +1,17 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:share_plus/share_plus.dart';
 
 /// What the system share sheet sends for a company vitrine.
+///
+/// Only the link is shared when there is one. Facebook, Instagram, WhatsApp
+/// and the iPhone share sheet build the card (photo, name, details) from it.
 class VitrineShare {
-  const VitrineShare({
-    required this.text,
-    required this.subject,
-    this.image,
-    this.mime,
-  });
+  const VitrineShare({required this.text, required this.subject, this.url});
 
   final String text;
   final String subject;
-  final Uint8List? image;
-  final String? mime;
+  final String? url;
 }
 
 typedef ShareVitrine = Future<void> Function(VitrineShare share);
@@ -23,7 +19,7 @@ typedef ShareVitrine = Future<void> Function(VitrineShare share);
 /// Tests replace this so a tap can be checked without the platform share sheet.
 ShareVitrine shareVitrineCard = _platformShareVitrine;
 
-/// Caption for WhatsApp and the other share targets: name, place, and link.
+/// Caption for share targets that only take text: name, place, and link.
 String vitrineShareText({
   required String name,
   required String city,
@@ -48,41 +44,27 @@ String vitrineShareText({
   ].where((line) => line.isNotEmpty).join('\n');
 }
 
-/// Bytes and mime of a `data:image/...;base64,` cover, when it can be shared.
-({Uint8List bytes, String mime})? vitrineCoverFile(String? dataUrl) {
-  if (dataUrl == null || !dataUrl.startsWith('data:image/')) return null;
-  final comma = dataUrl.indexOf(',');
-  if (comma < 0) return null;
-  final mime = dataUrl.substring('data:'.length, comma).split(';').first;
-  try {
-    final bytes = base64Decode(dataUrl.substring(comma + 1));
-    if (bytes.isEmpty) return null;
-    return (bytes: bytes, mime: mime);
-  } catch (_) {
-    return null;
+/// The shop link with a mark that changes whenever the vitrine changes.
+///
+/// Facebook keeps the first card it sees for a link. A new mark after an
+/// update makes it read the page again instead of showing the old card.
+String vitrineShareLink(String url, List<Object?> parts) {
+  var hash = 0x811c9dc5;
+  for (final byte in utf8.encode(parts.map((p) => '$p').join('\n'))) {
+    hash = ((hash ^ byte) * 0x01000193) & 0xFFFFFFFF;
   }
+  final mark = hash.toRadixString(36);
+  return '$url${url.contains('?') ? '&' : '?'}v=$mark';
 }
 
 Future<void> _platformShareVitrine(VitrineShare share) async {
-  final image = share.image;
-  if (image != null && image.isNotEmpty) {
-    final mime = share.mime ?? 'image/jpeg';
-    final ext = mime.contains('png')
-        ? 'png'
-        : mime.contains('webp')
-        ? 'webp'
-        : 'jpg';
-    final filename = 'vitrine.$ext';
+  final url = share.url;
+  if (url != null && url.isNotEmpty) {
     try {
-      await Share.shareXFiles(
-        [XFile.fromData(image, mimeType: mime, name: filename)],
-        fileNameOverrides: [filename],
-        text: share.text,
-        subject: share.subject,
-      );
+      await Share.shareUri(Uri.parse(url));
       return;
     } catch (_) {
-      // This browser can share text but not a picture. The caption still goes.
+      // No link sharing here (desktop browsers). The caption still goes.
     }
   }
   await Share.share(share.text, subject: share.subject);
