@@ -10,7 +10,7 @@ services:
       export PATH="$PWD/flutter/bin:$PATH" &&
       flutter config --enable-web &&
       flutter pub get &&
-      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=PAYMENTS_API=https://retail-pos-payments.onrender.com --dart-define=STOREFRONT_URL=https://retail-pos-storefront.onrender.com &&
+      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=PAYMENTS_API=https://retail-pos-payments.onrender.com --dart-define=STOREFRONT_URL=https://retail-pos-vitrine.onrender.com &&
       python3 -c "import json,os; p='build/web/version.json'; d=json.load(open(p)); d['build_id']=os.environ.get('RENDER_GIT_COMMIT',''); json.dump(d, open(p,'w'))"
     staticPublishPath: build/web
     buildFilter:
@@ -56,6 +56,38 @@ services:
         - storefront/**
     pullRequestPreviewsEnabled: true
     routes:
+      # App sections stay here. A shop address redirects to the service that
+      # fills in the photo, name and details for Facebook and Instagram.
+      - type: rewrite
+        source: /orders
+        destination: /index.html
+      - type: rewrite
+        source: /favorites
+        destination: /index.html
+      - type: rewrite
+        source: /profile
+        destination: /index.html
+      - type: rewrite
+        source: /login
+        destination: /index.html
+      - type: rewrite
+        source: /cart
+        destination: /index.html
+      - type: rewrite
+        source: /about
+        destination: /index.html
+      - type: rewrite
+        source: /help
+        destination: /index.html
+      - type: redirect
+        source: /preview/*
+        destination: https://retail-pos-vitrine.onrender.com/preview/*
+      - type: redirect
+        source: /:slug
+        destination: https://retail-pos-vitrine.onrender.com/:slug
+      - type: rewrite
+        source: /
+        destination: /index.html
       - type: rewrite
         source: /*
         destination: /index.html

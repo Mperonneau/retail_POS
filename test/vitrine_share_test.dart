@@ -108,7 +108,7 @@ void main() {
     expect(shared.single.text, contains('a big magasin'));
     expect(
       shared.single.text,
-      contains('https://retail-pos-storefront.onrender.com/boutique-soleil'),
+      contains('https://retail-pos-vitrine.onrender.com/boutique-soleil'),
     );
     expect(shared.single.mime, 'image/png');
     expect(shared.single.image, base64Decode(_png));

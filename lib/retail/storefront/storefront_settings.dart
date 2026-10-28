@@ -12,7 +12,7 @@ class StorefrontLinks {
 
   static const String base = String.fromEnvironment(
     'STOREFRONT_URL',
-    defaultValue: 'https://retail-pos-storefront.onrender.com',
+    defaultValue: 'https://retail-pos-vitrine.onrender.com',
   );
 
   static String get _root => base.replaceAll(RegExp(r'/+$'), '');
