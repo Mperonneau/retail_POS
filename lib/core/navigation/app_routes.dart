@@ -111,6 +111,7 @@ class AppRoutes {
   static const String restaurantSettings = '/restaurant/settings';
   static const String hotelSettings = '/hotel/settings';
   static const String retailSettings = '/retail/settings';
+  static const String retailPersonnel = '/retail/personnel';
   static const String reports = '/reports';
   static const String paymentFlow = '/payment';
 }

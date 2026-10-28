@@ -5,7 +5,9 @@ import 'permission_id.dart';
 
 /// Primary permission required for a shell route. `null` = always allow if logged in.
 PermissionId? permissionRequiredForRoute(String route, ActiveModule module) {
-  if (route.endsWith('/settings') || route.endsWith('/vitrine')) {
+  if (route.endsWith('/settings') ||
+      route.endsWith('/vitrine') ||
+      route.endsWith('/personnel')) {
     return PermissionId.settingsAccess;
   }
   if (route.contains('/reports')) return PermissionId.reportsView;

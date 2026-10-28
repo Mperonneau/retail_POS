@@ -115,6 +115,7 @@ String firstAllowedHomeRoute({
       AppRoutes.retailCashControl,
       AppRoutes.retailReports,
       AppRoutes.retailSettings,
+      AppRoutes.retailPersonnel,
     ],
   };
 

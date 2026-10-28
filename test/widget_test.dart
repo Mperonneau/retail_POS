@@ -49,6 +49,12 @@ void main() {
     );
     expect(find.text('Boutique Soleil'), findsWidgets);
     expect(find.textContaining('Page not found'), findsNothing);
+    expect(find.byIcon(Icons.badge_outlined), findsWidgets);
+
+    await tester.tap(find.byTooltip('Développer le menu'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Personnel', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('Mobile bottom nav shows every destination label', (
@@ -95,6 +101,30 @@ void main() {
     expect(find.byIcon(AppIcons.devices), findsOneWidget);
     expect(find.text('Inventaire'), findsWidgets);
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.text('Personnel'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(Drawer),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.text('Personnel'), findsOneWidget);
+    await tester.tap(find.text('Personnel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(find.text('Membres du personnel'), findsOneWidget);
+    expect(find.text('Jean-Marc Dupont'), findsOneWidget);
+    expect(find.text('Ajouter un employé'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(TabBar),
+        matching: find.text('Personnel'),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('On a phone the cart and checkout panels fill the screen', (

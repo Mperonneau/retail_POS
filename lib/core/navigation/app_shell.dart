@@ -83,6 +83,7 @@ final _retailDestinations = <_NavDestination>[
   _NavDestination(label: 'Rapports', icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, route: AppRoutes.retailReports),
   _NavDestination(label: 'Pointage', icon: Icons.access_time_outlined, selectedIcon: Icons.access_time_filled, route: AppRoutes.retailTimeclock),
   _NavDestination(label: 'Tableau de bord', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, route: AppRoutes.retailDashboard),
+  _NavDestination(label: 'Personnel', icon: Icons.badge_outlined, selectedIcon: Icons.badge, route: AppRoutes.retailPersonnel),
   _NavDestination(label: 'Paramètres', icon: Icons.settings_outlined, selectedIcon: Icons.settings, route: AppRoutes.retailSettings),
 ];
 

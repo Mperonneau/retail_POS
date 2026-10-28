@@ -39,6 +39,7 @@ import '../../retail/screens/quotes_screen.dart';
 import '../../retail/screens/vitrine_screen.dart';
 
 import '../../settings/screens/settings_screen.dart';
+import '../../settings/screens/staff_screen.dart';
 import '../../payments/screens/payment_flow_screen.dart';
 import '../screens/order_history/order_history_screen.dart';
 import '../screens/timeclock/timeclock_screen.dart';
@@ -314,6 +315,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.retailTimeclock,
               pageBuilder: (_, state) =>
                   _noTransitionPage(state, const TimeclockScreen())),
+          GoRoute(
+              path: AppRoutes.retailPersonnel,
+              pageBuilder: (_, state) =>
+                  _noTransitionPage(state, const StaffScreen())),
           GoRoute(
               path: AppRoutes.retailSettings,
               pageBuilder: (_, state) =>

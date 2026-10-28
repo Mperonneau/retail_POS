@@ -16,15 +16,10 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/phone_field.dart';
-import '../../core/models/staff_directory_entry.dart';
-import '../../core/models/staff_role.dart';
-import '../../core/providers/staff_directory_provider.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../widgets/permissions_matrix_tab.dart';
-import '../widgets/staff_editor_sheet.dart';
-import '../widgets/staff_permission_panel.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -43,7 +38,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     'Apparence',
     'Taxes et frais',
     'Permissions',
-    'Personnel',
     'Abonnement'
   ];
 
@@ -105,7 +99,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 _AppearanceTab(),
                 _TaxTab(),
                 const PermissionsMatrixTab(),
-                const _StaffTab(),
                 _SubscriptionTab(),
               ],
             ),
@@ -944,180 +937,6 @@ class _TaxTabState extends ConsumerState<_TaxTab> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _StaffTab extends ConsumerWidget {
-  const _StaffTab();
-
-  void _openEditor(BuildContext context, bool isDark, {StaffDirectoryEntry? existing}) {
-    showAppBottomSheet(
-      context: context,
-      child: StaffEditorSheet(isDark: isDark, existing: existing),
-    );
-  }
-
-  void _showStaffOptions(
-    BuildContext context,
-    WidgetRef ref,
-    bool isDark,
-    StaffDirectoryEntry entry,
-  ) {
-    showAppBottomSheet(
-      context: context,
-      isScrollControlled: false,
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Modifier'),
-              onTap: () {
-                Navigator.pop(context);
-                _openEditor(context, isDark, existing: entry);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings_outlined),
-              title: const Text('Gérer les droits'),
-              onTap: () {
-                Navigator.pop(context);
-                showStaffPermissionPanel(context, entry);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                entry.isActive ? Icons.block_outlined : Icons.check_circle_outline,
-                color: entry.isActive ? AppColors.amber : AppColors.deepGreen,
-              ),
-              title: Text(entry.isActive ? 'Deactivate' : 'Activer'),
-              onTap: () {
-                ref.read(staffDirectoryProvider.notifier).update(
-                      entry.copyWith(isActive: !entry.isActive),
-                    );
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.boldRed),
-              title: const Text('Retirer', style: TextStyle(color: AppColors.boldRed)),
-              onTap: () {
-                ref.read(staffDirectoryProvider.notifier).remove(entry.id);
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final staff = ref.watch(staffDirectoryProvider);
-
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.spacing24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text('Membres du personnel', style: AppTextStyles.h3())),
-              AppButton(
-                label: 'Ajouter un employé',
-                onPressed: () => _openEditor(context, isDark),
-                icon: Icons.person_add_outlined,
-                fullWidth: false,
-                width: 130,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppConstants.spacing16),
-          Expanded(
-            child: ListView.separated(
-              itemCount: staff.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AppConstants.spacing8),
-              itemBuilder: (_, i) {
-                final s = staff[i];
-                final initial = s.fullName.isNotEmpty ? s.fullName[0] : '?';
-                return AppCard(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor:
-                            AppColors.primaryBlue.withValues(alpha: 0.1),
-                        child: Text(
-                          initial.toUpperCase(),
-                          style: AppTextStyles.body(
-                            color: isDark
-                                ? AppColors.skyBlue
-                                : AppColors.primaryBlue,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              s.fullName,
-                              style: AppTextStyles.body(
-                                color: isDark
-                                    ? AppColors.warmWhite
-                                    : AppColors.nearBlack,
-                              ),
-                            ),
-                            Text(
-                              '${staffRoleDisplayLabel(s.role)} · ${s.phone}',
-                              style: AppTextStyles.caption(),
-                            ),
-                            Text(
-                              s.email,
-                              style: AppTextStyles.caption(
-                                color: isDark
-                                    ? AppColors.coolGray
-                                    : AppColors.darkGray,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(top: 6),
-                        decoration: BoxDecoration(
-                          color: s.isActive
-                              ? AppColors.deepGreen
-                              : AppColors.darkGray,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert, size: 18),
-                        onPressed: () =>
-                            _showStaffOptions(context, ref, isDark, s),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
