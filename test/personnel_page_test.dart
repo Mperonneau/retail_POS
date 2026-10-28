@@ -25,8 +25,44 @@ void main() {
     expect(find.text('Personnel'), findsOneWidget);
     expect(find.text('Membres du personnel'), findsOneWidget);
     expect(find.text('Ajouter un employé'), findsOneWidget);
+    expect(find.text('Actifs'), findsOneWidget);
+    expect(find.text('Inactifs'), findsOneWidget);
     expect(find.text('Jean-Marc Dupont'), findsOneWidget);
     expect(find.text('Marie-Carmel Joseph'), findsOneWidget);
+    expect(find.text('Marcel Toussaint'), findsNothing);
+
+    await tester.tap(find.text('Inactifs'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Marcel Toussaint'), findsOneWidget);
+    expect(find.text('Jean-Marc Dupont'), findsNothing);
+    expect(find.text('Marie-Carmel Joseph'), findsNothing);
+  });
+
+  testWidgets('Deactivating an employee moves them to Inactifs', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: StaffScreen())),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deactivate'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jean-Marc Dupont'), findsNothing);
+
+    await tester.tap(find.text('Inactifs'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jean-Marc Dupont'), findsOneWidget);
+    expect(find.text('Marcel Toussaint'), findsOneWidget);
   });
 
   testWidgets('Paramètres no longer includes a Personnel tab', (tester) async {
