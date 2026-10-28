@@ -19,6 +19,7 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/page_header.dart';
 import '../storefront/business_category_picker.dart';
+import '../storefront/share_vitrine.dart';
 import '../storefront/storefront_link_dialog.dart';
 import '../storefront/storefront_settings.dart';
 import '../storefront/storefront_sync.dart';
@@ -963,6 +964,38 @@ class _PreviewCard extends StatelessWidget {
   final String? url;
   final VoidCallback? onPreview;
 
+  Future<void> _share(BuildContext context) async {
+    final cover = vitrineCoverFile(settings.coverDataUrl);
+    final text = vitrineShareText(
+      name: name,
+      city: settings.city,
+      department: settings.department,
+      categories: settings.categories,
+      description: description,
+      openHour: settings.openHour,
+      closeHour: settings.closeHour,
+      url: url,
+    );
+    try {
+      await shareVitrineCard(
+        VitrineShare(
+          subject: name,
+          text: text,
+          image: cover?.bytes,
+          mime: cover?.mime,
+        ),
+      );
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: text));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Partage impossible. Le texte de la vitrine a été copié.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1083,6 +1116,15 @@ class _PreviewCard extends StatelessWidget {
                   variant: AppButtonVariant.ghost,
                   compact: true,
                   onPressed: onPreview,
+                ),
+                const SizedBox(height: 8),
+                AppButton(
+                  key: const Key('vitrine-share'),
+                  label: 'Partager la vitrine',
+                  icon: Icons.ios_share_rounded,
+                  variant: AppButtonVariant.secondary,
+                  compact: true,
+                  onPressed: url == null ? null : () => _share(context),
                 ),
               ],
             ),
