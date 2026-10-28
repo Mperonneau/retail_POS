@@ -123,6 +123,7 @@ void main() {
           .status,
       RetailOrderStatus.completed,
     );
+    expect(find.text('Marquer terminé'), findsNothing);
 
     await tester.pump(const Duration(seconds: 3));
   });

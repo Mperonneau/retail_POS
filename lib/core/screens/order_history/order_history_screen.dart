@@ -2389,7 +2389,8 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
             ),
           ),
 
-          // Actions
+          // Actions. "Marquer terminé" goes away once the order is finished.
+          if (_showOrderActions(current, nextStatus, nextLabel)) ...[
           Divider(
               height: 1,
               color:
@@ -2519,6 +2520,7 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
                     ),
                   ),
                 if (nextStatus != null) const SizedBox(height: 8),
+                if (current.status != RetailOrderStatus.completed)
                 OutlinedButton.icon(
                   onPressed: () {
                     ref.read(retailOrdersProvider.notifier).updateStatus(
@@ -2552,9 +2554,22 @@ class _RetailOrderDetailPanel extends ConsumerWidget {
               ],
             ),
           ),
+          ],
         ],
       ),
     );
+  }
+
+  bool _showOrderActions(
+    RetailOrder current,
+    RetailOrderStatus? nextStatus,
+    String? nextLabel,
+  ) {
+    final check = current.checkPayment;
+    final showCheck = check != null && !check.refused;
+    if (showCheck) return true;
+    if (nextStatus != null && nextLabel != null) return true;
+    return current.status != RetailOrderStatus.completed;
   }
 
   RetailOrderStatus? _nextStatus(RetailOrder o) {
