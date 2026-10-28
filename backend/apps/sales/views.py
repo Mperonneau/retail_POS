@@ -45,7 +45,7 @@ class OrderViewSet(TenantScopedMixin, mixins.ListModelMixin, mixins.RetrieveMode
         qs = super().get_queryset()
         params = self.request.query_params
         if self.action == "list":
-            qs = qs.annotate(item_count=Count("lines"))
+            qs = qs.annotate(item_count=Count("lines")).order_by("-created_at")
             if params.get("from"):
                 qs = qs.filter(created_at__date__gte=parse_date(params["from"]))
             if params.get("to"):

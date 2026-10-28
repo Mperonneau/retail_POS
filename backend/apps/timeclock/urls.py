@@ -1,8 +1,8 @@
-from rest_framework.routers import SimpleRouter
+from apps.common.routers import OptionalSlashRouter
 
 from . import views
 
-router = SimpleRouter(trailing_slash="/?")
+router = OptionalSlashRouter()
 router.register("timeclock", views.TimeclockViewSet, basename="timeclock")
 
 urlpatterns = router.urls

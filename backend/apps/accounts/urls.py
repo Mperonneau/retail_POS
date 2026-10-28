@@ -1,9 +1,9 @@
 from django.urls import path
-from rest_framework.routers import SimpleRouter
+from apps.common.routers import OptionalSlashRouter
 
 from . import views
 
-router = SimpleRouter(trailing_slash="/?")
+router = OptionalSlashRouter()
 router.register("staff", views.StaffViewSet, basename="staff")
 router.register("devices", views.DeviceViewSet, basename="device")
 router.register("locations", views.LocationViewSet, basename="location")

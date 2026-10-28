@@ -1,8 +1,8 @@
-from rest_framework.routers import SimpleRouter
+from apps.common.routers import OptionalSlashRouter
 
 from . import views
 
-router = SimpleRouter(trailing_slash="/?")
+router = OptionalSlashRouter()
 router.register("categories", views.CategoryViewSet, basename="category")
 router.register("products", views.ProductViewSet, basename="product")
 router.register("suppliers", views.SupplierViewSet, basename="supplier")
