@@ -16,7 +16,7 @@ import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qsl, unquote, urlparse
 
 from og_page import (
     MIN_IMAGE,
@@ -47,49 +47,142 @@ PORT = int(os.environ.get("PORT") or "8788")
 _INDEX = (WEB_ROOT / "index.html").read_text(encoding="utf-8") if (WEB_ROOT / "index.html").is_file() else (
     "<!doctype html><html><head><title>Vitrine</title></head><body></body></html>"
 )
-_cache: dict[str, tuple[float, dict | None]] = {}
+# The payments service sleeps on its plan and forgets shops when it restarts,
+# until the register publishes again. The last good copy of each shop is kept
+# here so a crawler never gets the generic page for a shop that exists.
+SHOPS_FILE = Path(os.environ.get("SHOPS_FILE") or "/tmp/vitrine-shops.json")
+FRESH_FOR = 60
+WARM_EVERY = 8 * 60
+
+_cache: dict[str, tuple[float, dict]] = {}
+_misses: dict[str, float] = {}
 _cache_lock = threading.Lock()
-_cards: dict[str, bytes] = {}
+_cards: dict[tuple[str, str], bytes] = {}
+_sizes: dict[str, tuple[int, int] | None] = {}
+
+
+def _load_saved() -> None:
+    try:
+        saved = json.loads(SHOPS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if isinstance(saved, dict):
+        for slug, shop in saved.items():
+            if isinstance(shop, dict) and shop.get("name"):
+                _cache[slug] = (0.0, shop)
+
+
+def _save() -> None:
+    with _cache_lock:
+        data = {slug: shop for slug, (_, shop) in _cache.items()}
+    try:
+        tmp = SHOPS_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data), encoding="utf-8")
+        tmp.replace(SHOPS_FILE)
+    except OSError:
+        pass
+
+
+def _get_json(url: str, timeout: float) -> object | None:
+    request = urllib.request.Request(url, headers={"Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode() or "null")
+    except (OSError, urllib.error.URLError, ValueError, TimeoutError):
+        return None
+
+
+def _download(slug: str, timeout: float) -> dict | None:
+    parsed = _get_json(f"{API_BASE}/storefront/shops/{slug}", timeout)
+    if isinstance(parsed, dict) and parsed.get("name"):
+        with _cache_lock:
+            _cache[slug] = (time.time(), parsed)
+            _misses.pop(slug, None)
+        _save()
+        return parsed
+    return None
 
 
 def fetch_shop(slug: str) -> dict | None:
     now = time.time()
     with _cache_lock:
         cached = _cache.get(slug)
-        if cached and now - cached[0] < 30:
-            return cached[1]
-    shop: dict | None = None
-    try:
-        request = urllib.request.Request(
-            f"{API_BASE}/storefront/shops/{slug}",
-            headers={"Accept": "application/json"},
-        )
-        with urllib.request.urlopen(request, timeout=5) as response:
-            parsed = json.loads(response.read().decode() or "{}")
-            if isinstance(parsed, dict) and parsed.get("name"):
-                shop = parsed
-    except (OSError, urllib.error.URLError, json.JSONDecodeError, TimeoutError):
-        shop = None
+        missed = _misses.get(slug, 0.0)
+    if cached and now - cached[0] < FRESH_FOR:
+        return cached[1]
+    if not cached and now - missed < 10:
+        return None
+    # Long enough for the payments service to wake up.
+    shop = _download(slug, timeout=20 if not cached else 6)
+    if shop:
+        return shop
+    if cached:
+        return cached[1]
     with _cache_lock:
-        _cache[slug] = (now, shop)
-    return shop
+        _misses[slug] = now
+    return None
 
 
 def image_size(url: str) -> tuple[int, int] | None:
     """Pixel size when the photo is large enough for Facebook to display it."""
+    if url in _sizes:
+        return _sizes[url]
     try:
         request = urllib.request.Request(url, headers={"User-Agent": "VitrinePreview"})
-        with urllib.request.urlopen(request, timeout=8) as response:
+        with urllib.request.urlopen(request, timeout=15) as response:
             data = response.read(262144)
     except (OSError, urllib.error.URLError, TimeoutError):
         return None
     size = image_dimensions(data)
-    if size is None:
-        return None
-    width, height = size
-    if width < MIN_IMAGE or height < MIN_IMAGE:
-        return None
+    if size is not None and (size[0] < MIN_IMAGE or size[1] < MIN_IMAGE):
+        size = None
+    # Photo names are content hashes, so the answer never changes.
+    _sizes[url] = size
     return size
+
+
+def card_for(title: str, description: str) -> bytes:
+    key = (title, description)
+    card = _cards.get(key)
+    if card is None:
+        card = preview_card(title, description)
+        if card:
+            _cards[key] = card
+    return card or b""
+
+
+def _version(*parts: str) -> str:
+    value = 2166136261
+    for byte in "\n".join(parts).encode():
+        value = ((value ^ byte) * 16777619) & 0xFFFFFFFF
+    return format(value, "x")
+
+
+def warm() -> None:
+    """Keeps the payments service awake and every shop's preview ready."""
+    directory = _get_json(f"{API_BASE}/storefront/shops", 30)
+    slugs = set()
+    if isinstance(directory, dict):
+        for item in directory.get("results") or []:
+            if isinstance(item, dict) and item.get("slug"):
+                slugs.add(str(item["slug"]))
+    with _cache_lock:
+        slugs.update(_cache.keys())
+    for slug in slugs:
+        shop = _download(slug, timeout=20)
+        if shop:
+            photo = cover_url(shop, API_BASE)
+            if photo:
+                image_size(photo)
+
+
+def _warm_forever() -> None:
+    while True:
+        try:
+            warm()
+        except Exception as error:  # noqa: BLE001 - the loop must keep running
+            print(f"warm failed: {error}", flush=True)
+        time.sleep(WARM_EVERY)
 
 
 def _origin(host: str) -> str:
@@ -110,7 +203,15 @@ def _with_base(page: str, origin: str) -> str:
     return tag + page
 
 
-def page_for(path: str, host: str) -> bytes:
+def share_version(query: str) -> str:
+    """The `v` the register adds so each vitrine update is a new link for Facebook."""
+    for name, value in parse_qsl(query or ""):
+        if name == "v" and 1 <= len(value) <= 16 and value.isalnum():
+            return value.lower()
+    return ""
+
+
+def page_for(path: str, host: str, query: str = "") -> bytes:
     origin = _origin(host)
     public = PUBLIC_BASE or origin
     slug = shop_slug(path)
@@ -121,6 +222,9 @@ def page_for(path: str, host: str) -> bytes:
     height = 0
     image_type = ""
     page_url = public + (path if path.startswith("/") else "/" + path)
+    version = share_version(query)
+    if version:
+        page_url += f"?v={version}"
     if slug:
         shop = fetch_shop(slug)
         if shop:
@@ -132,22 +236,16 @@ def page_for(path: str, host: str) -> bytes:
                 image = photo
                 width, height = size
                 image_type = _mime_for(photo)
-            else:
-                card = _cards.get(slug)
-                if card is None:
-                    card = preview_card(title, description)
-                    if card:
-                        _cards[slug] = card
-                if card:
-                    image = f"{origin}/preview/{slug}.png"
-                    width, height = 1200, 630
-                    image_type = "image/png"
+            elif card_for(title, description):
+                image = f"{origin}/preview/{slug}.png?v={_version(title, description)}"
+                width, height = 1200, 630
+                image_type = "image/png"
     html_page = inject_preview(
         _INDEX,
         title=title,
         description=description,
         image=image,
-        page_url=page_url.split("?")[0],
+        page_url=page_url,
         image_width=width,
         image_height=height,
         image_type=image_type,
@@ -171,7 +269,8 @@ class Handler(BaseHTTPRequestHandler):
         self.do_GET()
 
     def do_GET(self) -> None:
-        path = unquote(urlparse(self.path).path)
+        parsed = urlparse(self.path)
+        path = unquote(parsed.path)
         if path == "/health":
             raw = b'{"ok":true}'
             self.send_response(200)
@@ -186,12 +285,8 @@ class Handler(BaseHTTPRequestHandler):
             if shop_slug("/" + slug) != slug:
                 self.send_error(404)
                 return
-            card = _cards.get(slug) or b""
-            if not card:
-                shop = fetch_shop(slug) or {}
-                card = preview_card(str(shop.get("name") or slug), shop_blurb(shop))
-                if card:
-                    _cards[slug] = card
+            shop = fetch_shop(slug) or {}
+            card = card_for(str(shop.get("name") or slug), shop_blurb(shop))
             if not card:
                 self.send_error(404)
                 return
@@ -206,7 +301,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         host = (self.headers.get("Host") or "localhost").split(":")[0]
-        self._send(200, page_for(path, host), "text/html; charset=utf-8", "no-cache")
+        self._send(200, page_for(path, host, parsed.query), "text/html; charset=utf-8", "no-cache")
 
     def _send(self, status: int, body: bytes, mime: str, cache: str) -> None:
         self.send_response(status)
@@ -219,7 +314,10 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
 
     def log_message(self, fmt: str, *args) -> None:
-        print("%s %s" % (self.command, self.path))
+        if self.path.startswith("/health"):
+            return
+        agent = (self.headers.get("User-Agent") or "")[:80]
+        print("%s %s %s" % (self.command, self.path, agent), flush=True)
 
 
 def _safe_file(path: str) -> Path | None:
@@ -236,6 +334,8 @@ def _safe_file(path: str) -> Path | None:
 
 
 def main() -> None:
+    _load_saved()
+    threading.Thread(target=_warm_forever, daemon=True).start()
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
 
 

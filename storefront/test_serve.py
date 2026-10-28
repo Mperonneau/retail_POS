@@ -7,6 +7,8 @@ import urllib.request
 import serve
 from og_page import image_dimensions
 
+REAL_FETCH = serve.fetch_shop
+
 INDEX = """<!DOCTYPE html>
 <html><head>
   <meta name="description" content="Commandez en ligne.">
@@ -43,13 +45,23 @@ class PageTests(unittest.TestCase):
         self.assertIn("a big magasin", page)
         self.assertIn("Ouvert 8h", page)
         self.assertIn(
-            'property="og:image" content="https://retail-pos-vitrine.onrender.com/preview/boutique-soleil.png"',
+            'property="og:image" content="https://retail-pos-vitrine.onrender.com/preview/boutique-soleil.png?v=',
             page,
         )
         self.assertIn('property="og:image:width" content="1200"', page)
         self.assertIn('property="og:url" content="https://retail-pos-storefront.onrender.com/boutique-soleil"', page)
         self.assertIn('<base href="https://retail-pos-vitrine.onrender.com/">', page)
         self.assertNotIn("cover.png", page)
+
+    def test_share_version_is_part_of_the_link(self):
+        serve.image_size = lambda _url: (900, 600)
+        page = serve.page_for("/boutique-soleil", "localhost", "v=3fa9c1&utm=x").decode()
+        self.assertIn(
+            'property="og:url" content="https://retail-pos-storefront.onrender.com/boutique-soleil?v=3fa9c1"',
+            page,
+        )
+        bad = serve.page_for("/boutique-soleil", "localhost", "v=<script>").decode()
+        self.assertIn('content="https://retail-pos-storefront.onrender.com/boutique-soleil"', bad)
 
     def test_large_photo_is_the_preview_image(self):
         serve.image_size = lambda _url: (900, 600)
@@ -91,6 +103,35 @@ class PageTests(unittest.TestCase):
                 self.assertEqual(error.code, 404)
         finally:
             httpd.shutdown()
+
+
+class KeptCopyTests(unittest.TestCase):
+    def setUp(self):
+        self.real_fetch = REAL_FETCH
+        self.real_download = serve._download
+        serve._cache.clear()
+        serve._misses.clear()
+
+    def tearDown(self):
+        serve._download = self.real_download
+        serve._cache.clear()
+        serve._misses.clear()
+
+    def test_last_good_shop_is_used_while_payments_is_down(self):
+        serve._cache["boutique-soleil"] = (0.0, SHOP)
+        serve._download = lambda slug, timeout: None
+        self.assertEqual(self.real_fetch("boutique-soleil")["name"], "Morel Multi Services")
+
+    def test_fresh_shop_replaces_the_copy(self):
+        serve._cache["boutique-soleil"] = (0.0, SHOP)
+        newer = dict(SHOP, name="Morel Nouveau")
+
+        def download(slug, timeout):
+            serve._cache[slug] = (serve.time.time(), newer)
+            return newer
+
+        serve._download = download
+        self.assertEqual(self.real_fetch("boutique-soleil")["name"], "Morel Nouveau")
 
 
 if __name__ == "__main__":
