@@ -77,6 +77,18 @@ void main() {
 
     await _signInToRetailShell(tester);
 
+    final productSearch = find.byKey(const Key('pos-product-search'));
+    final searchBefore = tester.getSize(productSearch).width;
+    expect(find.byIcon(Icons.qr_code_scanner_outlined), findsOneWidget);
+    await tester.tap(productSearch);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(tester.getSize(productSearch).width, greaterThan(searchBefore + 80));
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(tester.getSize(productSearch).width, closeTo(searchBefore, 2));
+
     _expectBottomNavLabelsVisible(tester);
 
     await tester.tap(

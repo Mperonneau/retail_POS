@@ -16,6 +16,7 @@ import '../../core/providers/currency_settings_provider.dart';
 import '../../core/utils/catalog_price_helpers.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
+import '../../core/widgets/focus_expand_search_row.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_close_button.dart';
 import '../../core/widgets/app_card.dart';
@@ -839,26 +840,18 @@ class _ProductFilterRow extends StatelessWidget {
       onChanged: onCategoryChanged,
     );
 
-    if (narrow) {
-      return Row(
-        children: [
-          Expanded(child: searchField),
-          const SizedBox(width: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 156),
-            child: catChip,
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        catChip,
-        const SizedBox(width: AppConstants.spacing12),
-        Expanded(child: searchField),
-      ],
+    return FocusExpandSearchRow(
+      gap: narrow ? 8 : AppConstants.spacing12,
+      search: searchField,
+      leading: narrow ? const [] : [catChip],
+      trailing: narrow
+          ? [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 156),
+                child: catChip,
+              ),
+            ]
+          : const [],
     );
   }
 }

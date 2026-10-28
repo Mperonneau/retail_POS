@@ -19,6 +19,7 @@ import '../../../retail/storefront/receipt_scan.dart';
 import '../../printing/shop_pdf.dart';
 import '../../widgets/phone_field.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/focus_expand_search_row.dart';
 import '../../widgets/list_page_nav.dart';
 import '../../widgets/payment_method_block.dart';
 import 'order_history_detail.dart';
@@ -512,33 +513,36 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         children: [fromChip, toChip, pillSearch],
       );
     }
-    return Row(
-      children: [
-        Expanded(
-          child: _PillSearch(
-            controller: _searchCtrl,
-            hintText: 'Commande n° ou client…',
-            isDark: isDark,
-            dense: dense,
-            expand: true,
-            hasValue: _searchQuery.isNotEmpty,
-            onChanged: (v) => setState(() {
-              _searchQuery = v.trim();
-              _resetPage();
-            }),
-            onClear: () {
-              _searchCtrl.clear();
-              setState(() {
-                _searchQuery = '';
-                _resetPage();
-              });
-            },
-          ),
+    return FocusExpandSearchRow(
+      onlyWhenNarrow: false,
+      search: _PillSearch(
+        controller: _searchCtrl,
+        hintText: 'Commande n° ou client…',
+        isDark: isDark,
+        dense: dense,
+        expand: true,
+        hasValue: _searchQuery.isNotEmpty,
+        onChanged: (v) => setState(() {
+          _searchQuery = v.trim();
+          _resetPage();
+        }),
+        onClear: () {
+          _searchCtrl.clear();
+          setState(() {
+            _searchQuery = '';
+            _resetPage();
+          });
+        },
+      ),
+      trailing: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            fromChip,
+            const SizedBox(width: 6),
+            toChip,
+          ],
         ),
-        const SizedBox(width: 8),
-        fromChip,
-        const SizedBox(width: 6),
-        toChip,
       ],
     );
   }
@@ -728,32 +732,35 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
           ),
           const SizedBox(height: 8),
         ],
-        Row(
-          children: [
-            Expanded(
-              child: _PillSearch(
-                controller: _searchCtrl,
-                hintText: 'Reçu n° ou nom…',
-                isDark: isDark,
-                expand: true,
-                hasValue: _searchQuery.isNotEmpty,
-                onChanged: (v) => setState(() {
-                  _searchQuery = v.trim();
-                  _resetPage();
-                }),
-                onClear: () {
-                  _searchCtrl.clear();
-                  setState(() {
-                    _searchQuery = '';
-                    _resetPage();
-                  });
-                },
-              ),
+        FocusExpandSearchRow(
+          onlyWhenNarrow: false,
+          search: _PillSearch(
+            controller: _searchCtrl,
+            hintText: 'Reçu n° ou nom…',
+            isDark: isDark,
+            expand: true,
+            hasValue: _searchQuery.isNotEmpty,
+            onChanged: (v) => setState(() {
+              _searchQuery = v.trim();
+              _resetPage();
+            }),
+            onClear: () {
+              _searchCtrl.clear();
+              setState(() {
+                _searchQuery = '';
+                _resetPage();
+              });
+            },
+          ),
+          trailing: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                fromChip,
+                const SizedBox(width: 6),
+                toChip,
+              ],
             ),
-            const SizedBox(width: 8),
-            fromChip,
-            const SizedBox(width: 6),
-            toChip,
           ],
         ),
       ],

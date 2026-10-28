@@ -7,6 +7,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
+import '../../core/widgets/focus_expand_search_row.dart';
 import '../../core/widgets/app_card.dart';
 
 class SalesHistory extends ConsumerStatefulWidget {
@@ -120,27 +121,24 @@ class _SalesHistoryState extends ConsumerState<SalesHistory> {
                 )),
             const SizedBox(height: AppConstants.spacing16),
             // Filters
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (v) => setState(() => _searchText = v),
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher des transactions...',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.radiusInput)),
-                      filled: true,
-                      fillColor:
-                          isDark ? AppColors.darkSurface : AppColors.white,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 12),
-                    ),
-                  ),
+            FocusExpandSearchRow(
+              search: TextField(
+                onChanged: (v) => setState(() => _searchText = v),
+                decoration: InputDecoration(
+                  hintText: 'Rechercher des transactions...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppConstants.radiusInput)),
+                  filled: true,
+                  fillColor:
+                      isDark ? AppColors.darkSurface : AppColors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                      vertical: 10, horizontal: 12),
                 ),
-                const SizedBox(width: 8),
+              ),
+              trailing: [
                 Stack(
                   children: [
                     IconButton(

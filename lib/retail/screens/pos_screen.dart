@@ -14,6 +14,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/widgets/app_button.dart';
+import '../../core/widgets/focus_expand_search_row.dart';
 import '../../core/widgets/barcode_scan_screen.dart';
 import '../../core/widgets/discount_approval_dialog.dart';
 import '../../core/widgets/empty_state.dart';
@@ -832,25 +833,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 focusedBorder: pillFocusedBorder,
               );
 
-              final searchFocused = _productSearchFocus.hasFocus;
               final categoryGap = isNarrow ? 6.0 : 8.0;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  IgnorePointer(
-                    ignoring: searchFocused,
-                    child: ClipRect(
-                      child: AnimatedAlign(
-                        duration: AppConstants.animFast,
-                        curve: Curves.easeOut,
-                        alignment: Alignment.centerLeft,
-                        widthFactor: searchFocused ? 0 : 1,
-                        child: Padding(
-                          padding: EdgeInsets.only(right: categoryGap),
-                          child: SizedBox(
-                            width: categoryWidth,
-                            height: fieldMinHeight,
-                            child: DropdownMenu<String>(
+              return FocusExpandSearchRow(
+                onlyWhenNarrow: false,
+                gap: categoryGap,
+                leading: [
+                  SizedBox(
+                    width: categoryWidth,
+                    height: fieldMinHeight,
+                    child: DropdownMenu<String>(
                               width: categoryWidth,
                               initialSelection: categories.contains(_category)
                                   ? _category
@@ -902,16 +893,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   DropdownMenuEntry<String>(value: c, label: c),
                               ],
                             ),
-                          ),
-                        ),
-                      ),
-                    ),
                   ),
-                  Expanded(
-                    child: SizedBox(
-                      height: fieldMinHeight,
-                      child: TextField(
-                        controller: _productSearchController,
+                ],
+                search: SizedBox(
+                  height: fieldMinHeight,
+                  child: TextField(
+                    key: const Key('pos-product-search'),
+                    controller: _productSearchController,
                         focusNode: _productSearchFocus,
                         textAlignVertical: TextAlignVertical.center,
                         textInputAction: TextInputAction.search,
@@ -971,7 +959,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         ),
                       ),
                     ),
-                  ),
+                trailing: [
                   Tooltip(
                     message: 'Scanner le code-barres',
                     child: IconButton(

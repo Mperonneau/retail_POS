@@ -19,6 +19,7 @@ import '../../core/providers/staff_directory_provider.dart';
 import '../../core/providers/staff_session_provider.dart';
 import '../cash/cash_report_pdf.dart';
 import '../../core/widgets/app_bottom_sheet.dart';
+import '../../core/widgets/focus_expand_search_row.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_close_button.dart';
@@ -502,12 +503,9 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                               ],
                             );
                           }
-                          return Row(
-                            children: [
-                              Expanded(child: searchField),
-                              const SizedBox(width: 8),
-                              toggles,
-                            ],
+                          return FocusExpandSearchRow(
+                            search: searchField,
+                            trailing: [toggles],
                           );
                         },
                       ),

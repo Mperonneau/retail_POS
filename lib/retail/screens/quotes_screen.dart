@@ -13,6 +13,7 @@ import '../../core/utils/constants.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/input_formatters.dart';
 import '../../core/widgets/app_button.dart';
+import '../../core/widgets/focus_expand_search_row.dart';
 import '../../core/widgets/phone_field.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/list_page_nav.dart';
@@ -566,33 +567,36 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           ],
         );
       }
-      return Row(
-        children: [
-          Expanded(
-            child: _PillSearchField(
-              controller: _searchCtrl,
-              hintText: 'Devis n° ou client…',
-              isDark: isDark,
-              dense: dense,
-              expand: true,
-              hasValue: _searchQuery.isNotEmpty,
-              onChanged: (v) => setState(() {
-                _searchQuery = v.trim();
-                _resetPage();
-              }),
-              onClear: () {
-                _searchCtrl.clear();
-                setState(() {
-                  _searchQuery = '';
-                  _resetPage();
-                });
-              },
-            ),
+      return FocusExpandSearchRow(
+        onlyWhenNarrow: false,
+        search: _PillSearchField(
+          controller: _searchCtrl,
+          hintText: 'Devis n° ou client…',
+          isDark: isDark,
+          dense: dense,
+          expand: true,
+          hasValue: _searchQuery.isNotEmpty,
+          onChanged: (v) => setState(() {
+            _searchQuery = v.trim();
+            _resetPage();
+          }),
+          onClear: () {
+            _searchCtrl.clear();
+            setState(() {
+              _searchQuery = '';
+              _resetPage();
+            });
+          },
+        ),
+        trailing: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              fromChip,
+              const SizedBox(width: 6),
+              toChip,
+            ],
           ),
-          const SizedBox(width: 8),
-          fromChip,
-          const SizedBox(width: 6),
-          toChip,
         ],
       );
     });
