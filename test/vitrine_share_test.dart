@@ -45,25 +45,16 @@ void main() {
     LocalStore.instance.debugReset();
   });
 
-  test('the caption carries the shop name, place, and link', () {
-    final text = vitrineShareText(
-      name: 'Morel Multi Services',
-      city: 'Jacmel',
-      department: 'Sud-Est',
-      categories: const ['Boulangerie', 'Horlogerie'],
-      description: 'a big magasin',
-      openHour: 8,
-      closeHour: 18,
-      url: 'https://retail-pos-storefront.onrender.com/boutique-soleil',
+  test('the message invites people to order through the link', () {
+    final message = vitrineShareMessage('Morel Multi Services');
+    expect(
+      message,
+      'Morel Multi Services est sur Tabkreyol ! '
+      'Cliquez sur le lien pour commander chez nous, où que vous soyez.',
     );
     expect(
-      text,
-      'Morel Multi Services\n'
-      'Jacmel, Sud-Est\n'
-      'Boulangerie · Horlogerie\n'
-      'a big magasin\n'
-      'Ouvert 8h – 18h\n'
-      'https://retail-pos-storefront.onrender.com/boutique-soleil',
+      vitrineShareText(message, 'https://x.test/boutique-soleil'),
+      '$message\nhttps://x.test/boutique-soleil',
     );
     final link = vitrineShareLink('https://x.test/boutique-soleil', ['a', 1]);
     expect(link, startsWith('https://x.test/boutique-soleil?v='));
@@ -107,8 +98,10 @@ void main() {
 
     expect(shared, hasLength(1));
     expect(shared.single.subject, 'Morel Multi Services');
-    expect(shared.single.text, contains('Jacmel, Sud-Est'));
-    expect(shared.single.text, contains('a big magasin'));
+    expect(
+      shared.single.message,
+      startsWith('Morel Multi Services est sur Tabkreyol !'),
+    );
     expect(
       shared.single.url,
       startsWith('https://retail-pos-vitrine.onrender.com/boutique-soleil?v='),

@@ -978,22 +978,15 @@ class _PreviewCard extends StatelessWidget {
             settings.closeHour,
             settings.coverDataUrl,
           ]);
-    final text = vitrineShareText(
-      name: name,
-      city: settings.city,
-      department: settings.department,
-      categories: settings.categories,
-      description: description,
-      openHour: settings.openHour,
-      closeHour: settings.closeHour,
+    final share = VitrineShare(
+      subject: name,
+      message: vitrineShareMessage(name),
       url: link,
     );
     try {
-      await shareVitrineCard(
-        VitrineShare(subject: name, text: text, url: link),
-      );
+      await shareVitrineCard(share);
     } catch (_) {
-      await Clipboard.setData(ClipboardData(text: text));
+      await Clipboard.setData(ClipboardData(text: share.text));
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
