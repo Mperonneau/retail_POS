@@ -129,7 +129,8 @@ void main() {
 
     expect(find.text('Membres du personnel'), findsOneWidget);
     expect(find.text('Jean-Marc Dupont'), findsOneWidget);
-    expect(find.text('Ajouter un employé'), findsOneWidget);
+    expect(find.text('un employé'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsWidgets);
     expect(
       find.descendant(
         of: find.byType(TabBar),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:retail_pos/core/widgets/app_button.dart';
 import 'package:retail_pos/settings/screens/settings_screen.dart';
 import 'package:retail_pos/settings/screens/staff_screen.dart';
 
@@ -24,7 +25,11 @@ void main() {
 
     expect(find.text('Personnel'), findsOneWidget);
     expect(find.text('Membres du personnel'), findsOneWidget);
-    expect(find.text('Ajouter un employé'), findsOneWidget);
+    expect(find.text('un employé'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    final addButton = tester.getSize(find.widgetWithText(AppButton, 'un employé'));
+    expect(addButton.width, 160);
+    expect(addButton.height, 40);
     expect(find.text('Actifs'), findsOneWidget);
     expect(find.text('Inactifs'), findsOneWidget);
     expect(find.text('Jean-Marc Dupont'), findsOneWidget);
