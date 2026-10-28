@@ -5,8 +5,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:go_router/go_router.dart';
 import 'package:retail_pos/core/theme/app_colors.dart';
 import 'package:retail_pos/core/widgets/app_button.dart';
+import 'package:retail_pos/core/widgets/app_close_button.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:web/web.dart' as web;
 
@@ -69,6 +71,12 @@ class _RequestPageState extends State<RequestPage> {
   }
 
   String get _link => web.window.location.href;
+
+  /// Leaves the receipt and opens this company's vitrine.
+  void _close() {
+    final slug = _request?.shopSlug.trim() ?? '';
+    context.go(slug.isEmpty ? '/' : '/$slug');
+  }
 
   Future<void> _pay() async {
     final paid = await showPaySheet(context, api: _api, request: _request!);
@@ -171,9 +179,21 @@ class _RequestPageState extends State<RequestPage> {
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: kPhoneMaxWidth),
-                child: RepaintBoundary(
-                  key: _receiptKey,
-                  child: OrderReceipt(request: request, link: _link),
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: AppCloseButton(
+                        key: const Key('receipt-close'),
+                        onPressed: _close,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RepaintBoundary(
+                      key: _receiptKey,
+                      child: OrderReceipt(request: request, link: _link),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -192,10 +212,26 @@ class _RequestPageState extends State<RequestPage> {
                 border: Border(top: BorderSide(color: Color(0xFFECEAE4))),
               ),
               child: request.isPaid
-                  ? AppButton(
-                      label: 'Partager',
-                      icon: Icons.ios_share_rounded,
-                      onPressed: () => _share(),
+                  ? Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            label: 'Fermer',
+                            icon: Icons.close_rounded,
+                            variant: AppButtonVariant.secondary,
+                            onPressed: _close,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: AppButton(
+                            label: 'Partager',
+                            icon: Icons.ios_share_rounded,
+                            onPressed: () => _share(),
+                          ),
+                        ),
+                      ],
                     )
                   : Row(
                       children: [
