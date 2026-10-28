@@ -72,6 +72,37 @@ services:
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
+  # Link previews. Facebook and Instagram read the shop page's HTML, and the
+  # static site above is the same file for every path. This service builds the
+  # same app and fills in the shop name, text and photo for each address.
+  # Shop links on the static site redirect here so an already-shared URL
+  # reaches this page. The canonical link is this service's public URL.
+  - type: web
+    name: retail-pos-vitrine
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    buildCommand: >-
+      pip install -r storefront/requirements.txt &&
+      git clone https://github.com/flutter/flutter.git --depth 1 -b stable &&
+      export PATH="$PWD/flutter/bin:$PATH" &&
+      flutter config --enable-web &&
+      cd storefront &&
+      flutter pub get &&
+      flutter build web --release --dart-define=BUILD_ID=$RENDER_GIT_COMMIT --dart-define=STOREFRONT_API=https://retail-pos-payments.onrender.com
+    startCommand: python3 storefront/serve.py
+    buildFilter:
+      paths:
+        - storefront/**
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: STOREFRONT_API
+        value: https://retail-pos-payments.onrender.com
+      - key: WEB_ROOT
+        value: storefront/build/web
   # Secrets are set in the Render dashboard (sync: false). Never commit them.
   # Storefront data lives in STOREFRONT_DATA_DIR; attach a Render disk there so
   # requests survive restarts (the POS republishes the catalogue on its own).
